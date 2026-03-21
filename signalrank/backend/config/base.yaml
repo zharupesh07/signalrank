@@ -1,0 +1,215 @@
+# ============================================================
+# Job Ranker v2 — BASE CONFIG (ENGINE ONLY)
+# Deterministic, role-aware, persona-neutral
+# ============================================================
+
+version: 1
+
+paths:
+  db_path: duckdb
+
+# --------------------
+# EMBEDDINGS (ENGINE)
+# --------------------
+embeddings:
+  model_name: sentence-transformers/all-MiniLM-L6-v2
+  embedding_dim: 384
+  device: cpu
+  text:
+    normalize_embeddings: true
+    max_chars: 50000
+
+# --------------------
+# RANKING MECHANICS (NEUTRAL)
+# --------------------
+ranking:
+  min_semantic_score: 0.20
+  enable_recency_decay: true
+  recency_half_life_days: 21
+  min_keyword_overlap: 0
+  min_quality_multiplier: 0.0
+  company_semantic_floor: 0.65
+  hidden_gem_semantic_threshold: 0.70
+  hidden_gem_company_bonus: 60
+  contract_penalty: 0.9
+  role_semantic_thresholds:
+    software_general: 0.40
+    platform_devops: 0.35
+    agentic_systems: 0.35
+
+  seniority_penalty:
+    junior_multiplier: 0.4
+    low_yoe_multiplier: 0.5
+    over_senior_multiplier: 0.7
+    title_keywords:
+      junior:
+        - intern
+        - junior
+        - entry
+      over_senior:
+        - director
+        - head of
+        - chief
+
+  role_negative_keywords:
+    software_general:
+      - qa
+      - tester
+      - manual testing
+      - support engineer
+      - helpdesk
+      - customer support
+      - wordpress
+      - shopify developer
+
+    platform_devops:
+      - qa
+      - tester
+      - frontend
+      - react
+      - angular
+      - ui developer
+      - wordpress
+      - shopify developer
+
+    agentic_systems:
+      - qa
+      - tester
+      - data analyst
+      - business analyst
+      - power bi
+      - tableau
+      - excel heavy
+      - reporting
+      - dashboard
+      - wordpress
+      - shopify developer
+  # ----------------------------------------------------------
+  # SCORING WEIGHTS (additive model)
+  # ----------------------------------------------------------
+  scoring_weights:
+    skills_match: 0.40
+    company_fit: 0.20
+    seniority: 0.15
+    location: 0.15
+    recency: 0.10
+
+  # Neutral defaults — no role preference here
+  functional_role_penalties:
+    agentic_systems: 1.0
+    mlops_llmops: 1.0
+    platform_devops: 1.0
+    software_general: 0.9
+
+  # ----------------------------------------------------------
+  # 4. HARD CAPS (upper bounds)
+  # ----------------------------------------------------------
+  caps:
+    role_intent:
+      customer_facing: 60
+      architecture_strategy: 75
+
+  # ----------------------------------------------------------
+  # 5. LLM ADVISORY
+  # ----------------------------------------------------------
+  llm_veto:
+    enabled: false
+    model_max_tokens: 200
+    penalty_multiplier: 0.65
+
+# ============================================================
+# COMPANY SCORING
+# ============================================================
+company_scoring:
+  default_weight: 1.0
+
+# ============================================================
+# SKILLS
+# ============================================================
+skills:
+  equivalence_groups: {}
+
+# ============================================================
+# SCRAPING
+# ============================================================
+scraping:
+  country: India
+  max_results: 3000
+  min_description_length: 0
+  use_multiprocessing: true
+  supports_hours_old: true
+
+  # Set jobspy_only: true to disable ALL sources except JobSpy/Indeed.
+  # Queries run sequentially (one at a time) with a small delay to avoid 403s.
+  # Useful for testing, debugging, or when RapidAPI keys are unavailable.
+  # jobspy_only: true  → only JobSpy/Indeed, no RapidAPI, no free APIs
+  # jobspy_only: false → all sources (RapidAPI + JobSpy + free APIs)
+  # RapidAPI is disabled by default until subscriptions are active.
+  jobspy_only: true
+
+  # Google Jobs scraper (Phase 4)
+  # Works from residential IPs (laptop) without proxy.
+  # On servers/Docker: set proxy to a residential proxy.
+  google_jobs:
+    enabled: true
+    results_per_query: 50
+    delay: 2.0
+    # Backend priority:
+    #   1. SerpAPI (reliable, any IP)  → set SERPAPI_KEY in .env  https://serpapi.com (100 free/month)
+    #   2. JobSpy Google (fallback, unreliable — Google blocks most IPs now)
+    #   3. Residential proxy (fallback) → set GOOGLE_JOBS_PROXY=user:pass@host:port
+    proxy: null
+
+  # Gmail Job Alerts (read-only IMAP)
+  # Reads Google Job Alert emails from your Gmail label.
+  # Setup: enable IMAP in Gmail + create App Password (see SETUP.md)
+  # Then add GMAIL_USER + GMAIL_APP_PASSWORD to .env and set enabled: true
+  gmail_alerts:
+    enabled: false
+    days_back: 7       # how many days of emails to read
+    max_emails: 20     # max alert emails to parse per run
+
+  sites:
+    enabled:
+      - indeed
+      - linkedin
+
+# ============================================================
+# ROLE TAXONOMY
+# ============================================================
+functional_role_terms:
+  ai: []
+  devops: []
+  security: []
+
+functional_role_taxonomy:
+  architecture_strategy:
+    keywords:
+      - enterprise architect
+      - platform architect
+      - solution architect
+      - solutions architect
+      - field solutions architect
+  customer_facing:
+    keywords:
+      - solutions engineer
+      - pre-sales
+      - sales engineer
+      - customer engineer
+      - field solutions
+      - forward deployed engineer
+      - forward deployed
+
+functional_role_thresholds:
+  security_min_terms: 2
+  agentic_min_terms: 3
+  mlops_ai_terms: 1
+  mlops_devops_terms: 1
+  platform_devops_min_terms: 2
+
+# ============================================================
+# RESUME
+# ============================================================
+resume:
+  distillation:
+    enabled: false

@@ -1,0 +1,81 @@
+// One-page awesome-cv-style resume — Typst
+#set page(paper: "a4", margin: (x: 1.3cm, y: 0.7cm))
+#set text(font: "Charter", size: 10pt, lang: "en")
+#set par(leading: 0.55em, justify: false)
+
+#let accent = rgb("#00838f")
+#let gray   = rgb("#5d5d5d")
+
+#let section(title) = {
+  v(5pt)
+  text(size: 10.5pt, weight: "bold", fill: accent)[#upper(title)]
+  v(1pt)
+  line(length: 100%, stroke: 0.6pt + accent)
+  v(3pt)
+}
+
+#let entry(tech: "", role, company_loc, dates, bullets) = {
+  grid(columns: (1fr, auto),
+    [#text(weight: "bold")[#role] — #text(fill: gray)[#company_loc]],
+    [#text(fill: gray, size: 9pt)[#dates]]
+  )
+  if tech != "" [
+    #text(size: 8.5pt, fill: gray)[Tech: #tech]
+  ]
+  for b in bullets [
+    - #b
+  ]
+  v(3pt)
+}
+
+// ===== HEADER =====
+#align(center)[
+  #text(size: 20pt, weight: "bold")[{{ name }}]
+  #v(2pt)
+  #text(fill: gray)[{{ position }}]
+  #v(3pt)
+  #text(size: 9pt, fill: gray)[
+    {% if email %}{{ email | typst_escape }}{% endif %}{% if phone %} | {{ phone }}{% endif %}{% if linkedin %} | linkedin.com/in/{{ linkedin }}{% endif %}{% if github %} | github.com/{{ github }}{% endif %}{% if homepage %} | {{ homepage }}{% endif %}
+  ]
+]
+
+{% if summary %}
+#section("Summary")
+#text(fill: gray)[{{ summary }}]
+{% endif %}
+
+{% if experiences %}
+#section("Work Experience")
+{% for exp in experiences %}
+#entry(
+  tech: "{{ exp.get('tech', '') | replace('"', "'") }}",
+  "{{ exp.title | replace('"', "'") }}",
+  "{{ exp.company | replace('"', "'") }}{% if exp.get('location') %}, {{ exp.location }}{% endif %}",
+  "{{ exp.dates }}",
+  ({% for b in exp.bullets %}"{{ b | replace('"', "'") }}",{% endfor %})
+)
+{% endfor %}
+{% endif %}
+
+{% if skills %}
+#section("Technical Skills")
+#text(fill: gray)[{{ skills | join(", ") }}]
+{% endif %}
+
+{% if projects %}
+#section("Open Source & Projects")
+{% for p in projects %}
+- *{{ p.name | replace('"', "'") }}*{% if p.get('description') %} — #text(fill: gray)[{{ p.description | replace('"', "'") }}]{% endif %}
+
+{% endfor %}
+{% endif %}
+
+{% if education %}
+#section("Education")
+{% for edu in education %}
+#grid(columns: (1fr, auto),
+  [*{{ edu.degree | replace('"', "'") }}* — #text(fill: gray)[{{ edu.institution | replace('"', "'") }}]],
+  [#text(fill: gray, size: 9pt)[{{ edu.get('year', '') }}]]
+)
+{% endfor %}
+{% endif %}

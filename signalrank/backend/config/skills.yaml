@@ -1,0 +1,414 @@
+skills:
+  equivalence_groups:
+    machine_learning:
+      canonical: machine learning
+      variants:
+      - machine learning
+      - ml
+      - applied machine learning
+      - predictive modeling
+      - statistical learning
+      - supervised learning
+      - unsupervised learning
+      - anomaly detection
+      - model training
+      - model evaluation
+    deep_learning:
+      canonical: deep learning
+      variants:
+      - deep learning
+      - neural networks
+      - ann
+      - dnn
+      - cnn
+      - rnn
+      - transformers
+      - representation learning
+    model_optimization:
+      canonical: model optimization
+      variants:
+      - model optimization
+      - pruning
+      - quantization
+      - latency optimization
+      - inference optimization
+      - model compression
+    tensorflow:
+      canonical: deep learning framework
+      variants:
+      - tensorflow
+      - tf
+      - keras
+      - tf keras
+    pytorch:
+      canonical: deep learning framework
+      variants:
+      - pytorch
+      - torch
+      - torchscript
+      - torchserve
+      - lightning
+      - pytorch lightning
+    huggingface:
+      canonical: huggingface ecosystem
+      variants:
+      - huggingface
+      - transformers
+      - datasets
+      - tokenizers
+    llm:
+      canonical: large language models
+      variants:
+      - llm
+      - large language model
+      - foundation model
+      - generative ai
+      - genai
+    llm_frameworks:
+      canonical: llm framework
+      variants:
+      - langchain
+      - langgraph
+      - llamaindex
+      - semantic kernel
+      - autogen
+      - crewai
+      - google adk
+      - a2a
+    llm_providers:
+      canonical: llm providers
+      variants:
+      - openai
+      - openai api
+      - chatgpt
+      - gpt
+      - claude
+      - anthropic
+      - openrouter
+      - gemini
+      - google gemini
+    code_assistants:
+      canonical: ai coding assistants
+      variants:
+      - github copilot
+      - copilot
+      - copilot chat
+      - ai pair programmer
+    retrieval_augmented_generation:
+      canonical: rag
+      variants:
+      - rag
+      - retrieval augmented generation
+      - retrieval-augmented generation
+      - document retrieval
+      - context augmentation
+    prompt_engineering:
+      canonical: prompt engineering
+      variants:
+      - prompt engineering
+      - system prompts
+      - few shot prompting
+      - instruction tuning
+      - prompt templates
+    agentic_ai:
+      canonical: agentic ai
+      variants:
+      - agentic ai
+      - autonomous agents
+      - ai agents
+      - multi agent systems
+      - multi-agent orchestration
+      - tool using agents
+      - stateful agents
+    planning_reasoning:
+      canonical: reasoning systems
+      variants:
+      - chain of thought
+      - cot
+      - reasoning
+      - planning
+      - tool calling
+      - workflow reasoning
+    vector_databases:
+      canonical: vector database
+      variants:
+      - vector database
+      - faiss
+      - pinecone
+      - weaviate
+      - chroma
+      - qdrant
+      - milvus
+    embedding_models:
+      canonical: embedding models
+      variants:
+      - embeddings
+      - text embeddings
+      - sentence embeddings
+      - dense retrieval
+    mlops:
+      canonical: mlops
+      variants:
+      - mlops
+      - machine learning ops
+      - model lifecycle
+      - model governance
+      - production ml
+    llmops:
+      canonical: llmops
+      variants:
+      - llmops
+      - genai ops
+      - ai platform
+      - agent platform
+      - inference governance
+    experiment_tracking:
+      canonical: experiment tracking
+      variants:
+      - experiment tracking
+      - mlflow
+      - wandb
+      - weights and biases
+      - neptune
+      - comet
+    model_registry:
+      canonical: model registry
+      variants:
+      - model registry
+      - model versioning
+      - model promotion
+    model_serving:
+      canonical: model serving
+      variants:
+      - model serving
+      - inference service
+      - realtime inference
+      - batch inference
+      - online inference
+      - seldon
+      - seldon core
+    hitl:
+      canonical: human in the loop
+      variants:
+      - human in the loop
+      - hitl
+      - human feedback
+      - model validation
+      - annotation workflow
+    data_annotation:
+      canonical: data annotation
+      variants:
+      - data annotation
+      - labeling
+      - label studio
+      - annotation pipelines
+    cloud_platforms:
+      canonical: cloud platforms
+      variants:
+      - gcp
+      - google cloud
+      - aws
+      - hybrid cloud
+      - multi cloud
+    gcp_services:
+      canonical: gcp services
+      variants:
+      - cloud run
+      - vertex ai
+      - gcp iam
+      - gcp secret manager
+    containerization:
+      canonical: containerization
+      variants:
+      - docker
+      - containers
+      - containerized services
+    orchestration:
+      canonical: workflow orchestration
+      variants:
+      - airflow
+      - kubeflow pipelines
+      - argo
+      - prefect
+      - dagster
+    kubernetes:
+      canonical: kubernetes
+      variants:
+      - kubernetes
+      - k8s
+      - helm
+    cicd:
+      canonical: cicd
+      variants:
+      - cicd
+      - jenkins
+      - github actions
+      - gitlab ci
+      - azure pipelines
+    infrastructure_as_code:
+      canonical: infrastructure as code
+      variants:
+      - terraform
+      - infrastructure as code
+      - iac
+    backend_frameworks:
+      canonical: backend frameworks
+      variants:
+      - fastapi
+      - flask
+      - api development
+      - inference api
+    databases:
+      canonical: databases
+      variants:
+      - sql
+      - postgresql
+      - sqlmodel
+      - alembic
+    data_pipelines:
+      canonical: data pipelines
+      variants:
+      - etl
+      - data pipelines
+      - data orchestration
+      - streaming data
+    analytics_visualization:
+      canonical: analytics and visualization
+      variants:
+      - tableau
+      - streamlit
+      - dashboards
+      - reporting
+    ai_governance:
+      canonical: ai governance
+      variants:
+      - ai governance
+      - model governance
+      - enterprise ai
+      - compliance
+    security:
+      canonical: security
+      variants:
+      - rbac
+      - role based access control
+      - secret management
+      - pii redaction
+      - credential isolation
+    finops:
+      canonical: finops
+      variants:
+      - finops
+      - cost optimization
+      - cloud cost management
+      - resource optimization
+    observability:
+      canonical: observability
+      variants:
+      - observability
+      - system observability
+      - production monitoring
+    metrics_monitoring:
+      canonical: metrics monitoring
+      variants:
+      - prometheus
+      - metrics collection
+      - custom metrics
+      - slos
+      - slis
+    logging_tracing:
+      canonical: logging and tracing
+      variants:
+      - structured logging
+      - distributed tracing
+      - open telemetry
+      - otel
+    visualization_alerting:
+      canonical: monitoring dashboards
+      variants:
+      - grafana
+      - dashboards
+      - alerting
+      - on call monitoring
+    model_evaluation:
+      canonical: model evaluation
+      variants:
+      - model evaluation
+      - offline evaluation
+      - online evaluation
+      - benchmarking
+    llm_evaluation:
+      canonical: llm evaluation
+      variants:
+      - llm evaluation
+      - prompt evaluation
+      - response quality
+      - faithfulness
+      - hallucination detection
+    feedback_loops:
+      canonical: feedback loops
+      variants:
+      - feedback loops
+      - human feedback
+      - automated feedback
+      - eval pipelines
+    feature_stores:
+      canonical: feature store
+      variants:
+      - feature store
+      - offline features
+      - online features
+      - feature engineering
+    data_quality:
+      canonical: data quality
+      variants:
+      - data validation
+      - data quality checks
+      - schema validation
+      - data drift
+    serverless_compute:
+      canonical: serverless compute
+      variants:
+      - serverless
+      - cloud run
+      - modal
+      - function as a service
+      - faas
+    batch_processing:
+      canonical: batch processing
+      variants:
+      - batch jobs
+      - offline inference
+      - scheduled inference
+    realtime_systems:
+      canonical: realtime systems
+      variants:
+      - realtime inference
+      - low latency systems
+      - async processing
+    access_control:
+      canonical: access control
+      variants:
+      - access control
+      - rbac
+      - policy enforcement
+      - tenant isolation
+    audit_compliance:
+      canonical: audit and compliance
+      variants:
+      - audit logs
+      - compliance controls
+      - traceability
+      - governance workflows
+    experiment_tools:
+      canonical: experiment tools
+      variants:
+      - mlflow
+      - weights and biases
+      - wandb
+      - experiment tracking
+    deployment_tools:
+      canonical: deployment tools
+      variants:
+      - seldon
+      - cloud run
+      - kubernetes deployment

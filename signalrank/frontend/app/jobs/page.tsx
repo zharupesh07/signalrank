@@ -1,0 +1,217 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  flexRender,
+  createColumnHelper,
+  type SortingState,
+} from "@tanstack/react-table";
+import { api } from "@/lib/api";
+import type { Job } from "@/types";
+import { TableRowSkeleton } from "@/components/skeleton";
+import { ExternalLink, ChevronUp, ChevronDown } from "lucide-react";
+
+const col = createColumnHelper<Job>();
+
+function ScoreCell({ value }: { value: number | null }) {
+  if (value == null) return <span className="text-[#52525b]">—</span>;
+  const pct = value * 100;
+  const color = pct >= 80 ? "#22c55e" : pct >= 60 ? "#facc15" : "#ef4444";
+  return (
+    <div className="flex items-center gap-2">
+      <span className="tabular-nums text-xs font-bold" style={{ color }}>
+        {pct.toFixed(0)}
+      </span>
+      <div className="score-bar w-12">
+        <div className="score-bar-fill" style={{ width: `${pct}%`, background: color }} />
+      </div>
+    </div>
+  );
+}
+
+const columns = [
+  col.accessor("title", {
+    header: "Title",
+    cell: (i) => (
+      <span className="text-[#e4e4e7] text-xs">{i.getValue()}</span>
+    ),
+  }),
+  col.accessor("company", {
+    header: "Company",
+    cell: (i) => (
+      <span className="text-[#a1a1aa] text-xs">{i.getValue()}</span>
+    ),
+  }),
+  col.accessor("location", {
+    header: "Location",
+    cell: (i) => (
+      <span className="text-[#71717a] text-xs">{i.getValue() ?? "—"}</span>
+    ),
+  }),
+  col.accessor("final_score", {
+    header: "Score",
+    cell: (i) => <ScoreCell value={i.getValue()} />,
+  }),
+  col.accessor("company_tier", {
+    header: "Tier",
+    cell: (i) => {
+      const v = i.getValue();
+      return v ? (
+        <span className="text-[9px] text-[#52525b] border border-[#3f3f46] px-1.5 py-0.5">
+          T{v}
+        </span>
+      ) : <span className="text-[#52525b]">—</span>;
+    },
+  }),
+  col.accessor("is_contract", {
+    header: "Type",
+    cell: (i) => i.getValue() ? (
+      <span className="text-[9px] text-[#facc15] border border-[#facc15]/30 px-1.5 py-0.5">
+        CONTRACT
+      </span>
+    ) : null,
+  }),
+  col.accessor("site", {
+    header: "Source",
+    cell: (i) => (
+      <span className="text-[#52525b] text-xs">{i.getValue() ?? "—"}</span>
+    ),
+  }),
+  col.display({
+    id: "link",
+    header: "",
+    cell: (i) => (
+      <a
+        href={i.row.original.job_url}
+        target="_blank"
+        rel="noreferrer"
+        className="text-[#52525b] hover:text-[#22c55e] transition-colors"
+      >
+        <ExternalLink size={12} />
+      </a>
+    ),
+  }),
+];
+
+export default function JobsPage() {
+  const { data: session } = useSession();
+  const token = (session as { accessToken?: string })?.accessToken ?? "";
+
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [loading, setLoading] = useState(true);
+  const limit = 50;
+
+  useEffect(() => {
+    if (!token) return;
+    setLoading(true);
+    api.jobs.list(token, page, limit).then((r) => {
+      setJobs(r.jobs);
+      setTotal(r.total);
+      setLoading(false);
+    });
+  }, [token, page]);
+
+  const table = useReactTable({
+    data: jobs,
+    columns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
+
+  const totalPages = Math.ceil(total / limit) || 1;
+
+  return (
+    <div className="pt-12 min-h-screen">
+      <div className="max-w-6xl mx-auto px-6 py-8 space-y-4">
+        <div>
+          <div className="text-[10px] text-[#52525b] uppercase tracking-widest mb-1">// JOB INDEX</div>
+          <div className="flex items-baseline gap-3">
+            <h1 className="text-lg font-bold text-[#e4e4e7]">All Jobs</h1>
+            <span className="text-[#22c55e] text-sm tabular-nums">{total} results</span>
+          </div>
+        </div>
+
+        <div className="border border-[#3f3f46] overflow-hidden">
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              {table.getHeaderGroups().map((hg) => (
+                <tr key={hg.id} className="border-b border-[#3f3f46] bg-[#111113]">
+                  {hg.headers.map((h) => (
+                    <th
+                      key={h.id}
+                      onClick={h.column.getToggleSortingHandler()}
+                      className="px-3 py-2.5 text-left text-[10px] text-[#52525b] uppercase tracking-widest cursor-pointer select-none hover:text-[#22c55e] transition-colors"
+                    >
+                      <div className="flex items-center gap-1">
+                        {flexRender(h.column.columnDef.header, h.getContext())}
+                        {h.column.getIsSorted() === "asc" ? (
+                          <ChevronUp size={10} className="text-[#22c55e]" />
+                        ) : h.column.getIsSorted() === "desc" ? (
+                          <ChevronDown size={10} className="text-[#22c55e]" />
+                        ) : null}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {loading ? (
+                Array.from({ length: 10 }).map((_, i) => (
+                  <TableRowSkeleton key={i} cols={8} />
+                ))
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="job-row border-b border-[#3f3f46] bg-[#18181b]"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="px-3 py-2.5">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex items-center justify-between text-xs text-[#52525b]">
+          <span>
+            Showing {((page - 1) * limit) + 1}–{Math.min(page * limit, total)} of {total}
+          </span>
+          <div className="flex items-center gap-2 font-mono">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1.5 border border-[#3f3f46] hover:border-[#22c55e] hover:text-[#22c55e] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              [&lt; prev]
+            </button>
+            <span className="px-2">
+              {page} / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= totalPages}
+              className="px-3 py-1.5 border border-[#3f3f46] hover:border-[#22c55e] hover:text-[#22c55e] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              [next &gt;]
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
