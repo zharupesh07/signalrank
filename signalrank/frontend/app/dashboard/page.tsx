@@ -16,19 +16,19 @@ type Analytics = {
   total: number;
 };
 
-function MiniBarChart({ data, maxVal, color = "#22c55e" }: { data: { label: string; count: number }[]; maxVal: number; color?: string }) {
+function MiniBarChart({ data, maxVal, color = "var(--primary)" }: { data: { label: string; count: number }[]; maxVal: number; color?: string }) {
   return (
     <div className="space-y-1.5">
       {data.map(({ label, count }) => (
         <div key={label} className="flex items-center gap-2">
-          <span className="text-xs text-[#71717a] w-16 shrink-0 truncate">{label}</span>
-          <div className="flex-1 h-1.5 bg-[#1a1a1e] relative overflow-hidden">
+          <span className="text-xs text-muted-foreground w-16 shrink-0 truncate">{label}</span>
+          <div className="flex-1 h-1.5 bg-muted relative overflow-hidden">
             <div
               className="h-full transition-all duration-500"
               style={{ width: `${(count / maxVal) * 100}%`, background: color }}
             />
           </div>
-          <span className="text-xs text-[#71717a] tabular-nums w-6 text-right">{count}</span>
+          <span className="text-xs text-muted-foreground tabular-nums w-6 text-right">{count}</span>
         </div>
       ))}
     </div>
@@ -36,10 +36,10 @@ function MiniBarChart({ data, maxVal, color = "#22c55e" }: { data: { label: stri
 }
 
 function scoreColor(score: number) {
-  if (score >= 0.8) return "#22c55e";
-  if (score >= 0.65) return "#a3e635";
-  if (score >= 0.5) return "#facc15";
-  return "#f97316";
+  if (score >= 0.8) return "var(--primary)";
+  if (score >= 0.65) return "var(--terminal-green-bright)";
+  if (score >= 0.5) return "var(--terminal-yellow)";
+  return "var(--chart-4)";
 }
 
 function ScoreDisplay({ score }: { score: number }) {
@@ -71,15 +71,15 @@ function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="stat-card card-hover border border-[#2a2a2e] bg-[#111113] p-5 space-y-3">
+    <div className="stat-card card-hover border border-border bg-card p-5 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] text-[#71717a] uppercase tracking-[0.15em]">{label}</span>
-        <Icon size={12} className={accent ? "text-[#22c55e]" : "text-[#52525b]"} />
+        <span className="text-[11px] text-muted-foreground uppercase tracking-[0.15em]">{label}</span>
+        <Icon size={12} className={accent ? "text-primary" : "text-muted-foreground"} />
       </div>
-      <div className={`text-3xl font-bold tabular-nums leading-none ${accent ? "text-[#22c55e] text-glow-dim" : "text-[#d4d4d8]"}`}>
+      <div className={`text-3xl font-bold tabular-nums leading-none ${accent ? "text-primary text-glow-dim" : "text-foreground"}`}>
         {value}
       </div>
-      {sub && <div className="text-[11px] text-[#71717a] leading-snug">{sub}</div>}
+      {sub && <div className="text-[11px] text-muted-foreground leading-snug">{sub}</div>}
     </div>
   );
 }
@@ -164,12 +164,12 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <div className="section-label">dashboard</div>
-            <h1 className="text-xl font-bold text-[#d4d4d8] tracking-tight">Top Matches</h1>
+            <h1 className="text-xl font-bold text-foreground tracking-tight">Top Matches</h1>
           </div>
           <button
             onClick={triggerRun}
             disabled={triggering || isRunActive}
-            className="flex items-center gap-2 px-4 py-2.5 text-xs border border-[#22c55e]/50 text-[#22c55e] hover:bg-[#22c55e] hover:text-[#080808] hover:border-[#22c55e] transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-widest font-bold"
+            className="flex items-center gap-2 px-4 py-2.5 text-xs border border-primary/50 text-primary hover:bg-primary hover:text-background hover:border-primary transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-widest font-bold"
           >
             <RefreshCw size={11} className={triggering || isRunActive ? "spin-slow" : ""} />
             {triggering ? "Queuing..." : isRunActive ? "Running..." : "Refresh Jobs"}
@@ -207,36 +207,36 @@ export default function DashboardPage() {
           <div>
             <div className="section-label mb-3">signal analytics</div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="stat-card border border-[#2a2a2e] bg-[#111113] p-5 space-y-4">
+              <div className="stat-card border border-border bg-card p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-[#71717a] uppercase tracking-[0.15em]">Score Distribution</span>
-                  <BarChart2 size={12} className="text-[#52525b]" />
+                  <span className="text-[11px] text-muted-foreground uppercase tracking-[0.15em]">Score Distribution</span>
+                  <BarChart2 size={12} className="text-muted-foreground" />
                 </div>
                 <MiniBarChart
                   data={analytics.score_distribution.map((d) => ({ label: d.range, count: d.count }))}
                   maxVal={Math.max(...analytics.score_distribution.map((d) => d.count), 1)}
                 />
               </div>
-              <div className="stat-card border border-[#2a2a2e] bg-[#111113] p-5 space-y-4">
+              <div className="stat-card border border-border bg-card p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-[#71717a] uppercase tracking-[0.15em]">Top Companies</span>
-                  <BarChart2 size={12} className="text-[#52525b]" />
+                  <span className="text-[11px] text-muted-foreground uppercase tracking-[0.15em]">Top Companies</span>
+                  <BarChart2 size={12} className="text-muted-foreground" />
                 </div>
                 <MiniBarChart
                   data={analytics.top_companies.slice(0, 6).map((d) => ({ label: d.company, count: d.count }))}
                   maxVal={Math.max(...analytics.top_companies.map((d) => d.count), 1)}
-                  color="#a3e635"
+                  color="var(--terminal-green-bright)"
                 />
               </div>
             </div>
             {analytics.sites.length > 0 && (
-              <div className="mt-3 border border-[#2a2a2e] bg-[#111113] px-5 py-4 flex items-center gap-6">
-                <span className="text-[11px] text-[#71717a] uppercase tracking-[0.15em] shrink-0">Sources</span>
+              <div className="mt-3 border border-border bg-card px-5 py-4 flex items-center gap-6">
+                <span className="text-[11px] text-muted-foreground uppercase tracking-[0.15em] shrink-0">Sources</span>
                 <div className="flex items-center gap-4 flex-wrap">
                   {analytics.sites.map(({ site, count }) => (
                     <div key={site} className="flex items-center gap-2">
-                      <span className="text-xs text-[#a1a1aa]">{site}</span>
-                      <span className="text-xs text-[#71717a] tabular-nums">({count})</span>
+                      <span className="text-xs text-secondary-foreground">{site}</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">({count})</span>
                     </div>
                   ))}
                 </div>
@@ -254,27 +254,27 @@ export default function DashboardPage() {
               {Array.from({ length: 5 }).map((_, i) => <JobCardSkeleton key={i} />)}
             </div>
           ) : jobs.length === 0 ? (
-            <div className="border border-[#2a2a2e] bg-[#111113] p-12 text-center">
+            <div className="border border-border bg-card p-12 text-center">
               <div className="inline-block text-left font-mono text-[12px] leading-relaxed">
-                <div className="text-[#22c55e]/30">┌──────────────────────────────┐</div>
+                <div className="text-primary/30">┌──────────────────────────────┐</div>
                 <div>
-                  <span className="text-[#22c55e]/30">│ </span>
-                  <span className="text-[#22c55e]">&gt;</span>
-                  <span className="text-[#71717a]"> No signals detected.</span>
-                  <span className="text-[#22c55e]/30">       │</span>
+                  <span className="text-primary/30">│ </span>
+                  <span className="text-primary">&gt;</span>
+                  <span className="text-muted-foreground"> No signals detected.</span>
+                  <span className="text-primary/30">       │</span>
                 </div>
                 <div>
-                  <span className="text-[#22c55e]/30">│ </span>
-                  <span className="text-[#22c55e]">&gt;</span>
-                  <span className="text-[#71717a]"> Click Refresh Jobs to scan.</span>
-                  <span className="text-[#22c55e]/30">  │</span>
+                  <span className="text-primary/30">│ </span>
+                  <span className="text-primary">&gt;</span>
+                  <span className="text-muted-foreground"> Click Refresh Jobs to scan.</span>
+                  <span className="text-primary/30">  │</span>
                 </div>
                 <div>
-                  <span className="text-[#22c55e]/30">│ </span>
-                  <span className="text-[#22c55e] cursor-blink"> </span>
-                  <span className="text-[#22c55e]/30">                             │</span>
+                  <span className="text-primary/30">│ </span>
+                  <span className="text-primary cursor-blink"> </span>
+                  <span className="text-primary/30">                             │</span>
                 </div>
-                <div className="text-[#22c55e]/30">└──────────────────────────────┘</div>
+                <div className="text-primary/30">└──────────────────────────────┘</div>
               </div>
             </div>
           ) : (
@@ -282,44 +282,44 @@ export default function DashboardPage() {
               {jobs.map((job, idx) => (
                 <div
                   key={job.id}
-                  className="job-row flex items-center gap-4 px-4 py-3.5 bg-[#111113] border border-[#2a2a2e] animate-in"
+                  className="job-row flex items-center gap-4 px-4 py-3.5 bg-card border border-border animate-in"
                   style={{ animationDelay: `${idx * 35}ms` }}
                 >
-                  <span className="text-[11px] font-bold tabular-nums w-5 shrink-0 text-center" style={{ color: idx === 0 ? "#a3e635" : idx < 3 ? "#22c55e" : "#2a2a2e" }}>
+                  <span className="text-[11px] font-bold tabular-nums w-5 shrink-0 text-center" style={{ color: idx === 0 ? "var(--terminal-green-bright)" : idx < 3 ? "var(--primary)" : "var(--border)" }}>
                     {String(idx + 1).padStart(2, "0")}
                   </span>
 
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-medium text-[#d4d4d8] truncate">{job.title}</div>
-                    <div className="text-[11px] text-[#71717a] truncate mt-0.5">
+                    <div className="text-[13px] font-medium text-foreground truncate">{job.title}</div>
+                    <div className="text-[11px] text-muted-foreground truncate mt-0.5">
                       {job.company}{job.location ? ` · ${job.location}` : ""}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
                     {job.company_tier && (
-                      <span className="text-[11px] text-[#52525b] border border-[#2a2a2e] px-1.5 py-0.5 leading-none">T{job.company_tier}</span>
+                      <span className="text-[11px] text-muted-foreground border border-border px-1.5 py-0.5 leading-none">T{job.company_tier}</span>
                     )}
                     {job.is_contract && (
-                      <span className="text-[11px] text-[#facc15] border border-[#facc15]/20 px-1.5 py-0.5 leading-none">CONTRACT</span>
+                      <span className="text-[11px] text-[var(--terminal-yellow)] border border-[var(--terminal-yellow)]/20 px-1.5 py-0.5 leading-none">CONTRACT</span>
                     )}
-                    {job.site && <span className="text-[11px] text-[#2a2a2e] hidden md:block">{job.site}</span>}
+                    {job.site && <span className="text-[11px] text-border hidden md:block">{job.site}</span>}
                   </div>
 
                   {job.final_score != null && <ScoreDisplay score={job.final_score} />}
 
                   {tracked.has(job.id) ? (
-                    <span className="text-[11px] text-[#52525b] uppercase tracking-wider shrink-0">tracked</span>
+                    <span className="text-[11px] text-muted-foreground uppercase tracking-wider shrink-0">tracked</span>
                   ) : (
                     <button
                       onClick={() => trackJob(job)}
-                      className="flex items-center gap-0.5 text-[11px] text-[#22c55e]/60 border border-[#22c55e]/20 px-1.5 py-0.5 hover:border-[#22c55e] hover:text-[#22c55e] transition-colors uppercase tracking-wider shrink-0"
+                      className="flex items-center gap-0.5 text-[11px] text-primary/60 border border-primary/20 px-1.5 py-0.5 hover:border-primary hover:text-primary transition-colors uppercase tracking-wider shrink-0"
                     >
                       <Plus size={8} />track
                     </button>
                   )}
 
-                  <a href={job.job_url} target="_blank" rel="noreferrer" className="text-[#2a2a2e] hover:text-[#22c55e] transition-colors shrink-0">
+                  <a href={job.job_url} target="_blank" rel="noreferrer" className="text-border hover:text-primary transition-colors shrink-0">
                     <ExternalLink size={13} />
                   </a>
                 </div>
