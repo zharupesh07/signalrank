@@ -130,26 +130,26 @@ export default function JobsPage() {
   const totalPages = Math.ceil(total / limit) || 1;
 
   return (
-    <div className="pt-12 min-h-screen">
-      <div className="max-w-6xl mx-auto px-6 py-8 space-y-4">
+    <div className="pt-14 min-h-screen page-content">
+      <div className="max-w-6xl mx-auto px-6 py-8 space-y-5">
         <div>
-          <div className="text-[10px] text-[#52525b] uppercase tracking-widest mb-1">// JOB INDEX</div>
+          <div className="section-label mb-1">job index</div>
           <div className="flex items-baseline gap-3">
-            <h1 className="text-lg font-bold text-[#e4e4e7]">All Jobs</h1>
-            <span className="text-[#22c55e] text-sm tabular-nums">{total} results</span>
+            <h1 className="text-xl font-bold text-[#d4d4d8]">All Jobs</h1>
+            <span className="text-[#22c55e] text-sm tabular-nums text-glow-dim">{total}</span>
           </div>
         </div>
 
-        <div className="border border-[#3f3f46] overflow-hidden">
+        <div className="border border-[#2a2a2e] overflow-hidden">
           <table className="w-full text-xs border-collapse">
             <thead>
               {table.getHeaderGroups().map((hg) => (
-                <tr key={hg.id} className="border-b border-[#3f3f46] bg-[#111113]">
+                <tr key={hg.id} className="border-b border-[#2a2a2e] bg-[#0d0d0f]">
                   {hg.headers.map((h) => (
                     <th
                       key={h.id}
                       onClick={h.column.getToggleSortingHandler()}
-                      className="px-3 py-2.5 text-left text-[10px] text-[#52525b] uppercase tracking-widest cursor-pointer select-none hover:text-[#22c55e] transition-colors"
+                      className="px-3 py-3 text-left text-[10px] text-[#3f3f46] uppercase tracking-[0.15em] cursor-pointer select-none hover:text-[#22c55e] transition-colors"
                     >
                       <div className="flex items-center gap-1">
                         {flexRender(h.column.columnDef.header, h.getContext())}
@@ -173,7 +173,7 @@ export default function JobsPage() {
                 table.getRowModel().rows.map((row) => (
                   <tr
                     key={row.id}
-                    className="job-row border-b border-[#3f3f46] bg-[#18181b]"
+                    className="job-row border-b border-[#2a2a2e] bg-[#111113]"
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="px-3 py-2.5">

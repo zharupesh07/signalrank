@@ -70,13 +70,13 @@ export default function TrackerPage() {
   );
 
   return (
-    <div className="pt-12 min-h-screen">
+    <div className="pt-14 min-h-screen page-content">
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
         <div>
-          <div className="text-[10px] text-[#52525b] uppercase tracking-widest mb-1">// APPLICATION TRACKER</div>
+          <div className="section-label mb-1">application tracker</div>
           <div className="flex items-baseline gap-3">
-            <h1 className="text-lg font-bold text-[#e4e4e7]">Tracker</h1>
-            <span className="text-[#22c55e] text-sm tabular-nums">{applications.length} total</span>
+            <h1 className="text-xl font-bold text-[#d4d4d8]">Tracker</h1>
+            <span className="text-[#22c55e] text-sm tabular-nums text-glow-dim">{applications.length} total</span>
           </div>
         </div>
 
@@ -97,14 +97,14 @@ export default function TrackerPage() {
                 </div>
 
                 {apps.length === 0 ? (
-                  <div className="border border-dashed border-[#27272a] p-3 text-center">
+                  <div className="border border-dashed border-[#1e1e21] p-4 text-center">
                     <span className="text-[10px] text-[#3f3f46]">empty</span>
                   </div>
                 ) : (
                   apps.map((app) => (
                     <div
                       key={app.id}
-                      className={`border bg-[#18181b] p-3 space-y-2 ${style.border}`}
+                      className={`border card-hover bg-[#111113] p-3 space-y-2 ${style.border}`}
                     >
                       <div>
                         <div className="text-xs text-[#e4e4e7] truncate">{app.title}</div>

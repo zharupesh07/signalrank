@@ -28,7 +28,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] scanlines px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#080808] scanlines px-4">
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-1">
           <div className="text-3xl font-bold text-[#22c55e] text-glow-green tracking-widest">
@@ -39,7 +39,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="border border-[#3f3f46] bg-[#18181b] p-6 space-y-5">
+        <div className="border border-[#2a2a2e] bg-[#111113] p-6 space-y-5 stat-card">
           <div className="text-[10px] text-[#52525b] uppercase tracking-widest">
             // AUTHENTICATE
           </div>
@@ -47,7 +47,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-[10px] text-[#71717a] uppercase tracking-wider">Email</label>
-              <div className="flex items-center border border-[#3f3f46] bg-[#0a0a0a] focus-within:border-[#22c55e] transition-colors">
+              <div className="flex items-center border border-[#2a2a2e] bg-[#080808] focus-within:border-[#22c55e] focus-within:shadow-[0_0_0_1px_rgba(34,197,94,0.15)] transition-colors">
                 <span className="text-[#22c55e] text-xs pl-3 select-none">&gt;</span>
                 <input
                   type="email"
@@ -62,7 +62,7 @@ export default function LoginPage() {
 
             <div className="space-y-1.5">
               <label className="text-[10px] text-[#71717a] uppercase tracking-wider">Password</label>
-              <div className="flex items-center border border-[#3f3f46] bg-[#0a0a0a] focus-within:border-[#22c55e] transition-colors">
+              <div className="flex items-center border border-[#2a2a2e] bg-[#080808] focus-within:border-[#22c55e] focus-within:shadow-[0_0_0_1px_rgba(34,197,94,0.15)] transition-colors">
                 <span className="text-[#22c55e] text-xs pl-3 select-none">&gt;</span>
                 <input
                   type="password"

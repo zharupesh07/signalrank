@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { LogOut, Terminal } from "lucide-react";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -20,43 +20,53 @@ export default function Navbar() {
   const email = (session.user as { email?: string })?.email ?? "";
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 h-12 bg-[#0a0a0a] border-b border-[#3f3f46] flex items-center px-6 gap-8">
-      <Link
-        href="/dashboard"
-        className="text-[#22c55e] font-bold text-sm tracking-widest text-glow-green shrink-0"
-      >
-        SIGNAL<span className="text-[#a3e635]">RANK</span>
+    <nav className="fixed top-0 left-0 right-0 z-50 h-13 bg-[#080808]/95 backdrop-blur-sm border-b border-[#2a2a2e] nav-glow flex items-center px-6 gap-8">
+      {/* Logo */}
+      <Link href="/dashboard" className="flex items-center gap-2 shrink-0 group">
+        <Terminal size={14} className="text-[#22c55e] group-hover:text-[#a3e635] transition-colors" />
+        <span className="text-[#22c55e] font-bold text-sm tracking-[0.2em] text-glow-dim group-hover:text-glow-green transition-all">
+          SIGNAL<span className="text-[#a3e635]">RANK</span>
+        </span>
       </Link>
 
-      <div className="flex items-center gap-1 flex-1">
+      {/* Separator */}
+      <div className="w-px h-4 bg-[#2a2a2e]" />
+
+      {/* Nav links */}
+      <div className="flex items-center gap-0.5 flex-1">
         {NAV_LINKS.map(({ href, label }) => {
           const active = pathname === href || pathname.startsWith(href + "/");
           return (
             <Link
               key={href}
               href={href}
-              className={`px-3 py-1 text-xs tracking-wider transition-colors ${
+              className={`relative px-3 py-2 text-xs tracking-widest transition-all duration-150 ${
                 active
-                  ? "text-[#22c55e] border-b border-[#22c55e]"
-                  : "text-[#71717a] hover:text-[#a1a1aa]"
+                  ? "text-[#22c55e]"
+                  : "text-[#52525b] hover:text-[#a1a1aa]"
               }`}
             >
               {label.toUpperCase()}
+              {active && (
+                <span className="absolute bottom-0 left-2 right-2 h-px bg-[#22c55e] shadow-[0_0_6px_rgba(34,197,94,0.8)]" />
+              )}
             </Link>
           );
         })}
       </div>
 
-      <div className="flex items-center gap-4 shrink-0">
-        <span className="text-[#52525b] text-xs hidden sm:block truncate max-w-[180px]">
-          {email}
-        </span>
+      {/* Right side */}
+      <div className="flex items-center gap-5 shrink-0">
+        <div className="hidden sm:flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] pulse-dot" />
+          <span className="text-[#3f3f46] text-xs truncate max-w-[160px]">{email}</span>
+        </div>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-1.5 text-xs text-[#71717a] hover:text-[#ef4444] transition-colors"
+          className="flex items-center gap-1.5 text-xs text-[#3f3f46] hover:text-[#ef4444] transition-colors group"
         >
-          <LogOut size={12} />
-          <span className="hidden sm:inline">LOGOUT</span>
+          <LogOut size={11} className="group-hover:rotate-12 transition-transform" />
+          <span className="hidden sm:inline tracking-wider">LOGOUT</span>
         </button>
       </div>
     </nav>
