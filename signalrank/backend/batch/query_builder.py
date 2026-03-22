@@ -34,10 +34,20 @@ def build_queries(profile) -> list[SearchQuery]:
     if not locations:
         locations = [default_country]
 
+    # Normalize: "Remote" and country-level entries pass as city="" so jobspy
+    # searches country-wide. City-level entries (Pune, Bangalore) pass as city.
+    _country_like = {default_country.lower(), "remote", "india", "worldwide"}
+
     queries: list[SearchQuery] = []
+    seen_query_keys: set[tuple[str, str]] = set()
     for term in terms:
         for loc in locations:
-            queries.append(SearchQuery(term=term, location=loc, country=default_country))
-            if len(queries) >= 20:
+            city = "" if loc.lower() in _country_like else loc
+            key = (term.lower(), city.lower())
+            if key in seen_query_keys:
+                continue
+            seen_query_keys.add(key)
+            queries.append(SearchQuery(term=term, location=city, country=default_country))
+            if len(queries) >= 50:
                 return queries
     return queries

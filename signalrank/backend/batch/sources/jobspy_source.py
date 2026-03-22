@@ -10,7 +10,7 @@ from batch.scraper import RawJob, ScraperConfig
 logger = logging.getLogger(__name__)
 
 
-def _scrape_sync(term: str, location: str, config: ScraperConfig) -> list[RawJob]:
+def _scrape_sync(term: str, location: str, country: str, config: ScraperConfig) -> list[RawJob]:
     try:
         from jobspy import scrape_jobs
     except ImportError:
@@ -19,12 +19,12 @@ def _scrape_sync(term: str, location: str, config: ScraperConfig) -> list[RawJob
 
     try:
         df = scrape_jobs(
-            site_name=["indeed", "linkedin"],
+            site_name=["indeed"],
             search_term=term,
             location=location,
             results_wanted=config.max_results_per_query,
             hours_old=config.hours_old,
-            country_indeed=location,
+            country_indeed=country,
         )
     except Exception:
         logger.exception("JobSpy scrape failed for %s / %s", term, location)
@@ -32,7 +32,15 @@ def _scrape_sync(term: str, location: str, config: ScraperConfig) -> list[RawJob
 
     jobs = []
     for _, row in df.iterrows():
-        url = str(row.get("job_url", ""))
+        direct = str(row.get("job_url_direct") or "").strip()
+        fallback = str(row.get("job_url") or "").strip()
+        # Prefer company portal URL; fall back to Indeed; last resort LinkedIn
+        if direct and "linkedin.com" not in direct:
+            url = direct
+        elif fallback and "linkedin.com" not in fallback:
+            url = fallback
+        else:
+            url = direct or fallback
         if not url:
             continue
         date_posted = None
@@ -51,7 +59,7 @@ def _scrape_sync(term: str, location: str, config: ScraperConfig) -> list[RawJob
         jobs.append(RawJob(
             job_url=url,
             title=str(row.get("title", "")) or None,
-            company=str(row.get("company_name", "")) or None,
+            company=str(row.get("company", "")) or None,
             description=str(row.get("description", "")) or None,
             location=str(row.get("location", "")) or None,
             site=str(row.get("site", "jobspy")),
@@ -65,8 +73,8 @@ async def search(queries: list[SearchQuery], config: ScraperConfig) -> list[RawJ
     for query in queries:
         try:
             result = await asyncio.wait_for(
-                asyncio.to_thread(_scrape_sync, query.term, query.location, config),
-                timeout=180,
+                asyncio.to_thread(_scrape_sync, query.term, query.location, query.country, config),
+                timeout=120,
             )
             all_jobs.extend(result)
         except asyncio.TimeoutError:

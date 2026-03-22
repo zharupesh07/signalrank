@@ -19,7 +19,7 @@ class CompanyScorer:
     """
 
     # Ordered highest to lowest priority
-    _TIERS = ["tier_s", "tier_a", "tier_b", "tier_c", "tier_d"]
+    _TIERS = ["tier_ss", "tier_s", "tier_a", "tier_b", "tier_c", "tier_d"]
 
     def __init__(self, cfg: dict):
         c = cfg.get("company_scoring", {})
@@ -64,6 +64,7 @@ class CompanyScorer:
         """Legacy weight for backward compatibility."""
         tier = self.classify(company)
         return {
+            "tier_ss": 1.6,
             "tier_s": 1.5,
             "tier_a": 1.3,
             "tier_b": 1.1,

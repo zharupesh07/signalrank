@@ -48,11 +48,6 @@ SOURCES = {
             "query": f"{q.term} {q.location}",
         },
     },
-    "arbeitnow": {
-        "host": "arbeitnow-free-job-board.p.rapidapi.com",
-        "path": "/api/job-board-api",
-        "params_fn": lambda q, cfg: {},
-    },
 }
 
 MAX_RETRIES = 2

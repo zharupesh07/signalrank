@@ -46,7 +46,6 @@ from domain.skills import SkillCanonicalizer, extract_skills_from_texts
 
 logger = logging.getLogger(__name__)
 
-TOP_N = 200
 
 
 async def load_jobs_dataframe(db: AsyncSession) -> pd.DataFrame:
@@ -291,4 +290,4 @@ async def score_jobs_for_user(
     df = df.drop_duplicates(subset="_fuzzy_key", keep="first")
     df = df.drop(columns=["_dedup_key", "_fuzzy_key"], errors="ignore").reset_index(drop=True)
 
-    return df.head(TOP_N)
+    return df

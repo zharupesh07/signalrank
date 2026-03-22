@@ -58,17 +58,19 @@ def test_fallback_to_config_overrides():
     assert queries[0].location == "Mumbai"
 
 
-def test_cap_at_20():
+def test_cap_at_50():
     p = _mock_profile(
-        target_roles=[f"Role {i}" for i in range(10)],
-        preferred_locations=[f"City {j}" for j in range(5)],
+        target_roles=[f"Role {i}" for i in range(20)],
+        preferred_locations=[f"City {j}" for j in range(10)],
     )
     queries = build_queries(p)
-    assert len(queries) <= 20
+    assert len(queries) <= 50
 
 
 def test_default_country_when_no_locations():
     p = _mock_profile(target_roles=["Engineer"], preferred_locations=None)
     queries = build_queries(p)
     assert len(queries) == 1
-    assert queries[0].location == "India"
+    # "India" is country-like, normalized to city="" for country-wide jobspy search
+    assert queries[0].location == ""
+    assert queries[0].country == "India"

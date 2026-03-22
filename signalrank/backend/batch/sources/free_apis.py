@@ -22,7 +22,7 @@ def _parse_date(val) -> datetime | None:
 
 async def _fetch_himalayas(client: httpx.AsyncClient, query: SearchQuery) -> list[RawJob]:
     try:
-        resp = await client.get("https://himalayas.app/jobs/api", params={"limit": "50"}, timeout=30)
+        resp = await client.get("https://himalayas.app/jobs/api", params={"limit": "500"}, timeout=30)
         resp.raise_for_status()
         items = resp.json().get("jobs", [])
     except Exception:
@@ -46,7 +46,7 @@ async def _fetch_himalayas(client: httpx.AsyncClient, query: SearchQuery) -> lis
 
 async def _fetch_remotive(client: httpx.AsyncClient, query: SearchQuery) -> list[RawJob]:
     try:
-        resp = await client.get("https://remotive.com/api/remote-jobs", params={"search": query.term, "limit": "50"}, timeout=30)
+        resp = await client.get("https://remotive.com/api/remote-jobs", params={"search": query.term, "limit": "500"}, timeout=30)
         resp.raise_for_status()
         items = resp.json().get("jobs", [])
     except Exception:
@@ -69,7 +69,7 @@ async def _fetch_remotive(client: httpx.AsyncClient, query: SearchQuery) -> list
 
 async def _fetch_jobicy(client: httpx.AsyncClient, query: SearchQuery) -> list[RawJob]:
     try:
-        resp = await client.get("https://jobicy.com/api/v2/remote-jobs", params={"count": "50", "tag": query.term}, timeout=30)
+        resp = await client.get("https://jobicy.com/api/v2/remote-jobs", params={"count": "100", "tag": query.term}, timeout=30)
         resp.raise_for_status()
         items = resp.json().get("jobs", [])
     except Exception:
@@ -90,10 +90,27 @@ async def _fetch_jobicy(client: httpx.AsyncClient, query: SearchQuery) -> list[R
 
 
 async def search(queries: list[SearchQuery], config: ScraperConfig) -> list[RawJob]:
+    # Deduplicate by term — location is irrelevant for these remote-job APIs
+    seen_terms: set[str] = set()
+    unique_queries: list[SearchQuery] = []
+    for q in queries:
+        key = q.term.lower()
+        if key not in seen_terms:
+            seen_terms.add(key)
+            unique_queries.append(q)
+
     all_jobs: list[RawJob] = []
     async with httpx.AsyncClient() as client:
-        for query in queries[:5]:
-            for fetcher in [_fetch_himalayas, _fetch_remotive, _fetch_jobicy]:
+        # Himalayas returns the same feed regardless of query — fetch once
+        try:
+            himalayas_jobs = await _fetch_himalayas(client, unique_queries[0] if unique_queries else queries[0])
+            all_jobs.extend(himalayas_jobs)
+        except Exception:
+            logger.exception("Free API fetcher failed for himalayas")
+
+        # Remotive and Jobicy filter by search term — call once per unique term
+        for query in unique_queries:
+            for fetcher in [_fetch_remotive, _fetch_jobicy]:
                 try:
                     results = await fetcher(client, query)
                     all_jobs.extend(results)

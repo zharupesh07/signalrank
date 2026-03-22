@@ -44,7 +44,8 @@ def skills_score_0_100(
 
 def company_score_0_100(tier: str) -> float:
     return {
-        "tier_s": 100.0,
+        "tier_ss": 100.0,
+        "tier_s": 95.0,
         "tier_a": 85.0,
         "tier_b": 65.0,
         "tier_c": 45.0,

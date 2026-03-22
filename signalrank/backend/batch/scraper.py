@@ -39,11 +39,9 @@ def raw_job_to_dict(job: RawJob) -> dict:
 @dataclass
 class ScraperConfig:
     rapidapi_key: str | None = None
-    gmail_user: str | None = None
-    gmail_app_password: str | None = None
-    max_results_per_query: int = 25
-    hours_old: int = 240
-    jobspy_delay: float = 3.0
+    max_results_per_query: int = 200
+    hours_old: int = 720
+    jobspy_delay: float = 1.0
     google_delay: float = 2.0
     title_blocklist: list[str] = field(default_factory=list)
 
@@ -51,10 +49,8 @@ class ScraperConfig:
     def from_env(cls, title_blocklist: list[str] | None = None) -> ScraperConfig:
         return cls(
             rapidapi_key=os.environ.get("RAPIDAPI_KEY"),
-            gmail_user=os.environ.get("GMAIL_USER"),
-            gmail_app_password=os.environ.get("GMAIL_APP_PASSWORD"),
-            max_results_per_query=int(os.environ.get("SCRAPER_MAX_RESULTS", "25")),
-            hours_old=int(os.environ.get("SCRAPER_HOURS_OLD", "240")),
+            max_results_per_query=int(os.environ.get("SCRAPER_MAX_RESULTS", "200")),
+            hours_old=int(os.environ.get("SCRAPER_HOURS_OLD", "720")),
             title_blocklist=title_blocklist or [],
         )
 
@@ -75,36 +71,49 @@ async def scrape(
     from batch.sources.jobspy_source import search as search_jobspy
     from batch.sources.free_apis import search as search_free
     from batch.sources.google_jobs import search as search_google
-    from batch.sources.gmail_alerts import search as search_gmail
-
-    phases = [
-        ("rapidapi", search_rapidapi),
-        ("jobspy", search_jobspy),
-        ("free_apis", search_free),
-        ("google_jobs", search_google),
-        ("gmail", search_gmail),
-    ]
 
     all_jobs: list[RawJob] = []
 
     async def _run():
-        for i, (name, fn) in enumerate(phases):
-            if on_progress:
-                await on_progress(
-                    phase=name, phase_num=i + 1, total_phases=len(phases),
-                    jobs_found=len(all_jobs), message=f"Scanning {name}...",
-                )
-            try:
-                results = await fn(queries, config)
-                all_jobs.extend(results)
-                logger.info("Phase %s: %d jobs", name, len(results))
-            except Exception:
-                logger.exception("Phase %s failed, skipping", name)
+        # JobSpy must run sequentially (rate-limited, blocking threads)
+        if on_progress:
+            await on_progress(
+                phase="jobspy", phase_num=1, total_phases=2,
+                jobs_found=0, message="Scanning jobspy...",
+            )
+        try:
+            results = await asyncio.wait_for(search_jobspy(queries, config), timeout=3600)
+            all_jobs.extend(results)
+            logger.info("Phase jobspy: %d jobs", len(results))
+        except asyncio.TimeoutError:
+            logger.warning("Phase jobspy timed out")
+        except Exception:
+            logger.exception("Phase jobspy failed, skipping")
+
+        # Parallel sources
+        if on_progress:
+            await on_progress(
+                phase="parallel", phase_num=2, total_phases=2,
+                jobs_found=len(all_jobs), message="Scanning additional sources...",
+            )
+        parallel_sources = [
+            ("rapidapi", search_rapidapi),
+            ("free_apis", search_free),
+            ("google_jobs", search_google),
+        ]
+        tasks = [fn(queries, config) for _, fn in parallel_sources]
+        results_list = await asyncio.gather(*tasks, return_exceptions=True)
+        for (name, _), res in zip(parallel_sources, results_list):
+            if isinstance(res, Exception):
+                logger.exception("Phase %s failed: %s", name, res)
+            else:
+                all_jobs.extend(res)
+                logger.info("Phase %s: %d jobs", name, len(res))
 
     try:
-        await asyncio.wait_for(_run(), timeout=600)
+        await asyncio.wait_for(_run(), timeout=7200)
     except asyncio.TimeoutError:
-        logger.warning("Scrape timed out after 600s, returning %d jobs", len(all_jobs))
+        logger.warning("Scrape timed out after 7200s, returning %d jobs", len(all_jobs))
 
     seen_urls: set[str] = set()
     deduped: list[RawJob] = []
@@ -115,8 +124,7 @@ async def scrape(
 
     filtered = [
         j for j in deduped
-        if (j.description and len(j.description) >= 20)
-        and not _is_blocked(j.title, config.title_blocklist)
+        if not _is_blocked(j.title, config.title_blocklist)
     ]
 
     logger.info(

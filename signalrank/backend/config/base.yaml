@@ -123,6 +123,205 @@ ranking:
 company_scoring:
   default_weight: 1.0
 
+  # SS: European/product-based, remote/Pune-friendly, dream companies
+  tier_ss:
+    - Atlassian
+    - Salesforce
+    - Google
+    - Adobe
+    - Intuit
+    - LinkedIn
+    - HubSpot
+    - Autodesk
+    - UKG
+    - Elastic
+    - GitLab
+    - JetBrains
+    - Spotify
+    - Klarna
+    - Adyen
+    - Booking.com
+    - Delivery Hero
+    - Zalando
+    - SAP
+    - Siemens
+    - Bosch
+    - Philips
+    - ASML
+    - ARM
+    - Dynatrace
+    - Contentful
+    - Personio
+    - Canonical
+    - Grafana Labs
+    - Miro
+    - Notion
+    - Workday
+
+  # S: Great WLB + can pay 50L+
+  tier_s:
+    - Microsoft
+    - ServiceNow
+    - VMware
+    - Cisco
+    - Oracle
+    - Netflix
+    - Stripe
+    - Snowflake
+    - Databricks
+    - Palantir
+    - Scale AI
+    - Weights and Biases
+    - Hugging Face
+    - OpenAI
+    - Anthropic
+    - Cohere
+    - DeepMind
+    - Apple
+    - Meta
+    - Nvidia
+    - Freshworks
+    - Zoho
+    - AMD
+    - Okta
+    - Intel
+    - Synopsys
+
+  # A: High pay but work-intensive
+  tier_a:
+    - Amazon
+    - Uber
+    - Coinbase
+    - Rippling
+    - Flipkart
+    - PhonePe
+    - Razorpay
+    - CRED
+    - Meesho
+    - Swiggy
+    - Zomato
+    - Dream11
+    - Groww
+    - Zerodha
+    - Walmart
+    - Visa
+    - Mastercard
+    - Capital One
+    - Airbnb
+    - Shopify
+    - Bloomberg
+    - Qualcomm
+    - Palo Alto Networks
+    - CrowdStrike
+    - Datadog
+    - Confluent
+    - HashiCorp
+    - MongoDB
+    - Red Hat
+    - JPMorgan
+    - Goldman Sachs
+    - Morgan Stanley
+    - BlackRock
+    - Dell Technologies
+    - Micron Technology
+    - PayPal
+    - eBay
+    - Expedia Group
+    - American Express
+    - Warner Bros
+    - Marvell Technology
+    - KLA
+    - NetApp
+    - Equinix
+    - Automation Anywhere
+
+  # B: Domain AI / established enterprise
+  tier_b:
+    - Optum
+    - UnitedHealth
+    - GE Healthcare
+    - Persistent Systems
+    - PubMatic
+    - Mahindra
+    - MSCI
+    - Wolters Kluwer
+    - Luxoft
+    - Thoughtworks
+    - MakeMyTrip
+    - PolicyBazaar
+    - Lenskart
+    - Nykaa
+    - CarDekho
+    - S&P Global
+    - LSEG
+    - London Stock Exchange
+    - Barclays
+    - Wells Fargo
+    - Deutsche Bank
+    - HSBC
+    - Standard Chartered
+    - NatWest
+    - State Street
+    - Nokia
+    - Honeywell
+    - AstraZeneca
+    - Novartis
+    - Teradata
+    - Anaplan
+    - FIS Global
+    - Moody's
+    - Genesys
+    - Guidewire
+
+  # C: Industrial / traditional tech
+  tier_c:
+    - John Deere
+    - GE Vernova
+    - GE Aerospace
+    - General Electric
+    - NXP
+    - BridgeAI
+    - Birlasoft
+    - LTIMindtree
+    - WebEngage
+    - Expleo
+    - Boeing
+    - Caterpillar
+    - Kyndryl
+    - Lenovo
+    - Verizon
+    - Hewlett Packard
+    - HPE
+    - NTT DATA
+    - Sabre
+    - Teradata
+
+  # D: IT services / body shops
+  tier_d:
+    - Wipro
+    - Infosys
+    - TCS
+    - HCL
+    - Tech Mahindra
+    - Cognizant
+    - Capgemini
+    - Accenture
+    - Fractal
+    - Genpact
+    - IBM
+    - EPAM
+    - Nagarro
+    - Deloitte
+    - Mphasis
+    - Hexaware
+    - Mindtree
+    - CGI
+    - EXL Service
+    - Atos
+    - YASH Technologies
+    - UST Global
+    - Kaseya
+
 # ============================================================
 # SKILLS
 # ============================================================
