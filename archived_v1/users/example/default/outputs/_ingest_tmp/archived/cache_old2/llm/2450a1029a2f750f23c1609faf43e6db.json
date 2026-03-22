@@ -1,0 +1,4 @@
+{
+  "_error": "no_json",
+  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"SAP Datasphere\",\n      \"Data Engineering\",\n      \"Data Integration\",\n      \"Data Modeling\",\n      \"Data Governance\",\n      \"Access Control\",\n      \"SAP Business Data Cloud (BDC)\",\n      \"SQL\",\n      \"Data Warehousing\",\n      \"Incident Management\",\n      \"Change Management\",\n      \"Runbooks\",\n      \"SAP S/4HANA\",\n      \"SAP BW/4HANA\",\n      \"SAP HANA\",\n      \"Python\",\n      \"Shell Scripting\",\n      \"CI/CD\"\n    ],\n    [\n      \"Databricks Unity Catalog\",\n      \""
+}

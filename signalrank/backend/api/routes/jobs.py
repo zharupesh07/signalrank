@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import func, select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.database import get_db
@@ -14,6 +14,7 @@ async def list_jobs(
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
     sort: str = Query("final_score"),
+    search: str = Query(""),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -29,15 +30,21 @@ async def list_jobs(
 
     sort_col = getattr(JobResult, sort, JobResult.final_score)
 
-    total_result = await db.execute(
-        select(func.count()).where(JobResult.run_id == run.id, JobResult.user_id == current_user.id)
-    )
+    base_filters = [JobResult.run_id == run.id, JobResult.user_id == current_user.id]
+    if search:
+        pattern = f"%{search}%"
+        base_filters.append(
+            or_(JobRaw.title.ilike(pattern), JobRaw.company.ilike(pattern))
+        )
+
+    count_query = select(func.count()).select_from(JobResult).join(JobRaw, JobResult.job_id == JobRaw.id).where(*base_filters)
+    total_result = await db.execute(count_query)
     total = total_result.scalar()
 
     results = await db.execute(
         select(JobResult, JobRaw)
         .join(JobRaw, JobResult.job_id == JobRaw.id)
-        .where(JobResult.run_id == run.id, JobResult.user_id == current_user.id)
+        .where(*base_filters)
         .order_by(sort_col.desc())
         .offset((page - 1) * limit)
         .limit(limit)
@@ -54,18 +61,75 @@ async def list_jobs(
             "location": job.location,
             "site": job.site,
             "date_posted": str(job.date_posted) if job.date_posted else None,
-            "final_score": result.final_score,
+            "final_score": result.final_score / 100 if result.final_score is not None else None,
             "semantic_score": result.semantic_score,
-            "skills_score": result.skills_score,
-            "company_score": result.company_score,
-            "seniority_score": result.seniority_score,
-            "location_score": result.location_score,
-            "recency_score": result.recency_score,
-            "company_tier": result.company_tier,
+            "skills_score": result.skills_score / 100 if result.skills_score is not None else None,
+            "company_score": result.company_score / 100 if result.company_score is not None else None,
+            "seniority_score": result.seniority_score / 100 if result.seniority_score is not None else None,
+            "location_score": result.location_score / 100 if result.location_score is not None else None,
+            "recency_score": result.recency_score / 100 if result.recency_score is not None else None,
+            "company_tier": result.company_tier if result.company_tier not in ("default", "", None) else None,
             "is_contract": result.is_contract,
         })
 
     return {"jobs": jobs, "total": total, "page": page, "limit": limit}
+
+
+@router.get("/analytics")
+async def get_analytics(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    latest_run = await db.execute(
+        select(Run)
+        .where(Run.user_id == current_user.id, Run.status == "success")
+        .order_by(Run.finished_at.desc())
+        .limit(1)
+    )
+    run = latest_run.scalar_one_or_none()
+    if not run:
+        return {"score_distribution": [], "top_companies": [], "sites": []}
+
+    results = await db.execute(
+        select(JobResult, JobRaw)
+        .join(JobRaw, JobResult.job_id == JobRaw.id)
+        .where(JobResult.run_id == run.id, JobResult.user_id == current_user.id)
+    )
+    rows = results.all()
+
+    score_buckets = {"0-40": 0, "40-60": 0, "60-70": 0, "70-80": 0, "80-90": 0, "90-100": 0}
+    company_counts: dict[str, int] = {}
+    site_counts: dict[str, int] = {}
+
+    for result, job in rows:
+        score = result.final_score or 0
+        if score < 40:
+            score_buckets["0-40"] += 1
+        elif score < 60:
+            score_buckets["40-60"] += 1
+        elif score < 70:
+            score_buckets["60-70"] += 1
+        elif score < 80:
+            score_buckets["70-80"] += 1
+        elif score < 90:
+            score_buckets["80-90"] += 1
+        else:
+            score_buckets["90-100"] += 1
+
+        if job.company:
+            company_counts[job.company] = company_counts.get(job.company, 0) + 1
+        if job.site:
+            site_counts[job.site] = site_counts.get(job.site, 0) + 1
+
+    top_companies = sorted(company_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+    sites = sorted(site_counts.items(), key=lambda x: x[1], reverse=True)
+
+    return {
+        "score_distribution": [{"range": k, "count": v} for k, v in score_buckets.items()],
+        "top_companies": [{"company": c, "count": n} for c, n in top_companies],
+        "sites": [{"site": s, "count": n} for s, n in sites],
+        "total": len(rows),
+    }
 
 
 @router.get("/{job_id}")

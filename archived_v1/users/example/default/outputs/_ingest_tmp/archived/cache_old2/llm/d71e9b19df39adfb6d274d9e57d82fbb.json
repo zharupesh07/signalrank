@@ -1,0 +1,4 @@
+{
+  "_error": "no_json",
+  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"backend engineering\",\n      \"AI/ML platform\",\n      \"RAG\",\n      \"search\",\n      \"recommendations\",\n      \"backend services\",\n      \"ML/AI products\",\n      \"RAG pipelines\",\n      \"ingestion\",\n      \"chunking\",\n      \"embeddings\",\n      \"indexing\",\n      \"vector retrieval\",\n      \"hybrid retrieval\",\n      \"re-ranking\",\n      \"offline evaluation\",\n      \"Precision\",\n      \"Recall\",\n      \"nDCG\",\n      \"MRR\",\n      \"platform components\",\n      \"metadata store\",\n"
+}

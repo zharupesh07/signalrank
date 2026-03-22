@@ -1,0 +1,1774 @@
+id,site,job_url,job_url_direct,title,company,location,date_posted,job_type,salary_source,interval,min_amount,max_amount,currency,is_remote,job_level,job_function,listing_type,emails,description,company_industry,company_url,company_logo,company_url_direct,company_addresses,company_num_employees,company_revenue,company_description,skills,experience_range,company_rating,company_reviews_count,vacancy_count,work_from_home_type
+in-8d6711d88df2402c,indeed,https://in.indeed.com/viewjob?jk=8d6711d88df2402c,https://fusemachines.applytojob.com/apply/hJ1yYBWaxu/Machine-Learning-Engineer-Data-Scientist?source=INDE&~,Machine Learning Engineer / Data Scientist,Fusemachines,"Remote, IN",2026-01-26,fulltime,,,,,,True,,,,,"### **About Fusemachines**
+**Founded in 2013, Fusemachines is a global provider of enterprise AI products and services, on a mission to democratize AI. Leveraging proprietary AI Studio and AI Engines, the company helps drive the clients’ AI Enterprise Transformation, regardless of where they are in their Digital AI journeys. With offices in North America, Asia, and Latin America, Fusemachines provides a suite of enterprise AI offerings and specialty services that allow organizations of any size to implement and scale AI. Fusemachines serves companies in industries such as retail, manufacturing, and government.**
+
+### **Fusemachines continues to actively pursue the mission of democratizing AI for the masses by providing high\-quality AI education in underserved communities and helping organizations achieve their full potential with AI.**
+
+  
+
+**Type: Full\-time, Remote**### **Role Overview**
+
+
+We’re hiring a mid\-to\-senior Machine Learning Engineer / Data Scientist to build and deploy machine learning solutions that drive measurable business impact. You’ll work across the ML lifecycle—from problem framing and data exploration to model development, evaluation, deployment, and monitoring—often in partnership with client stakeholders and internal delivery teams.
+
+
+You should be strong in core data science and applied machine learning, comfortable working with real\-world data, and capable of turning modeling work into production\-ready systems.
+
+### **Key Responsibilities**
+
+* Problem Framing \& Stakeholder Partnership
+	+ Translate business questions into ML problem statements (classification, regression, time series forecasting, clustering, anomaly detection, recommendation, etc.).
+	+ Collaborate with stakeholders to define success metrics, evaluation plans, and practical constraints (latency, interpretability, cost, data availability).
+* Data Analysis \& Feature Engineering
+	+ Use SQL and Python to extract, join, and analyze data from relational databases and data warehouses.
+	+ Perform data profiling, missingness analysis, leakage checks, and exploratory analysis to guide modeling choices.
+	+ Build robust feature pipelines (aggregation, encoding, scaling, embeddings where appropriate) and document assumptions.
+* Model Development (Core ML)
+	+ Train and tune supervised learning models for tabular data (e.g., logistic/linear models, tree\-based methods, gradient boosting such as XGBoost/LightGBM/CatBoost, and neural nets for structured data).
+	+ Apply strong tabular modeling practices: handling missing data, categorical encoding, leakage prevention, class imbalance strategies, calibration, and robust cross\-validation.
+	+ Build time series models (statistical and ML/DL approaches) and validate with proper backtesting.
+	+ Apply clustering and segmentation techniques (k\-means, hierarchical, DBSCAN, Gaussian mixtures) and evaluate stability and usefulness.
+	+ Apply statistics in practice (hypothesis testing, confidence intervals, sampling, experiment design) to support inference and decision\-making.
+* Deep Learning
+	+ Build and train deep learning models using PyTorch or TensorFlow/Keras.
+	+ Use best practices for training (regularization, calibration, class imbalance handling, reproducibility, sound train/val/test design).
+* Evaluation, Explainability, and Iteration
+	+ Choose appropriate metrics (AUC/F1/PR, RMSE/MAE/MAPE, calibration, lift, and business KPIs) and create evaluation reports.
+	+ Perform error analysis and interpretation (feature importance/SHAP, cohort slicing) and iterate based on evidence.
+* Productionization \& MLOps (Project\-Dependent)
+	+ Package models for deployment (batch scoring pipelines or real\-time APIs) and collaborate with engineers on integration.
+	+ Implement practical MLOps: versioning, reproducible training, automated evaluation, monitoring for drift/performance, and retraining plans.
+* Documentation \& Communication
+	+ Communicate tradeoffs and recommendations clearly to technical and non\-technical stakeholders.
+	+ Create documentation and lightweight demos that make results actionable.
+
+### **Success in This Role Looks Like**
+
+* You deliver models that perform well and move business metrics (revenue lift, cost reduction, risk reduction, improved forecast accuracy, operational efficiency).
+* Your work is reproducible and production\-aware: clear data lineage, robust evaluation, and a credible path to deployment/monitoring.
+* Stakeholders trust your judgment in selecting methods and communicating uncertainty honestly.
+
+### **Required Qualifications**
+
+* 3–8 years of experience in data science, machine learning engineering, or applied ML (mid\-to\-senior).
+* Strong Python skills for data analysis and modeling (pandas/numpy/scikit\-learn or equivalent).
+* Strong SQL skills (joins, window functions, aggregation, performance awareness).
+* Solid foundation in statistics (hypothesis testing, uncertainty, bias/variance, sampling) and practical experimentation mindset.
+* Hands\-on experience across multiple model types, including:
+	+ Classification \& regression
+	+ Time series forecasting
+	+ Clustering/segmentation
+* Experience with deep learning in PyTorch or TensorFlow/Keras.
+* Strong problem\-solving skills: ability to work with ambiguous goals and messy data.
+* Clear communication skills and ability to translate analysis into decisions.
+
+### **Preferred Qualifications**
+
+* Experience with Databricks for applied ML (e.g., Spark, Delta Lake, MLflow, Databricks Jobs/Workflows).
+* Experience deploying models to production (APIs, batch pipelines) and maintaining them over time (monitoring, retraining).
+* Experience with orchestration tools (Airflow, Prefect, Dagster) and modern data stacks (Snowflake/BigQuery/Redshift/Databricks).
+* Experience with cloud platforms (AWS/GCP/Azure/IBM) and containerization (Docker).
+* Experience with responsible AI and governance best practices (privacy/PII handling, auditability, access controls).
+* Consulting or client\-facing delivery experience.
+
+**Certifications (Strong Plus)**  
+
+Candidates with at least one relevant certification are especially encouraged to apply:
+
+* Cloud certifications: AWS, Google Cloud, Microsoft Azure, or IBM (data/AI/ML tracks)
+* Databricks certifications (Data Scientist, Data Engineer, or related)
+
+### **Nice\-to\-Have**
+
+* Causal inference experience (e.g., quasi\-experimental methods, propensity scores, uplift/heterogeneous treatment effects, experimentation beyond A/B tests).
+* Agentic development experience: designing and evaluating agentic workflows (tool use, planning, memory/state, guardrails) and integrating them into products.
+* Deep familiarity with agentic coding tools and workflows for accelerated product development (e.g., AI\-assisted IDEs, code agents, automated testing/refactoring, repo\-aware assistants), including strong judgment on quality, security, and maintainability.
+
+*Fusemachines is an Equal Opportunities Employer, committed to diversity and inclusion. All qualified applicants will receive consideration for employment without regard to race, color, religion, sex, sexual orientation, gender identity, national origin, disability, or any other characteristic protected by applicable federal, state, or local laws.*
+
+
+hJ1yYBWaxu",,https://in.indeed.com/cmp/Fusemachines,,https://www.fusemachines.com,New York,51 to 200,,,,,,,,
+in-099e0004a2b199dc,indeed,https://in.indeed.com/viewjob?jk=099e0004a2b199dc,https://careers.irissoftware.com/job/Noida-Playwright-Test-Automation-Senior-Engineer-UP/51809044/,Playwright Test Automation - Senior Engineer,Iris Software,"UP, IN",2026-01-26,,,,,,,False,,,,,"**Posted On:** 26 Jan 2026
+
+
+**Location:** Noida, UP, India
+
+
+**Company:** Iris Software
+
+
+**Why Join Iris?**  
+
+Are you ready to do the best work of your career at one of **India’s Top 25 Best Workplaces in IT industry**? Do you want to grow in an award\-winning culture that **truly values your talent and ambitions**?  
+
+Join Iris Software — one of the **fastest\-growing IT services companies** — where **you own and shape your success story**.
+
+**About Us**  
+
+At Iris Software, our vision is to be our client’s most trusted technology partner, and the first choice for the industry’s top professionals to realize their full potential.
+With over 4,300 associates across India, U.S.A, and Canada, we help our enterprise clients thrive with technology\-enabled transformation across financial services, healthcare, transportation \& logistics, and professional services.
+Our work covers complex, mission\-critical applications with the latest technologies, such as high\-value complex Application \& Product Engineering, Data \& Analytics, Cloud, DevOps, Data \& MLOps, Quality Engineering, and Business Automation.  
+
+
+**Working with Us**  
+
+At Iris, every role is more than a job — it’s a launchpad for growth.
+Our Employee Value Proposition, **“Build Your Future. Own Your Journey.”** reflects our belief that people thrive when they have ownership of their career and the right opportunities to shape it.
+We foster a culture where your potential is valued, your voice matters, and your work creates real impact. With cutting\-edge projects, personalized career development, continuous learning and mentorship, we support you to grow and become your best — both personally and professionally.
+Curious what it’s like to work at Iris? Head to this video for an inside look at the people, the passion, and the possibilities. Watch it here.**Job Description**
+-------------------
+
+
+* As a Test Automation Consultant with 5\-7 years of experience and a strong background in Playwright Test automation
+* Responsibility to ensure the quality and reliability of software applications.
+* Playwright Test Automation expertise is mandatory and ability of driving automated testing strategies, optimizing testing processes, and mentoring junior team members.
+* Responsibilities
+* **Automation Strategy**: Develop and implement automated testing strategies that align with project goals and quality standards.
+* **Test Framework Development**: Design, develop, and maintain scalable and robust test automation frameworks using Typescript, ensuring reusability and low maintainability.
+* **Test Script Creation**: Write, review, and enhance automated test scripts to cover functional, regression, and integration testing scenarios.
+* **Test Execution**: Ability to record \& play and execute automated test scripts, analyze results, and report defects to the development team. Monitor and maintain test environments to ensure consistent test execution.
+* **Continuous Integration**: Integrate automated tests into the CI/CD pipeline, working collaboratively with development and DevOps teams to ensure timely and reliable test execution.
+* **Test Data Management**: Manage test data setup and ensure data consistency for different testing phases.
+* **Defect Tracking**: Identify, document, and prioritize defects using issue tracking tools. Collaborate with the development team to ensure timely defect resolution.
+* **Performance and Load Testing**: Contribute to performance and load testing efforts by creating automated tests to validate system responsiveness and stability.
+* **Test Reporting**: Generate comprehensive test reports and metrics for various stakeholders, highlighting test coverage, results, and areas for improvement – by logging details in Jira.
+* **Test Process Enhancement**: Continuously enhance testing processes and methodologies to increase efficiency, accuracy, and effectiveness.
+* **Mentorship**: Provide guidance and mentorship to junior team members, helping them develop their automation skills and best practices.
+* **Stay Current**:Stay updated on industry trends, emerging tools, and technologies related to test automation, and suggest improvements to the existing testing practices.
+* **Nice to have:** Exposure to any of the cloud computing platform (Azure \\ AWS \\ GCP)
+
+
+* **What you need to succeed:**
+
+
+* Bachelor's degree in Computer Science, Engineering, or related field.
+
+
+* 5\-7 years of hands\-on experience in test automation using Typescript
+
+
+* Strong coding skills in Typescript and experience with object\-oriented programming.
+
+
+* In\-depth understanding of software testing concepts, methodologies, and best practices.
+
+
+* Proficiency in creating and maintaining automation frameworks from scratch.
+
+
+* Experience with version control systems (e.g., Git) and CI/CD pipelines.
+
+
+* Solid knowledge of testing web applications, APIs, and databases.
+
+
+* Excellent problem\-solving skills and attention to detail.
+
+
+* Strong communication and collaboration skills to work effectively with cross\-functional teams.
+
+
+* Relevant certifications in testing or test automation (e.g., Playwright with Typescript) is a plus.
+**Mandatory Competencies**
+--------------------------
+
+
+Development Tools and Management \- Development Tools and Management \- JIRA
+Development Tools and Management \- Development Tools and Management \- CI/CD
+DevOps/Configuration Mgmt \- DevOps/Configuration Mgmt \- Git
+QA/QE \- QA Automation \- Playwright
+User Interface \- Typescript \- Typescript
+QA/QE \- QA Automation \- Performance testing (Jmeter, Loadrunner, NeoLoad etc)
+QE \- Test Automation Preparation
+Beh \- Communication and collaboration**Perks and Benefits for Irisians**  
+
+Iris provides world\-class benefits for a personalized employee experience. These benefits are designed to support financial, health and well\-being needs of Irisians for a holistic professional and personal growth. Click here to view the benefits.",,https://in.indeed.com/cmp/Iris-Software,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/7d764e02a8ee5c7c716dee3eb7bc2477,https://www.irissoftware.com/,,"1,001 to 5,000",,"Helping our clients achieve their business goals by fully leveraging technology, while providing an unparalleled, personalized client and employee experience.",,,,,,
+in-36dae80a30328419,indeed,https://in.indeed.com/viewjob?jk=36dae80a30328419,https://careers.irissoftware.com/job/Noida-Google-Vertex-AI-Senior-Engineer-UP/51807044/,Google Vertex AI - Senior Engineer,Iris Software,"UP, IN",2026-01-26,,,,,,,False,,,,,"**Posted On:** 26 Jan 2026
+
+
+**Location:** Noida, UP, India
+
+
+**Company:** Iris Software
+
+
+**Why Join Iris?**  
+
+Are you ready to do the best work of your career at one of **India’s Top 25 Best Workplaces in IT industry**? Do you want to grow in an award\-winning culture that **truly values your talent and ambitions**?  
+
+Join Iris Software — one of the **fastest\-growing IT services companies** — where **you own and shape your success story**.
+
+**About Us**  
+
+At Iris Software, our vision is to be our client’s most trusted technology partner, and the first choice for the industry’s top professionals to realize their full potential.
+With over 4,300 associates across India, U.S.A, and Canada, we help our enterprise clients thrive with technology\-enabled transformation across financial services, healthcare, transportation \& logistics, and professional services.
+Our work covers complex, mission\-critical applications with the latest technologies, such as high\-value complex Application \& Product Engineering, Data \& Analytics, Cloud, DevOps, Data \& MLOps, Quality Engineering, and Business Automation.  
+
+
+**Working with Us**  
+
+At Iris, every role is more than a job — it’s a launchpad for growth.
+Our Employee Value Proposition, **“Build Your Future. Own Your Journey.”** reflects our belief that people thrive when they have ownership of their career and the right opportunities to shape it.
+We foster a culture where your potential is valued, your voice matters, and your work creates real impact. With cutting\-edge projects, personalized career development, continuous learning and mentorship, we support you to grow and become your best — both personally and professionally.
+Curious what it’s like to work at Iris? Head to this video for an inside look at the people, the passion, and the possibilities. Watch it here.**Job Description**
+-------------------
+
+
+* Building multi\-agents solutions using VertexAI studio or ADK that have been promoted to production for large scale adoption, solid in conversational engineering and prompt engineering.
+* Tool / service integration into GCP ecosystem supporting Gemini Enterprise agents, such as MuleSoft, ServiceNow, Salesforce – understanding transaction types and standard agent protocols (A2A, MCP).
+* Data integration (e.g. BigQuery) and ingestion process (e.g. knowledge) for complex data feeds.
+**Mandatory Competencies**
+--------------------------
+
+
+Middleware \- Integration Middleware \- MuleSoft
+LowCode/NoCode \- LowCode/NoCode \- ServiceNow
+LowCode/NoCode \- LowCode/NoCode \- SalesForce
+Cloud \- GCP \- Cloud Data Fusion, Dataproc, BigQuery, Cloud Composer, Cloud Bigtable
+Beh \- Communication and collaboration**Perks and Benefits for Irisians**  
+
+Iris provides world\-class benefits for a personalized employee experience. These benefits are designed to support financial, health and well\-being needs of Irisians for a holistic professional and personal growth. Click here to view the benefits.",,https://in.indeed.com/cmp/Iris-Software,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/7d764e02a8ee5c7c716dee3eb7bc2477,https://www.irissoftware.com/,,"1,001 to 5,000",,"Helping our clients achieve their business goals by fully leveraging technology, while providing an unparalleled, personalized client and employee experience.",,,,,,
+in-8cc1b6f3663cc209,indeed,https://in.indeed.com/viewjob?jk=8cc1b6f3663cc209,https://careers.irissoftware.com/job/Noida-Google-Vertex-AI-Senior-Engineer-UP/51807144/,Google Vertex AI - Senior Engineer,Iris Software,"UP, IN",2026-01-26,,,,,,,False,,,,,"**Posted On:** 26 Jan 2026
+
+
+**Location:** Noida, UP, India
+
+
+**Company:** Iris Software
+
+
+**Why Join Iris?**  
+
+Are you ready to do the best work of your career at one of **India’s Top 25 Best Workplaces in IT industry**? Do you want to grow in an award\-winning culture that **truly values your talent and ambitions**?  
+
+Join Iris Software — one of the **fastest\-growing IT services companies** — where **you own and shape your success story**.
+
+**About Us**  
+
+At Iris Software, our vision is to be our client’s most trusted technology partner, and the first choice for the industry’s top professionals to realize their full potential.
+With over 4,300 associates across India, U.S.A, and Canada, we help our enterprise clients thrive with technology\-enabled transformation across financial services, healthcare, transportation \& logistics, and professional services.
+Our work covers complex, mission\-critical applications with the latest technologies, such as high\-value complex Application \& Product Engineering, Data \& Analytics, Cloud, DevOps, Data \& MLOps, Quality Engineering, and Business Automation.  
+
+
+**Working with Us**  
+
+At Iris, every role is more than a job — it’s a launchpad for growth.
+Our Employee Value Proposition, **“Build Your Future. Own Your Journey.”** reflects our belief that people thrive when they have ownership of their career and the right opportunities to shape it.
+We foster a culture where your potential is valued, your voice matters, and your work creates real impact. With cutting\-edge projects, personalized career development, continuous learning and mentorship, we support you to grow and become your best — both personally and professionally.
+Curious what it’s like to work at Iris? Head to this video for an inside look at the people, the passion, and the possibilities. Watch it here.**Job Description**
+-------------------
+
+
+* Building multi\-agents solutions using VertexAI studio or ADK that have been promoted to production for large scale adoption, solid in conversational engineering and prompt engineering.
+* Tool / service integration into GCP ecosystem supporting Gemini Enterprise agents, such as MuleSoft, ServiceNow, Salesforce – understanding transaction types and standard agent protocols (A2A, MCP).
+* Data integration (e.g. BigQuery) and ingestion process (e.g. knowledge) for complex data feeds.
+**Mandatory Competencies**
+--------------------------
+
+
+Middleware \- Integration Middleware \- MuleSoft
+LowCode/NoCode \- LowCode/NoCode \- ServiceNow
+LowCode/NoCode \- LowCode/NoCode \- SalesForce
+Cloud \- GCP \- Cloud Data Fusion, Dataproc, BigQuery, Cloud Composer, Cloud Bigtable
+Beh \- Communication and collaboration**Perks and Benefits for Irisians**  
+
+Iris provides world\-class benefits for a personalized employee experience. These benefits are designed to support financial, health and well\-being needs of Irisians for a holistic professional and personal growth. Click here to view the benefits.",,https://in.indeed.com/cmp/Iris-Software,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/7d764e02a8ee5c7c716dee3eb7bc2477,https://www.irissoftware.com/,,"1,001 to 5,000",,"Helping our clients achieve their business goals by fully leveraging technology, while providing an unparalleled, personalized client and employee experience.",,,,,,
+in-93b293a126c93edb,indeed,https://in.indeed.com/viewjob?jk=93b293a126c93edb,https://jobs.smartrecruiters.com/Visa/744000105596084-sr-consultant-agentic-tools-automation,Sr Consultant - Agentic Tools & Automation,Visa,"KA, IN",2026-01-26,fulltime,,,,,,False,,,,,"**Company Description**  
+
+Visa is a world leader in payments technology, facilitating transactions between consumers, merchants, financial institutions and government entities across more than 200 countries and territories, dedicated to uplifting everyone, everywhere by being the best way to pay and be paid.
+
+
+At Visa, you'll have the opportunity to create impact at scale — tackling meaningful challenges, growing your skills and seeing your contributions impact lives around the world. Join Visa and do work that matters — to you, to your community, and to the world.
+
+
+Progress starts with you.
+
+ **Job Description**  
+
+Visa’s Technology Organization is a community of problem solvers and innovators reshaping the future of commerce. We operate the world’s most sophisticated processing networks capable of handling more than 65k secure transactions a second across 80M merchants, 15k Financial Institutions, and billions of everyday people. While working with us you’ll get to work on complex distributed systems and solve massive scale problems centered on new payment flows, business and data solutions, cyber security, and B2C platforms.
+
+
+We are looking for Versatile, curious, and energetic Software Engineers who embrace solving complex challenges on a global scale. As a Visa Software Engineer, you will be an integral part of a multi\-functional development team inventing, designing, building, and testing software products that reach a truly global customer base. While building components of powerful payment technology, you will get to see your efforts shaping the digital future of monetary transactions. This position is ideal for an experienced software engineer passionate about solving challenging business problems, building applications with excellent user experience, and leveraging cutting\-edge GenAI technologies. The candidate will be deeply involved in hands\-on activities including POCs, design, documentation, development, and testing of new functionality, with a special emphasis on agentic solutions powered by GenAI tools.
+
+
+Responsibilities:
+
+* Design, develop, and own mission\-critical systems for highly scalable infrastructure supporting low\-latency, high\-throughput core payment processing.
+* Architect, code, and integrate application business layers with external components, including GenAI\-powered modules and agentic workflows.
+* Deliver zero\-defect code and ensure the team's deliverables meet or exceed prescribed SLAs.
+* Break down architected solutions into smaller tasks, including GenAI and agentic workflows.
+* Ensure instrumentation and monitoring for AI\-driven components.
+* Document design tradeoffs, best practices, and GenAI/agentic solution patterns.
+* Optimize production systems including traditional and AI\-enabled flows.
+* Collaborate across engineering teams to ensure scalability and stability.
+* Lead POCs including GenAI prototypes and agentic workflows.
+
+
+This is a hybrid position. Expectation of days in office will be confirmed by your hiring manager.
+
+ **Qualifications**  
+
+Basic Qualifications:  
+
+13\+ years of experience with Bachelor's Degree or 10\+ with Advanced Degree.  
+
+Experience delivering enterprise\-class applications with high\-throughput and low\-latency.  
+
+Experience with GoLang, Java, Python/Ruby and GenAI integration frameworks.  
+
+Strong coding abilities including building GenAI agents and orchestration logic.  
+
+Experience with containerization, NoSQL, and GenAI deployment.  
+
+Understanding of microservice architecture including those enhanced with AI.  
+
+Experience with security analysis including for GenAI modules.  
+
+Experience with DevOps and MLOps practices.  
+
+Strong communication skills including explaining GenAI concepts.  
+
+  
+
+Preferred Qualifications:  
+
+Experience with GenAI tools (OpenAI, Azure AI, Hugging Face).  
+
+Experience designing and scaling agentic workflows.  
+
+Payment domain experience.
+
+ **Additional Information**  
+
+Visa is an EEO Employer. Qualified applicants will receive consideration for employment without regard to race, color, religion, sex, national origin, sexual orientation, gender identity, disability or protected veteran status. Visa will also consider for employment qualified applicants with criminal histories in a manner consistent with EEOC guidelines and applicable local law.",,https://in.indeed.com/cmp/Visa,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/860a54ecfd7d7cab270f291d2d877922,http://www.visa.com,,"10,000+",more than $10B (USD),"Our Purpose is to... Uplift everyone, everywhere by being the best way to pay and be paid.",,,,,,
+in-facc95d1fe6f692a,indeed,https://in.indeed.com/viewjob?jk=facc95d1fe6f692a,https://www.novartis.com/careers/career-search/job/details/req-10069903-s-manager-ai-innovation,S. Manager - AI & Innovation,Novartis,"TS, IN",2026-01-23,fulltime,,,,,,False,,,,,"### **Summary**
+
+We are seeking a Senior AI Architect to lead the design and delivery of enterprise grade AI platforms and solutions across business units. You will define reference architectures, steer build vs buy decisions, and guide multi disciplinary teams from discovery through production and ongoing operations. The ideal candidate combines deep hands on engineering with architectural judgment across data, ML/GenAI, applications, security, and governance—translating business strategy into secure, scalable, cost efficient AI systems.
+### **About the Role**
+
+**Key Responsibilities**
+
+* Translate business strategies into AI roadmaps and target architectures that guide enterprise\-wide adoption.
+* Lead architecture governance, establishing reference patterns for RAG, fine‑tuning, classical ML, and hybrid search/graph solutions.
+* Define and enforce NFRs, SLOs, and FinOps guardrails to ensure scalable, reliable, and cost‑efficient AI systems.
+* Design and deliver end‑to‑end AI solutions, from data acquisition and feature engineering to model/prompt development and production deployment.
+* Embed security, privacy, and compliance controls across AI workflows, including PII protection and audit readiness.
+* Establish evaluation frameworks (offline metrics, HITL, A/B testing, safety filters) to ensure quality, safety, and robustness of GenAI and ML solutions.
+* Integrate AI systems with enterprise data platforms, vector databases, graph stores, and ontology‑driven data contracts for interoperability.
+* Implement and mature ML/LLMOps practices, including CI/CD pipelines, registries, observability, drift monitoring, and automated rollback processes.
+* Drive Responsible AI and governance, partnering with legal, risk, and compliance teams to meet regulatory and ethical standards.
+* Lead cross‑functional teams, mentor engineers, promote agile ways of working, and communicate complex topics to technical and non‑technical stakeholders
+
+**Essential Requirements**
+
+* Bachelor’s or Master’s degree in computer science, IT, or other quantitative disciplines.
+* 10\+ years overall experience, including 5\+ years in AI/ML or data‑intensive solution architecture at enterprise scale.
+* Demonstrated success delivering production AI systems that meet enterprise NFRs (security, latency, cost, compliance).
+* Strong engineering background in at least two programming languages (e.g., Python, Java, Scala).
+* Deep expertise in cloud‑native architectures (Kubernetes, microservices, event streaming) and at least one major cloud platform.
+* Practical proficiency with MLOps/LLMOps tools: model/prompt registries, evaluators, feature stores, pipelines.
+* Strong understanding of NLP, semantic search, and text mining techniques.
+* Ability to manage multiple priorities, work under tight deadlines, and operate within a global team environment.
+
+
+Desired Requirements
+
+* Experience in the pharmaceutical industry with understanding of industry‑specific data standards.
+* Domain expertise in at least one area Pharma R\&D,Manufacturing, Procurement \& Supply Chain, Marketing \& Sales
+* Strong background in semantic technologies and knowledge representation (OWL, RDF, SPARQL, SWRL, JSON‑LD, Turtle).
+
+**Why Novartis:** Helping people with disease and their families takes more than innovative science. It takes a community of smart, passionate people like you. Collaborating, supporting and inspiring each other. Combining to achieve breakthroughs that change patients’ lives. Ready to create a brighter future together? https://www.novartis.com/about/strategy/people\-and\-culture
+
+**Benefits and Rewards:** Learn about all the ways we’ll help you thrive personally and professionally.  
+
+Read our handbook (PDF 30 MB)
+
+
+  
+Division
+US
+Business Unit
+General Management
+Location
+India
+Site
+Hyderabad (Office)
+Company / Legal Entity
+IN10 (FCRS \= IN010\) Novartis Healthcare Private Limited
+Functional Area
+Marketing
+Job Type
+Full time
+Employment Type
+Regular
+Shift Work
+No
+VIDEO
+
+Novartis is committed to building an outstanding, inclusive work environment and diverse teams' representative of the patients and communities we serve.
+
+
+### **Accessibility and accommodation**
+
+
+Novartis is committed to working with and providing reasonable accommodation to individuals with disabilities. If, because of a medical condition or disability, you need a reasonable accommodation for any part of the recruitment process, or in order to perform the essential functions of a position, please send an e\-mail to \[email protected] and let us know the nature of your request and your contact information. Please include the job requisition number in your message.",,https://in.indeed.com/cmp/Novartis,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/1c9d9bc97826a2c0c335266459b68e47,https://www.novartis.com/,Basel,"10,000+",Decline to state,,,,,,,
+in-c39e87539f0f1676,indeed,https://in.indeed.com/viewjob?jk=c39e87539f0f1676,https://apply.careers.microsoft.com/careers/job/1970393556657674?utm_source=indeed&domain=microsoft.com,Senior Consultant - Data & AI,Microsoft,"TS, IN",2026-01-08,fulltime,,,,,,False,,,,,"**Overview**  
+
+Microsoft Industry Solutions \- Global Center for Innovation and Delivery Center (GCID) delivers end\-to\-end solutions by enabling accelerated adoption and productive use of Microsoft technologies. An organization of well over 2000\+ exceptional people, GCID presents a great opportunity for highly skilled services professionals to make a foray into consulting, solution development and delivery roles. The ideal consultant is passionate about technology, has breadth rather than specific product depth, and has the drive and courage to articulate and stand up for a great solution delivering true value for the client.
+
+
+As a Senior Data \& AI Consultant, you will design and deliver modern, cloud\-native and AI\-powered data solutions that drive measurable business outcomes, deliver quality engagements with your expertise, either as an advisor, reviewer, or contributor in high profile projects to ensure customer value. The ideal candidate must have the ability to combine their technical skills, leadership skills, creativity, and customer focus to deliver great solutions to the customers and ensure they get the best out of our technologies and solutions. Consulting Delivery professionals bring subject matter and solution expertise to architectural teams, customers, and partners. They apply deep technical and business knowledge to accelerate the adoption of Microsoft devices and services by ensuring strategic, architectural, and operational alignment to customer and partner objectives.
+
+ **Responsibilities*** Lead technical delivery of complex, cloud native and AI enabled engagements, contributing as a hands\-on individual contributor and, where required, leading engineering teams to ensure high\-quality, predictable outcomes.
+* Define and drive the technology strategy for large and complex customer engagements, ensuring solutions are scalable, secure, compliant, and aligned to business objectives, architectural best practices, and Microsoft reference architectures.
+* Design, develop, and deploy solutions on Microsoft Azure, accelerating customer value through the effective use of Microsoft technologies, platforms, and delivery methodologies while meeting quality, time, and cost constraints.
+* Identifies the best practice approach for a project, across a wide scope of technical issues, and develops or reuses intellectual capital (IP) with customers, world\-wide, and programs and initiatives across Microsoft.
+* Identifies dependencies and risks that go beyond the immediate scope and timeframe for a complex project. Develops contingency plans, risk\-mitigation implementation criteria, and alternative strategies to manage short\- and long\-term risks and manages technical escalations.
+* Collaborates, as appropriate, with peers and cross\-functional teams to scale the business with existing high\-stake or strategic customers, by articulating/developing value propositions for strategic Microsoft products and services.
+* Drives AI\-First data engineering principles and mindset in the team to make the best of AI tools and services while helping in orchestration, transformation, and operationalization of AI/ML\-powered data solutions.
+* Continuously upskill self to become strong Full stack data engineer, inspire their team as much, to be able to build future\-ready skills, collaborate with other specialist teams, product teams, and customers to co\-create innovative solutions and help the customers tackle some of their biggest challenges.
+* Drives new ways of thinking, across the division and subsidiary, to improve quality, engineering productivity, and responsiveness to feedback and changing priorities.
+* Implement rapid prototyping and able to lead from brainstorming and whiteboarding ideas to production\-ready solutions driven by AI\-first mindset. Upskill consistently to get better in this and deliver innovation for customers using Azure stacks.
+* Embody Microsoft culture and values
+ **Qualifications**  
+
+Qualifications
+
+* 10\+ years of experience
+* Bachelor's degree in computer science engineering or equivalent work experience. Higher relevant education is preferred.
+* Customer facing Project delivery leadership experience involving solution design, project envisioning, planning, development and deployment of complex solutions with minimum of 5 plus years.
+
+One or more of the following certifications, or other industry equivalent ones, is a plus:
+
+* Microsoft Certified: Fabric Analytics Engineer Associate (DP600\)
+* Microsoft Certified: Azure AI Engineer Associate (AI102\)
+* Microsoft Certified: Azure Solution Architect Expert (AZ\-305\)
+
+
+Areas of Expertise
+
+
+Data Architecture \& Platform Engineering
+
+* Lead enterprise data architecture/design across cloud, on\-prem, and hybrid environments, designing scalable Data Warehouse, Lakehouse, and analytics platforms using Microsoft Fabric, Azure Synapse Analytics. Knowledge of Azure Databricks is a plus
+* Architect modern platforms using Azure Data Services, serverless and microservices architectures, including largescale data migrations, platform modernization, and multitenant, security hardened designs
+* Apply deep expertise across OLTP/OLAP, columnar, opensource, and NoSQL databases (e.g., Cosmos DB, Redis, Cassandra, MongoDB) with strong governance and access control models
+
+AI\-First Delivery
+
+* Embed AI first principles across solution design, delivery workflows, automation, and intelligent orchestration for complex data and AI enabled programs
+* Own end\-to\-end technical execution—architecture decisions, engineering standards, quality, compliance, and delivery governance—aligning solutions to business outcomes
+* Help define delivery strategies, milestones, risk mitigation, recovery paths, and adoption of AI native delivery models (MLOps, intelligent pipelines)
+
+Engineering Excellence \& DataOps
+
+* Champion high quality engineering practices including coding standards, architectural integrity, performance benchmarks, security, testing, observability, and optimization
+* Drive Data Ops and DevOps excellence using Agile methodologies, Azure DevOps, CI/CD, and automation
+* Promote reuse through accelerators, reference architectures, shared components, and continuous learning via certifications and emerging platforms
+  
+
+AI / ML \& Intelligent Systems
+
+* Lead AI powered data engineering, ML ready pipelines, and operationalized MLOps using Azure AI services
+* Apply hands\-on expertise in Python, deep learning/Gen AI frameworks (PyTorch, TensorFlow), orchestration frameworks like LangChain/LangGraph, prompt engineering, RAG frameworks, AI Search, and agentic workflows on Azure AI stack
+* Integrate AI into enterprise data platforms, enabling intelligent automation and applying Responsible AI principles (fairness, governance, security, compliance, interpretability)
+
+Innovation \& Technical Thought Leadership
+
+* Apply design thinking and user centric approaches to deliver high impact data and AI solutions
+* Track and influence emerging technologies, delivery models, and platform strategy
+* Build and share intellectual property (IP), reusable assets, and best practices to improve delivery predictability, quality, and efficiency
+  
+
+Team Leadership \& Mentorship
+
+* Lead and mentor engineering teams, fostering collaboration, technical excellence, and accountability
+* Provide guidance through design and code reviews, coaching, and feedback
+* Support professional development and build a strong, inclusive engineering culture
+
+Soft Skills \& Mindset
+
+* Strong communication and presentation skills with the ability to engage both technical and non\-technical stakeholders.
+* Passion for mentoring, knowledge sharing, and continuous learning.
+* Proven adaptability to new technologies and evolving customer requirements.
+* Experience working in Agile/Scrum environments.
+* Awareness of AI technologies and their integration into cloud solutions.
+  
+
+Good to have:
+
+
+Customer Co\-Innovation Mindset \& Customer Enablement
+
+* Lead rapid prototyping, pilots, and early\-stage production deployments for enterprise customers, accelerating time\-to\-value
+* Translate from whiteboard to production with minimal friction, engineering alongside customer teams to unblock delivery and adoption
+* Own troubleshooting across performance, reliability, cost, security, and data quality, delivering outcome\-driven engineering in ambiguous, high\-pressure environments
+  
+
+  
+
+This position will be open for a minimum of 5 days, with applications accepted on an ongoing basis until the position is filled.
+
+  
+
+Microsoft is an equal opportunity employer. All qualified applicants will receive consideration for employment without regard to age, ancestry, citizenship, color, family or medical care leave, gender identity or expression, genetic information, immigration status, marital status, medical condition, national origin, physical or mental disability, political affiliation, protected veteran or military status, race, ethnicity, religion, sex (including pregnancy), sexual orientation, or any other characteristic protected by applicable local laws, regulations and ordinances. If you need assistance with religious accommodations and/or a reasonable accommodation due to a disability during the application process**.**",Internet And Software,https://in.indeed.com/cmp/Microsoft,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/88813b3f866a5b58c9685073e3b87e05,http://www.microsoft.com/,"One Microsoft Way Redmond, Washington 98052-6399","10,000+",more than $10B (USD),Our mission is to empower every person and every organization on the planet to achieve more.,,,,,,
+in-966d18e6f9531f1f,indeed,https://in.indeed.com/viewjob?jk=966d18e6f9531f1f,https://jobs.mahindracareers.com/job/Kandivali-Plant-%28AD%29-AI-Engineer-Kand/1360289300/,AI Engineer,Mahindra & Mahindra Ltd,"MH, IN",2026-01-29,,,,,,,False,,,,,"**Responsibilities \& Key Deliverables**
+
+We are looking for an experienced Senior Generative AI Engineer to join our GenAI Solutions team. The ideal
+
+candidate will bring extensive expertise in Large Language Models (LLMs), Retrieval\-Augmented Generation
+
+(RAG), and Agentic AI systems, along with a strong background in cloud\-native development and enterprise
+
+scale deployments. This role is critical in driving our AI innovation strategy and delivering impactful,
+
+production\-ready solutions for business transformation.
+* Lead the end\-to\-end design, development, and deployment of Generative AI applications, including LLMpowered workflows, RAG pipelines, and Agentic AI solutions.
+* Architect secure and scalable AI infrastructures using cloud platforms (GCP, AWS, Azure).
+* Apply fine\-tuning, advanced prompt engineering, and LLMOps best practices to enhance solution performance and relevance.
+* Build, optimize, and maintain APIs and microservices (FastAPI, REST, Spring Boot) to integrate AI solutions into enterprise applications.
+* Develop and manage data pipelines, vector databases, and Elasticsearch integrations for real\-time knowledge retrieval and decision\-making.
+* Implement MLOps, CI/CD, and DevOps practices using Kubernetes, Docker, Jenkins, and Ansible for robust deployment and monitoring.
+* Ensure high availability, logging, and performance monitoring through ELK stack and infrastructure\-as code practices.
+* Collaborate with cross\-functional teams to align AI solutions with business goals and operational requirements.
+* Mentor and guide junior engineers, setting best practices for scalable AI development.
+
+  
+
+
+**Experience*** 2\+ years of professional software engineering experience, with Generative AI/LLM application development.
+
+  
+
+
+**Qualifications*** A master’s degree in computer science/applications/engineering.
+* Proven expertise in LLMs, LangChain, LangGraph, RAG systems, and Agentic AI frameworks.
+* Proficiency in Python (advanced).
+* Strong knowledge of cloud platforms: GCP, AWS, Azure.
+* Hands\-on experience with MLOps \& DevOps practices: Kubernetes, Docker, Jenkins, Ansible, Infrastructure\-as\-Code.
+* Experience with databases and data pipelines: PostgreSQL, SQL, Vector Databases, Elasticsearch.
+* Familiarity with API development frameworks: FastAPI.
+* Excellent analytical and problem\-solving skills with the ability to lead AI initiatives end\-to\-end.
+* Strong communication skills with experience in working across cross\-functional and distributed teams.
+
+  
+
+
+**General Requirements*** Domain experience in automotive, manufacturing, or enterprise AI solutions.
+* Background in enterprise\-grade AI security and compliance.
+* Exposure to frontend integration frameworks (ReactJS) for AI\-enabled applications
+
+  
+
+  
+
+**Job Segment:** Software Engineer, Manufacturing Engineer, Engineer, Application Engineering, Engineering, Automotive",Auto,https://in.indeed.com/cmp/Mahindra-&-Mahindra-Ltd,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/48f98a7ba93496c883f61ef2c0044742,https://www.mahindra.com,"Mumbai, IN","10,000+",more than $10B (USD),,,,,,,
+in-0e992050a4b89567,indeed,https://in.indeed.com/viewjob?jk=0e992050a4b89567,https://uhg.taleo.net/careersection/10780/jobdetail.ftl?job=2328114&lang=en,Director AI or ML Engineering,Optum,"HR, IN",2026-01-29,fulltime,,,,,,False,,,,,"Optum is a global organization that delivers care, aided by technology to help millions of people live healthier lives. The work you do with our team will directly improve health outcomes by connecting people with the care, pharmacy benefits, data and resources they need to feel their best. Here, you will find a culture guided by inclusion, talented peers, comprehensive benefits and career development opportunities. Come make an impact on the communities we serve as you help us advance health optimization on a global scale. Join us to start **Caring. Connecting. Growing together.**
+
+ **Primary Responsibilities:**
+
+* Champion the AI first modernization agenda, embedding AI/ML into enterprise workflows, products, and operations
+* Partner with business leaders to identify high impact AI use cases, assess feasibility, and define value realization frameworks
+* Translate business goals into a prioritized AI portfolio, ensuring measurable outcomes and alignment with enterprise strategy
+* Lead the design, development, and deployment of scalable AI/ML, GenAI, LLM, RAG, and Agentic AI systems
+* Build AI products using modern ML architectures, vector stores, multimodal models, and model orchestration frameworks
+
+Oversee the end to end lifecycle \- from problem definition experimentation model development evaluation deployment* monitoring
+* Guide teams on best practices for healthcare AI, including clinical validation, data quality, safety, and regulatory alignment
+* Implement ethical AI frameworks, including bias detection, explainability, transparency, and governance standards
+* Provide solid technical leadership in ML engineering, model optimization, scalable model deployment, and distributed training
+* Mentor and lead AI/ML engineers, data scientists, and applied researchers
+* Build a culture of innovation, experimentation, engineering excellence, and continuous learning
+* Champion the organization's MLOps strategy, driving automation, reproducibility, CI/CD for ML, model versioning, monitoring, and governance
+* Partner with cloud/platform teams to implement robust, secure, and scalable AI infrastructure
+* Ensure platform readiness for GenAI, LLMOps, prompt management, evaluation frameworks, and agent orchestration
+* Collaborate with Product, Engineering, Cloud, Data, Security, Compliance, and Business stakeholders
+* Promote solid alignment between AI CoE and enterprise technology teams
+* Comply with the terms and conditions of the employment contract, company policies and procedures, and any and all directives (such as, but not limited to, transfer and/or re\-assignment to different work locations, change in teams and/or work shifts, policies in regards to flexibility of work benefits and/or work environment, alternative work arrangements, and other decisions that may arise due to the changing business environment). The Company may adopt, vary or rescind these policies and directives in its absolute discretion and without any limitation (implied or otherwise) on its ability to do so
+
+**Required Qualifications:**
+
+* Extensive Leadership in Enterprise AI: 15\+ years of progressive experience, with a significant track record of leading the development, deployment, and operationalization of high\-impact AI/ML solutions within a large, complex enterprise
+* Proven Expertise in AI Governance, Risk, and Compliance: Demonstrated experience designing or leading AI governance frameworks. Must have direct experience navigating internal review boards (like an AIRB), ensuring AI projects meet rigorous ethical, fairness, legal, and regulatory standards (e.g., HIPAA)
+* Deep Generative AI \& Machine Learning Expertise: Authoritative knowledge and hands\-on implementation experience with Generative AI and LLMs, alongside a broad understanding of traditional ML algorithms (e.g., for OCR, Speech, Deep Learning)
+* Strategic Business Acumen: Proven track record of developing and executing enterprise\-wide AI strategy. Must be able to translate business goals into a technical roadmap and articulate the ROI and business value of AI initiatives to executive leadership
+* Full ML Lifecycle \& Productization Proficiency: Solid proficiency across the entire machine learning lifecycle with a product\-centric mindset, including a demonstrated ability to guide teams in engineering robust, scalable, and maintainable AI products and platforms
+* Exceptional Communication \& Influence: Demonstrated world\-class communication skills with the proven ability to influence and align cross\-functional teams and senior leaders across business, legal, compliance, and technology domains
+
+ **Preferred Qualifications:**
+
+* Advanced Degree: A Master's or Ph.D. in Computer Science, Artificial Intelligence, Data Science, or a related quantitative field
+* Advanced MLOps \& Cloud Architecture: Deep, hands\-on experience designing and implementing sophisticated MLOps pipelines and scalable, cloud\-native AI architectures on major platforms (AWS, Azure, or GCP)
+* Deep Domain Expertise in Healthcare AI: Significant experience applying AI/ML specifically within the healthcare sector (e.g., claims processing, clinical decision support, patient engagement, call centre optimization)
+* Thought Leadership: A recognized presence in the AI/ML community, demonstrated through publications, patents, conference presentations, or significant open\-source contributions
+* Change Management Experience: Demonstrated success in leading large\-scale organizational change initiatives, specifically related to driving an 'AI\-First' or data\-driven culture
+* Track Record of Building \& Scaling Teams: Proven ability to attract, build, mentor, and retain high\-performing, multi\-disciplinary AI teams (including ML Engineers, Data Scientists, and Research Scientists)
+
+ *At UnitedHealth Group, our mission is to help people live healthier lives and make the health system work better for everyone. We believe everyone\-of every race, gender, sexuality, age, location and income\-deserves the opportunity to live their healthiest life. Today, however, there are still far too many barriers to good health which are disproportionately experienced by people of color, historically marginalized groups and those with lower incomes. We are committed to mitigating our impact on the environment and enabling and delivering equitable care that addresses health disparities and improves health outcomes \- an enterprise priority reflected in our mission.*",,https://in.indeed.com/cmp/Optum,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/fda00a1dbb2aaebea6d386695d0294c2,https://www.optum.com,"Eden Prairie, MN","10,000+",more than $10B (USD),,,,,,,
+in-85d6bac5e6702fcf,indeed,https://in.indeed.com/viewjob?jk=85d6bac5e6702fcf,https://kyndryl.wd5.myworkdayjobs.com/en-US/KyndrylProfessionalCareers/job/INMANBP-Bangalore-INMANBP-Manyatha/Senior-MLOps---AI-Ops-Engineer_R-56966-1,Senior MLOps / AI Ops Engineer,Kyndryl,"KA, IN",2026-01-29,fulltime,,,,,,False,,,,,"**Who We Are**
+
+At Kyndryl, we run and reimagine the mission\-critical technology systems that drive advantage for the world’s leading businesses. We are at the heart of progress; with proven expertise and a continuous flow of AI\-powered insight, enabling smarter decisions, faster innovation, and a lasting competitive edge. For our people—Kyndryls—that means doing purposeful work that powers human progress. Join us and experience a flexible, supportive environment where your well\-being is prioritized and your potential can thrive.  
+
+
+
+  
+
+**The Role**
+
+**Key Responsibilities**
+
+* Design, implement, and optimize MLOps/AI Ops architectures supporting scalable AI/ML solutions.
+* Build and manage cloud\-native infrastructure using Azure, Kubernetes, Docker, Terraform, and CI/CD pipelines.
+* Lead end\-to\-end AI/ML lifecycle operations, including data ingestion, model training, versioning, deployment, and monitoring.
+* Implement and manage agent/model registries, automated deployment workflows, and model monitoring systems.
+* Drive AI Ops capabilities, including prompt lifecycle management, RAG pipeline optimization, semantic search enhancements, vector database integration, and LLM observability.
+* Establish robust monitoring, alerting, and performance tuning practices for large\-scale production systems.
+* Collaborate with data engineering teams to ensure efficient data pipelines and infrastructure alignment.
+* Ensure high standards of security, governance, and reliability across ML/AI systems.
+* Implement security best practices such as IAM, secrets management, policy\-as\-code, drift detection, and audit trails.
+* Optimize production systems for autoscaling, resiliency, and cost efficiency.
+Evaluate emerging technologies and recommend enhancements to the AI/ML platform.  
+* 
+
+  
+
+Your Future at Kyndryl
+  
+
+Every position at Kyndryl offers a way forward to grow your career. We have opportunities that you won’t find anywhere else, including hands\-on experience, learning opportunities, and the chance to certify in all four major platforms. Whether you want to broaden your knowledge base or narrow your scope and specialize in a specific sector, you can find your opportunity here.  
+
+
+
+  
+
+**Who You Are**
+
+Who You Are
+  
+
+You’re good at what you do and possess the required experience to prove it. However, equally as important – you have a growth mindset; keen to drive your own personal and professional development. You are customer\-focused – someone who prioritizes customer success in their work. And finally, you’re open and borderless – naturally inclusive in how you work with others.
+
+
+**Required Skills \& Expertise**
+
+* 12\+ years of overall experience, with strong expertise in MLOps, AI Ops, and cloud infrastructure.
+* Hands\-on experience with Kubernetes, Docker, Terraform, Azure cloud, and CI/CD pipelines.
+* Strong understanding of the full AI/ML lifecycle, including data engineering, model development, deployment, monitoring, and retraining.
+* Experience with LLM lifecycle, prompt management, RAG frameworks, vector databases, semantic caching, and observability tools.
+* Solid understanding of infrastructure\-as\-code, automation, and cloud\-native architectures.
+* Knowledge of IAM, secrets management, security policies, audit logging, and compliance frameworks.
+* Proven ability in performance tuning, autoscaling, and managing large\-scale distributed systems.
+* Excellent communication, collaboration, and leadership skills.
+
+**Good to Have**
+
+* Experience with reliability engineering, SRE practices, and cost\-optimization strategies.
+* Exposure to monitoring tools and frameworks for AI/ML observability.
+* Certifications in Azure, Kubernetes, DevOps, or AI/ML.
+
+**Education**
+
+Bachelor’s or Master’s degree in Computer Science, Engineering, or a related field.  
+
+* 
+
+  
+
+**Being You**
+
+The “Kyn” in Kyndryl means kinship, which represents the strong bonds we have with each other, our customers and our communities. We focus on ensuring all Kyndryls feel included and we welcome people of all cultures, backgrounds, and experiences. Even if you don’t meet every requirement, we encourage you to apply. We believe in growth, and we’re excited to see what you can bring. At Kyndryl, employee feedback has told us that our number one driver of employee engagement is belonging. That sense of belonging — being a valued, respected, trusted member of the team — is fundamental to our culture and fueling great experiences for our customers. This dedication to welcoming everyone into our company means that Kyndryl gives you the ability to thrive and contribute to our culture of empathy and shared success. That’s The Kyndryl Way.  
+
+
+
+  
+
+**What You Can Expect**
+
+Your career with us isn’t just a job—it’s an adventure with purpose. We offer a dynamic, hybrid\-friendly culture that supports your well\-being and empowers you to grow. Our Be Well programs are thoughtfully designed to support your financial, mental, physical, and social health—because we know that when you feel your best, you do your best.
+  
+
+  
+
+From your very first day, you’ll dive into impactful work that powers the systems our customers rely on every day. You won’t just contribute—you’ll make a difference, tackling meaningful projects that sharpen your skills and fuel your growth.
+  
+
+  
+
+We’re here to champion your journey. With powerful tools to chart your career path, personalized development goals aligned with your ambitions, and continuous feedback to keep you inspired and on track, you’ll have everything you need to thrive and evolve. You’ll develop in\-demand skills to grow your career and achieve your ambitions with access to cutting\-edge learning opportunities—from certifications with Microsoft, Google, and Amazon to coaching and hands\-on experiences. And through it all, you’ll be part of a culture that values empathy, restless learning, and a devotion to shared success.
+  
+
+  
+
+We want you to thrive here—and we’re committed to helping you do just that. Ready to make an impact? Join us and help shape what’s next.
+
+
+**Get Referred!**
+
+If you know someone that works at Kyndryl, when asked ‘How Did You Hear About Us’ during the application process, select ‘Employee Referral’ and enter your contact's Kyndryl email address.",,https://in.indeed.com/cmp/Kyndryl,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/0fa041766388e801af9df38db401e16a,http://kyndryl.com/careers,,"10,000+",Decline to state,"We design, build, manage and modernize the mission-critical technology systems that the world depends on every day.",,,,,,
+in-93a5c04381c83ce4,indeed,https://in.indeed.com/viewjob?jk=93a5c04381c83ce4,https://eeho.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/job/324778,Software Developer,Oracle,"UP, IN",2026-01-29,fulltime,,,,,,False,,,,,"**About Oracle Healthcare Data Intelligence**
+
+Oracle Healthcare Data Intelligence (HDI) is at the forefront of leveraging data and AI to transform the healthcare and life sciences industries. Our SafetyOne platform uses agentic AI, generative models, NLP, and to automate pharmacovigilance workflows. We're developing multi\-agent systems that handle case processing, medical coding, and safety signal detection—with appropriate human oversight and regulatory guardrails.
+
+
+**The Opportunity**
+
+We're hiring an AI/ML Engineer (IC2\) to implement and integrate AI models into SafetyOne's pharmacovigilance platform. You'll work on production AI systems that extract entities from adverse event reports, assist with medical coding and causality assessment, and generate clinical narratives.
+
+
+You'll implement LLM\-based solutions, integrate models into SafetyOne workflows, and collaborate with senior data scientists and engineers to deploy AI capabilities at scale. This role offers significant learning opportunities in agentic AI, healthcare NLP, and regulated software development, with clear growth paths toward senior technical roles.
+
+
+**Career Level:** IC2  
+
+
+
+**What You Bring**
+
+**Qualifications**
+
+* Bachelor’s or Master’s degree in Computer Science or related technical field, with 2\+ years of experience in AI, ML, or data\-driven solution development.
+* Experience building and deploying machine learning models or AI applications
+* Familiarity with Python and common ML/NLP libraries
+* Experience working with APIs, databases, and production software systems
+* Understanding of software engineering best practices (version control, testing, documentation)
+
+**Technical Skills**
+
+**Must Have:**
+
+* Python programming with experience in ML/data science libraries (scikit\-learn, pandas, numpy, matplotlib)
+* Familiarity with at least one deep learning framework (PyTorch, TensorFlow, or similar)
+* Basic understanding of NLP concepts: text processing, embeddings, classification, entity extraction
+* Experience with SQL and working with both structured and unstructured data
+* Understanding of RESTful APIs and integrating ML models into applications
+* Familiarity with Git and collaborative development workflows
+
+**Highly Valued:**
+
+* Exposure to LLMs and prompt engineering
+* Hands\-on work with RAG or vector databases and semantic search.
+* Familiarity with cloud platforms (OCI, AWS, Azure, GCP) and containerization (Docker)
+* Comfortable with Linux/Unix environments and command\-line tools
+* Familiarity with MLOps practices: model deployment, monitoring, CI/CD for ML
+* Experience with healthcare or life sciences data and applications
+* Understanding of transformer architectures
+
+**Personal Attributes**
+
+* Problem\-solver with strong analytical and debugging skills
+* Collaborative team player who communicates effectively with technical and non\-technical stakeholders
+* Self\-motivated learner eager to grow technical expertise in AI/ML and healthcare domains
+* Quality\-focused with attention to detail and commitment to production\-ready code
+* Adaptable and comfortable working in a fast\-paced, evolving environment
+
+**Why Join Us**
+
+* Work on challenging, real\-world AI problems in a regulated domain.
+* Build models at production scale for global life sciences organizations.
+* Collaborate with experienced engineers, scientists, and PV experts.
+* Access broad learning and career opportunities across Oracle.
+* Contribute to systems that directly improve patient safety.
+
+  
+**Model Development \& Deployment**
+
+* Develop LLMs and NLP solutions for pharmacovigilance tasks including entity extraction, MedDRA coding assistance, and narrative generation
+* Build and optimize RAG pipelines for document processing and Q\&A systems
+* Deploy AI models into SafetyOne's production workflows and user interfaces
+* Work with vector databases and semantic search systems to support intelligent retrieval
+* Contribute to agentic workflows using modular AI frameworks under guidance
+
+**Testing \& Quality Assurance**
+
+* Contribute to model evaluation frameworks and testing protocols
+* Conduct performance analysis and error analysis on model outputs
+* Implement guardrails and validation checks to ensure clinical accuracy
+* Participate in code reviews and quality assurance processes
+* Document model behavior, limitations, and performance characteristics
+
+**Production Deployment \& Operations**
+
+* Deploy models to Oracle Cloud Infrastructure (OCI) using containerization and MLOps practices
+* Monitor model performance in production and address issues as they arise
+* Implement logging, monitoring, and observability for AI systems
+* Support model versioning, A/B testing, and gradual rollouts
+* Participate in on\-call rotation for production AI systems (as needed)
+
+**Collaboration \& Learning**
+
+* Work closely with senior data scientists, software engineers, and product managers
+* Collaborate with pharmacovigilance domain experts to understand requirements and validate outputs
+* Participate in team knowledge sharing, code reviews, and technical discussions
+* Stay current with advances in LLMs, RAG systems, and healthcare AI
+* Contribute to technical documentation and best practices",Internet And Software,https://in.indeed.com/cmp/Oracle,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/7469a5861d5fac78de05b68853a2b2ee,https://oracle.com/careers,"2300 Oracle Way
+Austin, TX 78741","10,000+",more than $10B (USD),"Oracle is the cloud leader for global business. Our technologies are transforming the world and no matter how complex, they have one thing in common: making our shared future better.",,,,,,
+in-8bf9eadb9a0a3793,indeed,https://in.indeed.com/viewjob?jk=8bf9eadb9a0a3793,https://usource.ripplehire.com/candidate/?token=xHQWoFn4C242POo7xMpH&source=CAREERSITE#detail/job/51740,Developer III - Software Engineering,UST,"KL, IN",2026-01-29,,,,,,,True,,,,,"3 \- 5 Years
+1 Opening
+Trivandrum  
+
+
+### **Role description**
+
+
+POSITION DESCRIPTION  
+
+Job title Senior Software Engineer \- Backend  
+
+Department/BU Engineering  
+
+Location Remote (India)  
+
+Overview:  
+
+Cotiviti is seeking an experienced Senior Software Engineer with a minimum of 5 years of professional software development experience and expert\-level Java skills to join our healthcare data processing team. The ideal candidate will contribute to a diverse range of backend systems including MLOps initiatives, LLM integration projects, and NLP\-powered applications for medical data analysis. This role involves working across multiple healthcare platforms \- from Risk Adjustment ICD\-10 extraction systems to cross\-platform AI tools and internal NLP applications. You'll collaborate with NLP Engineers, Data Scientists, and cross\-functional teams to build scalable backend solutions that incorporate modern AI capabilities while maintaining robust enterprise\-grade systems. While experience with MLOps, LLM integration, or NLP technologies is preferred, we will consider exceptional software engineers with strong technical fundamentals and demonstrated ability to learn new technologies and frameworks on the job.  
+
+Responsibilities:  
+
+MLOps Pipeline Development: Design and maintain ML operations pipelines for Risk Adjustment applications and cross\-platform projects, including model deployment and monitoring in healthcare environments  
+
+LLM Integration for Healthcare Applications: Lead integration of Large Language Models into Risk Adjustment systems and other healthcare products, enhancing clinical data processing capabilities  
+
+NLP System Development: Build natural language processing pipelines for medical text analysis across Risk Adjustment and other healthcare applications  
+
+Model Deployment \& Monitoring: Implement MLOps best practices for AI model deployment, versioning, and performance monitoring across multiple healthcare projects  
+
+Cross\-Platform AI Development: Work on LLM and AI integration across various internal tools and healthcare platforms beyond Risk Adjustment applications  
+
+REST API Development: Design and implement APIs for LLM integration, model serving, and cross\-platform AI capabilities  
+
+Medical Text Processing: Extract meaningful information from clinical notes and medical records using various NLP frameworks and modern AI techniques  
+
+Named Entity Recognition Systems: Build and optimize NER systems for identifying medical entities in text across Risk Adjustment and other healthcare applications  
+
+Enterprise Java Development: Design and implement robust, scalable Java applications using enterprise frameworks for healthcare data processing  
+
+NLP Internal Tools Development: Contribute to building and enhancing internal NLP tools and platforms used across multiple healthcare projects  
+
+Enterprise Applications: Develop and maintain enterprise\-grade Java applications utilizing Maven, Spring Framework, Hibernate, JPA, Spring Boot, and microservices architectures  
+
+UI Integration: Integrate LLM capabilities into JavaScript\-based user interfaces and web applications for various healthcare platforms  
+
+Python Integration: Leverage Python for data processing, ML model integration, and MLOps tooling across healthcare applications  
+
+Database Management: Design and maintain Oracle database schemas and complex SQL queries for healthcare data processing systems  
+
+System Administration: Manage application deployment using SSH, shell scripting, and Linux/Unix environments  
+
+CI/CD Management: Maintain build processes, testing pipelines, and ML model deployment workflows for healthcare AI systems  
+
+Relevant experience and educational requirements:  
+
+Minimum 5\+ years of professional software development experience  
+
+Expert\-level Java programming skills with deep understanding of JVM, concurrency, and enterprise development  
+
+Python proficiency required for MLOps and AI integration work (exceptions made for talented Java engineers/software engineers with strong learning ability)  
+
+Experience with MLOps practices, model deployment, and ML lifecycle management preferred  
+
+Experience with LLM integration, fine\-tuning, or AI model deployment is a plus  
+
+Experience with JavaScript for UI integration and web application development  
+
+Experience with REST API development and microservices architecture  
+
+Strong experience with Maven, Spring Framework, and Java ecosystem tools  
+
+Proficiency with Oracle databases and advanced SQL  
+
+Proficiency with Regex  
+
+Experience with Linux/Unix systems and SSH  
+
+Understanding of CI/CD pipelines and automated deployment processes  
+
+Bachelor's degree in Computer Science, Software Engineering, or related technical field (master's degree is a plus)  
+
+Combination of Computer Science and Data Science education is highly preferred  
+
+Familiarity with NLP concepts and techniques preferred  
+
+Experience with text processing frameworks (UIMA experience preferred but not required \- we welcome talented engineers who can learn frameworks on the job)
+
+
+### **Skills**
+
+
+java,nlp,risk management,mlops,llm integration,icd\-10,rest api,maven,python,spring framework,hibernate,jpa,spring boot,microservices
+
+
+  
+### **About UST**
+
+
+UST is a global digital transformation solutions provider. For more than 20 years, UST has worked side by side with the world’s best companies to make a real impact through transformation. Powered by technology, inspired by people and led by purpose, UST partners with their clients from design to operation. With deep domain expertise and a future\-proof philosophy, UST embeds innovation and agility into their clients’ organizations. With over 30,000 employees in 30 countries, UST builds for boundless impact—touching billions of lives in the process.",,https://in.indeed.com/cmp/Ust-2,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/19c08dd78148671d83d5fdb3dc01516c,https://www.ust.com/,"Aliso Viejo, CA","10,000+",Decline to state,"UST is a global digital transformation solutions provider for more than 20 years. With over 29K+ employees in 30 countries, UST builds for boundless impact—touching billions of lives in the process.",,,,,,
+in-0c6051a81eabf3b8,indeed,https://in.indeed.com/viewjob?jk=0c6051a81eabf3b8,https://levistraussandco.wd5.myworkdayjobs.com/en-US/External/job/GCC-Office--ITC-Green-Center-Bengaluru-Karnataka-India/Director--Band---Supply-Chain-Engineering--India-_R-0146159,"Director, Band & Supply Chain Engineering (India)",Levi Strauss,"KA, IN",2026-01-29,fulltime,,,,,,True,,,,,"Job Location: Bengaluru, India  
+
+Calling all originals: At Levi Strauss \& Co., you can be yourself — and be part of something bigger. We’re a company of people who like to forge our own path and leave the world better than we found it. Who believe that what makes us different makes us stronger. So add your voice. Make an impact. Find your fit — and your future.
+Director, Brand and Supply Chain Engineering (India) is a leadership role in our Global Talent Hub responsible for leading engineering and accelerating the use of Artificial Intelligence in our software engineering processes across the Brand, Connect\-to\-Consumer (CtC), and Supply Chain squads. This role provides functional ownership of AI\-driven engineering initiatives and practices, ensuring they deliver measurable value. The Director will report to the Sr. Director, Brand, Supply Chain \& CtC Engineering and serve as the senior technology leader for our India engineering hub (acting as the “eyes and ears on the ground” for global engineering leadership). The mission is to drive an “AI\-first” transformation in how our teams design, build, and deliver software, by introducing cutting\-edge AI capabilities into coding, DevOps, testing, and operations, and by re\-imagining our engineering practices to improve velocity, quality, and innovation. This role will not directly manage a single product\-engineering team in the traditional sense, but oversees AI innovation and adoption across multiple squads, guiding and influencing engineers and managers to embrace new tools and ways of working.  
+
+About the Job
+This role is expected to evolve as our AI maturity grows. In its first phase, a heavy focus will be on jump\-starting AI usage and demonstrating quick wins (hence the PoCs and pilots). Over time, as capabilities become embedded, the role’s emphasis may shift to scaling solutions, upskilling the broader engineering organization in AI, and tackling more advanced AI projects.* AI Strategy \& Adoption: Develop and implement a strategic roadmap for AI adoption in engineering for the Brand, CtC, and Supply Chain domains. Identify high\-impact opportunities where AI (including generative AI and machine learning) can improve coding productivity, code quality, SDLC speed, or testing depth. Develop KPIs for visibility on impact and innovation. Act as an internal consultant within the org to find impactful opportunities to leverage AI.
+* Innovation \& PoCs: Manage a small “AI SWAT” team (1–2 dedicated resources) focused on rapid prototyping of AI\-driven solutions. Oversee the end\-to\-end development of Proofs of Concept – for example, an AI\-based test automation tool or a GPT\-based coding assistant tailored to our tech stack. Prototype, pilot, and productionize successful solutions in collaboration with squads, then hand off to those squads for ongoing use. Track the impact of these initiatives (e.g. reduction in development cycle time, improvement in test coverage) and iterate accordingly
+* Engineering Practice Transformation: In partnership with leadership \& other engineering leaders, re\-imagine our engineering and implementation practices with an “AI\-first” mindset. This includes updating DevOps, code review, and QA processes to leverage AI (such as AI code analysis for pull requests, AI\-assisted incident resolution, or intelligent monitoring). Define new best practices and coding standards that integrate AI tools while maintaining software quality and ethics. Guide squads in adopting pair\-programming with AI, continuous testing with AI, and other modern techniques. Essentially, act as a catalyst for cultural change – fostering an engineering culture that embraces automation and data\-driven decision making.
+* Cross\-Functional Visibility \& Collaboration: Provide visibility into ongoing work and AI initiatives across all squads in the Brand, CtC, and Supply Chain areas. Regularly interface with each squad’s Product Managers, Engineering Managers, and Tech Leads to understand their deliverables and pain points. Connect the dots between teams Ensure our domain\-specific AI efforts are not siloed and leverage company\-wide infrastructure and policies (e.g. data privacy, model governance).
+* Offshore Team Oversight: Serve as the local leader for offshore engineering teams in India, providing mentorship and guidance. Although this role doesn’t directly manage the day\-to\-day of each squad, the Director will oversee the health, engagement, and performance of the offshore contingent. This includes understanding the work the India teams are doing for the Brand/CtC/SC squads, identifying any gaps or issues (like communication challenges or talent needs), and working with onshore counterparts to address them. Act as a liaison to ensure the offshore perspective is represented in global planning. In essence, ensure that our “Global Technology Hub” in India operates seamlessly as an extension of the San Francisco\-based teams. This may involve occasional program management or stepping in to resolve time\-zone gaps and keep work moving.
+* Governance \& Ethical AI: Implement and enforce guidelines for responsible AI usage within our engineering domain. Stay abreast of the latest AI and machine learning standards, tools, and ethical considerations, and ensure our squad\-level AI experiments comply with company policies (e.g. data security, model bias, IP protection). Coordinate with the corporate AI governance working group or Data Science team on any needed approvals for new AI tools or third\-party services. Establish simple governance for squad\-developed AI (like registering any new models or scripts developed in squads, to avoid duplication and manage risk).
+
+About You* Bachelor’s degree in Computer Science, Engineering, or related field (Master’s preferred).
+* 15\+ years of experience in software engineering or technology roles, with at least 5 years in leadership positions.
+* Significant exposure to AI/ML or data\-driven automation projects in an engineering context is required.
+* AI Domain Knowledge: Strong understanding of modern AI capabilities and how they apply to software development. Familiarity with AI\-assisted coding tools, test automation frameworks, machine learning operations (MLOps), and generative AI. You stay updated on emerging tech – e.g. large language models (LLMs), AI code review assistants, AI ops tools – and can discern which are hype versus high\-value. Hands\-on ability to experiment with scripts, APIs, or cloud AI services is a plus (you need not be a data scientist, but should be technical enough to prototype or evaluate AI solutions).
+* Proven Transformation Leadership: A track record of driving process improvements or technology transformations across teams. This could be leading an Agile adoption, CI/CD implementation, cloud migration, or AI initiative. You are adept at analyzing workflows, identifying opportunities for automation, and executing changes that increase efficiency or effectiveness. You can point to projects where your leadership directly resulted in measurable improvements (e.g. faster delivery, higher quality, cost savings, etc.).
+* Global/Offshore Experience: Experience working with globally distributed teams (especially India\-based teams) and an appreciation for multicultural collaboration. You understand the dynamics of offshore delivery – time zone differences, communication challenges, talent development – and have strategies for integrating offshore teams into a unified development process. Prior experience being based in or managing a remote hub would be beneficial.
+
+LOCATION
+Bengaluru, India
+FULL TIME/PART TIME
+Full time
+Current LS\&Co Employees, apply via your Workday account.",,https://in.indeed.com/cmp/Levi-Strauss-e85ee6e2,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/e5dbe7aa477522633d0dcc1d0588c60b,https://www.levistrauss.com,"San Francisco, CA","10,000+",$1B to $5B (USD),You’re an original. So are we. We’re a company of people who like to forge our own path.,,,,,,
+in-49a965322cff2c5c,indeed,https://in.indeed.com/viewjob?jk=49a965322cff2c5c,http://in.indeed.com/job/ai-engineer-49a965322cff2c5c,AI Engineer,Dinjan Infotech,"Remote, IN",2026-01-29,,,,,,,True,,,,,"**Job Title:** Senior Full Stack AI Engineer  
+**Location:** Remote  
+**Employment Type:** Full\-time
+
+**About the Role:**  
+We are looking for a Senior Full Stack AI Engineer to build and deploy AI\-powered applications using Large Language Models (LLMs) and autonomous agent frameworks. This role blends full\-stack development with hands\-on AI/ML experience to create scalable, intelligent systems for resource management.
+
+**Key Responsibilities:**
+
+* Develop AI/ML systems with frameworks like LangChain, LangGraph, AutoGen, or CrewAI
+* Integrate and fine\-tune LLMs (GPT\-4, Claude, LLaMA) for web and mobile applications
+* Build full\-stack apps using Next.js, React, TypeScript, Node.js, and Python
+* Deploy and manage applications on AWS
+* Collaborate with product teams and mentor junior engineers
+
+**Requirements:**
+
+* 5–8 years software engineering experience, 2\+ years in production LLM/GenAI applications
+* Strong skills in Python, TypeScript/JavaScript, Next.js, React, Node.js
+* Experience with databases (PostgreSQL, MongoDB, Redis) and REST APIs
+* Hands\-on with LLM integration, agentic frameworks, and RAG systems
+* Understanding of software architecture, SDLC, and scalable systems
+
+**Nice to Have:**
+
+* ML model fine\-tuning, MLOps, AI safety/ethics knowledge
+
+**What We Offer:**
+
+* 100% remote work
+* Cutting\-edge AI projects with real impact
+* Competitive salary and equity
+* Collaborative team and comprehensive benefits
+
+Job Types: Contractual / Temporary, Freelance
+
+Pay: ₹1,000,000\.00 \- ₹3,000,000\.00 per year
+
+Benefits:
+
+* Work from home
+
+Work Location: Remote",,https://in.indeed.com/cmp/Dinjan-Infotech,,,,,,,,,,,,
+in-f6411ae41be97e77,indeed,https://in.indeed.com/viewjob?jk=f6411ae41be97e77,http://in.indeed.com/job/senior-aiml-developer-f6411ae41be97e77,Senior AI/ML Developer,Cognolabs Systems Private Limited,"TS, IN",2026-01-29,fulltime,,,,,,False,,,,,"**About Cognolabs:** 
+
+Cognolabs Systems has pioneered the integration of cognitive computing and neuro\-economics within its software solutions, establishing itself in educational and industrial technology sectors, committed to delivering innovative and scalable software solutions to meet the evolving needs of our clients. Dedicated to empowering global communities through advanced technology, Cognolabs develops innovative solutions that enhance learning and operational efficiencies across diverse industries, The company's research has led to the development of efficient tools to help people with various challenges.
+
+**Role Overview:** 
+
+We are seeking a proactive and dynamic Senior AI/ML Developer who will lead the design, development, and deployment of advanced AI/ML solutions across diverse domains such as MSME digitization, education, healthcare, Object detections, and renewable energy monitoring. You will work closely with cross\-functional teams to drive innovation, ensure scalable deployments, contribute to proposals, and mentor junior engineers.
+
+**Roles \& Responsibilities:**
+
+* Design, train, and optimize machine learning and deep learning models for diverse use cases.
+* Deploy models into production environments with scalability and monitoring.
+* Ensure reliability, integrity, and scalability of datasets for ML applications.
+* Implement end\-to\-end ML pipelines including data preprocessing, feature engineering, and model tuning.
+* Collaborate with junior engineers to prepare, clean, and transform structured/unstructured datasets.
+* Explore and experiment with the latest AI/ML techniques (NLP, Computer Vision, Generative AI, Reinforcement Learning, etc).
+* Drive POCs and innovative AI initiatives to solve business problems.
+* Stay updated with industry trends and integrate new tools, frameworks, and methodologies.
+* Work with software engineers, data scientists, and product managers to deliver AI\-powered solutions.
+* Provide technical guidance, mentoring, and best practices to junior team members.
+* Translate business requirements into robust and scalable AI/ML solutions.
+
+**Required Skills \& Qualifications:**
+
+* Bachelor’s/Master’s degree in Computer Science, Data Science, AI/ML, or related field.
+* 3\+ years of proven experience in AI/ML development and deployment.
+* Proficiency in Python, Java, or Scala with ML libraries (TensorFlow, PyTorch, scikit\-learn, Keras).
+* Experience in NLP, Computer Vision, Generative AI, and LLM fine\-tuning.
+* Knowledge of Docker, Kubernetes, CI/CD, and API development.
+* Strong understanding of SQL/NoSQL databases, big data tools (Spark, Hadoop), and MLOps practices.
+
+**Good to Have:**
+
+* Experience with LangChain, Vector Databases, and RAG pipelines.
+* Hands\-on expertise with cloud AI platforms (AWS SageMaker, Azure ML, GCP Vertex AI).
+* Contributions to open\-source projects or AI/ML research publications.
+
+**Why Join Us?**
+
+* Be part of a team that thrives on innovation and creativity, with opportunities to work on high\-impact state and national\-level projects. At Cognolabs, you will gain exposure to cutting\-edge technologies in Generative AI, NLP, and Computer Vision, contribute to open\-source and research publications, and explore career paths in technology leadership, product management, and R\&D.
+* Opportunity to experiment with cutting\-edge technologies in Generative AI, NLP, and Computer Vision.
+* Opportunity to work on high\-impact, state and national\-level projects.
+* A collaborative, transparent, and performance\-driven work culture.
+* Freedom to explore new ideas and contribute to AI\-driven product development.
+* Career development opportunities across project, tech, and business functions.
+
+Job Type: Full\-time
+
+Pay: ₹600,000\.00 \- ₹800,000\.00 per year
+
+Benefits:
+
+* Provident Fund
+
+Work Location: In person",,https://in.indeed.com/cmp/Cognolabs-Systems-Private-Limited,,,,,,,,,,,,
+in-28f642e2aca42c54,indeed,https://in.indeed.com/viewjob?jk=28f642e2aca42c54,https://careers.moodys.com/sr-machine-learning-engineer/job/12406?utm_source=indeed&jobPipeline=indeed,Sr Machine Learning Engineer,Moody's,"KA, IN",2026-01-29,,,,,,,False,,,,,"At Moody's, we unite the brightest minds to turn today’s risks into tomorrow’s opportunities. We do this by striving to create an inclusive environment where everyone feels welcome to be who they are—with the freedom to exchange ideas, think innovatively, and listen to each other and customers in meaningful ways. Moody’s is transforming how the world sees risk. As a global leader in ratings and integrated risk assessment, we’re advancing AI to move from insight to action—enabling intelligence that not only understands complexity but responds to it. We decode risk to unlock opportunity, helping our clients navigate uncertainty with clarity, speed, and confidence.
+
+
+If you are excited about this opportunity but do not meet every single requirement, please apply! You still may be a great fit for this role or other open roles. We are seeking candidates who model our values: invest in every relationship, lead with curiosity, champion diverse perspectives, turn inputs into actions, and uphold trust through integrity.
+
+#### **Skills and Competencies**
+
+* Strong expertise in core Amazon Web Services (AWS) services, including EC2, VPC, IAM, S3, and CloudFormation, to architect and maintain secure and scalable cloud infrastructure.
+* Proficiency in Linux system administration and scripting using languages such as Python or Bash.
+* Demonstrated experience with Infrastructure\-as\-Code tools, particularly Terraform or AWS CloudFormation and soild understanding of networking principles, cloud security best practices, and high\-availability architectures.
+* Exhibits a strong work ethic, effective teamwork, clear communication, and excellent problem\-solving skills, with a willingness to work flexible hours to collaborate with international teams.
+* Preferred qualifications include AWS certifications (e.g., AWS Certified Solutions Architect – Professional), experience with Microsoft Azure, and familiarity with CI/CD pipelines.
+* Desired experience with containerization and orchestration (e.g., Docker, Kubernetes) and exposure to ML/AI infrastructure requirements.
+
+#### **Education**
+
+* Bachelor’s or master’s degree in computer science, engineering, or a related field.
+* 3–4\+ years of experience in a cloud systems engineering or architecture role.
+
+#### **Responsibilities**
+
+* Lead the design, implementation, and maintenance of our AWS\-based cloud architecture, ensuring the scalability, security, and reliability of our AI platforms.
+* Architect and maintain secure, scalable, and cost\-efficient cloud infrastructure on AWS.
+* Automate infrastructure provisioning and configuration using Infrastructure\-as\-Code tools like Terraform and AWS CDK.
+* Implement and manage monitoring, logging, and alerting for cloud resources using tools such as AWS CloudWatch.
+* Manage system performance, availability, and disaster recovery strategies to ensure platform reliability.
+* Collaborate with data scientists, data engineers, and MLOps engineers to support machine learning (ML) and Generative AI (GenAI) workloads, ensuring optimal resource allocation.
+* Ensure compliance with security best practices, including identity management, encryption, and network security.
+* Troubleshoot and resolve complex system\-level issues across cloud environments.
+
+#### **About the team**
+
+
+Our AI Analytics team is responsible for developing advanced machine learning and generative AI solutions for high\-profile data science initiatives. Our department contributes to Moody's by delivering robust cloud solutions that power our AI initiatives, ensuring the scalability and reliability of our data platforms, and enabling collaboration between data scientists and engineers to drive innovation. By joining our team, you will be part of exciting work in building and managing the cloud infrastructure that supports cutting\-edge AI and machine learning project
+
+
+Moody’s is an equal opportunity employer. All qualified applicants will receive consideration for employment without regard to race, color, religion, sex, national origin, disability, protected veteran status, sexual orientation, gender expression, gender identity or any other characteristic protected by law.  
+
+  
+
+Candidates for Moody's Corporation may be asked to disclose securities holdings pursuant to Moody’s Policy for Securities Trading and the requirements of the position. Employment is contingent upon compliance with the Policy, including remediation of positions in those holdings as necessary.  
+
+  
+
+For more information on the Securities Trading Program, please refer to the STP Quick Reference guide on ComplianceNet  
+
+  
+
+Please note: STP categories are assigned by the hiring teams and are subject to change over the course of an employee’s tenure with Moody’s.",,https://in.indeed.com/cmp/Moody's-9dbf4b88,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/5ce97398be6ddbafb5e7928474a6d395,https://www.moodys.com/,"New York, NY",Decline to state,Decline to state,"In a world shaped by increasingly interconnected risks, Moody’s helps customers develop a holistic view of these risks to advance their business and act decisively.",,,,,,
+in-e80464facac6044f,indeed,https://in.indeed.com/viewjob?jk=e80464facac6044f,http://in.indeed.com/job/senior-computer-vision-engineer-e80464facac6044f,Senior Computer Vision Engineer,Bidaal Pvt Ltd,"UP, IN",2026-01-29,fulltime,,,,,,True,,,,,"About Bidaal:
+
+Bidaal is an AI–IoT startup founded by IIT Kharagpur graduates, focused on building cutting edge AI\-driven solutions for heavy industries such as Mining, Oil \& Gas, Steel Plants, Manufacturing Units, Airports, and large industrial infrastructure. Our platform enables workplace safety, productivity enhancement, and regulatory compliance through proprietary, in\-house technologies powered by Computer Vision, AI, and IoT. We are addressing real\-world industrial challenges at scale, combining deep tech innovation with enterprise\-grade deployment. If you are passionate about building production\-ready AI systems and want to see your work deployed in high\-impact environments, Bidaal is the place for you.
+
+About the Role:
+
+We are looking for a Senior Computer Vision Engineer with 5–6 years of hands\-on experience in building, deploying, and scaling advanced computer vision systems. This role is ideal for someone who thrives on ownership, enjoys solving complex real\-world vision problems, and is comfortable taking solutions from research to production. You will work closely with product, hardware, and engineering teams while also mentoring junior engineers and driving technical excellence across projects.
+
+Roles \& Responsibilities:
+
+* Design, develop, and optimize state\-of\-the\-art computer vision and deep learning models for use cases including:
+
+\- Object detection, classification, and segmentation
+
+\- Multi\-object tracking and pose estimation
+
+\- OCR and document understanding
+
+\- 3D vision (stereo vision, depth estimation, structure\-from\-motion)
+
+* Architect and build scalable, production\-ready CV pipelines and workflows for real world industrial deployment.
+* Lead experimentation, benchmarking, performance evaluation, and model optimization initiatives.
+* Collaborate closely with product, hardware, and platform teams to translate business and field requirements into robust technical solutions.
+* Implement and optimize models using ONNX, TensorRT, quantization, pruning, and edge\-optimized deployment strategies.
+* Deploy and integrate CV systems across edge devices (NVIDIA Jetson, embedded systems) and cloud\-based GPU environments.
+* Design and maintain DeepStream and GStreamer pipelines for real\-time video analytics.
+* Stay up to date with the latest research, evaluate emerging architectures, and drive the adoption of innovative techniques where applicable.
+* Contribute to project planning, technical documentation, architectural decisions, and long\-term roadmap discussions.
+* Provide technical mentorship and guidance to junior engineers, ensuring best practices and code quality.
+
+Who Are You:
+
+* Experience: 5–6 years of strong, hands\-on experience in Computer Vision, Deep Learning, or Applied Machine Learning, with a proven record of production deployments.
+* Core Technical Skills:
+
+\- Strong proficiency in Python, OpenCV, NumPy
+
+\- Expertise in PyTorch and/or TensorFlow
+
+\- Solid understanding of classical computer vision algorithms, imaging fundamentals, and feature extraction
+
+* Model \& Architecture Experience:
+
+\- Detection: YOLO, Faster R\-CNN, SSD, DETR
+
+\- Segmentation: U\-Net, Mask R\-CNN
+
+\- Tracking: SORT, DeepSORT, ByteTrack, and custom multi\-object tracking pipelines
+
+\- OCR: CRNN, transformer\-based OCR, document AI workflows
+
+* Deployment \& Optimization:
+
+\- Hands\-on experience with TensorRT, ONNX Runtime, quantization, and pruning
+
+\- Experience deploying models on NVIDIA Jetson, ARM\-based devices, or enterprise production environments
+
+* Software Engineering Excellence:
+
+\- Clean, modular, and scalable coding practices
+
+\- Strong debugging, profiling, and optimization skills
+
+\- Experience with Git and CI/CD workflows
+
+* Ownership Mindset:
+
+\- Ability to independently own projects, make architectural decisions, and manage timelines effectively
+
+\- Comfortable working in fast\-paced, high\-impact environments
+
+Good to Have:
+
+* Experience with AWS, GCP, or hybrid cloud–edge deployments
+* GPU/CPU performance optimization for real\-time inference with limited resources
+* Understanding of networking fundamentals for distributed inference systems
+* Experience with multi\-camera systems, calibration, and depth estimation
+* Familiarity with MLOps tools such as MLflow, Docker, Kubernetes
+
+What We Offer:
+
+* Salary: As per industry standards (based on experience \& role fit)
+* Working Days: 6 days a week / Onsite in Noida (alternate Saturday WFH)
+* Culture: Opportunity to work on large\-scale, real\-world industrial computer vision deployments. Collaborative culture with highly skilled engineers and cross\-functional teams. High ownership, autonomy, and freedom to experiment and innovate
+* Learning Potential: Exposure to advanced AI infrastructure, edge computing, and enterprise\-grade systems
+
+Job Type: Full\-time
+
+Pay: From ₹200,000\.00 per month
+
+Benefits:
+
+* Health insurance
+* Paid sick time
+* Provident Fund
+* Work from home
+
+Work Location: In person",,https://in.indeed.com/cmp/Bidaal-Pvt-Ltd,,,,,,,,,,,,
+in-8d14a6906685dcb4,indeed,https://in.indeed.com/viewjob?jk=8d14a6906685dcb4,https://careers.irissoftware.com/job/Noida-Data-Engineer-Lead-UP/51940644/,Data Engineer - Lead,Iris Software,"UP, IN",2026-01-29,,,,,,,False,,,,,"**Posted On:** 29 Jan 2026
+
+
+**Location:** Noida, UP, India
+
+
+**Company:** Iris Software
+
+
+**Why Join Iris?**  
+
+Are you ready to do the best work of your career at one of **India’s Top 25 Best Workplaces in IT industry**? Do you want to grow in an award\-winning culture that **truly values your talent and ambitions**?  
+
+Join Iris Software — one of the **fastest\-growing IT services companies** — where **you own and shape your success story**.
+
+**About Us**  
+
+At Iris Software, our vision is to be our client’s most trusted technology partner, and the first choice for the industry’s top professionals to realize their full potential.
+With over 4,300 associates across India, U.S.A, and Canada, we help our enterprise clients thrive with technology\-enabled transformation across financial services, healthcare, transportation \& logistics, and professional services.
+Our work covers complex, mission\-critical applications with the latest technologies, such as high\-value complex Application \& Product Engineering, Data \& Analytics, Cloud, DevOps, Data \& MLOps, Quality Engineering, and Business Automation.  
+
+
+**Working with Us**  
+
+At Iris, every role is more than a job — it’s a launchpad for growth.
+Our Employee Value Proposition, **“Build Your Future. Own Your Journey.”** reflects our belief that people thrive when they have ownership of their career and the right opportunities to shape it.
+We foster a culture where your potential is valued, your voice matters, and your work creates real impact. With cutting\-edge projects, personalized career development, continuous learning and mentorship, we support you to grow and become your best — both personally and professionally.
+Curious what it’s like to work at Iris? Head to this video for an inside look at the people, the passion, and the possibilities. Watch it here.**Job Description**
+-------------------
+
+
+
+The Lead Data Engineer is a strategic and technical leadership role responsible for architecting, scaling, and evolving enterprise\-grade data platforms that enable advanced analytics, AI/ML, and data\-driven decision\-making. Reporting to the Senior Director of Data Platforms, this role will lead the design and governance of modern data architectures, drive innovation in AI orchestration, and ensure the delivery of secure, compliant, and high\-performing data solutions.  
+
+This position combines hands\-on engineering expertise with architectural vision and cross\-functional leadership. The Lead Data Architect will guide engineering teams, influence platform strategy, and establish best practices across the organization’s data ecosystem.  
+
+  
+
+**Basic Qualifications:**  
+
+* Bachelor’s or Master’s degree in Computer Science, Engineering, Data Science, or related field.
+* 8\+ years of experience in data engineering and architecture, with a proven track record of leading large\-scale data initiatives.
+* Deep expertise in Python, PySpark.
+* Strong hands\-on experience with Databricks (Spark, Delta Lake, Workflows)
+* Strong experience with AWS (S3, IAM, Textract, Bedrock or equivalent)
+* Demonstrated success in architecting and deploying AI/ML pipelines in production.
+* Experience with design and implement scalable document ingestion pipelines using Databricks Auto Loader and AWS S3\.
+* Understanding of vector embeddings and semantic search
+* Strong understanding of data governance, privacy, and compliance in regulated industries (healthcare, life sciences).
+
+**Preferred Qualifications:**  
+
+* Advanced knowledge of data modeling, lakehouse/lake/warehouse design, and performance optimization.
+* Familiarity with generative AI platforms and use cases.
+* Contributions to open\-source projects or thought leadership in data engineering/architecture.
+* Experience with Agile methodologies, CI/CD, and DevOps practices.
+* Exposure to FastAPI, or API\-based ML services
+* Experience evaluating LLM output quality
+
+**Key Responsibilities:**  
+
+* Architect Scalable Data Platforms: Design and oversee implementation of robust data lakehouse, data mesh, and real\-time streaming architectures to support enterprise analytics and AI/ML initiatives.
+* Lead Engineering Teams: Provide technical leadership and mentorship to data engineers, fostering a culture of excellence, innovation, and continuous improvement.
+* AI/ML Enablement: Collaborate with Data Science and ML Engineering teams to operationalize models, implement AI orchestration frameworks (e.g., MLflow, Airflow), and ensure scalable deployment pipelines.
+* Platform Strategy \& Governance: Define and enforce architectural standards, data governance policies, and compliance frameworks (HIPAA, SOC 2, GDPR, etc.) across the data platform.
+* Performance \& Reliability Optimization: Drive observability, automation, and performance tuning across data pipelines and infrastructure to ensure reliability at scale.
+* Cross\-Functional Collaboration: Partner with product, analytics, compliance, and infrastructure teams to align data architecture with business goals and regulatory requirements.
+* Innovation \& Thought Leadership: Stay ahead of industry trends, evaluate emerging technologies, and contribute to strategic decisions on platform evolution, including generative AI integration and event\-driven systems.
+**Mandatory Competencies**
+--------------------------
+
+
+Cloud \- AWS \- AWS S3, S3 glacier, AWS EBS
+Development Tools and Management \- Development Tools and Management \- CI/CD
+Beh \- Communication
+Big Data \- Big Data \- Pyspark
+Data Science and Machine Learning \- Data Science and Machine Learning \- Python
+Data Science and Machine Learning \- Data Science and Machine Learning \- AI/ML**Perks and Benefits for Irisians**  
+
+Iris provides world\-class benefits for a personalized employee experience. These benefits are designed to support financial, health and well\-being needs of Irisians for a holistic professional and personal growth. Click here to view the benefits.",,https://in.indeed.com/cmp/Iris-Software,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/7d764e02a8ee5c7c716dee3eb7bc2477,https://www.irissoftware.com/,,"1,001 to 5,000",,"Helping our clients achieve their business goals by fully leveraging technology, while providing an unparalleled, personalized client and employee experience.",,,,,,
+in-c9a484163fb89a35,indeed,https://in.indeed.com/viewjob?jk=c9a484163fb89a35,https://jobs.smartrecruiters.com/Visa/744000106231420-data-engineer-sr-consultant-level,Data Engineer - Sr Consultant level,Visa,"KA, IN",2026-01-29,fulltime,,,,,,True,,,,,"**Company Description**  
+
+Visa is a world leader in payments technology, facilitating transactions between consumers, merchants, financial institutions and government entities across more than 200 countries and territories, dedicated to uplifting everyone, everywhere by being the best way to pay and be paid.
+
+
+At Visa, you'll have the opportunity to create impact at scale — tackling meaningful challenges, growing your skills and seeing your contributions impact lives around the world. Join Visa and do work that matters — to you, to your community, and to the world.
+
+
+Progress starts with you.
+
+ **Job Description**  
+
+CMS division’s charter is to capture new sources of money movement through card and non\-card flows, including Visa Business Solutions, Government Solutions and Visa Direct which presents an enormous growth opportunity. Our team brings payment solutions and associated services to clients around the globe. Our global clients and partners deploy our solutions to serve the needs of Small Businesses, Middle Market Clients, Large Corporate Clients, Multi Nationals and Governments.
+
+
+The Visa Business Solutions (VBS) and Visa Government Solutions (VGS) team is a world\-class technology organization experiencing tremendous, double\-digit growth as we expand products into new payment flows and continue to grow our core card solutions. This is an incredibly exciting team to join as we expand globally.
+
+
+Essential Functions:
+
+* Strong technology and leadership background delivering enterprise\-scale data and AI solutions using Scala/Java, Python, Spring Boot, REST/gRPC APIs, SQL/NoSQL databases, and modern UI frameworks such as Angular/React. Expertise with distributed systems, cloud\-native architectures, and microservices is essential.
+* Deep experience in modern Data Engineering including Spark (Structured Streaming), Databricks, Kafka, Airflow, DBT, Delta Lake/Apache Iceberg, and large\-scale ETL/ELT pipelines across cloud platforms (AWS/GCP/Azure).
+* Ability to design, implement, and operationalize data platforms \& pipeline frameworks using open\-source and cloud\-native technologies such as Hadoop ecosystem, Spark, Hive, HBase, Flink, Kafka, Kinesis, BigQuery/Snowflake/Redshift.
+* GenAI and LLM engineering exposure, including prompt engineering, LLM fine‑tuning, RAG (Retrieval‑Augmented Generation), vector databases (Pinecone, FAISS, Weaviate, Milvus), and integration of foundation models (OpenAI, Anthropic, Gemini, Llama).
+* Experience building LLMOps pipelines: model versioning, deployment, monitoring, evaluation, and reinforcement learning from human feedback (RLHF) workflows.
+* Champion Design, Architecture, and Coding best practices, performing code reviews, improving engineering quality, and technically leading and mentoring a small team.
+* Hands\-on experience with CI/CD and DevOps/MLOps tools such as Jenkins, GitHub Actions, GitLab CI, Argo CD, Terraform, Docker, Kubernetes, Helm, Artifactory, Selenium, and configuration tools like Chef/Ansible.
+* Familiarity with machine learning, data science, and statistical modeling (regression, clustering, decision trees, time\-series modeling) and experience partnering with ML teams to productionize models.
+* Responsible for designing and building scalable, secure, cloud\-based distributed systems and data platforms ensuring resiliency, governance, lineage, and data quality using tools like Great Expectations, Monte Carlo, Collibra, and Apache Atlas.
+* Experience managing global/remote teams across different time zones and driving effective collaboration.
+* Partner closely with product managers to shape long\-term vision, capability strategy, and roadmap aligned to business objectives.
+* Work collaboratively with senior engineers to establish architecture blueprints, evaluate new technologies, and define reusable components for new product development.
+* Enforce strong software engineering standards (documentation, testing, coding conventions) and ensure high\-quality deliverables on demanding timelines.
+* Lead project planning, prioritization, stakeholder management, delivery tracking, and cross\-functional communication.
+* Ensure operational excellence through monitoring, observability (Prometheus, Grafana, New Relic), reliability engineering, and production support best practices.
+* Identify opportunities for innovation, process optimization, automation, and standardization across the data and AI ecosystem.
+* Mentor junior team members, guide architectural decisions, establish departmental best practices and engineering playbooks.
+* Participate in hiring, developing, and retaining world\-class data, ML, and GenAI engineering talent.
+* Demonstrate strong stakeholder and negotiation skills, acting as a trusted ambassador between engineering, business units, and executive leadership to balance strategic trade\-offs.
+
+
+This is a hybrid position. Expectation of days in office will be confirmed by your hiring manager.
+
+ **Qualifications**  
+
+Bachelor degree in a technical field such as computer science, computer engineering or related field required. Advanced degree preferred  
+
+Requires 10\+ years of experience, at least 3 of which were in leading engineering teams  
+
+6\+ years of hands\-on experience in Hadoop using Core Java Programming, Spark, Scala, Hive, MongoDB, Streaming, Kafka and any ETL tool exposure  
+
+Strong knowledge of Database concepts and UNIX  
+
+Experience in handling very large data volume in low latency and/or batch mode  
+
+Proven experience delivering large scale, highly available production software  
+
+Ability to handle multiple competing priorities in a fast\-paced environment  
+
+A deep understanding of end\-to\-end software development in a team, and a track record of shipping software on time  
+
+Payment processing background desirable but not required  
+
+Experience working in an Agile and Test\-Driven Development environment  
+
+Strong business and technical vision  
+
+Outstanding verbal, written, presentation, facilitation, and interaction skills, including ability to effectively communicate architectural issues and concepts to multiple organization levels and executive management  
+
+Quick learner, self\-starter, detailed and work with minimal supervision
+
+ **Additional Information**  
+
+Visa is an EEO Employer. Qualified applicants will receive consideration for employment without regard to race, color, religion, sex, national origin, sexual orientation, gender identity, disability or protected veteran status. Visa will also consider for employment qualified applicants with criminal histories in a manner consistent with EEOC guidelines and applicable local law.",,https://in.indeed.com/cmp/Visa,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/860a54ecfd7d7cab270f291d2d877922,http://www.visa.com,,"10,000+",more than $10B (USD),"Our Purpose is to... Uplift everyone, everywhere by being the best way to pay and be paid.",,,,,,
+in-ffd58ef1ebeda593,indeed,https://in.indeed.com/viewjob?jk=ffd58ef1ebeda593,https://www.infogain.com/careers/jobID=TH40126_100001,Data Science Architect (Senior),Infogain,"KA, IN",2026-01-29,,,,,,,False,,,,,"ROLES \& RESPONSIBILITIES
+
+
+**Job Description:**
+
+**Generative AI Architect (AWS)**
+
+**Job Description**
+
+**Job Summary**
+
+
+We are seeking an experienced Generative AI Architect with deep expertise in designing, building, and scaling Generative AI and Large Language Model (LLM)–based solutions on cloud platforms. The role requires strong architectural leadership and hands\-on implementation skills, particularly using Python\-based AI/ML frameworks, to deliver secure, scalable, and production\-grade GenAI systems.
+
+
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+
+**Eligibility**
+
+**Minimum Qualifications**
+
+* Bachelor’s degree in Computer Science, Engineering, or a related field
+
+
+OR Master’s degree in Statistics, Data Science, Economics, Operations Research, or a related discipline.
+
+* 12–15\+ years of experience in Analytics, Data Science, AI/ML, or advanced engineering roles.
+* Extensive hands\-on experience with Generative AI and LLM\-based solutions.
+* Strong proficiency in Python, with experience building AI/ML and GenAI applications.
+* Proven experience designing and deploying solutions on AWS.
+* Solid understanding of data engineering, model lifecycle management, and production deployment.
+
+
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+
+**Core Technical Skills (Required)**
+
+**Generative AI \& LLM Architecture**
+
+* **Expertise in:**
+
+
+o Prompt design and prompt engineering using Python\-based frameworks
+
+
+o Retrieval\-Augmented Generation (RAG), Corrective RAG, and hybrid retrieval approaches
+
+
+o Knowledge Graph–based RAG implementations
+
+
+o Multi\-agent and agentic frameworks implemented in Python
+
+
+o Model evaluation, hallucination mitigation, and response quality measurement
+
+* Experience with:
+
+
+o Fine\-tuning techniques such as LoRA / QLoRA using Python ML stacks
+
+
+o Reranking, embedding strategies, and semantic search optimization
+
+
+o Automated and human\-in\-the\-loop evaluation frameworks
+
+**Python \& AI/ML Development**
+
+* Advanced proficiency in Python for:
+
+
+o Developing GenAI services, APIs, and orchestration layers
+
+
+o Integrating LLMs with vector databases, search engines, and data sources
+
+
+o Building reusable libraries and modular AI components
+
+* Experience with Python libraries and frameworks such as:
+
+
+o LangChain, LangGraph, LlamaIndex or similar
+
+
+o FastAPI or Flask for AI service deployment
+
+
+Multimodal AI
+
+* Experience or strong architectural exposure to:
+
+
+o Text, image, audio, and video AI workflows
+
+
+o Multimodal generation pipelines orchestrated via Python services
+
+
+o Content structuring, summarization, and transformation using GenAI
+
+**AWS \& Cloud Architecture**
+
+* Strong hands\-on experience with AWS services, including:
+
+
+o Amazon Bedrock, SageMaker
+
+
+o Lambda, ECS/EKS
+
+
+o S3, OpenSearch, DynamoDB, RDS
+
+
+o IAM, VPC, KMS, CloudWatch
+
+* Experience designing:
+
+
+o Secure, scalable, and cost\-optimized GenAI architectures
+
+
+o VPC\-isolated AI workloads and governed access models
+
+
+o CI/CD pipelines and Python\-based MLOps workflows
+
+
+Data \& Platform Engineering
+
+* Solid understanding of:
+
+
+o ETL pipelines implemented in Python
+
+
+o Structured and unstructured data processing
+
+
+o SQL and database technologies
+
+* Exposure to Big Data and distributed processing frameworks is desirable.
+
+
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+
+**Key Responsibilities**
+
+**Architecture \& Solution Design**
+
+* Design end\-to\-end architectures for Python\-driven Generative AI and LLM solutions.
+* Define reusable Python frameworks for prompt management, RAG pipelines, agent orchestration, and evaluation.
+* Ensure architectural alignment with scalability, security, and governance standards.
+
+
+Technical Leadership \& Delivery
+
+* Lead solution development using Python\-centric AI stacks, from design through production deployment.
+* Guide engineering teams on best practices for Python\-based GenAI development.
+* Ensure delivery of high\-quality, production\-ready AI solutions.
+
+
+Governance, Quality \& Risk Management
+
+* Implement governance, safety controls, and evaluation frameworks using Python\-based tooling.
+* Monitor performance, quality, and reliability of deployed GenAI systems.
+
+**Mentoring \& Best Practices**
+
+* Mentor engineers and data scientists on Python, GenAI architecture, and LLM integration patterns.
+* Conduct code and design reviews to ensure maintainability and quality.
+
+
+Innovation \& Continuous Learning
+
+* Stay current with advancements in Generative AI and Python\-based AI ecosystems.
+* Evaluate and adopt new frameworks, tools, and methodologies where relevant.
+
+
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+
+**Desirable Skills**
+
+* Experience with open\-source LLMs and SLMs using Python.
+* Familiarity with vector databases and embedding stores.
+* Exposure to observability and evaluation tooling for GenAI systems.
+* Understanding of content structuring or learning\-related AI workflows is a plus.
+
+EXPERIENCE
+
+
+20\-25 Years
+SKILLS
+
+
+Primary Skill: Data Science
+Sub Skill(s): Data Science
+Additional Skill(s): Python, Data Modeling, Data Science
+ABOUT THE COMPANY
+
+
+Infogain is a human\-centered digital platform and software engineering company based out of Silicon Valley. We engineer business outcomes for Fortune 500 companies and digital natives in the technology, healthcare, insurance, travel, telecom, and retail \& CPG industries using technologies such as cloud, microservices, automation, IoT, and artificial intelligence. We accelerate experience\-led transformation in the delivery of digital platforms. Infogain is also a Microsoft (NASDAQ: MSFT) Gold Partner and Azure Expert Managed Services Provider (MSP).
+
+
+
+Infogain, an Apax Funds portfolio company, has offices in California, Washington, Texas, the UK, the UAE, and Singapore, with delivery centers in Seattle, Houston, Austin, Kraków, Noida, Gurgaon, Mumbai, Pune, and Bengaluru.",,https://in.indeed.com/cmp/Infogain,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/cef7cfd331db9897faf4beac1e89b78a,http://www.infogain.com,"Los Gatos, CA","5,001 to 10,000",$100M to $500M (USD),Infogain is a human-centered digital platform and software engineering company based out of Silicon Valley. We engineer business outcomes for Fortune 500 companies.,,,,,,
+in-a4bb4275087bba70,indeed,https://in.indeed.com/viewjob?jk=a4bb4275087bba70,https://www.infogain.com/careers/jobID=TH210126_100273,AI / ML Developer (Senior),Infogain,"MH, IN",2026-01-29,,,,,,,False,,,,,"ROLES \& RESPONSIBILITIES
+
+
+About the Role
+
+
+We are seeking a highly skilled and adaptable AI/ML Engineer who can work on diverse and evolving machine learning and artificial intelligence use cases. The ideal candidate will have strong technical expertise, problem\-solving skills, and the ability to understand complex business scenarios and translate them into actionable ML solutions.
+
+
+Key Responsibilities
+
+
+Collaborate with business stakeholders to understand use cases and define problem statements.
+
+
+Design and implement end\-to\-end AI/ML solutions, including:
+
+
+Data collection, cleaning, and preprocessing.
+
+
+Feature engineering and model selection.
+
+
+Model training, evaluation, and deployment.
+
+
+Work on challenging prediction problems, such as:
+
+
+Example: Predicting sales for products with irregular demand patterns (e.g., high sales for a few days followed by long periods of no sales).
+
+
+Develop scalable and maintainable ML pipelines.
+
+
+Continuously research and apply the latest AI/ML techniques to new business problems.
+
+
+Communicate insights and results effectively to technical and non\-technical stakeholders.
+
+
+Required Skills \& Qualifications
+
+
+Strong proficiency in Python and ML libraries (e.g., TensorFlow, PyTorch, Scikit\-learn).
+
+
+Solid understanding of statistical modeling, time\-series forecasting, and predictive analytics.
+
+
+Experience with data preprocessing, handling imbalanced datasets, and feature engineering.
+
+
+Knowledge of cloud platforms (AWS, Azure, GCP) and ML deployment tools.
+
+
+Ability to work on non\-standard prediction problems where patterns are irregular or sparse.
+
+
+Excellent problem\-solving and analytical skills.
+
+
+Strong communication and collaboration abilities.
+
+
+Preferred Qualifications
+
+
+Experience with deep learning, NLP, or reinforcement learning.
+
+
+Familiarity with MLOps and CI/CD for ML models.
+
+
+Exposure to business analytics and understanding of revenue\-impacting use cases.
+
+
+EXPERIENCE
+
+
+6\-8 Years
+SKILLS
+
+
+Primary Skill: AI/ML Development
+Sub Skill(s): AI/ML Development
+Additional Skill(s): AI/ML Development, Data Science, TensorFlow, NLP, Pytorch
+ABOUT THE COMPANY
+
+
+Infogain is a human\-centered digital platform and software engineering company based out of Silicon Valley. We engineer business outcomes for Fortune 500 companies and digital natives in the technology, healthcare, insurance, travel, telecom, and retail \& CPG industries using technologies such as cloud, microservices, automation, IoT, and artificial intelligence. We accelerate experience\-led transformation in the delivery of digital platforms. Infogain is also a Microsoft (NASDAQ: MSFT) Gold Partner and Azure Expert Managed Services Provider (MSP).
+
+
+
+Infogain, an Apax Funds portfolio company, has offices in California, Washington, Texas, the UK, the UAE, and Singapore, with delivery centers in Seattle, Houston, Austin, Kraków, Noida, Gurgaon, Mumbai, Pune, and Bengaluru.",,https://in.indeed.com/cmp/Infogain,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/cef7cfd331db9897faf4beac1e89b78a,http://www.infogain.com,"Los Gatos, CA","5,001 to 10,000",$100M to $500M (USD),Infogain is a human-centered digital platform and software engineering company based out of Silicon Valley. We engineer business outcomes for Fortune 500 companies.,,,,,,
+in-819aa911dd6bbc2e,indeed,https://in.indeed.com/viewjob?jk=819aa911dd6bbc2e,http://in.indeed.com/job/sr-data-engineer-819aa911dd6bbc2e,Sr. Data Engineer,VAK Consulting,"TN, IN",2026-01-29,fulltime,,,,,,False,,,,syam@vakconsulting.com,"**Role**: Data Engineer
+
+**Years of Experience**: 5\+
+
+Location: Chennai IN
+
+Email:syam@vakconsulting.com/7337235667
+
+Key Responsibilities•
+
+Architect, design, and maintain scalable, resilient data pipelines and enterprise data models to support analytics, AI, and business intelligence use cases.
+
+* Design, build, and optimize ETL/ELT frameworks using Azure Data Factory (ADF) and cloud\-native data integration patterns.
+* Develop and manage cloud data platforms using Snowflake for high\-performance, cost\-efficient analytics workloads.
+* Design and implement advanced AI and machine learning systems, including deep learning, NLP, large language models (LLMs), and generative AI solutions.
+* Lead AI research, experimentation, and prototyping to solve complex business problems and identify automation opportunities.
+* Build and operationalize end\-to\-end ML pipelines, from data preparation and feature engineering to deployment and monitoring.
+* Develop executive dashboards and analytical applications that deliver actionable insights and support strategic decision\-making.
+* Implement CI/CD pipelines to automate data and AI workflows, ensuring reliability, reproducibility, and faster releases.
+* Collaborate with engineering, analytics, product, and business teams to ensure seamless system integration and alignment with business objectives.
+* Establish data engineering, analytics, and AI best practices, including governance, quality, security, and observability.
+* Stay current with emerging data, AI, and LLM technologies to drive continuous innovation.
+
+Required Skills•
+
+Strong proficiency in Python for data engineering, analytics, and machine learning development.
+
+* Hands\-on experience with Snowflake for cloud data warehousing and analytics.
+* Experience designing and implementing data pipelines using Azure Data Factory (ADF) or equivalent ETL/ELT tools.
+* Solid experience with AI/ML techniques, including deep learning, NLP, and LLMs / generative AI.
+* Experience building analytical models, experiments, and AI\-driven solutions for real\-world business problems.
+* Strong understanding of enterprise data modeling, data quality, and scalable pipeline design.
+* Experience implementing CI/CD pipelines for data and ML workflows using modern DevOps practices.
+* Experience building dashboards and analytical applications using modern BI or visualization tools(Tableau/Power BI).
+* Familiarity with cloud platforms (Azure preferred; AWS/GCP acceptable).
+* Strong communication skills to translate complex technical concepts into business insights.
+
+Preferred / Nice\-to\-Have Skills
+
+* Experience with MLOps practices, model deployment, monitoring, and observability. Experience with telecom network data (5G, LTE, VoLTE, SMS, data usage, roaming).
+* Familiarity with vector databases, embeddings, and retrieval\-augmented generation (RAG) patterns.
+* Experience integrating LLMs with enterprise data and applications.
+* Experience working in Agile teams and large\-scale enterprise environments.
+
+Job Types: Full\-time, Permanent
+
+Pay: ₹477,085\.74 \- ₹1,834,190\.04 per year
+
+Work Location: In person",,https://in.indeed.com/cmp/Vak-Consulting,,,,,,,,,,,,
+in-1f41504e60398224,indeed,https://in.indeed.com/viewjob?jk=1f41504e60398224,https://www.guidewire.com/about/careers/jobs/senior-machine-learning-platform-engineer-jr_14239/,Senior Machine Learning Platform Engineer,"Guidewire Software, Inc.","KA, IN",2026-01-28,fulltime,,,,,,False,,,,,"**India \- Bangalore**
+
+Product Development and Operations/Full time/Onsite
+
+  
+
+Summary:  
+
+  
+
+Join Guidewire as a Senior Machine Learning Platform Engineer and play a pivotal role in architecting and scaling our next\-generation ML platform. You will drive the design and implementation of secure, cloud\-native infrastructure supporting the full ML lifecycle, from data ingestion to model monitoring. Collaborate with cross\-functional teams to deliver innovative, reliable, and efficient solutions that empower our customers and accelerate Guidewire’s AI and data platform adoption.  
+
+  
+
+At Guidewire, you’ll help deliver measurable value and efficiency for customers by advancing operational excellence and transformative innovation. Our Product Development \& Operations (PDO) priorities focus on secure, scalable platform operations, accelerating AI and cloud adoption, and ensuring every customer is successful and referenceable. You’ll contribute to a culture of curiosity, collaboration, and responsible AI, supporting Guidewire’s mission to transform the global P\&C insurance industry through technology and data\-driven insights.
+Job Description
+What you’ll do
+Architect and evolve a scalable, secure ML platform that supports the end‑to‑end ML lifecycle, including data preparation, training, evaluation, deployment, and monitoring.
+Design and implement core ML infrastructure for model training, hyperparameter tuning, experiment tracking, and model registry, using cloud‑native and open‑source technologies.
+Orchestrate ML workflows using tools such as Kubeflow, SageMaker, MLflow, Vertex AI, or Databricks, ensuring reproducibility and robust automation.
+Partner with Data Engineers to build reliable, high‑quality data pipelines and feature pipelines that provide model‑ready datasets at scale.
+Implement and improve CI/CD for ML, including automated testing, validation, and safe rollout/rollback of models and data pipelines.
+Optimize ML workload performance and cost across compute, storage, and networking layers on public cloud (AWS, GCP, or Azure).
+Embed observability and governance into the platform, including logging, tracing, model performance monitoring, and drift detection.
+Collaborate with security, compliance, and data governance teams to ensure the platform adheres to Guidewire’s standards for security, privacy, and auditability.
+Provide technical leadership and mentorship to other engineers, influencing architectural decisions, coding standards, and best practices for ML platform and MLOps.
+Continuously explore and apply AI/automation (including GenAI) to improve developer and data scientist productivity, platform reliability, and operational efficiency.
+
+What you’ll bring:
+Demonstrated ability to embrace AI and use data‑driven insights to drive innovation, productivity, and continuous improvement in your current role.
+Bachelor’s or Master’s degree in Computer Science, Engineering, or a related field.
+10\+ years of software engineering experience, including 5\+ years working on ML platforms or infrastructure.
+Expertise in building large‑scale distributed systems and microservices, with solid understanding of system design and architecture.
+Strong programming skills in Python, Go, or Java, with emphasis on writing clean, testable, maintainable code.
+Hands‑on experience with containerization and orchestration, for example Docker and Kubernetes.
+Familiarity with MLOps tools such as MLflow, Kubeflow, SageMaker and how they fit into an end‑to‑end ML platform.
+Cloud platform experience on AWS, GCP, or Azure, including core services for compute, storage, networking, and identity.
+Experience with statistical learning algorithms (e.g., GLM, XGBoost, Random Forest) and deep learning approaches (e.g., neural networks, transformers), with a practical understanding of how they are trained and deployed.
+Strong communication, leadership, and problem‑solving skills, with the ability to influence across functions and work effectively in a global, distributed environment.
+
+Preferred :
+Experience with real‑time model inference and streaming ML pipelines, including low‑latency serving and online feature computation.
+Deep knowledge of model governance, reproducibility, and monitoring, including experiment lineage, versioning, and approval workflows.
+Understanding of model performance metrics and drift detection, and experience implementing monitoring for data drift, concept drift, and model quality.
+Exposure to feature stores (e.g., Feast, Tecton) and workflow orchestration tools (e.g., Airflow, Argo) in production environments.
+Familiarity with regulatory and compliance considerations for ML systems, including model auditability, interpretability, and data privacy laws such as CCPA/GDPR.
+Experience with real‑time data pipelines and streaming technologies such as Kafka, Flink, or Spark Structured Streaming.
+Experience using TeamCity and Terraform (or similar tools) for infrastructure‑as‑code and CI/CD of platform components.
+Domain experience in insurance or related industries (such as banking or finance), or a demonstrated ability to ramp quickly in highly regulated domains.
+Interested in this position?
+  
+About Guidewire
+Guidewire is the platform P\&C insurers trust to engage, innovate, and grow efficiently. We combine digital, core, analytics, and AI to deliver our platform as a cloud service. More than 540\+ insurers in 40 countries, from new ventures to the largest and most complex in the world, run on Guidewire.
+As a partner to our customers, we continually evolve to enable their success. We are proud of our unparalleled implementation track record with 1600\+ successful projects, supported by the largest R\&D team and partner ecosystem in the industry. Our Marketplace provides hundreds of applications that accelerate integration, localization, and innovation.
+For more information, please visit www.guidewire.com and follow us on Twitter: @Guidewire\_PandC.
+Guidewire Software, Inc. is proud to be an equal opportunity and affirmative action employer. We are committed to an inclusive workplace, and believe that a diversity of perspectives, abilities, and cultures is a key to our success. Qualified applicants will receive consideration without regard to race, color, ancestry, religion, sex, national origin, citizenship, marital status, age, sexual orientation, gender identity, gender expression, veteran status, or disability. All offers are contingent upon passing a criminal history and other background checks where it's applicable to the position.",,"https://in.indeed.com/cmp/Guidewire-Software,-Inc.",https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/066ccd2bbac946016ab78201544ac953,https://www.guidewire.com/?utm_source=indeed&utm_medium=referral&utm_campaign=indeed,"San Mateo, CA","1,001 to 5,000",$500M to $1B (USD),"We care deeply about quality: the quality of our products and services, but most importantly our people. Come navigate what's next at Guidewire.",,,,,,
+in-7b0bdce13309eae1,indeed,https://in.indeed.com/viewjob?jk=7b0bdce13309eae1,https://ltts.sensehq.com/careers/iframe/jobs/28163,Senior Engineer,L&T Technology Services Ltd.,"KA, IN",2025-12-23,fulltime,,,,,,False,,,,,"LTTS India
+Bangalore
+
+
+**Job Description**
+
+
+Required Skills \& Qualifications:  
+
+* Bachelor's/Master's in Computer Science, AI/ML, Data Science, or related field
+* Hands\-on experience with LLMs (OpenAI, Anthropic, Hugging Face), diffusion models, and transformer architectures
+* Practical experience evaluating LLM outputs for hallucination, grounding, accuracy, and relevance
+* Familiarity with LLM fine\-tuning techniques (LoRA, PEFT, adapters)
+* Proficiency in Python, TensorFlow, PyTorch, and ML frameworks
+* Strong knowledge of NLP, deep learning, and reinforcement learning
+* Familiarity with cloud platforms (AWS, Azure, GCP) and MLOps practices
+* Strong experience with vector databases and Retrieval\-Augmented Generation (RAG)
+* Prior experience in building Gen AI applications for enterprise use cases
+* Experience working with knowledge graphs and Graph RAG approaches (Neo4j, RDF, or similar)
+* Excellent problem\-solving and communication skills
+* Strong expertise in prompt engineering including few\-shot prompting, chain\-of\-thought, ReAct, and tool/function calling optimization
+
+  
+
+Nice to have  
+
+* Experience with model optimization techniques such as quantization or distillation for performance improvement
+* Understanding of AI ethics, bias mitigation, and responsible AI principles
+* Exposure to LLM monitoring and observability (logging, tracing, feedback loops, user evaluation)
+* Hands\-on experience with agentic AI frameworks (planner\-executor, tool\-using agents, multi\-agent systems)
+* Experience optimizing latency, cost, and token usage in LLM\-based systems
+**Job Requirement**
+
+
+AI/ML",Industrial Manufacturing,https://in.indeed.com/cmp/L&T-Technology-Services-Ltd.,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/8cc33ec902465d5f66c28ef156dd83b9,http://www.lnttechservices.com/,"L&T Knowledge City, Special Economic Zone (IT/ITES), West Block – II, NH No. 8, Village Ankhol
+Vadodara, Gujarat 390019
+India","10,000+",$500M to $1B (USD),L&T Technology Services Limited (LTTS) is a publicly listed subsidiary of Larsen & Toubro Limited providing Engineering and ER&D services.,,,,,,

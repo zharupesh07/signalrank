@@ -1,0 +1,72 @@
+id,site,job_url,job_url_direct,title,company,location,date_posted,job_type,salary_source,interval,min_amount,max_amount,currency,is_remote,job_level,job_function,listing_type,emails,description,company_industry,company_url,company_logo,company_url_direct,company_addresses,company_num_employees,company_revenue,company_description,skills,experience_range,company_rating,company_reviews_count,vacancy_count,work_from_home_type
+in-facc95d1fe6f692a,indeed,https://in.indeed.com/viewjob?jk=facc95d1fe6f692a,https://www.novartis.com/careers/career-search/job/details/req-10069903-s-manager-ai-innovation,S. Manager - AI & Innovation,Novartis,"TS, IN",2026-01-23,fulltime,,,,,,False,,,,,"### **Summary**
+
+We are seeking a Senior AI Architect to lead the design and delivery of enterprise grade AI platforms and solutions across business units. You will define reference architectures, steer build vs buy decisions, and guide multi disciplinary teams from discovery through production and ongoing operations. The ideal candidate combines deep hands on engineering with architectural judgment across data, ML/GenAI, applications, security, and governance—translating business strategy into secure, scalable, cost efficient AI systems.
+### **About the Role**
+
+**Key Responsibilities**
+
+* Translate business strategies into AI roadmaps and target architectures that guide enterprise\-wide adoption.
+* Lead architecture governance, establishing reference patterns for RAG, fine‑tuning, classical ML, and hybrid search/graph solutions.
+* Define and enforce NFRs, SLOs, and FinOps guardrails to ensure scalable, reliable, and cost‑efficient AI systems.
+* Design and deliver end‑to‑end AI solutions, from data acquisition and feature engineering to model/prompt development and production deployment.
+* Embed security, privacy, and compliance controls across AI workflows, including PII protection and audit readiness.
+* Establish evaluation frameworks (offline metrics, HITL, A/B testing, safety filters) to ensure quality, safety, and robustness of GenAI and ML solutions.
+* Integrate AI systems with enterprise data platforms, vector databases, graph stores, and ontology‑driven data contracts for interoperability.
+* Implement and mature ML/LLMOps practices, including CI/CD pipelines, registries, observability, drift monitoring, and automated rollback processes.
+* Drive Responsible AI and governance, partnering with legal, risk, and compliance teams to meet regulatory and ethical standards.
+* Lead cross‑functional teams, mentor engineers, promote agile ways of working, and communicate complex topics to technical and non‑technical stakeholders
+
+**Essential Requirements**
+
+* Bachelor’s or Master’s degree in computer science, IT, or other quantitative disciplines.
+* 10\+ years overall experience, including 5\+ years in AI/ML or data‑intensive solution architecture at enterprise scale.
+* Demonstrated success delivering production AI systems that meet enterprise NFRs (security, latency, cost, compliance).
+* Strong engineering background in at least two programming languages (e.g., Python, Java, Scala).
+* Deep expertise in cloud‑native architectures (Kubernetes, microservices, event streaming) and at least one major cloud platform.
+* Practical proficiency with MLOps/LLMOps tools: model/prompt registries, evaluators, feature stores, pipelines.
+* Strong understanding of NLP, semantic search, and text mining techniques.
+* Ability to manage multiple priorities, work under tight deadlines, and operate within a global team environment.
+
+
+Desired Requirements
+
+* Experience in the pharmaceutical industry with understanding of industry‑specific data standards.
+* Domain expertise in at least one area Pharma R\&D,Manufacturing, Procurement \& Supply Chain, Marketing \& Sales
+* Strong background in semantic technologies and knowledge representation (OWL, RDF, SPARQL, SWRL, JSON‑LD, Turtle).
+
+**Why Novartis:** Helping people with disease and their families takes more than innovative science. It takes a community of smart, passionate people like you. Collaborating, supporting and inspiring each other. Combining to achieve breakthroughs that change patients’ lives. Ready to create a brighter future together? https://www.novartis.com/about/strategy/people\-and\-culture
+
+**Benefits and Rewards:** Learn about all the ways we’ll help you thrive personally and professionally.  
+
+Read our handbook (PDF 30 MB)
+
+
+  
+Division
+US
+Business Unit
+General Management
+Location
+India
+Site
+Hyderabad (Office)
+Company / Legal Entity
+IN10 (FCRS \= IN010\) Novartis Healthcare Private Limited
+Functional Area
+Marketing
+Job Type
+Full time
+Employment Type
+Regular
+Shift Work
+No
+VIDEO
+
+Novartis is committed to building an outstanding, inclusive work environment and diverse teams' representative of the patients and communities we serve.
+
+
+### **Accessibility and accommodation**
+
+
+Novartis is committed to working with and providing reasonable accommodation to individuals with disabilities. If, because of a medical condition or disability, you need a reasonable accommodation for any part of the recruitment process, or in order to perform the essential functions of a position, please send an e\-mail to \[email protected] and let us know the nature of your request and your contact information. Please include the job requisition number in your message.",,https://in.indeed.com/cmp/Novartis,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/1c9d9bc97826a2c0c335266459b68e47,https://www.novartis.com/,Basel,"10,000+",Decline to state,,,,,,,

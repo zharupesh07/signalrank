@@ -7,7 +7,33 @@ import type { Job, Run } from "@/types";
 import { useToast } from "@/components/toast";
 import RunProgress from "@/components/run-progress";
 import { JobCardSkeleton, StatCardSkeleton } from "@/components/skeleton";
-import { RefreshCw, ExternalLink, TrendingUp, Layers, Clock } from "lucide-react";
+import { RefreshCw, ExternalLink, TrendingUp, Layers, Clock, BarChart2, Plus } from "lucide-react";
+
+type Analytics = {
+  score_distribution: { range: string; count: number }[];
+  top_companies: { company: string; count: number }[];
+  sites: { site: string; count: number }[];
+  total: number;
+};
+
+function MiniBarChart({ data, maxVal, color = "#22c55e" }: { data: { label: string; count: number }[]; maxVal: number; color?: string }) {
+  return (
+    <div className="space-y-1.5">
+      {data.map(({ label, count }) => (
+        <div key={label} className="flex items-center gap-2">
+          <span className="text-xs text-[#71717a] w-16 shrink-0 truncate">{label}</span>
+          <div className="flex-1 h-1.5 bg-[#1a1a1e] relative overflow-hidden">
+            <div
+              className="h-full transition-all duration-500"
+              style={{ width: `${(count / maxVal) * 100}%`, background: color }}
+            />
+          </div>
+          <span className="text-xs text-[#71717a] tabular-nums w-6 text-right">{count}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function scoreColor(score: number) {
   if (score >= 0.8) return "#22c55e";
@@ -47,13 +73,13 @@ function StatCard({
   return (
     <div className="stat-card card-hover border border-[#2a2a2e] bg-[#111113] p-5 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] text-[#52525b] uppercase tracking-[0.15em]">{label}</span>
-        <Icon size={12} className={accent ? "text-[#22c55e]" : "text-[#3f3f46]"} />
+        <span className="text-[11px] text-[#71717a] uppercase tracking-[0.15em]">{label}</span>
+        <Icon size={12} className={accent ? "text-[#22c55e]" : "text-[#52525b]"} />
       </div>
       <div className={`text-3xl font-bold tabular-nums leading-none ${accent ? "text-[#22c55e] text-glow-dim" : "text-[#d4d4d8]"}`}>
         {value}
       </div>
-      {sub && <div className="text-[11px] text-[#52525b] leading-snug">{sub}</div>}
+      {sub && <div className="text-[11px] text-[#71717a] leading-snug">{sub}</div>}
     </div>
   );
 }
@@ -67,6 +93,8 @@ export default function DashboardPage() {
   const [run, setRun] = useState<Run | null>(null);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [tracked, setTracked] = useState<Set<string>>(new Set());
 
   const loadJobs = useCallback(async () => {
     if (!token) return;
@@ -74,11 +102,18 @@ export default function DashboardPage() {
     setJobs(r.jobs);
   }, [token]);
 
+  const loadAnalytics = useCallback(async () => {
+    if (!token) return;
+    api.jobs.analytics(token).then(setAnalytics).catch(() => null);
+  }, [token]);
+
   useEffect(() => {
     if (!token) return;
     Promise.all([
       api.jobs.list(token, 1, 10).then((r) => setJobs(r.jobs)),
       api.runs.latest(token).then(setRun).catch(() => null),
+      api.jobs.analytics(token).then(setAnalytics).catch(() => null),
+      api.applications.list(token).then((apps) => setTracked(new Set(apps.filter((a) => a.job_id).map((a) => a.job_id!)))).catch(() => null),
     ]).finally(() => setLoading(false));
   }, [token]);
 
@@ -92,6 +127,8 @@ export default function DashboardPage() {
         started_at: new Date().toISOString(),
         finished_at: null,
         job_count: null,
+        scrape_count: null,
+        progress: null,
       });
       toast("Run queued", "info");
     } catch (err) {
@@ -101,9 +138,16 @@ export default function DashboardPage() {
     }
   }
 
+  async function trackJob(job: Job) {
+    await api.applications.create(token, { job_id: job.id, company: job.company, title: job.title, status: "interested", system_score: job.final_score, resume_match_pct: job.semantic_score });
+    setTracked((prev) => new Set(prev).add(job.id));
+    toast("Added to tracker", "success");
+  }
+
   function handleRunComplete(completed: Run) {
     setRun(completed);
     loadJobs();
+    loadAnalytics();
   }
 
   const topScore = jobs.length > 0 ? Math.max(...jobs.map((j) => j.final_score ?? 0)) : null;
@@ -158,6 +202,49 @@ export default function DashboardPage() {
         {/* Run progress */}
         {run && <RunProgress run={run} onComplete={handleRunComplete} />}
 
+        {/* Analytics */}
+        {analytics && analytics.total > 0 && (
+          <div>
+            <div className="section-label mb-3">signal analytics</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="stat-card border border-[#2a2a2e] bg-[#111113] p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-[#71717a] uppercase tracking-[0.15em]">Score Distribution</span>
+                  <BarChart2 size={12} className="text-[#52525b]" />
+                </div>
+                <MiniBarChart
+                  data={analytics.score_distribution.map((d) => ({ label: d.range, count: d.count }))}
+                  maxVal={Math.max(...analytics.score_distribution.map((d) => d.count), 1)}
+                />
+              </div>
+              <div className="stat-card border border-[#2a2a2e] bg-[#111113] p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-[#71717a] uppercase tracking-[0.15em]">Top Companies</span>
+                  <BarChart2 size={12} className="text-[#52525b]" />
+                </div>
+                <MiniBarChart
+                  data={analytics.top_companies.slice(0, 6).map((d) => ({ label: d.company, count: d.count }))}
+                  maxVal={Math.max(...analytics.top_companies.map((d) => d.count), 1)}
+                  color="#a3e635"
+                />
+              </div>
+            </div>
+            {analytics.sites.length > 0 && (
+              <div className="mt-3 border border-[#2a2a2e] bg-[#111113] px-5 py-4 flex items-center gap-6">
+                <span className="text-[11px] text-[#71717a] uppercase tracking-[0.15em] shrink-0">Sources</span>
+                <div className="flex items-center gap-4 flex-wrap">
+                  {analytics.sites.map(({ site, count }) => (
+                    <div key={site} className="flex items-center gap-2">
+                      <span className="text-xs text-[#a1a1aa]">{site}</span>
+                      <span className="text-xs text-[#71717a] tabular-nums">({count})</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Job list */}
         <div>
           <div className="section-label mb-3">top 10 matches</div>
@@ -173,13 +260,13 @@ export default function DashboardPage() {
                 <div>
                   <span className="text-[#22c55e]/30">│ </span>
                   <span className="text-[#22c55e]">&gt;</span>
-                  <span className="text-[#52525b]"> No signals detected.</span>
+                  <span className="text-[#71717a]"> No signals detected.</span>
                   <span className="text-[#22c55e]/30">       │</span>
                 </div>
                 <div>
                   <span className="text-[#22c55e]/30">│ </span>
                   <span className="text-[#22c55e]">&gt;</span>
-                  <span className="text-[#52525b]"> Click Refresh Jobs to scan.</span>
+                  <span className="text-[#71717a]"> Click Refresh Jobs to scan.</span>
                   <span className="text-[#22c55e]/30">  │</span>
                 </div>
                 <div>
@@ -204,22 +291,33 @@ export default function DashboardPage() {
 
                   <div className="flex-1 min-w-0">
                     <div className="text-[13px] font-medium text-[#d4d4d8] truncate">{job.title}</div>
-                    <div className="text-[11px] text-[#52525b] truncate mt-0.5">
+                    <div className="text-[11px] text-[#71717a] truncate mt-0.5">
                       {job.company}{job.location ? ` · ${job.location}` : ""}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
                     {job.company_tier && (
-                      <span className="text-[9px] text-[#3f3f46] border border-[#2a2a2e] px-1.5 py-0.5 leading-none">T{job.company_tier}</span>
+                      <span className="text-[11px] text-[#52525b] border border-[#2a2a2e] px-1.5 py-0.5 leading-none">T{job.company_tier}</span>
                     )}
                     {job.is_contract && (
-                      <span className="text-[9px] text-[#facc15] border border-[#facc15]/20 px-1.5 py-0.5 leading-none">CONTRACT</span>
+                      <span className="text-[11px] text-[#facc15] border border-[#facc15]/20 px-1.5 py-0.5 leading-none">CONTRACT</span>
                     )}
-                    {job.site && <span className="text-[9px] text-[#2a2a2e] hidden md:block">{job.site}</span>}
+                    {job.site && <span className="text-[11px] text-[#2a2a2e] hidden md:block">{job.site}</span>}
                   </div>
 
                   {job.final_score != null && <ScoreDisplay score={job.final_score} />}
+
+                  {tracked.has(job.id) ? (
+                    <span className="text-[11px] text-[#52525b] uppercase tracking-wider shrink-0">tracked</span>
+                  ) : (
+                    <button
+                      onClick={() => trackJob(job)}
+                      className="flex items-center gap-0.5 text-[11px] text-[#22c55e]/60 border border-[#22c55e]/20 px-1.5 py-0.5 hover:border-[#22c55e] hover:text-[#22c55e] transition-colors uppercase tracking-wider shrink-0"
+                    >
+                      <Plus size={8} />track
+                    </button>
+                  )}
 
                   <a href={job.job_url} target="_blank" rel="noreferrer" className="text-[#2a2a2e] hover:text-[#22c55e] transition-colors shrink-0">
                     <ExternalLink size={13} />

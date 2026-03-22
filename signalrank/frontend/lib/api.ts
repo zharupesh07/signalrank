@@ -5,6 +5,8 @@ import type {
   OnboardingStatus,
   Profile,
   Run,
+  RunProgress,
+  TrackerStats,
 } from "@/types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -57,27 +59,36 @@ export const api = {
   },
 
   jobs: {
-    list: (token: string, page = 1, limit = 50) =>
-      request<JobsResponse>(`/api/jobs?page=${page}&limit=${limit}`, { token }),
+    list: (token: string, page = 1, limit = 50, search = "") =>
+      request<JobsResponse>(`/api/jobs?page=${page}&limit=${limit}${search ? `&search=${encodeURIComponent(search)}` : ""}`, { token }),
     get: (token: string, id: string) =>
       request<Job>(`/api/jobs/${id}`, { token }),
+    analytics: (token: string) =>
+      request<{
+        score_distribution: { range: string; count: number }[];
+        top_companies: { company: string; count: number }[];
+        sites: { site: string; count: number }[];
+        total: number;
+      }>("/api/jobs/analytics", { token }),
   },
 
   runs: {
+    list: (token: string) =>
+      request<{ run_id: string; status: string; job_count: number | null; scrape_count: number | null; started_at: string | null; finished_at: string | null; progress: RunProgress | null }[]>("/api/runs", { token }),
     trigger: (token: string) =>
       request<{ run_id: string; status: string }>("/api/runs/trigger", {
         method: "POST",
         token,
       }),
     latest: async (token: string): Promise<Run> => {
-      const r = await request<{ run_id: string; status: string; job_count: number | null; started_at: string | null; finished_at: string | null }>("/api/runs/latest", { token });
+      const r = await request<{ run_id: string; status: string; job_count: number | null; scrape_count: number | null; started_at: string | null; finished_at: string | null; progress: RunProgress | null }>("/api/runs/latest", { token });
       const status = r.status === "success" ? "done" : r.status as Run["status"];
-      return { id: r.run_id, status, job_count: r.job_count, started_at: r.started_at ?? "", finished_at: r.finished_at };
+      return { id: r.run_id, status, job_count: r.job_count, scrape_count: r.scrape_count, started_at: r.started_at ?? "", finished_at: r.finished_at, progress: r.progress };
     },
     status: async (token: string, runId: string): Promise<Run> => {
-      const r = await request<{ run_id: string; status: string; job_count: number | null; started_at: string | null; finished_at: string | null }>(`/api/runs/${runId}/status`, { token });
+      const r = await request<{ run_id: string; status: string; job_count: number | null; scrape_count: number | null; started_at: string | null; finished_at: string | null; progress: RunProgress | null }>(`/api/runs/${runId}/status`, { token });
       const status = r.status === "success" ? "done" : r.status as Run["status"];
-      return { id: r.run_id, status, job_count: r.job_count, started_at: r.started_at ?? "", finished_at: r.finished_at };
+      return { id: r.run_id, status, job_count: r.job_count, scrape_count: r.scrape_count, started_at: r.started_at ?? "", finished_at: r.finished_at, progress: r.progress };
     },
   },
 
@@ -100,6 +111,20 @@ export const api = {
       request<void>(`/api/applications/${id}`, {
         method: "DELETE",
         token,
+      }),
+    patchRecruiter: (token: string, id: string, data: { recruiter_name?: string; recruiter_email?: string; recruiter_linkedin_url?: string }) =>
+      request<{ recruiter_id: string }>(`/api/applications/${id}/recruiter`, {
+        method: "PATCH",
+        token,
+        body: JSON.stringify(data),
+      }),
+    stats: (token: string) =>
+      request<TrackerStats>("/api/applications/stats", { token }),
+    importFromRun: (token: string, data: { run_id: string; min_score?: number; limit?: number }) =>
+      request<{ created: number; skipped: number }>("/api/applications/import-from-run", {
+        method: "POST",
+        token,
+        body: JSON.stringify(data),
       }),
   },
 

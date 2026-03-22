@@ -1,0 +1,36 @@
+{
+  "core_capabilities": [
+    "AI Platform Engineering",
+    "Machine Learning",
+    "Cloud Infrastructure",
+    "DevOps",
+    "Data Engineering",
+    "LLMOps"
+  ],
+  "primary_focus": "Building and scaling secure, governed, and production-ready AI platforms, particularly with GenAI and LLMs.",
+  "secondary_skills": [
+    "FinOps",
+    "RBAC Security",
+    "CI/CD Pipeline Automation",
+    "Multi-Agent Orchestration",
+    "Data Annotation",
+    "Model Monitoring"
+  ],
+  "non_focus": [
+    "Frontend Development",
+    "Mobile Development",
+    "Database Administration (non-ML focused)"
+  ],
+  "seniority_signals": [
+    "Senior AI Platform Engineer",
+    "Lead Engineer",
+    "Architect"
+  ],
+  "target_roles": [
+    "Senior AI Platform Engineer",
+    "AI Platform Architect",
+    "LLMOps Engineer",
+    "MLOps Engineer",
+    "AI Infrastructure Engineer"
+  ]
+}

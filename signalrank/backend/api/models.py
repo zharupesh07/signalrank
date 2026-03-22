@@ -55,6 +55,8 @@ class Profile(Base):
     max_yoe: Mapped[int | None] = mapped_column(Integer)
     role_intent: Mapped[str | None] = mapped_column(String(100))
     config_overrides: Mapped[dict | None] = mapped_column(JSONB)
+    target_lpa: Mapped[float | None] = mapped_column(Float)
+    custom_search_queries: Mapped[list | None] = mapped_column(JSONB)
     onboarding_complete: Mapped[bool] = mapped_column(Boolean, default=False)
 
     user: Mapped["User"] = relationship(back_populates="profile")
@@ -86,6 +88,8 @@ class Run(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     job_count: Mapped[int | None] = mapped_column(Integer)
+    scrape_count: Mapped[int | None] = mapped_column(Integer)
+    progress: Mapped[dict | None] = mapped_column(JSONB)
 
     user: Mapped["User"] = relationship(back_populates="runs")
     results: Mapped[list["JobResult"]] = relationship(back_populates="run")
@@ -123,9 +127,17 @@ class Application(Base):
     status: Mapped[str] = mapped_column(String(100), default="interested")
     applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     notes: Mapped[str | None] = mapped_column(Text)
+    priority: Mapped[str | None] = mapped_column(String(10))
+    location_group: Mapped[str | None] = mapped_column(String(100))
+    interview_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    offer_lpa: Mapped[float | None] = mapped_column(Float)
+    system_score: Mapped[float | None] = mapped_column(Float)
+    resume_match_pct: Mapped[float | None] = mapped_column(Float)
     recruiter_id: Mapped[str | None] = mapped_column(ForeignKey("recruiters.id"))
 
     user: Mapped["User"] = relationship(back_populates="applications")
+    job: Mapped["JobRaw | None"] = relationship()
+    recruiter: Mapped["Recruiter | None"] = relationship()
 
 
 class Recruiter(Base):

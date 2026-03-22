@@ -1,0 +1,4 @@
+{
+  "_error": "no_json",
+  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"AI\",\n      \"Machine Learning\",\n      \"Data Science\",\n      \"Natural Language Processing\",\n      \"Retrieval Augmented Generation (RAG)\",\n      \"Embeddings\",\n      \"Hybrid Retrieval\",\n      \"Re-ranking\",\n      \"Agentic AI Workflows\",\n      \"Tool Integration\",\n      \"Evaluation Frameworks\",\n      \"Hallucination Testing\",\n      \"Red-teaming\",\n      \"Prompt Injection Defense\",\n      \"Guardrails\",\n      \"Policy Checks\",\n      \"PII Redaction\",\n      \"Safety Filters\""
+}

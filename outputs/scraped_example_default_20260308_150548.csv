@@ -1,0 +1,617 @@
+job_url,job_url_direct,title,company,description,location,date_posted,site
+https://www.recruit.net/job/ai-engineer-mlops-production-ai-jobs/9E58FBDACB4690F3?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,https://www.recruit.net/job/ai-engineer-mlops-production-ai-jobs/9E58FBDACB4690F3?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,"AI Engineer ,  MLOps & Production AI",i-Genie.ai,"Job Description
+
+As an AI Engineer, you'll transform AI prototypes and MVPs into scalable, production, grade products , ensuring the right DataOps and DevOps foundations are in place, from data ingestion and transformation through to final deployment and observability. You'll play a central role in shaping i-Genie's architecture strategy and infrastructure requirements, optimizing for delivery speed, cost, and user experience.
+
+This isn't just about keeping systems running. You'll influence real architectural decisions, redesign models and processes to eliminate technical debt, and enforce data and development standards across the team. Your infrastructure will directly underpin AI solutions used by blue, chip clients to unlock high, stakes consumer insights.
+
+What You'll Work With
+
+Core Stack: Python, PySpark, SQL
+
+AI/ML: LLMs, NLP pipelines, model fine, tuning, AI prototype productionization
+
+NLP Libraries: CoreNLP, OpenNLP, NLTK, Spacy, TextBlob, LLM APIs
+
+Cloud & Infrastructure: Azure suite, Databricks, containers, Kubernetes
+
+Collaboration: Work closely with data scientists, data engineers, and product teams
+
+What We're Looking For
+
+· 5+ years solving real client problems through data science and data engineering, with strong NLP focus
+
+· Computer Science degree (science stream)
+
+· Python proficiency required; PySpark experience strongly preferred, at minimum, Python mastery with a working understanding of Spark
+
+· Deep knowledge of Databricks and broad familiarity across the Azure suite
+
+· Hands-on experience pushing products into production environments (containers, Kubernetes)
+
+· Solid grounding in core NLP techniques and common packages (CoreNLP, OpenNLP, NLTK, Spacy, TextBlob, LLM models)
+
+· Experience with Large Language Models in a coding context, including pipeline integration and fine-tuning
+
+· Working knowledge of non-English text data processing
+
+· SQL skills are a plus
+
+What We Offer
+
+Global remote work: No physical office, work from wherever you do your best thinking
+
+Ownership & impact: Shape the architecture powering AI products used by Fortune 100 companies and growing
+
+Competitive compensation: Creative short and long, term packages designed to create wealth as we grow
+
+Cutting, edge problems: Real, world production challenges at the intersection of MLOps, LLMs, and NLP
+
+Direct business impact: Your infrastructure decisions will determine how fast and how well i-Genie delivers insights at scale
+• Autonomy: We trust you to deliver exceptional work on your terms",IN,2026-03-08T00:00:00.000Z,jsearch
+https://in.jobrapido.com/jobpreview/6912064792005967872?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,https://in.jobrapido.com/jobpreview/6912064792005967872?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,"MLOps Engineer, Pharmaceutical AI (India)",Ajanta Pharma,"Job Title: Executive – Machine Learning Ops. Engineer
+
+Location: Andheri (Mumbai)
+
+Department: IT
+
+Employment Type: Full time
+
+Industry - Pharmaceutical
+
+Job Summary
+
+We are seeking a skilled and detail-oriented MLOps Engineer with 3-4 years of experience to drive the deployment, monitoring, and operational excellence of AI agents and machine learning models within enterprise environments. The ideal candidate will be responsible for building robust CI/CD pipelines for AI systems, optimizing GPU workloads, managing hybrid infrastructure (on-premises and cloud), and ensuring performance, security, and compliance — particularly within a regulated pharma environment.
+
+This role requires strong experience in productionizing ML/GenAI solutions and ensuring scalability, reliability, and compliance of AI systems handling sensitive data.
+
+Key Responsibilities
+
+1. Model & AI Agent Deployment
+
+- Own end-to-end deployment of ML models and AI agents into production environments.
+- Manage model versioning, rollback strategies, and lifecycle management.
+- Ensure high availability, scalability, and reliability of deployed systems.
+
+2. CI/CD for AI Systems
+
+- Design and implement CI/CD pipelines tailored for ML and GenAI workflows.
+- Automate model training, testing, validation, and deployment processes.
+- Integrate model testing frameworks, performance checks, and compliance gates into pipelines.
+- Enable seamless integration between development, staging, and production environments.
+
+3. Infrastructure & GPU Optimization
+
+- Manage and optimize GPU-based workloads for model training and inference.
+- Monitor and improve compute utilization, cost efficiency, and latency.
+- Administer and maintain cloud (AWS/Azure/GCP) and/or on-prem infrastructure environments.
+- Support containerized deployments using Docker and Kubernetes.
+
+4. Performance Monitoring & Observability
+
+- Implement infrastructure and model performance monitoring systems.
+- Track system health, latency, throughput, resource utilization, and failure rates.
+- Establish alerting, logging, and incident response processes.
+- Continuously improve system performance and reliability through proactive monitoring.
+
+5. Vector Database & Data Infrastructure Management
+
+- Deploy and manage vector databases (e.G., FAISS, Pinecone, Weaviate, Chroma).
+- Optimize indexing, embedding pipelines, and retrieval performance for GenAI applications.
+- Ensure high availability and backup strategies for AI data systems.
+
+6. Security, Access Control & Compliance
+
+- Implement role-based access control (RBAC) and secure authentication mechanisms.
+- Ensure infrastructure and AI systems comply with pharma regulatory standards and internal governance policies.
+- Manage sensitive data securely, including encryption (at rest and in transit).
+- Support audit readiness and documentation for compliance reviews.
+
+Technical Skills & Competencies
+
+- Strong programming skills in Python and scripting languages
+- Hands-on experience with CI/CD tools (Jenkins, GitHub Actions, GitLab CI, Azure DevOps, etc.)
+- Experience with Docker, Kubernetes, Helm
+- Knowledge of ML lifecycle tools (MLflow, Kubeflow, Airflow, etc.)
+- Experience with GPU optimization and distributed training frameworks
+- Familiarity with cloud platforms (AWS/Azure/GCP) and hybrid infrastructure
+- Experience managing vector databases
+- Knowledge of monitoring tools (Prometheus, Grafana, ELK, Datadog, etc.)
+- Understanding of data security, encryption, compliance frameworks (GxP, HIPAA preferred)
+
+Qualifications
+
+- BE in Data Science / Artificial Intelligence / Computer Science or MCA
+- Certification in CI/CD, Machine Learning, or related DevOps technologies
+- 3–4 years of experience in MLOps / DevOps for ML systems
+- Experience in the pharmaceutical or regulated industry (preferred)
+
+Preferred Attributes
+
+- Strong problem-solving and troubleshooting skills
+- Ability to work independently and manage production-critical systems
+- Detail-oriented with strong documentation practices
+- Experience supporting enterprise GenAI applications
+- Good communication and cross-functional collaboration skills
+
+What We Offer
+
+- Exposure to regulated pharma AI environments
+- Collaborative and innovation-driven culture
+- Free access to on-site gym facility to support employee wellness",IN,2026-03-04T00:00:00.000Z,jsearch
+https://jobs.venturebeat.com/job/ml-ops-engineer-T7lX0IFBId-at-schneider-electric-3?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,https://jobs.venturebeat.com/job/ml-ops-engineer-T7lX0IFBId-at-schneider-electric-3?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,ML Ops Engineer,Schneider Electric,"Job Profile At Schneider Electric, we are committed to solving real-world problems to create a sustainable, digitized, new electric future. Artificial Intelligence has the potential to transform industries and help unlock efficiency and sustainability. As part of the AI Technology group (70 people), we are seeking an ML engineer who can contribute to the development of our AI platform, which is used by our internal stakeholders to design and deploy AI use cases for our external offers and internal functions. We look for someone who is passionate about solving complex business & technical problems by applying best in class engineering, quality, and security practices in the context of AI software developments & integration. Our AI platform is built on top of Azure & AWS cloud providers, and also leverages Databricks solution. If you're excited by the opportunity to positively impact business processes through innovation and application of advanced technologies, you will feel at home. Responsibilities · Contribute to the industrialization of the ML & GenAI technical stacks of our AI Platform, by participating to their definition, architecture, development, test, documentation & maintenance phases · Ensure the development process of this stack follows the DevSecOps recommendations & best practices · Write ML pipelines to illustrate the AI Platform capabilities · Contribute to the CI/CD workflows developments to automate the integration and deployment of the various ML assets (code or models) into the different environments · Contribute to the definition of the LLMOps / MLOps operating model and make sure the AI Platform enforces this model · Collaborate with our internal stakeholders to co-design the new features of the AI Platform · Occasionally be embarked into one of our stakeholders teams to help them using the AI platform, write ML pipelines, and, in return, collect platform evolution needs · Occasionally contribute to the collective effort of run & support for the AI Platform Qualifications - External Requirements and Skills · 5+ years of experience in ML Engineering · Strong knowledge on Machine Learning (including ML model management context) and GenAI technologies (including RAG) · Previous hands-on experience on MLOps or LLMOps disciplines is mandatory · Good knowledge of DevOps processes at scale and experience of production systems · Rigorous mindset (but still open to changes), oriented towards customers, problems solving & results · Good team player · Autonomous · Ideally, some knowledge of Energy Management and Automation market · At ease in an international work environment & fluent in english · Familiar with agile methodologies: Scrum, SAFe · Technologies: Azure and/or AWS cloud technologies and their respective ML plateforms (AzureML, AWS SageMaker) Databricks Github, Terraform ML Tools such as MLFlow GenAI & LLM tools",IN,,jsearch
+https://careers.hitachi.com/jobs/17295434-ai-slash-mlops-rag-specialist?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,https://careers.hitachi.com/jobs/17295434-ai-slash-mlops-rag-specialist?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,AI/MLOps RAG Specialist,Hitachi Careers,"Our Company
+
+We're Hitachi Digital, a company at the forefront of digital transformation and the fastest growing division of Hitachi Group. We're crucial to the company's strategy and ambition to become a premier global player in the massive and fast-moving digital transformation market.
+
+Our group companies, including GlobalLogic, Hitachi Digital Services, Hitachi Vantara and more, offer comprehensive services that span the entire digital lifecycle, from initial idea to full-scale operation and the infrastructure to run it on. Hitachi Digital represents One Hitachi, integrating domain knowledge and digital capabilities, and harnessing the power of the entire portfolio of services, technologies, and partnerships, to accelerate synergy creation and make real-world impact for our customers and society as a whole.
+
+Imagine the sheer breadth of talent it takes to unleash a digital future. We don't expect you to 'fit' every requirement - your life experience, character, perspective, and passion for achieving great things in the world are equally as important to us.
+
+The Team
+
+As an ML Ops / GCP Cloud Specialist, you will own the end-to-end lifecycle of AI models and agents, focusing on deployment, monitoring, and optimization. You will leverage Google Cloud Platform (GCP) services and Vertex AI to build LLMOps pipelines, integrate RAG workflows, and enforce AI governance for transparency and reliability.
+
+The role
+
+ML Ops & Pipeline Management
+
+Design and implement LLMxOps/MLOps pipelines for model training, deployment, and lifecycle management.
+Automate CI/CD workflows for AI models using GCP-native tools.
+Manage model versioning, rollback strategies, and performance benchmarking.
+
+AI RAG & Agent Optimization
+
+Architect and deploy Retrieval-Augmented Generation (RAG) pipelines for contextual AI responses.
+Optimize AI agent performance (latency, accuracy, cost) through prompt tuning, caching, and orchestration strategies.
+Integrate knowledge graphs, embeddings, and vector databases for semantic retrieval.
+
+Observability & Explainability
+
+Implement AI observability frameworks for monitoring agent workflows, latency, and reliability.
+Develop explainability dashboards for model decisions, bias detection, and compliance reporting.
+Define evaluation metrics and safety tests for AI outputs.
+
+Cloud Architecture & Integration
+
+Leverage GCP services (Vertex AI, Cloud Run, GKE, IAM, VPC-SC) for secure and scalable deployments.
+Integrate AI solutions with enterprise systems and APIs.
+Ensure compliance with data governance and regulatory standards.
+
+What you'll bring
+
+Bachelor's or Master's in Computer Science, AI/ML, or related field.
+7+ years in ML Ops or AI platform engineering; 3+ years with GCP and Vertex AI.
+Hands-on experience with RAG architectures, LLMs, and Agentic AI workflows.
+Strong programming skills in Python and familiarity with Node.js for orchestration.
+Expertise in observability tools, model monitoring, and explainability frameworks.
+Knowledge of vector databases, embeddings, and semantic search.
+
+Preferred Qualifications
+
+Certifications: Google Professional Cloud Architect, Machine Learning Engineer.
+Experience with LangChain, agent orchestration frameworks, and evaluation harnesses.
+Familiarity with data governance, bias detection, and AI safety protocols.
+Exposure to GPU optimization and cost-performance tuning.
+
+Key Competencies
+
+Strong problem-solving and analytical skills.
+Ability to design scalable, secure, and explainable AI systems.
+Collaborative mindset with excellent communication skills.
+Passion for AI reliability, observability, and responsible AI practices.
+
+Success Metrics
+
+Deployment of production-ready RAG pipelines integrated with enterprise workflows.
+Established AI observability dashboards and explainability reports.
+Reduction in model incident rates and improved response accuracy.
+Positive impact on AI governance and compliance readiness.
+
+What You'll Work With
+
+Cloud & AI: GCP, Vertex AI, Cloud Run, GKE.
+ML Ops Tools: CI/CD pipelines, monitoring frameworks, evaluation harnesses.
+Data & Retrieval: Vector databases, embeddings, semantic search.
+Agentic AI: Multi-agent orchestration, prompt optimization, RAG workflows.
+
+About us
+
+We're a global, 1000-stong, diverse team of professional experts, promoting and delivering Social Innovation through our One Hitachi initiative (OT x IT x Product) and working on projects that have a real-world impact. We're curious, passionate and empowered, blending our legacy of 110 years of innovation with our shaping our future. Here you're not just another employee; you're part of a tradition of excellence and a community working towards creating a digital future.
+
+#LI-AP1
+
+Fostering innovation through diverse perspectives
+
+Hitachi is a global company operating across a wide range of industries and regions. One of the things that sets Hitachi apart is the diversity of our business and people, which drives our innovation and growth.
+
+We are committed to building an inclusive culture based on mutual respect and merit-based systems. We believe that when people feel valued, heard, and safe to express themselves, they do their best work.
+
+How we look after you
+
+We help take care of your today and tomorrow with industry-leading benefits, support, and services that look after your holistic health and wellbeing. We're also champions of life balance and offer flexible arrangements that work for you (role and location dependent). We're always looking for new ways of working that bring out our best, which leads to unexpected ideas. So here, you'll experience a sense of belonging, and discover autonomy, freedom, and ownership as you work alongside talented people you enjoy sharing knowledge with.
+
+We're proud to say we're an equal opportunity employer and welcome all applicants for employment without attention to race, colour, religion, sex, sexual orientation, gender identity, national origin, veteran, age, disability status or any other protected characteristic. Should you need reasonable accommodations during the recruitment process, please let us know so that we can do our best to set you up for success.",IN,2026-02-28T00:00:00.000Z,jsearch
+https://www.efinancialcareers.com/jobs-India-Gurgaon-Senior_Machine_LearningData_Engineer_MLops__Spark.id23890450?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,https://www.efinancialcareers.com/jobs-India-Gurgaon-Senior_Machine_LearningData_Engineer_MLops__Spark.id23890450?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,"Senior Machine Learning/Data Engineer (MLops & Spark) | Gurgaon, IN",Expedia Group,"Senior Machine Learning/Data Engineer (MLops & Spark)
+
+Expedia Group brands power global travel for everyone, everywhere. We design cutting-edge tech to make travel smoother and more memorable, and we create groundbreaking solutions for our partners. Our diverse, vibrant, and welcoming community is essential in driving our success.
+
+Why Join Us?
+
+To shape the future of travel, people must come first. Guided by our Values and Leadership Agreements, we foster an open culture where everyone belongs, differences are celebrated and know that when one of us wins, we all win.
+
+We provide a full benefits package, including exciting travel perks, generous time-off, parental leave, a flexible work model (with some pretty cool offices), and career development resources, all to fuel our employees' passion for travel and ensure a rewarding career journey. We're building a more open world. Join us.
+
+Job Description
+
+Senior Machine Learning Engineer
+
+Are you fascinated by machine learning and building robust machine learning pipelines which process massive amounts of data at scale and speed to provide crucial insights to the end consumers?
+
+This is exactly what we, the Machine Learning Engineering group in Expedia, do. Our mission is to partner with our Machine Learning Science counterparts to use AI/ML to collaboratively transform Expedia's data assets into intelligent and real-time insights to support a variety of applications which are used by 1000+ market managers, analysts, our supply partners, and our travelers. Our work spans across a variety of datasets and ML models and across a diverse technology stack ranging from Spark, Sagemaker, Airflow, Databricks, Kubernetes, AWS and much more!
+
+In this role, you will:
+
+• Work in a cross-functional team of Machine Learning engineers and Data scientists to design and code large scale batch and real-time data pipelines on the AWS
+• Design, implement and deploy large scale data pipelines (both real time and batch) and back-end services on Big Data and AWS platforms
+• Lead the end-to-end product life cycle for mid to large machine learning/data engineering projects: Design, development, model validation/testing, model deployment, and providing operational excellence and support
+• Find and advocate for Industry standards and best practices in machine learning engineering methodologies, techniques, and technologies
+• Contribute to advancing the team's design methodology and quality programming practices and mentor junior team members to adapt best practices
+• Innovate and implement new ideas to solve complex software problems and prototype creative solutions to enable product MVP's
+• Independently understand scheduling, cost constraints, and impact to other teams; and make resource and architectural trade-offs based on those factors
+• Anticipate and prevent problems and roadblocks, before they occur, and present technical issues and their impact to leadership
+• Lead, coordinate, and collaborate on multiple concurrent and complex cross-organizational initiatives
+• Effectively build and maintain a network of key contacts across company, and leverage these contacts to achieve results
+• Communicate and work effectively with geographically distributed cross functional teams
+• Drive for continuous improvement in software and development process within an agile development team
+Experience and Qualifications:
+
+• Bachelor's or Master's Degree in software engineering, computer science, informatics or in a related technical field; or equivalent related professional experience
+• 8 to 10+ years of work experience in software engineering
+• 4+ years' experience in designing and implementing Big Data applications (data ingestion, real-time data processing and batch analytics) in Spark Streaming, Kafka, Hadoop
+• Experience on Hadoop-ecosystem technologies in particular MapReduce, Spark, Hive, YARN
+• Experience in productionizing machine learning models including feature engineering, model scalability, model validation, and model deployment
+• Solid server-side programming skills in multiple languages (Scala/Java and Python), and hands-on experience in OOAD, design patterns, NoSQL and SQL
+• Strong experience with cloud computing platforms (AWS, EMR, Kubernetes, Docker)
+• Strong experience working with ML platforms (Databricks, SageMaker, etc.)
+• Solid knowledge in SQL (T-SQL/PL-SQL), ETL and data modelling
+• Experience with microservice architecture, and design
+• Experience on machine learning toolkits like spark mllib, H20, scikit-learn, R and ML techniques
+• Strong command with machine learning libraries such as PyTorch and Tensorflow and knowledge of common integration patterns for serving inference with them
+• Familiar with training models with very large datasets- strategies for parallelizing and optimizing the training jobs especially with GPUs or large-compute
+• You have hands-on experience with workflow management tools (e.g. Airflow)
+• Familiar with machine learning inference at scale. Can instrument streaming or parallel inference tasks to accommodate large traffic or volume of data
+• Experience working with Agile/Scrum methodologies
+• Familiarity with the e-commerce or travel industry
+Accommodation requests
+
+If you need assistance with any part of the application or recruiting process due to a disability, or other physical or mental health conditions, please reach out to our Recruiting Accommodations Team through the Accommodation Request.
+
+We are proud to be named as a Best Place to Work on Glassdoor in 2024 and be recognized for award-winning culture by organizations like Forbes, TIME, Disability:IN, and others.
+
+Expedia Group's family of brands includes: Brand Expedia®, Hotels.com®, Expedia® Partner Solutions, Vrbo®, trivago®, Orbitz®, Travelocity®, Hotwire®, Wotif®, ebookers®, CheapTickets®, Expedia Group™ Media Solutions, Expedia Local Expert®, CarRentals.com™, and Expedia Cruises™. © 2024 Expedia, Inc. All rights reserved. Trademarks and logos are the property of their respective owners. CST: 2029030-50
+
+Employment opportunities and job offers at Expedia Group will always come from Expedia Group's Talent Acquisition and hiring teams. Never provide sensitive, personal information to someone unless you're confident who the recipient is. Expedia Group does not extend job offers via email or any other messaging tools to individuals with whom we have not made prior contact. Our email domain is @expediagroup.com. The official website to find and apply for job openings at Expedia Group is careers.expediagroup.com/jobs.
+
+Expedia is committed to creating an inclusive work environment with a diverse workforce. All qualified applicants will receive consideration for employment without regard to race, religion, gender, sexual orientation, national origin, disability or age.",Gurugram,2026-03-05T00:00:00.000Z,jsearch
+https://in.linkedin.com/jobs/view/mlops-lead-irc283110-at-globallogic-4371792460?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,https://in.linkedin.com/jobs/view/mlops-lead-irc283110-at-globallogic-4371792460?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,MLOps Lead IRC283110,GlobalLogic,"Description
+
+We are seeking a highly skilled and experienced MLOps Lead to design, implement, and scale machine learning infrastructure and deployment pipelines on Google Cloud Platform (GCP). The ideal candidate will have deep expertise in machine learning lifecycle management, CI/CD for ML, model monitoring, and cloud-native architectures.
+
+You will lead the MLOps strategy, mentor engineers, and collaborate closely with Data Scientists, ML Engineers, and DevOps teams to productionize and scale ML solutions reliably and efficiently.
+
+Requirements
+
+6+ years of experience in Machine Learning and production ML systems.
+
+3+ years of hands-on experience in MLOps.
+
+Strong expertise in Google Cloud Platform.
+
+Experience with:
+
+Python (advanced level)
+
+Docker & Kubernetes
+
+CI/CD tools (GitHub Actions, GitLab CI, Jenkins)
+
+Hands-on experience with Vertex AI or similar ML platforms.
+
+Experience building scalable distributed systems.
+
+Strong understanding of ML model lifecycle management.
+
+Job responsibilities
+
+Key Responsibilities
+
+🔹 Leadership & Strategy
+
+Lead the design and implementation of end-to-end MLOps architecture.
+
+Define best practices for ML lifecycle management and governance.
+
+Mentor and guide ML and platform engineers.
+
+Drive DevOps + MLOps culture across teams.
+
+🔹 ML Pipeline & Infrastructure
+
+Design scalable ML pipelines using tools such as Kubeflow, Vertex AI, and MLflow.
+
+Build CI/CD pipelines for ML model training, testing, and deployment.
+
+Automate model retraining and versioning workflows.
+
+Implement feature stores and model registries.
+
+🔹 Cloud & Platform Engineering (GCP)
+
+Architect and manage ML infrastructure on Google Cloud Platform.
+
+Work with services such as:
+
+Google Kubernetes Engine
+
+Cloud Build
+
+Cloud Composer
+
+BigQuery
+
+Optimize cloud cost, performance, and security.
+
+🔹 Model Deployment & Monitoring
+
+Deploy models using containerized environments (Docker, Kubernetes).
+
+Implement model monitoring for:
+
+Drift detection
+
+Performance degradation
+
+Data quality issues
+
+Set up logging, observability, and alerting systems.
+
+🔹 Governance & Security
+
+Implement model governance frameworks.
+
+Ensure compliance with data security and privacy standards.
+
+Manage IAM roles, access control, and secrets management.
+
+What we offer
+
+Culture of caring. At GlobalLogic, we prioritize a culture of caring. Across every region and department, at every level, we consistently put people first. From day one, you’ll experience an inclusive culture of acceptance and belonging, where you’ll have the chance to build meaningful connections with collaborative teammates, supportive managers, and compassionate leaders.
+
+Learning and development. We are committed to your continuous learning and development. You’ll learn and grow daily in an environment with many opportunities to try new things, sharpen your skills, and advance your career at GlobalLogic. With our Career Navigator tool as just one example, GlobalLogic offers a rich array of programs, training curricula, and hands-on opportunities to grow personally and professionally.
+
+Interesting & meaningful work. GlobalLogic is known for engineering impact for and with clients around the world. As part of our team, you’ll have the chance to work on projects that matter. Each is a unique opportunity to engage your curiosity and creative problem-solving skills as you help clients reimagine what’s possible and bring new solutions to market. In the process, you’ll have the privilege of working on some of the most cutting-edge and impactful solutions shaping the world today.
+
+Balance and flexibility. We believe in the importance of balance and flexibility. With many functional career areas, roles, and work arrangements, you can explore ways of achieving the perfect balance between your work and life. Your life extends beyond the office, and we always do our best to help you integrate and balance the best of work and life, having fun along the way!
+
+High-trust organization. We are a high-trust organization where integrity is key. By joining GlobalLogic, you’re placing your trust in a safe, reliable, and ethical global company. Integrity and trust are a cornerstone of our value proposition to our employees and clients. You will find truthfulness, candor, and integrity in everything we do.
+
+About GlobalLogic
+
+GlobalLogic, a Hitachi Group Company, is a trusted digital engineering partner to the world’s largest and most forward-thinking companies. Since 2000, we’ve been at the forefront of the digital revolution – helping create some of the most innovative and widely used digital products and experiences. Today we continue to collaborate with clients in transforming businesses and redefining industries through intelligent products, platforms, and services.",Hyderabad,2026-03-07T19:00:00.000Z,jsearch
+https://careers.expediagroup.com/job/senior-machine-learning-engineer/gurgaon-Hary%C4%81na/R-101642/?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,https://careers.expediagroup.com/job/senior-machine-learning-engineer/gurgaon-Hary%C4%81na/R-101642/?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,Senior Machine Learning/Data Engineer (MLops & Spark),Expedia Group,"Expedia Group brands power global travel for everyone, everywhere. We design cutting-edge tech to make travel smoother and more memorable, and we create groundbreaking solutions for our partners. Our diverse, vibrant, and welcoming community is essential in driving our success.
+
+Why Join Us?
+
+To shape the future of travel, people must come first. Guided by our Values and Leadership Agreements, we foster an open culture where everyone belongs, differences are celebrated and know that when one of us wins, we all win.
+
+We provide a full benefits package, including exciting travel perks, generous time-off, parental leave, a flexible work model (with some pretty cool offices), and career development resources, all to fuel our employees' passion for travel and ensure a rewarding career journey. We’re building a more open world. Join us.
+
+Job Description
+
+Senior Machine Learning Engineer
+
+Are you fascinated by machine learning and building robust machine learning pipelines which process massive amounts of data at scale and speed to provide crucial insights to the end consumers?
+
+This is exactly what we, the Machine Learning Engineering group in Expedia, do. Our mission is to partner with our Machine Learning Science counterparts to use AI/ML to collaboratively transform Expedia’s data assets into intelligent and real-time insights to support a variety of applications which are used by 1000+ market managers, analysts, our supply partners, and our travelers. Our work spans across a variety of datasets and ML models and across a diverse technology stack ranging from Spark, Sagemaker, Airflow, Databricks, Kubernetes, AWS and much more!
+
+In this role, you will:
+• Work in a cross-functional team of Machine Learning engineers and Data scientists to design and code large scale batch and real-time data pipelines on the AWS
+• Design, implement and deploy large scale data pipelines (both real time and batch) and back-end services on Big Data and AWS platforms
+• Lead the end-to-end product life cycle for mid to large machine learning/data engineering projects: Design, development, model validation/testing, model deployment, and providing operational excellence and support
+• Find and advocate for Industry standards and best practices in machine learning engineering methodologies, techniques, and technologies
+• Contribute to advancing the team's design methodology and quality programming practices and mentor junior team members to adapt best practices
+• Innovate and implement new ideas to solve complex software problems and prototype creative solutions to enable product MVP's
+• Independently understand scheduling, cost constraints, and impact to other teams; and make resource and architectural trade-offs based on those factors
+• Anticipate and prevent problems and roadblocks, before they occur, and present technical issues and their impact to leadership
+• Lead, coordinate, and collaborate on multiple concurrent and complex cross-organizational initiatives
+• Effectively build and maintain a network of key contacts across company, and leverage these contacts to achieve results
+• Communicate and work effectively with geographically distributed cross functional teams
+• Drive for continuous improvement in software and development process within an agile development team
+
+Experience and Qualifications:
+• Bachelor's or Master's Degree in software engineering, computer science, informatics or in a related technical field; or equivalent related professional experience
+• 8 to 10+ years of work experience in software engineering
+• 4+ years’ experience in designing and implementing Big Data applications (data ingestion, real-time data processing and batch analytics) in Spark Streaming, Kafka, Hadoop
+• Experience on Hadoop-ecosystem technologies in particular MapReduce, Spark, Hive, YARN
+• Experience in productionizing machine learning models including feature engineering, model scalability, model validation, and model deployment
+• Solid server-side programming skills in multiple languages (Scala/Java and Python), and hands-on experience in OOAD, design patterns, NoSQL and SQL
+• Strong experience with cloud computing platforms (AWS, EMR, Kubernetes, Docker)
+• Strong experience working with ML platforms (Databricks, SageMaker, etc.)
+• Solid knowledge in SQL (T-SQL/PL-SQL), ETL and data modelling
+• Experience with microservice architecture, and design
+• Experience on machine learning toolkits like spark mllib, H20, scikit-learn, R and ML techniques
+• Strong command with machine learning libraries such as PyTorch and Tensorflow and knowledge of common integration patterns for serving inference with them
+• Familiar with training models with very large datasets- strategies for parallelizing and optimizing the training jobs especially with GPUs or large-compute
+• You have hands-on experience with workflow management tools (e.g. Airflow)
+• Familiar with machine learning inference at scale. Can instrument streaming or parallel inference tasks to accommodate large traffic or volume of data
+• Experience working with Agile/Scrum methodologies
+• Familiarity with the e-commerce or travel industry
+
+Accommodation requests
+
+If you need assistance with any part of the application or recruiting process due to a disability, or other physical or mental health conditions, please reach out to our Recruiting Accommodations Team through the Accommodation Request.
+
+We are proud to be named as a Best Place to Work on Glassdoor in 2024 and be recognized for award-winning culture by organizations like Forbes, TIME, Disability:IN, and others.
+
+Expedia Group's family of brands includes: Brand Expedia®, Hotels.com®, Expedia® Partner Solutions, Vrbo®, trivago®, Orbitz®, Travelocity®, Hotwire®, Wotif®, ebookers®, CheapTickets®, Expedia Group™ Media Solutions, Expedia Local Expert®, CarRentals.com™, and Expedia Cruises™. © 2024 Expedia, Inc. All rights reserved. Trademarks and logos are the property of their respective owners. CST: 2029030-50
+
+Employment opportunities and job offers at Expedia Group will always come from Expedia Group’s Talent Acquisition and hiring teams. Never provide sensitive, personal information to someone unless you’re confident who the recipient is. Expedia Group does not extend job offers via email or any other messaging tools to individuals with whom we have not made prior contact. Our email domain is @expediagroup.com. The official website to find and apply for job openings at Expedia Group is careers.expediagroup.com/jobs.
+
+Expedia is committed to creating an inclusive work environment with a diverse workforce. All qualified applicants will receive consideration for employment without regard to race, religion, gender, sexual orientation, national origin, disability or age.",Gurugram,2026-03-02T00:00:00.000Z,jsearch
+https://www.recruit.net/job/ai-ops-mlops-engineer-jobs/B348B7E300BC512C?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,https://www.recruit.net/job/ai-ops-mlops-engineer-jobs/B348B7E300BC512C?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,AI Ops / MLOps Engineer,TnT Techies Guide,"Company Description
+
+TnT Techies Guide is a leading training and consulting firm specializing in technology-focused solutions. Known for its comprehensive guides, hands-on training, and strategic consulting services, the company empowers tech enthusiasts, professionals, and businesses to navigate the evolving digital landscape. With tailored programs spanning various technology domains, TnT Techies Guide equips clients with practical skills and up-to-date insights. Dedicated to excellence and innovation, the firm is a trusted partner for those seeking to thrive in the fast-paced world of technology.
+
+Role Description
+
+This is a full-time remote role for an AI Ops / MLOps Engineer. The AI Ops / MLOps Engineer will be responsible for deploying and managing machine learning models, maintaining and troubleshooting ML pipelines, and ensuring systems are running smoothly and efficiently. Daily tasks include monitoring infrastructure, identifying performance issues, collaborating with cross-functional teams, and optimizing systems to improve scalability and reliability.
+
+Key Responsibilities
+
+• Design and manage scalable ML infrastructure on AWS, Azure, or GCP to support model training, experimentation, and production inference workloads.
+
+• Build and maintain automated ML pipelines for data ingestion, feature engineering, model training, validation, and deployment using CI/CD and GitOps principles.
+
+• Deploy and operate machine learning models using Kubernetes, Kubeflow, MLflow, SageMaker, Vertex AI, or Azure ML in production environments.
+
+• Implement model versioning, model registry, artifact management, and experiment tracking to enable traceability and reproducibility.
+
+• Develop monitoring solutions for model performance, drift detection, data quality validation, and inference latency tracking.
+
+• Implement observability for AI workloads using Prometheus, Grafana, OpenTelemetry, and centralized logging platforms.
+
+• Optimize GPU and CPU resource utilization, autoscaling strategies, and distributed training or inference workloads.
+
+• Enforce secure deployment practices including IAM controls, secrets management, encryption, network segmentation, and compliance alignment.
+
+• Automate ML infrastructure provisioning using Terraform or Infrastructure as Code frameworks.
+
+• Collaborate with data scientists, AI researchers, and platform teams to transition models from experimentation to reliable, highly available production systems.
+
+Required Qualifications
+
+• 5+ years of experience in Cloud Engineering, DevOps, SRE, or MLOps roles.
+
+• Strong hands-on experience with AWS, Azure, or GCP cloud environments.
+
+• Production-level Kubernetes experience with containerized ML workloads.
+
+• Experience with ML lifecycle tools such as MLflow, Kubeflow, SageMaker, Vertex AI, or Azure ML.
+
+• Proficiency in Python and familiarity with ML frameworks such as TensorFlow, PyTorch, or Scikit-learn.
+
+• Experience building CI/CD pipelines for ML workflows and automation.
+
+• Strong understanding of distributed systems, APIs, and cloud-native architecture.
+
+Preferred Qualifications
+
+• Experience operating LLM or Generative AI platforms in production environments.
+
+• Knowledge of vector databases such as Pinecone, Weaviate, or FAISS.
+
+• Experience managing GPU-based workloads and NVIDIA environments.
+
+• Familiarity with feature stores and data platforms such as Snowflake, BigQuery, or Databricks.",Bharatpur,2026-03-04T00:00:00.000Z,jsearch
+https://www.shine.com/jobs/mlops/capgemini-engineering/18414064?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,https://www.shine.com/jobs/mlops/capgemini-engineering/18414064?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,MLops,Capgemini Engineering,"At Capgemini Engineering, the world leader in engineering services, you will have the opportunity to work with a global team of engineers, scientists, and architects to support innovative companies in unleashing their potential. From autonomous cars to life-saving robots, you will be part of a team that provides unique R&D and engineering services across various industries. Join us for a career full of opportunities where you can make a difference, and where each day brings new challenges.
+
+- Design, implement, and maintain end-to-end ML pipelines for model training, evaluation, and deployment
+- Collaborate with data scientists and software engineers to operationalize ML models
+- Develop and maintain CI/CD pipelines for ML workflows
+- Implement monitoring and logging solutions for ML models
+- Optimize ML infrastructure for performance, scalability, and cost-efficiency
+- Ensure compliance with data privacy and security regulations
+
+Qualification Required:
+- Strong programming skills in Python, with experience in ML frameworks
+- Expertise in containerization technologies (Docker) and orchestration platforms (Kubernetes)
+- Proficiency in cloud platforms (AWS) and their ML-specific services
+- Experience with MLOps tools
+- Experience with ML model serving frameworks (TensorFlow Serving, TorchServe)
+
+Capgemini is a global business and technology transformation partner that helps organizations accelerate their transition to a digital and sustainable world. With a team of over 340,000 members in more than 50 countries, Capgemini has a strong heritage of over 55 years. Trusted by clients to unlock the value of technology, Capgemini offers end-to-end services and solutions leveraging strengths from strategy and design to engineering, AI, cloud, and data. At Capgemini Engineering, the world leader in engineering services, you will have the opportunity to work with a global team of engineers, scientists, and architects to support innovative companies in unleashing their potential. From autonomous cars to life-saving robots, you will be part of a team that provides unique R&D and engineering services across various industries. Join us for a career full of opportunities where you can make a difference, and where each day brings new challenges.
+
+- Design, implement, and maintain end-to-end ML pipelines for model training, evaluation, and deployment
+- Collaborate with data scientists and software engineers to operationalize ML models
+- Develop and maintain CI/CD pipelines for ML workflows
+- Implement monitoring and logging solutions for ML models
+- Optimize ML infrastructure for performance, scalability, and cost-efficiency
+- Ensure compliance with data privacy and security regulations
+
+Qualification Required:
+- Strong programming skills in Python, with experience in ML frameworks
+- Expertise in containerization technologies (Docker) and orchestration platforms (Kubernetes)
+- Proficiency in cloud platforms (AWS) and their ML-specific services
+- Experience with MLOps tools
+- Experience with ML model serving frameworks (TensorFlow Serving, TorchServe)
+
+Capgemini is a global business and technology transformation partner that helps organizations accelerate their transition to a digital and sustainable world. With a team of over 340,000 members in more than 50 countries, Capgemini has a strong heritage of over 55 years. Trusted by clients to unlock the value of technology, Capgemini offers end-to-end services and solutions leveraging strengths from strategy and design to engineering, AI, cloud, and data.",IN,,jsearch
+https://careers.hitachi.com/jobs/17184675-mlops-lead-10-plus-years-irc280632?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,https://careers.hitachi.com/jobs/17184675-mlops-lead-10-plus-years-irc280632?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic,MLOps Lead | 10+Years IRC280632,Hitachi Careers,"Description
+
+We are seeking an experienced MLOps Lead to design, build, and scale end-to-end machine learning platforms and workflows. The ideal candidate will lead the MLOps function, enabling reliable model development, deployment, monitoring, and governance across the organization. This role requires deep hands-on expertise with MLflow, Kubeflow, AWS SageMaker, Docker, Kubernetes, Jenkins, and Terraform, along with strong leadership and collaboration skills.
+
+Requirements
+
+Technical Skills
+• Strong hands-on experience with MLflow, Kubeflow, and AWS SageMaker
+• Expertise in Docker and Kubernetes (EKS preferred)
+• Proven experience building CI/CD pipelines with Jenkins
+• Infrastructure as Code using Terraform
+• Strong programming skills in Python
+• Experience with REST/gRPC-based model serving
+• Knowledge of monitoring tools (Prometheus, Grafana, CloudWatch, etc.)
+• Cloud & Data
+• Deep experience with AWS services (S3, IAM, EC2, ECR, EKS)
+• Understanding of data pipelines and feature stores
+• Familiarity with security best practices for ML systems
+• Leadership & Soft Skills
+• Experience leading technical teams and mentoring engineers
+• Strong problem-solving and architectural decision-making skills
+• Excellent communication and stakeholder management abilities
+• Ability to translate business needs into scalable technical solutions
+
+Job responsibilities
+
+Leadership & Strategy
+• Lead and mentor a team of MLOps and platform engineers.
+• Define and drive MLOps strategy, best practices, and standards across ML lifecycle.
+• Partner with Data Science, Engineering, Security, and Product teams to operationalize ML solutions.
+• Own architecture decisions for scalable, secure, and cost-effective ML platforms.
+• ML Platform & Pipeline Engineering
+• Design and implement end-to-end ML pipelines for training, testing, deployment, and monitoring.
+• Build and manage reproducible ML workflows using Kubeflow Pipelines.
+• Implement experiment tracking, model registry, and versioning using MLflow.
+• Deploy and manage ML models on AWS SageMaker and Kubernetes-based platforms.
+• CI/CD & Automation
+• Develop robust CI/CD pipelines for ML and data workflows using Jenkins.
+• Automate model testing, validation, and deployment processes.
+• Integrate CI/CD pipelines with container registries and infrastructure provisioning.
+• Containerization & Orchestration
+• Containerize ML workloads using Docker.
+• Deploy, scale, and manage ML services using Kubernetes.
+• Implement blue-green and canary deployments for ML models.
+• Infrastructure & Cloud
+• Design and manage infrastructure as code using Terraform.
+• Provision and maintain cloud resources for training and inference workloads.
+• Ensure high availability, scalability, security, and observability of ML systems.
+• Monitoring, Governance & Reliability
+• Implement model monitoring for performance, drift, and data quality.
+• Establish logging, alerting, and incident response processes.
+• Enforce ML governance, reproducibility, and compliance standards.
+
+What we offer
+
+Culture of caring. At GlobalLogic, we prioritize a culture of caring. Across every region and department, at every level, we consistently put people first. From day one, you'll experience an inclusive culture of acceptance and belonging, where you'll have the chance to build meaningful connections with collaborative teammates, supportive managers, and compassionate leaders.
+
+Learning and development. We are committed to your continuous learning and development. You'll learn and grow daily in an environment with many opportunities to try new things, sharpen your skills, and advance your career at GlobalLogic. With our Career Navigator tool as just one example, GlobalLogic offers a rich array of programs, training curricula, and hands-on opportunities to grow personally and professionally.
+
+Interesting & meaningful work. GlobalLogic is known for engineering impact for and with clients around the world. As part of our team, you'll have the chance to work on projects that matter. Each is a unique opportunity to engage your curiosity and creative problem-solving skills as you help clients reimagine what's possible and bring new solutions to market. In the process, you'll have the privilege of working on some of the most cutting-edge and impactful solutions shaping the world today.
+
+Balance and flexibility. We believe in the importance of balance and flexibility. With many functional career areas, roles, and work arrangements, you can explore ways of achieving the perfect balance between your work and life. Your life extends beyond the office, and we always do our best to help you integrate and balance the best of work and life, having fun along the way!
+
+High-trust organization. We are a high-trust organization where integrity is key. By joining GlobalLogic, you're placing your trust in a safe, reliable, and ethical global company. Integrity and trust are a cornerstone of our value proposition to our employees and clients. You will find truthfulness, candor, and integrity in everything we do.
+
+About GlobalLogic
+
+GlobalLogic, a Hitachi Group Company, is a trusted digital engineering partner to the world's largest and most forward-thinking companies. Since 2000, we've been at the forefront of the digital revolution - helping create some of the most innovative and widely used digital products and experiences. Today we continue to collaborate with clients in transforming businesses and redefining industries through intelligent products, platforms, and services.",Bengaluru,,jsearch

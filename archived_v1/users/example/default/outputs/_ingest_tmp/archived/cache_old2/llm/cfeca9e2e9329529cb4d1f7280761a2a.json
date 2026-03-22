@@ -1,0 +1,4 @@
+{
+  "_error": "no_json",
+  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"Amazon Connect\",\n      \"Amazon Web Services (AWS)\"\n    ],\n    [\n      \"Contact Center Technologies\",\n      \"AWS Cloud Services\",\n      \"Amazon Connect\",\n      \"GenAI\",\n      \"Chatbots\",\n      \"Amazon Lex\",\n      \"Lambda\",\n      \"DynamoDB\",\n      \"S3\",\n      \"API Gateway\",\n      \"Transcribe\",\n      \"Comprehend\",\n      \"Contact Lens\",\n      \"Amazon Bedrock\",\n      \"LLM\",\n      \"Node.js\",\n      \"Python\",\n      \"REST APIs\",\n      \"CloudWatch\",\n      \"CloudTrail\"\n"
+}

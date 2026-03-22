@@ -1,0 +1,60 @@
+{
+  "skills": [
+    [
+      "Quality Assurance",
+      "Manual Testing",
+      "Automation Testing",
+      "Automation Frameworks",
+      "AI/ML Testing",
+      "Playwright",
+      "Selenium",
+      "Python",
+      "TypeScript",
+      "Data Validation",
+      "Model Validation",
+      "API Validation",
+      "Agile Methodologies",
+      "Software Quality Assurance",
+      "Testing Tools",
+      "Analytical Skills",
+      "Problem-Solving",
+      "Communication Skills"
+    ],
+    [
+      "Software Engineering",
+      "Embedded Software Development",
+      "Cloud Edge Software Development",
+      "Application Development",
+      "System-Level Software Design",
+      "Performance Requirements",
+      "Interfaces"
+    ],
+    [
+      "ML Libraries Development",
+      "CPU Architecture",
+      "Machine Learning (ML)",
+      "Artificial Intelligence (AI)",
+      "SoC Platforms",
+      "ARM CPU Architecture",
+      "ARM Arch64 ISA",
+      "Kernel Optimization",
+      "Vector Processors",
+      "Linear Algebra",
+      "Algorithm Design",
+      "Performance Evaluation",
+      "Performance Optimization",
+      "ML Model Inferencing",
+      "PyTorch",
+      "TensorFlow",
+      "Keras",
+      "Open Source Libraries",
+      "Programming Skills",
+      "Matrix Accelerators",
+      "Debugging Skills",
+      "QEMU",
+      "Simulators",
+      "Emulators",
+      "Real Hardware"
+    ]
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "roles": [
+    {
+      "title": "Full Stack Engineer",
+      "level": "individual_contributor"
+    },
+    {
+      "title": "AI / ML Engineer",
+      "level": "individual_contributor"
+    },
+    {
+      "title": "Application Tech Support Practitioner",
+      "level": "individual_contributor"
+    }
+  ]
+}

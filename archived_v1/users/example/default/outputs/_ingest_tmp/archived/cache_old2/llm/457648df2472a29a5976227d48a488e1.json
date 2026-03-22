@@ -1,0 +1,4 @@
+{
+  "_error": "no_json",
+  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"Python\",\n      \"CommerceTools Commerce Platform\"\n    ],\n    [\n      \"Python\",\n      \"CommerceTools Commerce Platform\",\n      \"GenAI\",\n      \"LLMs\",\n      \"RAG\",\n      \"AWS\",\n      \"Azure\",\n      \"GCP\",\n      \"FastAPI\",\n      \"Flask\",\n      \"Django\",\n      \"React\",\n      \"Angular\",\n      \"OpenTelemetry\",\n      \"CI/CD\",\n      \"REST\",\n      \"GraphQL\",\n      \"Microservices\",\n      \"JavaScript\",\n      \"TypeScript\",\n      \"Prompting\",\n      \"Function/Tool Calling\","
+}

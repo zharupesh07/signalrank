@@ -1,0 +1,1881 @@
+id,site,job_url,job_url_direct,title,company,location,date_posted,job_type,salary_source,interval,min_amount,max_amount,currency,is_remote,job_level,job_function,listing_type,emails,description,company_industry,company_url,company_logo,company_url_direct,company_addresses,company_num_employees,company_revenue,company_description,skills,experience_range,company_rating,company_reviews_count,vacancy_count,work_from_home_type
+in-7d0ef2ec8fe151d9,indeed,https://in.indeed.com/viewjob?jk=7d0ef2ec8fe151d9,https://jobs.bechtel.com/job/Gurugram-AI-Specialist-%28ML-&-LLM%29-HR-122015/1359156100/,AI Specialist (ML & LLM),Bechtel,"HR, IN",2026-01-26,fulltime,,,,,,False,,,,acesstmt@bechtel.com,"**Requisition ID: 291555**
+
+
+* **Relocation Authorized: None**
+* **Telework Type: Full\-Time Office/Project**
+* **Work Location: Gurugram**
+
+**Extraordinary teams building inspiring projects:**
+----------------------------------------------------
+
+
+
+Since 1898, we have helped customers complete more than 25,000 projects in 160 countries on all seven continents that have created jobs, grown economies, improved the resiliency of the world's infrastructure, increased access to energy, resources, and vital services, and made the world a safer, cleaner place.
+
+
+
+Differentiated by the quality of our people and our relentless drive to deliver the most successful outcomes, we align our capabilities to our customers' objectives to create a lasting positive impact. We serve the Infrastructure; Nuclear, Security \& Environmental; Energy; Mining \& Metals, and the Manufacturing and Technology markets. Our services span from initial planning and investment, through start\-up and operations.
+
+
+
+Core to Bechtel is our Vision, Values and Commitments. They are what we believe, what customers can expect, and how we deliver.
+
+  
+
+
+
+Bechtel’s India offices support the execution of projects and services around the world. Working seamlessly with Bechtel’s global business units, project sites, customers, and suppliers, our teams have delivered more than 125 projects since 1994\. With offices in Gurgaon, Vadodara, and Chennai there are exciting career opportunities for candidates who are passionate about delivering projects that make a lasting, meaningful difference for people and communities around the world.
+
+**Job Summary:**
+----------------
+
+
+
+We are seeking an AI specialist primarily as **Data Scientist \& Data Engineer** with hands‑on experience in **Azure OpenAI Studio**, **Databricks**, and modern data/AI engineering practices. The ideal candidate will work at the intersection of **data engineering, machine learning, and applied generative AI**, driving end‑to‑end solutions from data ingestion to model deployment for unique challenges and opportunities within the engineering, procurement and construction (EPC) sector.
+
+
+
+In this role, you may be required to travel to other corporate or project offices.
+
+**Major Responsibilities:**
+---------------------------
+
+
+* Identify AI Opportunities: Work closely with different departments to identify potential AI use cases that can solve business problems and create value.
+* Use Case Development: Develop detailed AI use cases, including problem statements, objectives, expected outcomes, and success metrics.
+* Feasibility Analysis: Conduct feasibility studies to assess the technical and economic viability of proposed AI use cases.
+* Solution Design:
+	+ Develop and maintain data ingestion workflows from varied sources (APIs, databases, file systems).
+	+ Implement data quality checks, validation, and monitoring frameworks
+	+ Translate business problems into technical solutions leveraging Azure and Databricks ecosystems.
+	+ Design secure, scalable architectures for data storage, processing, and model deployment.
+	+ Integrate AI/ML workloads with enterprise applications using APIs, orchestrators, and Azure services (Functions, Logic Apps, Synapse, etc.).
+	+ Fine\-tune and deploy **Azure OpenAI** models (GPT, embeddings, assistants, and custom models).
+	+ Build prompt engineering frameworks and evaluation strategies for LLM\-based applications.
+	+ Develop production\-grade ML systems using **MLflow**, **Databricks Model Registry**, or Azure ML.
+* Documentation: Maintain comprehensive documentation of AI use cases, including requirements, design, implementation, and performance metrics.
+* Continuous Improvement: Stay up\-to\-date with the latest advancements in AI and continuously seek opportunities to improve existing AI solutions and processes.
+**Education and Experience Requirements:**
+------------------------------------------
+
+
+* **Education:** Bachelor’s degree in computer science, AI, Classic Machine Learning models, Data Science, or a related field. Master’s degree preferred.
+* **Experience:** 4\+ years of experience in AI/machine learning, preferably within the engineering and construction (EPC) industry or a related field.
+* Experience in data science, data engineering, or ML engineering.
+* Proven experience building production\-grade ML/AI systems.
+* Prior exposure to LLMs, foundation models, or generative AI solutions
+* Experience with Vector databases (Pinecone, Weaviate, Azure AI Search).
+* Experience with RAG, LLMOps, or LLM application frameworks (LangChain, Semantic Kernel).
+* Understanding of security, governance, and compliance for AI workloads
+**Required Knowledge and Skills:**
+----------------------------------
+
+
+* Strong understanding of **LLM concepts** (RAG, grounding, evaluation, hallucination mitigation)
+* Hands\-on expertise with **Azure OpenAI Studio** (prompting, fine\-tuning, deployments)
+* Experience with **MLflow**, **MLOps**, CI/CD pipelines.
+
+
+Solid understanding of data modeling, distributed systems, and cloud\-native architectures.
+
+**Total Rewards/Benefits:**
+---------------------------
+
+
+
+For decades, Bechtel has worked to inspire the next generation of employees and beyond! Because our teams face some of the world's toughest challenges, we offer robust benefits to ensure our people thrive. Whether it is advancing careers, delivering programs to enhance our culture, or providing time to recharge, Bechtel has the benefits to build a legacy of sustainable growth.
+
+**Diverse teams build the extraordinary:**
+------------------------------------------
+
+
+
+As a global company, Bechtel has long been home to a vibrant multitude of nationalities, cultures, ethnicities, and life experiences. This diversity has made us a more trusted partner, more effective problem solvers and innovators, and a more attractive destination for leading talent.
+
+
+
+We are committed to being a company where every colleague feels that they belong\-where colleagues feel part of ""One Team,"" respected and rewarded for what they bring, supported in pursuing their goals, invested in our values and purpose, and treated equitably.
+
+  
+
+
+***Bechtel is an Equal Opportunity Employer. All qualified applicants will receive consideration for employment without regard to race, color, religion, sex, sexual orientation, gender identity and expression, age, national origin, disability, citizenship status (except as authorized by law), protected veteran status, genetic information, and any other characteristic protected by federal, state or local law. Applicants with a disability, who require a reasonable accommodation for any part of the application or hiring process, may e\-mail their request to*** **acesstmt@bechtel.com**",,https://in.indeed.com/cmp/Bechtel,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/abfeaf5cdbab5e3ee32aee3051121bd4,http://www.bechtel.com,"Reston, VA","10,000+",more than $10B (USD),"Bechtel is one of the world’s most respected global engineering, construction, and project management organizations.",,,,,,
+in-0573ab9151432e0d,indeed,https://in.indeed.com/viewjob?jk=0573ab9151432e0d,https://amdocs.eightfold.ai/careers/?pid=563431012015231&domain=amdocs.com&sort_by=relevance,Software Principal Engineer,Amdocs,"HR, IN",2026-01-26,,,,,,,False,,,,,"**Job ID:** 208194
+  
+
+**Required Travel** : Minimal
+  
+
+**Managerial \- No**  
+
+**Location:** :India\- Gurgaon (Amdocs Site)
+
+
+**Who are we?**
+---------------
+
+Amdocs helps those who build the future to make it amazing. With our market\-leading portfolio of software products and services, we unlock our customers’ innovative potential, empowering them to provide next\-generation communication and media experiences for both the individual end user and enterprise customers. Our employees around the globe are here to accelerate service providers’ migration to the cloud, enable them to differentiate in the 5G era, and digitalize and automate their operations. Listed on the NASDAQ Global Select Market, Amdocs had revenue of $5\.00 billion in fiscal 2024\. For more information, visit www.amdocs.com
+
+
+At Amdocs, our mission is to empower our employees to 'Live Amazing, Do Amazing' every day. We believe in creating a workplace where you not only excel professionally but also thrive personally. Through our culture of making a real impact, fostering growth, embracing flexibility, and building connections, we enable them to live meaningful lives while making a difference in the world.  
+
+
+
+**In one sentence**
+-------------------
+
+As AI reshapes the future of software, we aim to harness its power to transform the way networks, IT systems, and business operations are built and managed. We seek a visionary and hands\-on AI Evangelist \& Enablement Lead to join amdocs.
+This is a unique hybrid role that combines deep technical expertise with a passion for teaching, enabling, and advocacy. As a member of the Amdocs agentic AI office. you will join our internal team of champions for AI—driving the adoption of Agentic and Generative AI across Amdocs engineering and product teams, while also positioning Amdocs as a thought leader in the global technology ecosystem.
+**What will your job look like?**
+---------------------------------
+
+**Internal AI Enablement \& Strategy**
+
+* Partner with engineering and product development teams to integrate and optimize AI/GenAI tools throughout the software delivery lifecycle, from coding and testing to deployment and operations.
+* Define and champion best practices, coding standards, and standardized workflows for AI\-assisted development across the organization.
+* Establish and lead an internal AI community of practice, fostering a culture of innovation, knowledge sharing, and responsible AI adoption.
+
+**Hands\-on Implementation \& Prototyping**
+
+* Lead the evaluation, piloting, and integration of new AI development platforms (e.g., advanced coding assistants, MLOps frameworks, internal LLM deployments).
+* Build proof\-of\-concept projects and reusable AI components to showcase the value of emerging technologies and architectural patterns.
+* Design and document robust frameworks for leveraging AI services with a focus on scalability, performance, security, and cost\-effectiveness.
+
+**Knowledge Sharing \& Education**
+
+* Create and deliver hands\-on workshops, tech talks, and practical tutorials on topics like prompt engineering, AI\-powered debugging, and integrating LLMs into production workflows.
+* Develop an internal knowledge base with code samples, case studies, and technical documentation to empower engineers to adopt and scale AI independently.
+* Mentor engineers and team leads, helping them grow their skills and confidence in applying AI to complex telecom and enterprise challenges.
+
+**External Evangelism \& Thought Leadership** 
+
+* Represent Amdocs as a technical expert at industry conferences, customer events, and developer communities.
+* Publish technical blog posts, whitepapers, and open\-source contributions that showcase Amdocs’ innovative use of AI in the telecom and enterprise software domains.
+* Stay at the forefront of the rapidly evolving AI landscape, bringing back insights and opportunities to the organization.
+**All you need is...**
+----------------------
+
+* **Extensive Technical Background:**
+
+
+	+ 7\+ years of hands\-on software development experience, with proficiency in multiple programming languages (e.g., Java, Python, C\#, TypeScript).**AI/ML Expertise:** 
+
+
+	+ Hands\-on experience with AI coding assistants (e.g., GitHub Copilot, Tabnine) and conversational AI tools for development (e.g., ChatGPT, Claude, Gemini).
+	+ Strong knowledge of LLMs, prompt engineering, and AI\-assisted software development practices.
+	+ Understanding of AI/ML model lifecycle, context management, and API integration protocols.**Leadership \& Influence:**
+
+
+	+ Proven ability to drive technology adoption and influence engineering culture across large, distributed teams without formal authority.
+	+ Strong communication and presentation skills, with the ability to simplify and explain complex technical concepts to executives, engineers, and customers.
+	+ Prior experience in Developer Advocacy, Technical Evangelism, or platform/tool enablement roles is a strong plus.
+**Why you will love this job:**
+-------------------------------
+
+* You will be in charge for the improvement of engineering and quality practices and work across Amdocs various business groups
+* You will lead key processes and prioritize work across teams
+* You will work with a team that responsible for shaping and constantly improving Amdocs products
+* You will work in a fast growing innovative environment
+**Amdocs is an equal opportunity employer. We welcome applicants from all backgrounds and are committed to fostering a diverse and inclusive workforce**",,https://in.indeed.com/cmp/Amdocs,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/e0336b28cf20f843426e9e3635055c6f,http://www.amdocs.com,"Chesterfield, MO","10,000+",$1B to $5B (USD),"Our people make an impact on the world. They are passionate, they see beyond limits and are not afraid to dare.",,,,,,
+in-235e21b6bb017a80,indeed,https://in.indeed.com/viewjob?jk=235e21b6bb017a80,https://jobs.bechtel.com/job/Gurugram-AI-Specialist-%28ML-&-LLM%29-HR-122015/1359156100/?feedId=4&utm_source=Indeed,AI Specialist (ML & LLM),Bechtel,"HR, IN",2026-01-26,fulltime,,,,,,False,,,,acesstmt@bechtel.com,"**Requisition ID: 291555**
+
+* **Relocation Authorized: None**
+* **Telework Type: Full\-Time Office/Project**
+* **Work Location: Gurugram**
+
+**Extraordinary teams building inspiring projects:**
+----------------------------------------------------
+
+
+Since 1898, we have helped customers complete more than 25,000 projects in 160 countries on all seven continents that have created jobs, grown economies, improved the resiliency of the world's infrastructure, increased access to energy, resources, and vital services, and made the world a safer, cleaner place.
+
+
+Differentiated by the quality of our people and our relentless drive to deliver the most successful outcomes, we align our capabilities to our customers' objectives to create a lasting positive impact. We serve the Infrastructure; Nuclear, Security \& Environmental; Energy; Mining \& Metals, and the Manufacturing and Technology markets. Our services span from initial planning and investment, through start\-up and operations.
+
+
+Core to Bechtel is our Vision, Values and Commitments. They are what we believe, what customers can expect, and how we deliver. Learn more about our extraordinary teams building inspiring projects in our Impact Report.
+
+  
+
+Bechtel’s India offices support the execution of projects and services around the world. Working seamlessly with Bechtel’s global business units, project sites, customers, and suppliers, our teams have delivered more than 125 projects since 1994\. With offices in Gurgaon, Vadodara, and Chennai there are exciting career opportunities for candidates who are passionate about delivering projects that make a lasting, meaningful difference for people and communities around the world.
+
+**Job Summary:**
+----------------
+
+
+We are seeking an AI specialist primarily as **Data Scientist \& Data Engineer** with hands‑on experience in **Azure OpenAI Studio**, **Databricks**, and modern data/AI engineering practices. The ideal candidate will work at the intersection of **data engineering, machine learning, and applied generative AI**, driving end‑to‑end solutions from data ingestion to model deployment for unique challenges and opportunities within the engineering, procurement and construction (EPC) sector.
+
+
+In this role, you may be required to travel to other corporate or project offices.
+
+**Major Responsibilities:**
+---------------------------
+
+* Identify AI Opportunities: Work closely with different departments to identify potential AI use cases that can solve business problems and create value.
+* Use Case Development: Develop detailed AI use cases, including problem statements, objectives, expected outcomes, and success metrics.
+* Feasibility Analysis: Conduct feasibility studies to assess the technical and economic viability of proposed AI use cases.
+* Solution Design:
+	+ Develop and maintain data ingestion workflows from varied sources (APIs, databases, file systems).
+	+ Implement data quality checks, validation, and monitoring frameworks
+	+ Translate business problems into technical solutions leveraging Azure and Databricks ecosystems.
+	+ Design secure, scalable architectures for data storage, processing, and model deployment.
+	+ Integrate AI/ML workloads with enterprise applications using APIs, orchestrators, and Azure services (Functions, Logic Apps, Synapse, etc.).
+	+ Fine\-tune and deploy **Azure OpenAI** models (GPT, embeddings, assistants, and custom models).
+	+ Build prompt engineering frameworks and evaluation strategies for LLM\-based applications.
+	+ Develop production\-grade ML systems using **MLflow**, **Databricks Model Registry**, or Azure ML.
+* Documentation: Maintain comprehensive documentation of AI use cases, including requirements, design, implementation, and performance metrics.
+* Continuous Improvement: Stay up\-to\-date with the latest advancements in AI and continuously seek opportunities to improve existing AI solutions and processes.
+**Education and Experience Requirements:**
+------------------------------------------
+
+* **Education:** Bachelor’s degree in computer science, AI, Classic Machine Learning models, Data Science, or a related field. Master’s degree preferred.
+* **Experience:** 4\+ years of experience in AI/machine learning, preferably within the engineering and construction (EPC) industry or a related field.
+* Experience in data science, data engineering, or ML engineering.
+* Proven experience building production\-grade ML/AI systems.
+* Prior exposure to LLMs, foundation models, or generative AI solutions
+* Experience with Vector databases (Pinecone, Weaviate, Azure AI Search).
+* Experience with RAG, LLMOps, or LLM application frameworks (LangChain, Semantic Kernel).
+* Understanding of security, governance, and compliance for AI workloads
+**Required Knowledge and Skills:**
+----------------------------------
+
+* Strong understanding of **LLM concepts** (RAG, grounding, evaluation, hallucination mitigation)
+* Hands\-on expertise with **Azure OpenAI Studio** (prompting, fine\-tuning, deployments)
+* Experience with **MLflow**, **MLOps**, CI/CD pipelines.
+
+
+Solid understanding of data modeling, distributed systems, and cloud\-native architectures.
+
+**Total Rewards/Benefits:**
+---------------------------
+
+
+For decades, Bechtel has worked to inspire the next generation of employees and beyond! Because our teams face some of the world's toughest challenges, we offer robust benefits to ensure our people thrive. Whether it is advancing careers, delivering programs to enhance our culture, or providing time to recharge, Bechtel has the benefits to build a legacy of sustainable growth. Learn more at bechtel.com/total\-rewards.
+
+**Diverse teams build the extraordinary:**
+------------------------------------------
+
+
+As a global company, Bechtel has long been home to a vibrant multitude of nationalities, cultures, ethnicities, and life experiences. This diversity has made us a more trusted partner, more effective problem solvers and innovators, and a more attractive destination for leading talent.
+
+
+We are committed to being a company where every colleague feels that they belong\-where colleagues feel part of ""One Team,"" respected and rewarded for what they bring, supported in pursuing their goals, invested in our values and purpose, and treated equitably.
+
+ ***Bechtel is an Equal Opportunity Employer. All qualified applicants will receive consideration for employment without regard to race, color, religion, sex, sexual orientation, gender identity and expression, age, national origin, disability, citizenship status (except as authorized by law), protected veteran status, genetic information, and any other characteristic protected by federal, state or local law. Applicants with a disability, who require a reasonable accommodation for any part of the application or hiring process, may e\-mail their request to*** **acesstmt@bechtel.com**",,https://in.indeed.com/cmp/Bechtel,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/abfeaf5cdbab5e3ee32aee3051121bd4,http://www.bechtel.com,"Reston, VA","10,000+",more than $10B (USD),"Bechtel is one of the world’s most respected global engineering, construction, and project management organizations.",,,,,,
+in-39473dfc08c8b8c9,indeed,https://in.indeed.com/viewjob?jk=39473dfc08c8b8c9,https://grnh.se/wbj7ukhi8us,Engineer – CFD / Fire and Egress Modeling,JENSEN HUGHES,"KA, IN",2026-01-26,,,,,,,True,,,,,"**Company Overview**
+
+
+
+Throughout our worldwide network of experts, clients and communities, we are renowned for our leadership in fire protection engineering – a legacy of responsibility we have proudly upheld since 1939\. Today, our expertise extends broadly across closely related security and risk\-based fields – from accessibility consulting and risk analysis to process safety, forensic investigations, security risk consulting, emergency management, digital innovation and more.Our engineers and consultants collaborate to solve complex safety and security challenges, ensuring our clients can protect what matters most. For over 80 years, we have helped mitigate risks that threaten lives, property and reputations. Through technology, expertise and industry\-leading research, we remain dedicated to our purpose of making our world safe, secure and resilient.At Jensen Hughes, we believe that creating and sustaining a culture of trust, integrity and professional growth starts with putting our people first. Our employees are our greatest strength, and we value the unique perspectives and talents they bring to our organization. Our wide range of Global Employee Networks connect people from across the organization, supporting career development and providing forums for individuals to share experiences on topics they're passionate about. Together, we are cultivating a connected culture where everyone has the opportunity to learn, grow and succeed together.
+
+
+**Overview – Role**
+
+
+
+We are seeking a skilled **CFD / Fire and Egress Modeling Engineer** to support fire engineering and life safety projects through advanced numerical modeling and performance\-based analysis. The role involves applying **computational fluid dynamics (CFD), fire and smoke modeling,** and **egress simulations** to assess fire scenarios, occupant safety, and regulatory compliance across a wide range of developments.
+
+
+
+This role while based in India (remote) , and will be responsible for handling projects across Middle East / other international locations
+
+
+**Responsibilities·**
+
+
+* Carry out CFD fire and smoke modeling using FDS / PyroSim for complex geometries.
+* Develop credible fire scenarios in line with codes, standards, and project requirements.
+* Perform egress and evacuation modeling using Pathfinder, MassMotion, STEPS, or similar tools.
+* Assess evacuation times, crowd movement, congestion, and exit capacities to support ASET/RSET and performance\-based design.
+* Prepare technical reports and presentations for clients and approval authorities.
+* Coordinate with multidisciplinary teams to support project delivery and QA.
+
+
+**Qualifications**
+
+
+* Bachelor's or Master's degree in Fire, Mechanical, or Civil Engineering (or related discipline) with 5–10 years of experience in CFD fire modeling and egress analysis, preferably on Middle East projects involving regulatory authority approvals.
+* Hands\-on experience developing 3D models for complex facilities (e.g., airports, stadiums) using PyroSim, Pathfinder, or similar tools.
+* Strong understanding of fire dynamics, smoke control, and international codes and standards (NFPA / IBC).
+* Excellent technical report writing, communication, and interpersonal skills.
+
+
+ **Why you should join Jensen Hughes**
+
+  
+
+* You will work on exciting, challenging and at times groundbreaking designs and projects with market\-leading clients
+* There is continued support from the leadership team with a measured and flexible approach to carrying out day to day activities.
+* Career advancement with an established framework is in place with mentorship from market leaders – clearly defining expectations and outlining opportunities for advancement.
+
+
+\#LI\-SR1
+
+  
+
+
+***Jensen Hughes is an Equal Opportunity Employer. Qualified candidates will receive consideration for employment without regard to race, color, religion, sex, national origin, sexual orientation, gender identity, disability or protected veteran status.***
+
+  
+
+
+
+At Jensen Hughes, we embrace innovation and understand that people are increasingly using artificial intelligence (AI) tools like ChatGPT and other generative platforms to learn, prepare and communicate. We have provided some guidelines regarding the responsible use of AI in the recruitment process. Please click **here** to review.
+
+  
+
+The security of your personal data is important to us. Jensen Hughes has implemented reasonable physical, technical, and administrative security standards to protect personal data from loss, misuse, alteration, or destruction. We protect your personal data against unauthorized access, use, or disclosure, using security technologies and procedures, such as encryption and limited access. Only authorized individuals may access your personal data for the purpose for which it was collected, and these individuals receive training about the importance of protecting personal data. Jensen Hughes is committed to compliance with all relevant data privacy laws in all areas where we do business, including, but not limited to, the GDPR and the CCPA. Additionally, our service providers are contractually bound to maintain the confidentiality of personal data and may not use the information for any unauthorized purpose.
+
+  
+
+
+* Policy on use of 3rd party recruiting agency for direct placements
+
+  
+
+Jensen Hughes will occasionally augment a recruiting search through agencies for certain positions when business conditions warrant. Jensen Hughes will not accept resumes, inquiries or proposals from recruiting agencies as an acceptable method to consider a candidate. 3rd party recruiting agencies must sign a standard Jensen Hughes agreement after being evaluated and accepted by a Human Resources or Talent Acquisition manager, or member of the talent acquisition team. Hiring managers and employees of Jensen Hughes are not authorized to accept resumes, engage in fee\-based searches through recruiting firms or sign a search agreement. Please note this policy does not apply to ""staffing firms"" or firms that are involved with hiring temporary staff. Any recruiting agency interested in being considered may contact our recruiting team at jensenhughesrecruiting.com.",,https://in.indeed.com/cmp/Jensen-Hughes-1,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/c4e73ff491bb0d5330fb9aee611f1111,http://www.jensenhughes.com,"Baltimore, MD","1,001 to 5,000",$100M to $500M (USD),"Making our world safe, secure, and resilient.",,,,,,
+in-0d934ac2036d3418,indeed,https://in.indeed.com/viewjob?jk=0d934ac2036d3418,https://jobs.smartrecruiters.com/NielsenIQ/744000105595086-senior-ml-engineer,Senior ML Engineer,NielsenIQ,"MH, IN",2026-01-26,fulltime,,,,,,False,,,,,"NIQ is seeking a highly skilled and experienced Senior ML Engineer to join our dynamic team. As a Senior ML Engineer at NIQ, you will play a crucial role in developing and implementing advanced AI/GenAI models and algorithms to solve complex business problems. You will collaborate closely with cross\-functional teams to design, build, and deploy scalable AI/GenAI solutions.
+
+**Responsibilities:**
+
+* Develop and implement AI/GenAI models and algorithms using Python programming language, jointly with knowledge about PyTorch/Tensorflow, Pandas, sklearn and similar AI/GenAI libraries.
+* Utilize ML fundamentals, including deep learning, optimization techniques, NLP, and Large Language Models (LLMs), to solve real\-world problems.
+* Work closely with data scientists and engineers to gather requirements, perform data analysis, and develop end\-to\-end ML pipelines.
+* Conduct experiments and perform model evaluation to ensure the robustness, scalability, and accuracy of AI/GenAI solutions.
+* Optimize and fine\-tune AI/GenAI models for performance and efficiency.
+* Collaborate with cloud computing teams to deploy AI/GenAI models on cloud platforms, preferably Azure.
+* Utilize SQL for data Extraction, Transformation, and Loading (ETL) processes.
+* Stay updated with the latest advancements in AI/GenAI.
+**Qualifications**
+------------------
+
+**Qualifications:**
+
+* Bachelor's degree or higher in Computer Science, Engineering, Mathematics, or related field.
+* Proven experience 5 years working as a Senior ML Engineer or similar role.
+* Strong proficiency in Python programming language.
+* In\-depth knowledge of ML fundamentals, including deep learning, optimization techniques, generative AI, NLP, and LLMs.
+* Experience with cloud computing platforms (knowledge of Azure is a plus).
+* Familiarity with SQL for data manipulation and analysis.
+* Excellent problem\-solving skills and attention to detail.
+* Strong communication and collaboration skills.
+* Ability to thrive in a fast\-paced, dynamic environment.
+**Additional Information**
+--------------------------
+
+**Our Benefits**
+
+* Flexible working environment
+* Volunteer time off
+* LinkedIn Learning
+* Employee\-Assistance\-Program (EAP)
+
+
+NIQ may utilize artificial intelligence (AI) tools at various stages of the recruitment process, including résumé screening, candidate assessments, interview scheduling, job matching, communication support, and certain administrative tasks that help streamline workflows. These tools are intended to improve efficiency and support fair and consistent evaluation based on job\-related criteria. All use of AI is governed by NIQ’s principles of fairness, transparency, human oversight, and inclusion. Final hiring decisions are made exclusively by humans. NIQ regularly reviews its AI tools to help mitigate bias and ensure compliance with applicable laws and regulations. If you have questions, require accommodations, or wish to request human review were permitted by law, please contact your local HR representative. For more information, please visit NIQ’s AI Safety Policies and Guiding Principles: https://www.nielseniq.com/global/en/ai\-safety\-policies.
+
+  
+
+
+**About NIQ**
+
+
+NIQ is the world’s leading consumer intelligence company, delivering the most complete understanding of consumer buying behavior and revealing new pathways to growth. In 2023, NIQ combined with GfK, bringing together the two industry leaders with unparalleled global reach. With a holistic retail read and the most comprehensive consumer insights—delivered with advanced analytics through state\-of\-the\-art platforms—NIQ delivers the Full View™. NIQ is an Advent International portfolio company with operations in 100\+ markets, covering more than 90% of the world’s population.
+
+
+For more information, visit NIQ.com
+
+
+Want to keep up with our latest updates?
+
+  
+
+
+**Our commitment to Diversity, Equity, and Inclusion**
+
+
+At NIQ, we are steadfast in our commitment to fostering an inclusive workplace that mirrors the rich diversity of the communities and markets we serve. We believe that embracing a wide range of perspectives drives innovation and excellence. All employment decisions at NIQ are made without regard to race, color, religion, sex (including pregnancy, sexual orientation, or gender identity), national origin, age, disability, genetic information, marital status, veteran status, or any other characteristic protected by applicable laws. We invite individuals who share our dedication to inclusivity and equity to join us in making a meaningful impact. To learn more about our ongoing efforts in diversity and inclusion, please visit the https://nielseniq.com/global/en/news\-center/diversity\-inclusion",,https://in.indeed.com/cmp/Nielseniq-6,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/b36ad0277649777a7e45862e1349e96b,https://nielseniq.com/global/en/,,"10,000+",,"NielsenIQ is the industry leader in global measurement and data analytics, and the most trusted source for retail and consumer intelligence.",,,,,,
+in-cbfb6af32099b2b5,indeed,https://in.indeed.com/viewjob?jk=cbfb6af32099b2b5,http://in.indeed.com/job/ai-engineer-cbfb6af32099b2b5,AI Engineer,GetNext Solutions Private Limited,"Pollachi, TN, IN",2026-01-26,fulltime,,,,,,False,,,,,"Position Overview
+
+We are seeking a highly skilled **AI Engineer** to design, develop, and deploy artificial intelligence solutions that drive innovation and efficiency across our products and services. The ideal candidate will have strong expertise in machine learning, deep learning, and data engineering, combined with practical experience in building scalable AI systems.
+
+Key Responsibilities
+
+* **Model Development**: Design, train, and optimize machine learning and deep learning models for various applications (e.g., Natural Language Processing, computer vision, recommendation systems).
+* **Data Handling**: Collect, preprocess, and analyze large datasets to ensure high\-quality input for AI models.
+* **Deployment \& Integration**: Implement AI models into production environments, ensuring scalability, reliability, and performance.
+* **Research \& Innovation**: Stay updated with the latest AI/ML research and apply cutting\-edge techniques to solve business problems.
+* **Collaboration**: Work closely with data scientists, software engineers, and product teams to integrate AI solutions into products.
+* **Monitoring \& Maintenance**: Continuously monitor deployed models, retrain when necessary, and improve accuracy and efficiency.
+* **Documentation**: Maintain clear technical documentation for models, pipelines, and processes. Required Skills \& Qualifications
+* Bachelor’s or Master’s degree in Computer Science, Data Science, AI/ML, or related field.
+* Strong programming skills in **Python** (TensorFlow, PyTorch etc.).
+* Experience with **cloud platforms** (AWS, Azure) .
+* Solid understanding of **machine learning algorithms**, **deep learning architectures**, and **data structures**.
+* Familiarity with Natural Language Processing**, computer vision, reinforcement learning**, or other AI domains.
+* Strong problem\-solving skills and ability to translate business needs into technical solutions.
+* Excellent communication and teamwork abilities.
+
+Preferred Qualifications
+
+* Experience with **large language models , Image Processing** and generative AI.
+* Knowledge of **distributed computing** and **big data frameworks** (Spark, Hadoop).
+* Contributions to open\-source AI/ML projects.
+* Prior experience in deploying AI solutions at scale in production.
+
+Job Types: Full\-time, Permanent
+
+Pay: ₹30,000\.00 \- ₹50,000\.00 per month
+
+Work Location: In person",,https://in.indeed.com/cmp/Getnext-Solutions-Private-Limited,,,,,,,,,,,,
+in-90c76f4467d83851,indeed,https://in.indeed.com/viewjob?jk=90c76f4467d83851,http://in.indeed.com/job/ai-engineer-90c76f4467d83851,AI Engineer,Logistic Infotech,"GJ, IN",2026-01-26,fulltime,,,,,,True,,,,,"**Position: AI Engineer**   
+Company: Logistic Infotech Pvt. Ltd.  
+Location: Ahmedabad / Rajkot, Gujarat  
+Experience: **2–3 Years**  
+Job Type: Full\-time
+
+**About the Company:**
+
+Founded in 2010, Logistic Infotech Pvt. Ltd. is a fast\-growing IT company headquartered in Rajkot, Gujarat. We deliver cutting\-edge web, mobile, UI/UX, and custom software solutions to clients across the USA, UK, Germany, Australia, Canada, and more. With 800\+ successful projects, we focus on innovation, quality, and complete client satisfaction.
+
+**Roles \& Responsibilities**
+
+* Design, develop, and optimize **AI \& Generative AI solutions** using **LLMs**
+* Build **LangChain / LangGraph workflows**, AI agents, and **RAG pipelines**
+* Work with **OpenAI, Azure OpenAI, and open\-source LLMs**
+* Perform **prompt engineering**, evaluation, and hallucination control
+* Integrate AI models using **REST APIs / microservices**
+* Work with **vector databases** (FAISS, Pinecone, Weaviate, ChromaDB)
+* Apply **Machine Learning techniques** and work on **NLP \& Computer Vision** use cases
+* Deploy and monitor AI systems on **AWS / Azure / GCP**
+* Collaborate with cross\-functional teams to deliver **AI\-powered features**
+* Ensure **scalability, performance, and production stability**.
+
+**Requirements**
+
+* Bachelor’s (**4 Years**) or Master’s degree in **Computer Science, AI, Machine Learning, or related field**
+* **2–3 years** of hands\-on experience in **AI / Generative AI development**
+* Strong proficiency in **Python**
+* Solid understanding of **LLMs, Transformers, embeddings, and prompt engineering**
+* Experience with **LangChain / LangGraph** and **RAG architectures**
+* Hands\-on exposure to **vector databases**
+* Good understanding of **Machine Learning fundamentals**
+* Working knowledge of **NLP and Computer Vision**
+
+**Benefits**
+
+* Work From Home (For Ahmedabad\-Based Candidates)
+* 5 Days Working
+* Mediclaim Insurance
+* Festival Leaves
+* Exposure to modern AI \& GenAI technologies
+* Positive and supportive work culture
+
+Job Type: Full\-time
+
+Pay: ₹500,000\.00 \- ₹800,000\.00 per year
+
+Benefits:
+
+* Health insurance
+* Paid time off
+* Provident Fund
+* Work from home
+
+Work Location: In person",,https://in.indeed.com/cmp/Logistic-Infotech,,http://www.logisticinfotech.com,Rājkot,11 to 50,,,,,,,,
+in-e8e68d1fda9dcf1b,indeed,https://in.indeed.com/viewjob?jk=e8e68d1fda9dcf1b,https://www.amazon.jobs/jobs/3157938/business-intelligence-engineer-rbs-be--bqa?cmpid=DA_INAD200785B,"Business Intelligence Engineer, RBS BE - BQA",Amazon.com,"TN, IN",2026-01-09,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+We are looking for a customer\-obsessed Business Intel Engineer that thrives in a culture of data\-driven decision making who will be responsible to help us hold a high bar for RBS BQA  
+
+  
+
+Key job responsibilities  
+
+This individual will be responsible for driving/creating:  
+
+* Leveraging Generative AI tools and Large Language Models (LLMs) to automate data analysis, generate insights, and create natural language summaries of complex datasets
+* Building and deploying GenAI\-powered analytics solutions to enhance self\-service capabilities and accelerate decision\-making
+* Developing prompt engineering strategies and RAG (Retrieval\-Augmented Generation) pipelines to integrate GenAI with existing data infrastructure
+* Experimenting with foundation models (e.g., Amazon Bedrock, SageMaker JumpStart) to solve business intelligence challenges
+* Experience working with large, multi\-dimensional datasets from multiple sources
+* Make recommendations for new metrics, techniques, and strategies to improve the operational and quality metrics.
+* Proficient using at least one data visualization product (Tableau, Qlik, Amazon QuickSight, Power BI, etc.)
+* Experience in deployment of Machine Learning and Statistical models
+* Building new Python utilities and maintaining existing ones
+* Enabling more efficient adhoc queries \& analysis
+* Working closely with research scientists, business analysts and product leads to scale data
+* Ensuring consistency between various platform, operational, and analytic data sources to enable faster and more efficient detection and resolution of issues
+* Exploring and learn the latest AWS technologies to provide new capabilities and increase efficiencies
+* Mentoring the team on analytics best practices
+
+  
+
+A day in the life  
+
+* Working closely with cross\-functional teams including Product/Program Managers, Software Development Managers, Applied/Research/Data Scientists, and Software Developers
+* Building dashboards, performing root cause analysis, and sharing actionable insights with stakeholders to enable data\-informed decision making
+
+
+\- Leading reporting and analytics initiatives to drive data\-informed decision making\- Designing, developing, and maintaining ETL processes and data visualization dashboards using Amazon QuickSight  
+
+* Transforming complex business requirements into actionable analytics solutions.
+
+  
+
+About the team  
+
+Retail Business Service accelerates WW Amazon Stores growth by improving customer and Selling Partner experiences while optimizing costs. Our three\-fold charter: 1\) Detect and fix customer shopping impediments, 2\) Grow SP business profitably including scaled tier\-2/3 management, 3\) Reduce Cost\-to\-Serve across Stores P\&L  
+
+RBS BQA transforms organizational capability through four pillars: Quality Assurance, People Excellence, Continuous Improvement, and Innovation. The team proactively solves internal challenges via systematic defect identification and data\-driven frameworks. Through various programs, BQA positions RBS as Amazon's benchmark organization.
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 5\+ years of analyzing and interpreting data with Redshift, Oracle, NoSQL etc. experience
+* Experience with data visualization using Tableau, Quicksight, or similar tools
+* Experience with data modeling, warehousing and building ETL pipelines
+* Experience in Statistical Analysis packages such as R, SAS and Matlab
+* Experience using SQL to pull data from a database or data warehouse and scripting experience (Python) to process data for modeling
+* Experience developing and presenting recommendations of new metrics allowing better understanding of the performance of the business
+* Experience writing complex SQL queries
+* Bachelor's degree in BI, finance, engineering, statistics, computer science, mathematics, finance or equivalent quantitative field
+* Experience in machine learning, data mining, information retrieval, statistics or natural language processing, or experience in developing and deploying LLMs in production on GPUs, Neuron, TPU or other AI acceleration hardware
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Experience with AWS solutions such as EC2, DynamoDB, S3, and Redshift
+* Experience in data mining, ETL, etc. and using databases in a business environment with large\-scale, complex datasets
+* Master's degree in BI, finance, engineering, statistics, computer science, mathematics, finance or equivalent quantitative field
+* Experience with design \& innovation and research \& development
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-4034afe72cb0989a,indeed,https://in.indeed.com/viewjob?jk=4034afe72cb0989a,https://www.amazon.jobs/jobs/3157938/business-intelligence-engineer-rbs-be--bqa?cmpid=DA_INAD200785B,"Business Intelligence Engineer, RBS BE - BQA",Amazon.com,"KA, IN",2026-01-09,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+We are looking for a customer\-obsessed Business Intel Engineer that thrives in a culture of data\-driven decision making who will be responsible to help us hold a high bar for RBS BQA  
+
+  
+
+Key job responsibilities  
+
+This individual will be responsible for driving/creating:  
+
+* Leveraging Generative AI tools and Large Language Models (LLMs) to automate data analysis, generate insights, and create natural language summaries of complex datasets
+* Building and deploying GenAI\-powered analytics solutions to enhance self\-service capabilities and accelerate decision\-making
+* Developing prompt engineering strategies and RAG (Retrieval\-Augmented Generation) pipelines to integrate GenAI with existing data infrastructure
+* Experimenting with foundation models (e.g., Amazon Bedrock, SageMaker JumpStart) to solve business intelligence challenges
+* Experience working with large, multi\-dimensional datasets from multiple sources
+* Make recommendations for new metrics, techniques, and strategies to improve the operational and quality metrics.
+* Proficient using at least one data visualization product (Tableau, Qlik, Amazon QuickSight, Power BI, etc.)
+* Experience in deployment of Machine Learning and Statistical models
+* Building new Python utilities and maintaining existing ones
+* Enabling more efficient adhoc queries \& analysis
+* Working closely with research scientists, business analysts and product leads to scale data
+* Ensuring consistency between various platform, operational, and analytic data sources to enable faster and more efficient detection and resolution of issues
+* Exploring and learn the latest AWS technologies to provide new capabilities and increase efficiencies
+* Mentoring the team on analytics best practices
+
+  
+
+A day in the life  
+
+* Working closely with cross\-functional teams including Product/Program Managers, Software Development Managers, Applied/Research/Data Scientists, and Software Developers
+* Building dashboards, performing root cause analysis, and sharing actionable insights with stakeholders to enable data\-informed decision making
+
+
+\- Leading reporting and analytics initiatives to drive data\-informed decision making\- Designing, developing, and maintaining ETL processes and data visualization dashboards using Amazon QuickSight  
+
+* Transforming complex business requirements into actionable analytics solutions.
+
+  
+
+About the team  
+
+Retail Business Service accelerates WW Amazon Stores growth by improving customer and Selling Partner experiences while optimizing costs. Our three\-fold charter: 1\) Detect and fix customer shopping impediments, 2\) Grow SP business profitably including scaled tier\-2/3 management, 3\) Reduce Cost\-to\-Serve across Stores P\&L  
+
+RBS BQA transforms organizational capability through four pillars: Quality Assurance, People Excellence, Continuous Improvement, and Innovation. The team proactively solves internal challenges via systematic defect identification and data\-driven frameworks. Through various programs, BQA positions RBS as Amazon's benchmark organization.
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 5\+ years of analyzing and interpreting data with Redshift, Oracle, NoSQL etc. experience
+* Experience with data visualization using Tableau, Quicksight, or similar tools
+* Experience with data modeling, warehousing and building ETL pipelines
+* Experience in Statistical Analysis packages such as R, SAS and Matlab
+* Experience using SQL to pull data from a database or data warehouse and scripting experience (Python) to process data for modeling
+* Experience developing and presenting recommendations of new metrics allowing better understanding of the performance of the business
+* Experience writing complex SQL queries
+* Bachelor's degree in BI, finance, engineering, statistics, computer science, mathematics, finance or equivalent quantitative field
+* Experience in machine learning, data mining, information retrieval, statistics or natural language processing, or experience in developing and deploying LLMs in production on GPUs, Neuron, TPU or other AI acceleration hardware
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Experience with AWS solutions such as EC2, DynamoDB, S3, and Redshift
+* Experience in data mining, ETL, etc. and using databases in a business environment with large\-scale, complex datasets
+* Master's degree in BI, finance, engineering, statistics, computer science, mathematics, finance or equivalent quantitative field
+* Experience with design \& innovation and research \& development
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-44db83872d5b513e,indeed,https://in.indeed.com/viewjob?jk=44db83872d5b513e,https://apply.careers.microsoft.com/careers/job/1970393556657610?utm_source=indeed&domain=microsoft.com,Senior Consultant - Apps,Microsoft,"TS, IN",2026-01-08,fulltime,,,,,,False,,,,,"**Overview**  
+
+Microsoft Industry Solutions – Global Center for Innovation and Delivery (GCID) delivers end‑to‑end, industry‑aligned solutions by accelerating the adoption of Microsoft technologies. With a global team of 1,000\+ professionals, GCID offers experienced consultants the opportunity to deliver high‑impact, enterprise‑scale solutions.
+
+
+As a Senior Consultant – Full Stack AI Application Developer, you will design and deliver modern, cloud‑native and AI‑powered applications that drive measurable business outcomes. You will contribute across the solution lifecycle—as an advisor, architect, and hands‑on engineer—on complex, high‑visibility customer engagements. The ideal candidate combines strong full‑stack engineering expertise with applied AI capabilities, deep knowledge of Cloud services, and a consulting mindset focused on customer value. You will ensure strategic, architectural, and operational alignment while advocating for scalable, secure, and well‑designed solutions.
+
+ **Responsibilities*** Lead the technical delivery of complex, cloud‑native and AI‑enabled engagements, contributing as a hands‑on individual contributor and, where required, leading engineering teams to ensure high‑quality, predictable outcomes.
+* Define and drive the technology strategy for large and complex customer engagements, ensuring solutions are scalable, secure, and aligned to business objectives, architectural best practices, and Microsoft reference architectures.
+* Design, develop, and deploy solutions on Microsoft Azure, accelerating customer value through the effective use of Microsoft technologies, platforms, and delivery methodologies.
+* Applies user‑centered design principles to translate customer needs into clear technical requirements and scalable solution designs through iterative prototyping and feedback.
+* Provide delivery leadership by setting technical priorities, estimating effort, managing dependencies, making disciplined trade‑offs, and driving successful releases.
+* Ensure engineering excellence and solution quality, with accountability for the overall efficacy, performance, security, and compliance of technical delivery within assigned engagements.
+* Identify, assess, and manage technical risks and dependencies across projects, including defining mitigation strategies, handling escalations, and planning for both short‑ and long‑term delivery risks.
+* Apply information security, compliance, and assurance standards to maintain stakeholder confidence and meet customer, regulatory, and Microsoft governance requirements.
+* Drive innovation and digital transformation, leveraging existing intellectual property (IP), reusable assets, and best practices to improve delivery predictability and speed.
+* Collaborate with cross‑functional teams, including Sales, account‑aligned teams, and peers, to articulate technical value propositions and support the expansion and adoption of Microsoft cloud and AI solutions with strategic customers.
+* Contribute to thought leadership and continuous improvement, fostering new ways of working that enhance engineering productivity, solution quality, and responsiveness to evolving customer needs.
+ **Qualifications*** 10\+ years of overall professional experience in software engineering, application development, and solution delivery, with a strong focus on enterprise‑scale, customer‑facing engagements.
+* 5\+ years of experience in customer‑facing delivery leadership
+* Bachelor's degree in computer science engineering, or a related field. Advanced or higher‑education qualifications are a plus.
+* Microsoft and cloud technology certifications are preferred, including but not limited to:  
+
+AZ‑204 (Developing Solutions for Microsoft Azure),  
+
+AI‑102 (Designing and Implementing an Azure AI Solution),  
+
+MCSD / MCSE or equivalent modern cloud and AI certifications.
+
+
+AREAS OF EXPERTISE
+
+
+Full‑Stack Application Development
+
+* Strong experience designing, building, and deploying business‑ and mission‑critical applications using .NET (C\#), .NET Web APIs, Node.js.
+* Full‑stack development expertise across UI, API, service, domain, data, and integration layers, with proficiency in C\#, JavaScript, TypeScript, Angular or React, HTML5, and CSS/SCSS.
+* Deep understanding of software architecture patterns and anti‑patterns for large‑scale systems, including MVC, CQRS, and Saga, with a focus on performance, scalability, and resiliency.
+* Excellent foundation in software engineering principles, data structures, algorithms, testing, debugging, and analytical problem‑solving.
+* Proficiency with cloud data platforms including Azure SQL, Cosmos DB, Azure Database for PostgreSQL, MySQL, Azure SQL Managed Instance, and MariaDB.
+* Experience creating reusable application frameworks and shared components that address cross‑cutting concerns such as logging, security, resiliency, and configuration management.
+* Hands‑on experience with multi‑threaded and parallel programming and high‑throughput service design.
+
+AI Application Development \& Generative AI
+
+* Strong hands‑on experience, preferably with Azure AI Foundry, Azure AI Search, Cognitive Search, Vector Search, and Retrieval‑Augmented Generation (RAG) patterns.
+* Proven expertise in building enterprise‑grade LLM and agentic AI solutions using Semantic Kernel, LangChain, LangGraph, AutoGen, and developer copilots such as GitHub Copilot and Cursor.
+* Practical experience in prompt engineering, prompt optimization, evaluation frameworks, and reliability tuning to deliver safe, high‑quality AI outputs.
+* Advanced Python expertise in implementing RAG pipelines, vector workflows, agent orchestration, and AI evaluation frameworks.
+* Strong understanding and application of Responsible AI principles, including safety, fairness, transparency, and governance (mandatory).
+
+Cloud Architecture, Platforms \& DevOps
+
+* Extensive experience in designing, implementing, operating, tuning, and troubleshooting large‑scale cloud solutions on Microsoft Azure or any public cloud.
+* Hands‑on expertise implementing microservices and serverless architectures using Kubernetes, Azure Functions, Service Fabric, and related platforms.
+* Strong experience defining and implementing CI/CD pipelines, automated testing, and release strategies including Blue/Green and Canary deployments.
+* Deep experience with cloud monitoring and end‑to‑end telemetry, ensuring observability, reliability, and production readiness.
+
+Security, Compliance \& Zero Trust
+
+* Strong expertise in security‑by‑design principles, including encryption, authentication and authorization (AuthN/AuthZ).
+* Deep knowledge of Zero Trust architecture, IAM, secure‑by‑default design, threat modeling, compliance standards, and DevSecOps practices.
+* Hands‑on experience with least‑privilege access, assume‑breach concepts, micro‑segmentation, continuous monitoring, SAST/DAST, and secure CI/CD pipelines.
+* Familiarity with security and monitoring tools such as Microsoft Defender for Cloud, Microsoft Threat Modeling Tool, Azure Sentinel, and Splunk.
+
+Consulting, Transformation \& Industry Experience
+
+
+Proven experience delivering large‑scale digital transformation initiatives, including cloud migration and hybrid modernization programs. Brings architectural breadth through exposure to open‑source technologies and platforms. Has good exposure to Azure/AWS/GCP, along with industry experience across domains such as financial services, government, healthcare, manufacturing, and retail/supply chain.
+
+  
+
+Good to have
+
+  
+
+Customer Co\-Innovation Mindset \& Customer Enablement
+
+* Lead rapid prototyping, pilots, and early\-stage production deployments for enterprise customers, accelerating time\-to\-value
+* Translate from whiteboard to production with minimal friction, engineering alongside customer teams to unblock delivery and adoption
+* Own troubleshooting across performance, reliability, cost, security, and data quality, delivering outcome\-driven engineering in ambiguous, high\-pressure environments
+
+ Other
+
+* Embody our culture and values
+  
+
+  
+
+This position will be open for a minimum of 5 days, with applications accepted on an ongoing basis until the position is filled.
+
+  
+
+Microsoft is an equal opportunity employer. All qualified applicants will receive consideration for employment without regard to age, ancestry, citizenship, color, family or medical care leave, gender identity or expression, genetic information, immigration status, marital status, medical condition, national origin, physical or mental disability, political affiliation, protected veteran or military status, race, ethnicity, religion, sex (including pregnancy), sexual orientation, or any other characteristic protected by applicable local laws, regulations and ordinances. If you need assistance with religious accommodations and/or a reasonable accommodation due to a disability during the application process**.**",Internet And Software,https://in.indeed.com/cmp/Microsoft,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/88813b3f866a5b58c9685073e3b87e05,http://www.microsoft.com/,"One Microsoft Way Redmond, Washington 98052-6399","10,000+",more than $10B (USD),Our mission is to empower every person and every organization on the planet to achieve more.,,,,,,
+in-27d14dd9af5de7aa,indeed,https://in.indeed.com/viewjob?jk=27d14dd9af5de7aa,https://www.amazon.jobs/jobs/3155053/business-intelligence-engineer-rbs-aces?cmpid=DA_INAD200785B,"Business Intelligence Engineer, RBS ACES",Amazon.com,"TN, IN",2025-12-15,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+We are looking for a customer\-obsessed Business Intel Engineer that thrives in a culture of data\-driven decision making who will be responsible to help us hold a high bar for RBS ACES  
+
+  
+
+Key job responsibilities  
+
+This individual will be responsible for driving/creating:  
+
+* Leveraging Generative AI tools and Large Language Models (LLMs) to automate data analysis, generate insights, and create natural language summaries of complex datasets
+* Building and deploying GenAI\-powered analytics solutions to enhance self\-service capabilities and accelerate decision\-making
+* Developing prompt engineering strategies and RAG (Retrieval\-Augmented Generation) pipelines to integrate GenAI with existing data infrastructure
+* Experimenting with foundation models (e.g., Amazon Bedrock, SageMaker JumpStart) to solve business intelligence challenges
+* Experience working with large, multi\-dimensional datasets from multiple sources
+* Make recommendations for new metrics, techniques, and strategies to improve the operational and quality metrics.
+* Proficient using at least one data visualization product (Tableau, Qlik, Amazon QuickSight, Power BI, etc.)
+* Experience in deployment of Machine Learning and Statistical models
+* Building new Python utilities and maintaining existing ones
+* Enabling more efficient adhoc queries \& analysis
+* Working closely with research scientists, business analysts and product leads to scale data
+* Ensuring consistency between various platform, operational, and analytic data sources to enable faster and more efficient detection and resolution of issues
+* Exploring and learn the latest AWS technologies to provide new capabilities and increase efficiencies
+* Mentoring the team on analytics best practices
+
+  
+
+A day in the life  
+
+* Working closely with cross\-functional teams including Product/Program Managers, Software Development Managers, Applied/Research/Data Scientists, and Software Developers
+* Building dashboards, performing root cause analysis, and sharing actionable insights with stakeholders to enable data\-informed decision making
+
+
+\- Leading reporting and analytics initiatives to drive data\-informed decision making\- Designing, developing, and maintaining ETL processes and data visualization dashboards using Amazon QuickSight  
+
+* Transforming complex business requirements into actionable analytics solutions.
+
+  
+
+About the team  
+
+Retail Business Service accelerates WW Amazon Stores growth by improving customer and Selling Partner experiences while optimizing costs. Our three\-fold charter: 1\) Detect and fix customer shopping impediments, 2\) Grow SP business profitably including scaled tier\-2/3 management, 3\) Reduce Cost\-to\-Serve across Stores P\&L  
+
+RBS ACES transforms organizational capability through four pillars: Org Excellence, People Excellence, Continuous Improvement, and Innovation. The team proactively solves internal challenges via systematic defect identification and data\-driven frameworks. Through various programs, ACES positions RBS as Amazon's benchmark organization.
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 5\+ years of analyzing and interpreting data with Redshift, Oracle, NoSQL etc. experience
+* Experience with data visualization using Tableau, Quicksight, or similar tools
+* Experience with data modeling, warehousing and building ETL pipelines
+* Experience in Statistical Analysis packages such as R, SAS and Matlab
+* Experience using SQL to pull data from a database or data warehouse and scripting experience (Python) to process data for modeling
+* Experience developing and presenting recommendations of new metrics allowing better understanding of the performance of the business
+* Experience writing complex SQL queries
+* Bachelor's degree in BI, finance, engineering, statistics, computer science, mathematics, finance or equivalent quantitative field
+* Experience with Generative AI technologies, including prompt engineering, working with LLM APIs (e.g., Amazon Bedrock, OpenAI, Anthropic), or building AI\-powered analytics applications
+* Familiarity with GenAI frameworks and tools such as LangChain, vector databases, or embedding models for semantic search and retrieval
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Experience with AWS solutions such as EC2, DynamoDB, S3, and Redshift
+* Experience in data mining, ETL, etc. and using databases in a business environment with large\-scale, complex datasets
+* Master's degree in BI, finance, engineering, statistics, computer science, mathematics, finance or equivalent quantitative field
+* Relentless curiosity and drive to explore emerging trends and technologies in the field
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-f1520315265f9034,indeed,https://in.indeed.com/viewjob?jk=f1520315265f9034,https://www.amazon.jobs/jobs/3155053/business-intelligence-engineer-rbs-aces?cmpid=DA_INAD200785B,"Business Intelligence Engineer, RBS ACES",Amazon.com,"KA, IN",2025-12-15,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+We are looking for a customer\-obsessed Business Intel Engineer that thrives in a culture of data\-driven decision making who will be responsible to help us hold a high bar for RBS ACES  
+
+  
+
+Key job responsibilities  
+
+This individual will be responsible for driving/creating:  
+
+* Leveraging Generative AI tools and Large Language Models (LLMs) to automate data analysis, generate insights, and create natural language summaries of complex datasets
+* Building and deploying GenAI\-powered analytics solutions to enhance self\-service capabilities and accelerate decision\-making
+* Developing prompt engineering strategies and RAG (Retrieval\-Augmented Generation) pipelines to integrate GenAI with existing data infrastructure
+* Experimenting with foundation models (e.g., Amazon Bedrock, SageMaker JumpStart) to solve business intelligence challenges
+* Experience working with large, multi\-dimensional datasets from multiple sources
+* Make recommendations for new metrics, techniques, and strategies to improve the operational and quality metrics.
+* Proficient using at least one data visualization product (Tableau, Qlik, Amazon QuickSight, Power BI, etc.)
+* Experience in deployment of Machine Learning and Statistical models
+* Building new Python utilities and maintaining existing ones
+* Enabling more efficient adhoc queries \& analysis
+* Working closely with research scientists, business analysts and product leads to scale data
+* Ensuring consistency between various platform, operational, and analytic data sources to enable faster and more efficient detection and resolution of issues
+* Exploring and learn the latest AWS technologies to provide new capabilities and increase efficiencies
+* Mentoring the team on analytics best practices
+
+  
+
+A day in the life  
+
+* Working closely with cross\-functional teams including Product/Program Managers, Software Development Managers, Applied/Research/Data Scientists, and Software Developers
+* Building dashboards, performing root cause analysis, and sharing actionable insights with stakeholders to enable data\-informed decision making
+
+
+\- Leading reporting and analytics initiatives to drive data\-informed decision making\- Designing, developing, and maintaining ETL processes and data visualization dashboards using Amazon QuickSight  
+
+* Transforming complex business requirements into actionable analytics solutions.
+
+  
+
+About the team  
+
+Retail Business Service accelerates WW Amazon Stores growth by improving customer and Selling Partner experiences while optimizing costs. Our three\-fold charter: 1\) Detect and fix customer shopping impediments, 2\) Grow SP business profitably including scaled tier\-2/3 management, 3\) Reduce Cost\-to\-Serve across Stores P\&L  
+
+RBS ACES transforms organizational capability through four pillars: Org Excellence, People Excellence, Continuous Improvement, and Innovation. The team proactively solves internal challenges via systematic defect identification and data\-driven frameworks. Through various programs, ACES positions RBS as Amazon's benchmark organization.
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 5\+ years of analyzing and interpreting data with Redshift, Oracle, NoSQL etc. experience
+* Experience with data visualization using Tableau, Quicksight, or similar tools
+* Experience with data modeling, warehousing and building ETL pipelines
+* Experience in Statistical Analysis packages such as R, SAS and Matlab
+* Experience using SQL to pull data from a database or data warehouse and scripting experience (Python) to process data for modeling
+* Experience developing and presenting recommendations of new metrics allowing better understanding of the performance of the business
+* Experience writing complex SQL queries
+* Bachelor's degree in BI, finance, engineering, statistics, computer science, mathematics, finance or equivalent quantitative field
+* Experience with Generative AI technologies, including prompt engineering, working with LLM APIs (e.g., Amazon Bedrock, OpenAI, Anthropic), or building AI\-powered analytics applications
+* Familiarity with GenAI frameworks and tools such as LangChain, vector databases, or embedding models for semantic search and retrieval
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Experience with AWS solutions such as EC2, DynamoDB, S3, and Redshift
+* Experience in data mining, ETL, etc. and using databases in a business environment with large\-scale, complex datasets
+* Master's degree in BI, finance, engineering, statistics, computer science, mathematics, finance or equivalent quantitative field
+* Relentless curiosity and drive to explore emerging trends and technologies in the field
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-29aad77464c53743,indeed,https://in.indeed.com/viewjob?jk=29aad77464c53743,https://www.amazon.jobs/jobs/3153928/sdm-alexa-ai-agent-act?cmpid=DA_INAD200785B,"SDM, Alexa+ AI Agent, ACT",Amazon.com,"MH, IN",2025-12-11,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Alexa\+: An AI assistant that gets things done—she's smarter, more conversational, and more capable.  
+
+  
+
+With 600 million Alexa devices now out in the world, the latest advancements in generative AI have unlocked new possibilities—enabling us to reimagine the experience in our pursuit of making customers' lives better and easier every day.  
+
+  
+
+Prompt engineering and LLM orchestration form the backbone of Alexa\+ by serving as the interface between user request and LLM processing, guiding AI systems to provide contextually relevant, accurate, and coherent responses. The quality of this engineering directly impacts the assistant's ability to understand context, maintain conversation flow, and generate appropriate responses.  
+
+  
+
+We are seeking an experienced Software Engineering Manager to lead our Alexa\+ AI Agent team, driving the development and optimization of the LLM prompt and orchestration system for Alexa\+. The ideal candidate will manage a team of engineers focused on building robust, scalable architectures that power the conversation flow, context management, prompt generation, and LLM orchestration. You will drive technical strategy, collaborate with conversation bar raisers and Alexa domain teams, and ensure the delivery of high\-quality solutions that enhance the conversation experience of Alexa\+.  
+
+  
+
+Key job responsibilities  
+
+Technical Leadership:  
+
+* Lead technical strategy and development of scalable solutions for Alexa\+'s LLM prompt and orchestration system
+* Establish technical standards and best practices for the team
+* Drive adoption of emerging AI technologies and best practices in LLM orchestration
+* Evaluate and integrate new LLM models and prompt engineering techniques
+
+  
+
+Team Management:  
+
+* Build and mentor a diverse team of software engineers
+* Foster a culture of innovation and engineering excellence
+* Provide technical guidance and career development support
+* Manage team performance and delivery timelines
+
+  
+
+Project \& Product Management:  
+
+* Work with product managers to define and execute team roadmaps
+* Align technical implementations with product requirements
+* Ensure delivery of high\-quality solutions meeting performance standards
+* Drive operational excellence and system reliability
+* Set and track team goals and metrics
+
+  
+
+Operational Excellence:  
+
+* Ensure system scalability for 600M\+ Alexa devices
+* Maintain high performance standards and monitoring
+* Manage high severity incidents and resolution
+* Drive continuous improvement initiatives
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 7\+ years of engineering experience
+* 3\+ years of engineering team management experience
+* 8\+ years of leading the definition and development of multi tier web services experience
+* Knowledge of engineering practices and patterns for the full software/hardware/networks development life cycle, including coding standards, code reviews, source control management, build processes, testing, certification, and livesite operations
+* Experience partnering with product or program management teams
+* Experience designing or architecting (design patterns, reliability and scaling) of new and existing systems
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Experience in communicating with users, other technical teams, and senior leadership to collect requirements, describe software product features, technical designs, and product strategy
+* Experience in recruiting, hiring, mentoring/coaching and managing teams of Software Engineers to improve their skills, and make them more effective, product software engineers
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-12896fb58b18fb95,indeed,https://in.indeed.com/viewjob?jk=12896fb58b18fb95,https://www.amazon.jobs/jobs/3153928/sdm-alexa-ai-agent-act?cmpid=DA_INAD200785B,"SDM, Alexa+ AI Agent, ACT",Amazon.com,"KA, IN",2025-12-11,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Alexa\+: An AI assistant that gets things done—she's smarter, more conversational, and more capable.  
+
+  
+
+With 600 million Alexa devices now out in the world, the latest advancements in generative AI have unlocked new possibilities—enabling us to reimagine the experience in our pursuit of making customers' lives better and easier every day.  
+
+  
+
+Prompt engineering and LLM orchestration form the backbone of Alexa\+ by serving as the interface between user request and LLM processing, guiding AI systems to provide contextually relevant, accurate, and coherent responses. The quality of this engineering directly impacts the assistant's ability to understand context, maintain conversation flow, and generate appropriate responses.  
+
+  
+
+We are seeking an experienced Software Engineering Manager to lead our Alexa\+ AI Agent team, driving the development and optimization of the LLM prompt and orchestration system for Alexa\+. The ideal candidate will manage a team of engineers focused on building robust, scalable architectures that power the conversation flow, context management, prompt generation, and LLM orchestration. You will drive technical strategy, collaborate with conversation bar raisers and Alexa domain teams, and ensure the delivery of high\-quality solutions that enhance the conversation experience of Alexa\+.  
+
+  
+
+Key job responsibilities  
+
+Technical Leadership:  
+
+* Lead technical strategy and development of scalable solutions for Alexa\+'s LLM prompt and orchestration system
+* Establish technical standards and best practices for the team
+* Drive adoption of emerging AI technologies and best practices in LLM orchestration
+* Evaluate and integrate new LLM models and prompt engineering techniques
+
+  
+
+Team Management:  
+
+* Build and mentor a diverse team of software engineers
+* Foster a culture of innovation and engineering excellence
+* Provide technical guidance and career development support
+* Manage team performance and delivery timelines
+
+  
+
+Project \& Product Management:  
+
+* Work with product managers to define and execute team roadmaps
+* Align technical implementations with product requirements
+* Ensure delivery of high\-quality solutions meeting performance standards
+* Drive operational excellence and system reliability
+* Set and track team goals and metrics
+
+  
+
+Operational Excellence:  
+
+* Ensure system scalability for 600M\+ Alexa devices
+* Maintain high performance standards and monitoring
+* Manage high severity incidents and resolution
+* Drive continuous improvement initiatives
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 7\+ years of engineering experience
+* 3\+ years of engineering team management experience
+* 8\+ years of leading the definition and development of multi tier web services experience
+* Knowledge of engineering practices and patterns for the full software/hardware/networks development life cycle, including coding standards, code reviews, source control management, build processes, testing, certification, and livesite operations
+* Experience partnering with product or program management teams
+* Experience designing or architecting (design patterns, reliability and scaling) of new and existing systems
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Experience in communicating with users, other technical teams, and senior leadership to collect requirements, describe software product features, technical designs, and product strategy
+* Experience in recruiting, hiring, mentoring/coaching and managing teams of Software Engineers to improve their skills, and make them more effective, product software engineers
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-04ecb590478aa837,indeed,https://in.indeed.com/viewjob?jk=04ecb590478aa837,https://www.amazon.jobs/jobs/3156839/support-engineer-trustworthy-shopping-experience-tse--tops-tech-team?cmpid=DA_INAD200785B,"Support Engineer, Trustworthy Shopping Experience (TSE) : TOPS Tech Team",Amazon.com,"KA, IN",2025-12-10,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Are you passionate about using your technical problem\-solving skills to enhance operational processes through automation and innovation? We are seeking a talented Support Engineer to join the Trustworthy Shopping Experience (TSE); TOPS Tech Team, where you will design, develop, test, and continuously improve high\-quality self\-service software products called Paramount workflows. In this role, you will collaborate across functions with Operations, Product Managers, Software Engineers, Business Analysts, Data Scientists, and Program Managers to deliver medium to large\-scale projects.  
+
+You will analyze operational processes, develop technical requirements, and implement effective solutions through code implementations that leverage Amazon technology and services. As a Support Engineer III, you'll have opportunities to embrace Agentic AI and LLM orchestration to optimize workplan development, testing, and automation. Your ability to identify process improvements and collaborate with development teams will be crucial in enhancing workflow efficiency and contributing to technical design decisions that help orchestrate multiple automation systems.  
+
+  
+
+Key job responsibilities  
+
+* Engage with operations, product, tech, and program stakeholders to document requirements, create functional specifications and generate process maps.
+* Lead the end\-to\-end development of self\-service software products, with a focus on Paramount workflows, including design, development, testing, launch, and continuous improvement.
+* Serve as a Subject Matter Expert for Amazon's internal authoring application and workflow engine to develop Paramount workflows.
+* Possess strong expertise in Generative AI and Agentic systems and concepts, with the ability to integrate these technologies into daily workflows. You will be expected to leverage this knowledge to enhance workflow designs and improve builder productivity through AI\-driven solutions.
+* Develop deep expertise as a subject matter expert in specific focus areas, serving as the technical point of contact for your team.
+* Demonstrate comprehensive understanding of various features and systems, including their impact on workplans and orchestration, ensuring all components integrate and function as designed.
+* Lead the comprehensive design, development, and testing of new workflow implementations, with a strong emphasis on Failure Mode and Effects Analysis (FMEA). Develop and implement robust mitigation strategies to identify potential risks and prevent operational disruptions, ensuring seamless workflow deployment and performance.
+* Demonstrate strong analytical capabilities to investigate technical product and operational issues, developing straightforward yet effective solutions.
+* Provide technical guidance while encouraging team members to identify and address root causes. Take ownership of documentation improvement by identifying gaps, enhancing existing materials, and creating new documentation where needed to support operational excellence.
+* Design, develop, test, launch and improve self\-service software products such as Paramount workflows.
+* Demonstrate strong leadership by guiding team members through root cause analysis and problem resolution. Act as a collaborative team player who readily steps across functional boundaries to share technical expertise, best practices, and provide valuable technical guidance to colleagues.
+* Partner proactively with various Technology teams to understand their roadmap and assess its impact on workplan designs and outcomes.
+* Contribute to the evolution of program technology by gaining deep insights into different implementation strategies across our proprietary tools, internal applications, and service architectures. Leverage this comprehensive understanding to implement effective bug fixes and system improvements.
+* Design and implement efficient solutions through development of low to medium complexity code, focusing on API integration and development to leverage Large Language Models (LLMs). This includes both utilizing existing APIs and creating new ones to harness the full potential of AI capabilities.
+
+  
+
+A day in the life  
+
+Join us for an exciting and dynamic role where every day brings new challenges and opportunities to innovate!  
+
+Your day starts with strategic planning \- reviewing product roadmaps and prioritizing high\-impact and priority initiatives. Engage in collaborative sessions with Product, Program, and Operations teams to understand process requirements. Put your technical expertise to work by analyzing technical designs (LLDs and HLDs) and architecting robust workflow designs.  
+
+Drive innovation by leveraging technologies \- from implementing Gen AI solutions to enhancing workflow automation through AI integration. Take ownership of critical problem\-solving, whether it's resolving urgent escalations to improve customer experience, optimizing operational productivity, or collaborating with tech teams to implement solutions.  
+
+This role offers you the perfect blend of technical depth and business impact. You'll have the opportunity to architect solutions, write code, troubleshoot complex issues, and drive continuous improvement through documentation and process enhancement. If you're passionate about building scalable solutions and want to work at the intersection of technology and business operations, this role is for you!  
+
+  
+
+About the team  
+
+The Trustworthy Shopping Experience (TSE) team strives to guarantee customers a trustworthy shopping and ordering experience so they can shop with confidence on Amazon. We do this by (1\) eliminating catalog defects, (2\) ensuring listings are compliant with Amazon’s selling policies, (3\) helping customers find selling partners that have a good ordering and fulfillment record, (4\) ensuring customers receive authentic products in the condition they expect, and (5\) in the rare chance the order experience does not meet customer expectations, protecting them by making things right with our A\-to\-z Guarantee. Our selling partners are also our customers and we work hard to educate and support them to facilitate a positive and friction\-free selling partner experience. We design workplans and implement policies, tools and technology innovations to protect the buying experience on Amazon while minimizing friction for sellers.  
+
+TOPS Tech team delivers AI\-first solutions that make quick, accurate decisions at scale while protecting customers and enabling brands and selling partners to succeed. We drive automations in human workflows and optimization of investigator experience to achieve business goals while reducing the cost to serve.  
+
+We are looking for a Support Engineer with a passion for technology, innovation with analytical and communication skills. You will enjoy working with technology, and the ability to see your insights drive the creation of real tools and features for our operations teams, thereby, impacting customer experience and seller experience of merchants participating in our Marketplace on a regular basis. You will collaborate with Software Engineering, Data Science, Product Management, Program Management and Operations Teams to build a deeper understanding of operational performance and drive improvements which directly influence Amazon’s bottom\-line.
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 2\+ years of software development, or 2\+ years of technical support experience
+* Experience troubleshooting and debugging technical systems
+* Experience scripting in modern program languages
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Knowledge of web services, distributed systems, and web application development
+* Experience troubleshooting \& maintaining hardware \& software RAID
+* Experience with REST web services, XML, JSON
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-9e432cf8782df6c9,indeed,https://in.indeed.com/viewjob?jk=9e432cf8782df6c9,https://www.amazon.jobs/jobs/3156841/support-engineer?cmpid=DA_INAD200785B,Support Engineer,Amazon.com,"KA, IN",2025-12-10,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Are you passionate about using your technical problem\-solving skills to enhance operational processes through automation and innovation? We are seeking a talented Support Engineer to join the Trustworthy Shopping Experience (TSE); TOPS Tech Team, where you will design, develop, test, and continuously improve high\-quality self\-service software products called Paramount workflows. In this role, you will collaborate across functions with Operations, Product Managers, Software Engineers, Business Analysts, Data Scientists, and Program Managers to deliver medium to large\-scale projects.  
+
+You will analyze operational processes, develop technical requirements, and implement effective solutions through code implementations that leverage Amazon technology and services. As a Support Engineer III, you'll have opportunities to embrace Agentic AI and LLM orchestration to optimize workplan development, testing, and automation. Your ability to identify process improvements and collaborate with development teams will be crucial in enhancing workflow efficiency and contributing to technical design decisions that help orchestrate multiple automation systems.  
+
+  
+
+Key job responsibilities  
+
+* Engage with operations, product, tech, and program stakeholders to document requirements, create functional specifications and generate process maps.
+* Lead the end\-to\-end development of self\-service software products, with a focus on Paramount workflows, including design, development, testing, launch, and continuous improvement.
+* Serve as a Subject Matter Expert for Amazon's internal authoring application and workflow engine to develop Paramount workflows.
+* Possess expertise in Generative AI and Agentic systems and concepts, with the ability to integrate these technologies into daily workflows. You will be expected to leverage this knowledge to enhance workflow designs and improve builder productivity through AI\-driven solutions.
+* Develop deep expertise as a subject matter expert in specific focus areas, serving as the technical point of contact for your team.
+* Demonstrate comprehensive understanding of various features and systems, including their impact on workplans and orchestration, ensuring all components integrate and function as designed.
+* Lead the comprehensive design, development, and testing of new workflow implementations, with a emphasis on Failure Mode and Effects Analysis (FMEA). Develop and implement robust mitigation strategies to identify potential risks and prevent operational disruptions, ensuring seamless workflow deployment and performance.
+* Demonstrate analytical capabilities to investigate technical product and operational issues, developing straightforward yet effective solutions.
+* Provide technical guidance while encouraging team members to identify and address root causes. Take ownership of documentation improvement by identifying gaps, enhancing existing materials, and creating new documentation where needed to support operational excellence.
+* Design, develop, test, launch and improve self\-service software products such as Paramount workflows.
+* Demonstrate leadership by guiding team members through root cause analysis and problem resolution. Act as a collaborative team player who readily steps across functional boundaries to share technical expertise, best practices, and provide valuable technical guidance to colleagues.
+* Partner proactively with various Technology teams to understand their roadmap and assess its impact on workplan designs and outcomes.
+* Contribute to the evolution of program technology by gaining deep insights into different implementation strategies across our proprietary tools, internal applications, and service architectures. Leverage this comprehensive understanding to implement effective bug fixes and system improvements.
+* Design and implement efficient solutions through development of low to medium complexity code, focusing on API integration and development to leverage Large Language Models (LLMs). This includes both utilizing existing APIs and creating new ones to harness the full potential of AI capabilities.
+
+  
+
+A day in the life  
+
+Join us for an exciting and dynamic role where every day brings new challenges and opportunities to innovate!  
+
+Your day starts with strategic planning \- reviewing product roadmaps and prioritizing high\-impact and priority initiatives. Engage in collaborative sessions with Product, Program, and Operations teams to understand process requirements. Put your technical expertise to work by analyzing technical designs (LLDs and HLDs) and architecting robust workflow designs.  
+
+Drive innovation by leveraging technologies \- from implementing Gen AI solutions to enhancing workflow automation through AI integration. Take ownership of critical problem\-solving, whether it's resolving urgent escalations to improve customer experience, optimizing operational productivity, or collaborating with tech teams to implement solutions.  
+
+This role offers you the perfect blend of technical depth and business impact. You'll have the opportunity to architect solutions, write code, troubleshoot complex issues, and drive continuous improvement through documentation and process enhancement. If you're passionate about building scalable solutions and want to work at the intersection of technology and business operations, this role is for you!  
+
+  
+
+About the team  
+
+The Trustworthy Shopping Experience (TSE) team strives to guarantee customers a trustworthy shopping and ordering experience so they can shop with confidence on Amazon. We do this by (1\) eliminating catalog defects, (2\) ensuring listings are compliant with Amazon’s selling policies, (3\) helping customers find selling partners that have a good ordering and fulfillment record, (4\) ensuring customers receive authentic products in the condition they expect, and (5\) in the rare chance the order experience does not meet customer expectations, protecting them by making things right with our A\-to\-z Guarantee. Our selling partners are also our customers and we work hard to educate and support them to facilitate a positive and friction\-free selling partner experience. We design workplans and implement policies, tools and technology innovations to protect the buying experience on Amazon while minimizing friction for sellers.  
+
+TOPS Tech team delivers AI\-first solutions that make quick, accurate decisions at scale while protecting customers and enabling brands and selling partners to succeed. We drive automations in human workflows and optimization of investigator experience to achieve business goals while reducing the cost to serve.  
+
+We are looking for a Support Engineer with a passion for technology, innovation with analytical and communication skills. You will enjoy working with technology, and the ability to see your insights drive the creation of real tools and features for our operations teams, thereby, impacting customer experience and seller experience of merchants participating in our Marketplace on a regular basis. You will collaborate with Software Engineering, Data Science, Product Management, Program Management and Operations Teams to build a deeper understanding of operational performance and drive improvements which directly influence Amazon’s bottom\-line.
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 2\+ years of software development, or 2\+ years of technical support experience
+* Experience troubleshooting and debugging technical systems
+* Experience scripting in modern program languages
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Knowledge of web services, distributed systems, and web application development
+* Experience troubleshooting \& maintaining hardware \& software RAID
+* Experience with REST web services, XML, JSON
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-69db0108c3780366,indeed,https://in.indeed.com/viewjob?jk=69db0108c3780366,https://www.amazon.jobs/jobs/3156841/support-engineer?cmpid=DA_INAD200785B,Support Engineer,Amazon.com,"KA, IN",2025-12-10,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Are you passionate about using your technical problem\-solving skills to enhance operational processes through automation and innovation? We are seeking a talented Support Engineer to join the Trustworthy Shopping Experience (TSE); TOPS Tech Team, where you will design, develop, test, and continuously improve high\-quality self\-service software products called Paramount workflows. In this role, you will collaborate across functions with Operations, Product Managers, Software Engineers, Business Analysts, Data Scientists, and Program Managers to deliver medium to large\-scale projects.  
+
+You will analyze operational processes, develop technical requirements, and implement effective solutions through code implementations that leverage Amazon technology and services. As a Support Engineer III, you'll have opportunities to embrace Agentic AI and LLM orchestration to optimize workplan development, testing, and automation. Your ability to identify process improvements and collaborate with development teams will be crucial in enhancing workflow efficiency and contributing to technical design decisions that help orchestrate multiple automation systems.  
+
+  
+
+Key job responsibilities  
+
+* Engage with operations, product, tech, and program stakeholders to document requirements, create functional specifications and generate process maps.
+* Lead the end\-to\-end development of self\-service software products, with a focus on Paramount workflows, including design, development, testing, launch, and continuous improvement.
+* Serve as a Subject Matter Expert for Amazon's internal authoring application and workflow engine to develop Paramount workflows.
+* Possess expertise in Generative AI and Agentic systems and concepts, with the ability to integrate these technologies into daily workflows. You will be expected to leverage this knowledge to enhance workflow designs and improve builder productivity through AI\-driven solutions.
+* Develop deep expertise as a subject matter expert in specific focus areas, serving as the technical point of contact for your team.
+* Demonstrate comprehensive understanding of various features and systems, including their impact on workplans and orchestration, ensuring all components integrate and function as designed.
+* Lead the comprehensive design, development, and testing of new workflow implementations, with a emphasis on Failure Mode and Effects Analysis (FMEA). Develop and implement robust mitigation strategies to identify potential risks and prevent operational disruptions, ensuring seamless workflow deployment and performance.
+* Demonstrate analytical capabilities to investigate technical product and operational issues, developing straightforward yet effective solutions.
+* Provide technical guidance while encouraging team members to identify and address root causes. Take ownership of documentation improvement by identifying gaps, enhancing existing materials, and creating new documentation where needed to support operational excellence.
+* Design, develop, test, launch and improve self\-service software products such as Paramount workflows.
+* Demonstrate leadership by guiding team members through root cause analysis and problem resolution. Act as a collaborative team player who readily steps across functional boundaries to share technical expertise, best practices, and provide valuable technical guidance to colleagues.
+* Partner proactively with various Technology teams to understand their roadmap and assess its impact on workplan designs and outcomes.
+* Contribute to the evolution of program technology by gaining deep insights into different implementation strategies across our proprietary tools, internal applications, and service architectures. Leverage this comprehensive understanding to implement effective bug fixes and system improvements.
+* Design and implement efficient solutions through development of low to medium complexity code, focusing on API integration and development to leverage Large Language Models (LLMs). This includes both utilizing existing APIs and creating new ones to harness the full potential of AI capabilities.
+
+  
+
+A day in the life  
+
+Join us for an exciting and dynamic role where every day brings new challenges and opportunities to innovate!  
+
+Your day starts with strategic planning \- reviewing product roadmaps and prioritizing high\-impact and priority initiatives. Engage in collaborative sessions with Product, Program, and Operations teams to understand process requirements. Put your technical expertise to work by analyzing technical designs (LLDs and HLDs) and architecting robust workflow designs.  
+
+Drive innovation by leveraging technologies \- from implementing Gen AI solutions to enhancing workflow automation through AI integration. Take ownership of critical problem\-solving, whether it's resolving urgent escalations to improve customer experience, optimizing operational productivity, or collaborating with tech teams to implement solutions.  
+
+This role offers you the perfect blend of technical depth and business impact. You'll have the opportunity to architect solutions, write code, troubleshoot complex issues, and drive continuous improvement through documentation and process enhancement. If you're passionate about building scalable solutions and want to work at the intersection of technology and business operations, this role is for you!  
+
+  
+
+About the team  
+
+The Trustworthy Shopping Experience (TSE) team strives to guarantee customers a trustworthy shopping and ordering experience so they can shop with confidence on Amazon. We do this by (1\) eliminating catalog defects, (2\) ensuring listings are compliant with Amazon’s selling policies, (3\) helping customers find selling partners that have a good ordering and fulfillment record, (4\) ensuring customers receive authentic products in the condition they expect, and (5\) in the rare chance the order experience does not meet customer expectations, protecting them by making things right with our A\-to\-z Guarantee. Our selling partners are also our customers and we work hard to educate and support them to facilitate a positive and friction\-free selling partner experience. We design workplans and implement policies, tools and technology innovations to protect the buying experience on Amazon while minimizing friction for sellers.  
+
+TOPS Tech team delivers AI\-first solutions that make quick, accurate decisions at scale while protecting customers and enabling brands and selling partners to succeed. We drive automations in human workflows and optimization of investigator experience to achieve business goals while reducing the cost to serve.  
+
+We are looking for a Support Engineer with a passion for technology, innovation with analytical and communication skills. You will enjoy working with technology, and the ability to see your insights drive the creation of real tools and features for our operations teams, thereby, impacting customer experience and seller experience of merchants participating in our Marketplace on a regular basis. You will collaborate with Software Engineering, Data Science, Product Management, Program Management and Operations Teams to build a deeper understanding of operational performance and drive improvements which directly influence Amazon’s bottom\-line.
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 2\+ years of software development, or 2\+ years of technical support experience
+* Experience troubleshooting and debugging technical systems
+* Experience scripting in modern program languages
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Knowledge of web services, distributed systems, and web application development
+* Experience troubleshooting \& maintaining hardware \& software RAID
+* Experience with REST web services, XML, JSON
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-b0791055eb8a88e8,indeed,https://in.indeed.com/viewjob?jk=b0791055eb8a88e8,https://www.amazon.jobs/jobs/3156839/support-engineer-trustworthy-shopping-experience-tse--tops-tech-team?cmpid=DA_INAD200785B,"Support Engineer, Trustworthy Shopping Experience (TSE) : TOPS Tech Team",Amazon.com,"KA, IN",2025-12-10,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Are you passionate about using your technical problem\-solving skills to enhance operational processes through automation and innovation? We are seeking a talented Support Engineer to join the Trustworthy Shopping Experience (TSE); TOPS Tech Team, where you will design, develop, test, and continuously improve high\-quality self\-service software products called Paramount workflows. In this role, you will collaborate across functions with Operations, Product Managers, Software Engineers, Business Analysts, Data Scientists, and Program Managers to deliver medium to large\-scale projects.  
+
+You will analyze operational processes, develop technical requirements, and implement effective solutions through code implementations that leverage Amazon technology and services. As a Support Engineer III, you'll have opportunities to embrace Agentic AI and LLM orchestration to optimize workplan development, testing, and automation. Your ability to identify process improvements and collaborate with development teams will be crucial in enhancing workflow efficiency and contributing to technical design decisions that help orchestrate multiple automation systems.  
+
+  
+
+Key job responsibilities  
+
+* Engage with operations, product, tech, and program stakeholders to document requirements, create functional specifications and generate process maps.
+* Lead the end\-to\-end development of self\-service software products, with a focus on Paramount workflows, including design, development, testing, launch, and continuous improvement.
+* Serve as a Subject Matter Expert for Amazon's internal authoring application and workflow engine to develop Paramount workflows.
+* Possess strong expertise in Generative AI and Agentic systems and concepts, with the ability to integrate these technologies into daily workflows. You will be expected to leverage this knowledge to enhance workflow designs and improve builder productivity through AI\-driven solutions.
+* Develop deep expertise as a subject matter expert in specific focus areas, serving as the technical point of contact for your team.
+* Demonstrate comprehensive understanding of various features and systems, including their impact on workplans and orchestration, ensuring all components integrate and function as designed.
+* Lead the comprehensive design, development, and testing of new workflow implementations, with a strong emphasis on Failure Mode and Effects Analysis (FMEA). Develop and implement robust mitigation strategies to identify potential risks and prevent operational disruptions, ensuring seamless workflow deployment and performance.
+* Demonstrate strong analytical capabilities to investigate technical product and operational issues, developing straightforward yet effective solutions.
+* Provide technical guidance while encouraging team members to identify and address root causes. Take ownership of documentation improvement by identifying gaps, enhancing existing materials, and creating new documentation where needed to support operational excellence.
+* Design, develop, test, launch and improve self\-service software products such as Paramount workflows.
+* Demonstrate strong leadership by guiding team members through root cause analysis and problem resolution. Act as a collaborative team player who readily steps across functional boundaries to share technical expertise, best practices, and provide valuable technical guidance to colleagues.
+* Partner proactively with various Technology teams to understand their roadmap and assess its impact on workplan designs and outcomes.
+* Contribute to the evolution of program technology by gaining deep insights into different implementation strategies across our proprietary tools, internal applications, and service architectures. Leverage this comprehensive understanding to implement effective bug fixes and system improvements.
+* Design and implement efficient solutions through development of low to medium complexity code, focusing on API integration and development to leverage Large Language Models (LLMs). This includes both utilizing existing APIs and creating new ones to harness the full potential of AI capabilities.
+
+  
+
+A day in the life  
+
+Join us for an exciting and dynamic role where every day brings new challenges and opportunities to innovate!  
+
+Your day starts with strategic planning \- reviewing product roadmaps and prioritizing high\-impact and priority initiatives. Engage in collaborative sessions with Product, Program, and Operations teams to understand process requirements. Put your technical expertise to work by analyzing technical designs (LLDs and HLDs) and architecting robust workflow designs.  
+
+Drive innovation by leveraging technologies \- from implementing Gen AI solutions to enhancing workflow automation through AI integration. Take ownership of critical problem\-solving, whether it's resolving urgent escalations to improve customer experience, optimizing operational productivity, or collaborating with tech teams to implement solutions.  
+
+This role offers you the perfect blend of technical depth and business impact. You'll have the opportunity to architect solutions, write code, troubleshoot complex issues, and drive continuous improvement through documentation and process enhancement. If you're passionate about building scalable solutions and want to work at the intersection of technology and business operations, this role is for you!  
+
+  
+
+About the team  
+
+The Trustworthy Shopping Experience (TSE) team strives to guarantee customers a trustworthy shopping and ordering experience so they can shop with confidence on Amazon. We do this by (1\) eliminating catalog defects, (2\) ensuring listings are compliant with Amazon’s selling policies, (3\) helping customers find selling partners that have a good ordering and fulfillment record, (4\) ensuring customers receive authentic products in the condition they expect, and (5\) in the rare chance the order experience does not meet customer expectations, protecting them by making things right with our A\-to\-z Guarantee. Our selling partners are also our customers and we work hard to educate and support them to facilitate a positive and friction\-free selling partner experience. We design workplans and implement policies, tools and technology innovations to protect the buying experience on Amazon while minimizing friction for sellers.  
+
+TOPS Tech team delivers AI\-first solutions that make quick, accurate decisions at scale while protecting customers and enabling brands and selling partners to succeed. We drive automations in human workflows and optimization of investigator experience to achieve business goals while reducing the cost to serve.  
+
+We are looking for a Support Engineer with a passion for technology, innovation with analytical and communication skills. You will enjoy working with technology, and the ability to see your insights drive the creation of real tools and features for our operations teams, thereby, impacting customer experience and seller experience of merchants participating in our Marketplace on a regular basis. You will collaborate with Software Engineering, Data Science, Product Management, Program Management and Operations Teams to build a deeper understanding of operational performance and drive improvements which directly influence Amazon’s bottom\-line.
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 2\+ years of software development, or 2\+ years of technical support experience
+* Experience troubleshooting and debugging technical systems
+* Experience scripting in modern program languages
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Knowledge of web services, distributed systems, and web application development
+* Experience troubleshooting \& maintaining hardware \& software RAID
+* Experience with REST web services, XML, JSON
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-88022e9b4c04db55,indeed,https://in.indeed.com/viewjob?jk=88022e9b4c04db55,https://www.amazon.jobs/jobs/3156841/support-engineer?cmpid=DA_INAD200785B,Support Engineer,Amazon.com,"KA, IN",2025-12-10,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Are you passionate about using your technical problem\-solving skills to enhance operational processes through automation and innovation? We are seeking a talented Support Engineer to join the Trustworthy Shopping Experience (TSE); TOPS Tech Team, where you will design, develop, test, and continuously improve high\-quality self\-service software products called Paramount workflows. In this role, you will collaborate across functions with Operations, Product Managers, Software Engineers, Business Analysts, Data Scientists, and Program Managers to deliver medium to large\-scale projects.  
+
+You will analyze operational processes, develop technical requirements, and implement effective solutions through code implementations that leverage Amazon technology and services. As a Support Engineer III, you'll have opportunities to embrace Agentic AI and LLM orchestration to optimize workplan development, testing, and automation. Your ability to identify process improvements and collaborate with development teams will be crucial in enhancing workflow efficiency and contributing to technical design decisions that help orchestrate multiple automation systems.  
+
+  
+
+Key job responsibilities  
+
+* Engage with operations, product, tech, and program stakeholders to document requirements, create functional specifications and generate process maps.
+* Lead the end\-to\-end development of self\-service software products, with a focus on Paramount workflows, including design, development, testing, launch, and continuous improvement.
+* Serve as a Subject Matter Expert for Amazon's internal authoring application and workflow engine to develop Paramount workflows.
+* Possess expertise in Generative AI and Agentic systems and concepts, with the ability to integrate these technologies into daily workflows. You will be expected to leverage this knowledge to enhance workflow designs and improve builder productivity through AI\-driven solutions.
+* Develop deep expertise as a subject matter expert in specific focus areas, serving as the technical point of contact for your team.
+* Demonstrate comprehensive understanding of various features and systems, including their impact on workplans and orchestration, ensuring all components integrate and function as designed.
+* Lead the comprehensive design, development, and testing of new workflow implementations, with a emphasis on Failure Mode and Effects Analysis (FMEA). Develop and implement robust mitigation strategies to identify potential risks and prevent operational disruptions, ensuring seamless workflow deployment and performance.
+* Demonstrate analytical capabilities to investigate technical product and operational issues, developing straightforward yet effective solutions.
+* Provide technical guidance while encouraging team members to identify and address root causes. Take ownership of documentation improvement by identifying gaps, enhancing existing materials, and creating new documentation where needed to support operational excellence.
+* Design, develop, test, launch and improve self\-service software products such as Paramount workflows.
+* Demonstrate leadership by guiding team members through root cause analysis and problem resolution. Act as a collaborative team player who readily steps across functional boundaries to share technical expertise, best practices, and provide valuable technical guidance to colleagues.
+* Partner proactively with various Technology teams to understand their roadmap and assess its impact on workplan designs and outcomes.
+* Contribute to the evolution of program technology by gaining deep insights into different implementation strategies across our proprietary tools, internal applications, and service architectures. Leverage this comprehensive understanding to implement effective bug fixes and system improvements.
+* Design and implement efficient solutions through development of low to medium complexity code, focusing on API integration and development to leverage Large Language Models (LLMs). This includes both utilizing existing APIs and creating new ones to harness the full potential of AI capabilities.
+
+  
+
+A day in the life  
+
+Join us for an exciting and dynamic role where every day brings new challenges and opportunities to innovate!  
+
+Your day starts with strategic planning \- reviewing product roadmaps and prioritizing high\-impact and priority initiatives. Engage in collaborative sessions with Product, Program, and Operations teams to understand process requirements. Put your technical expertise to work by analyzing technical designs (LLDs and HLDs) and architecting robust workflow designs.  
+
+Drive innovation by leveraging technologies \- from implementing Gen AI solutions to enhancing workflow automation through AI integration. Take ownership of critical problem\-solving, whether it's resolving urgent escalations to improve customer experience, optimizing operational productivity, or collaborating with tech teams to implement solutions.  
+
+This role offers you the perfect blend of technical depth and business impact. You'll have the opportunity to architect solutions, write code, troubleshoot complex issues, and drive continuous improvement through documentation and process enhancement. If you're passionate about building scalable solutions and want to work at the intersection of technology and business operations, this role is for you!  
+
+  
+
+About the team  
+
+The Trustworthy Shopping Experience (TSE) team strives to guarantee customers a trustworthy shopping and ordering experience so they can shop with confidence on Amazon. We do this by (1\) eliminating catalog defects, (2\) ensuring listings are compliant with Amazon’s selling policies, (3\) helping customers find selling partners that have a good ordering and fulfillment record, (4\) ensuring customers receive authentic products in the condition they expect, and (5\) in the rare chance the order experience does not meet customer expectations, protecting them by making things right with our A\-to\-z Guarantee. Our selling partners are also our customers and we work hard to educate and support them to facilitate a positive and friction\-free selling partner experience. We design workplans and implement policies, tools and technology innovations to protect the buying experience on Amazon while minimizing friction for sellers.  
+
+TOPS Tech team delivers AI\-first solutions that make quick, accurate decisions at scale while protecting customers and enabling brands and selling partners to succeed. We drive automations in human workflows and optimization of investigator experience to achieve business goals while reducing the cost to serve.  
+
+We are looking for a Support Engineer with a passion for technology, innovation with analytical and communication skills. You will enjoy working with technology, and the ability to see your insights drive the creation of real tools and features for our operations teams, thereby, impacting customer experience and seller experience of merchants participating in our Marketplace on a regular basis. You will collaborate with Software Engineering, Data Science, Product Management, Program Management and Operations Teams to build a deeper understanding of operational performance and drive improvements which directly influence Amazon’s bottom\-line.
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 2\+ years of software development, or 2\+ years of technical support experience
+* Experience troubleshooting and debugging technical systems
+* Experience scripting in modern program languages
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Knowledge of web services, distributed systems, and web application development
+* Experience troubleshooting \& maintaining hardware \& software RAID
+* Experience with REST web services, XML, JSON
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-42c904196d25a911,indeed,https://in.indeed.com/viewjob?jk=42c904196d25a911,https://www.amazon.jobs/jobs/3156840/support-engineer?cmpid=DA_INAD200785B,Support Engineer,Amazon.com,"KA, IN",2025-12-10,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Are you passionate about using your technical problem\-solving skills to enhance operational processes through automation and innovation? We are seeking a talented Support Engineer to join the Trustworthy Shopping Experience (TSE); TOPS Tech Team, where you will design, develop, test, and continuously improve high\-quality self\-service software products called Paramount workflows. In this role, you will collaborate across functions with Operations, Product Managers, Software Engineers, Business Analysts, Data Scientists, and Program Managers to deliver medium to large\-scale projects.  
+
+You will analyze operational processes, develop technical requirements, and implement effective solutions through code implementations that leverage Amazon technology and services. As a Support Engineer III, you'll have opportunities to embrace Agentic AI and LLM orchestration to optimize workplan development, testing, and automation. Your ability to identify process improvements and collaborate with development teams will be crucial in enhancing workflow efficiency and contributing to technical design decisions that help orchestrate multiple automation systems.  
+
+  
+
+Key job responsibilities  
+
+* Engage with operations, product, tech, and program stakeholders to document requirements, create functional specifications and generate process maps.
+* Lead the end\-to\-end development of self\-service software products, with a focus on Paramount workflows, including design, development, testing, launch, and continuous improvement.
+* Serve as a Subject Matter Expert for Amazon's internal authoring application and workflow engine to develop Paramount workflows.
+* Possess strong expertise in Generative AI and Agentic systems and concepts, with the ability to integrate these technologies into daily workflows. You will be expected to leverage this knowledge to enhance workflow designs and improve builder productivity through AI\-driven solutions.
+* Develop deep expertise as a subject matter expert in specific focus areas, serving as the technical point of contact for your team.
+* Demonstrate comprehensive understanding of various features and systems, including their impact on workplans and orchestration, ensuring all components integrate and function as designed.
+* Lead the comprehensive design, development, and testing of new workflow implementations, with a strong emphasis on Failure Mode and Effects Analysis (FMEA). Develop and implement robust mitigation strategies to identify potential risks and prevent operational disruptions, ensuring seamless workflow deployment and performance.
+* Demonstrate strong analytical capabilities to investigate technical product and operational issues, developing straightforward yet effective solutions.
+* Provide technical guidance while encouraging team members to identify and address root causes. Take ownership of documentation improvement by identifying gaps, enhancing existing materials, and creating new documentation where needed to support operational excellence.
+* Design, develop, test, launch and improve self\-service software products such as Paramount workflows.
+* Demonstrate strong leadership by guiding team members through root cause analysis and problem resolution. Act as a collaborative team player who readily steps across functional boundaries to share technical expertise, best practices, and provide valuable technical guidance to colleagues.
+* Partner proactively with various Technology teams to understand their roadmap and assess its impact on workplan designs and outcomes.
+* Contribute to the evolution of program technology by gaining deep insights into different implementation strategies across our proprietary tools, internal applications, and service architectures. Leverage this comprehensive understanding to implement effective bug fixes and system improvements.
+* Design and implement efficient solutions through development of low to medium complexity code, focusing on API integration and development to leverage Large Language Models (LLMs). This includes both utilizing existing APIs and creating new ones to harness the full potential of AI capabilities.
+
+  
+
+A day in the life  
+
+Join us for an exciting and dynamic role where every day brings new challenges and opportunities to innovate!  
+
+Your day starts with strategic planning \- reviewing product roadmaps and prioritizing high\-impact and priority initiatives. Engage in collaborative sessions with Product, Program, and Operations teams to understand process requirements. Put your technical expertise to work by analyzing technical designs (LLDs and HLDs) and architecting robust workflow designs.  
+
+Drive innovation by leveraging
+  
+
+technologies \- from implementing Gen AI solutions to enhancing workflow automation through AI integration. Take ownership of critical problem\-solving, whether it's resolving urgent escalations to improve customer experience, optimizing operational productivity, or collaborating with tech teams to implement solutions.  
+
+This role offers you the perfect blend of technical depth and business impact. You'll have the opportunity to architect solutions, write code, troubleshoot complex issues, and drive continuous improvement through documentation and process enhancement. If you're passionate about building scalable solutions and want to work at the intersection of technology and business operations, this role is for you!  
+
+  
+
+About the team  
+
+The Trustworthy Shopping Experience (TSE) team strives to guarantee customers a trustworthy shopping and ordering experience so they can shop with confidence on Amazon. We do this by (1\) eliminating catalog defects, (2\) ensuring listings are compliant with Amazon’s selling policies, (3\) helping customers find selling partners that have a good ordering and fulfillment record, (4\) ensuring customers receive authentic products in the condition they expect, and (5\) in the rare chance the order experience does not meet customer expectations, protecting them by making things right with our A\-to\-z Guarantee. Our selling partners are also our customers and we work hard to educate and support them to facilitate a positive and friction\-free selling partner experience. We design workplans and implement policies, tools and technology innovations to protect the buying experience on Amazon while minimizing friction for sellers.  
+
+TOPS Tech team delivers AI\-first solutions that make quick, accurate decisions at scale while protecting customers and enabling brands and selling partners to succeed. We drive automations in human workflows and optimization of investigator experience to achieve business goals while reducing the cost to serve.  
+
+We are looking for a Support Engineer with a passion for technology, innovation with analytical and communication skills. You will enjoy working with technology, and the ability to see your insights drive the creation of real tools and features for our operations teams, thereby, impacting customer experience and seller experience of merchants participating in our Marketplace on a regular basis. You will collaborate with Software Engineering, Data Science, Product Management, Program Management and Operations Teams to build a deeper understanding of operational performance and drive improvements which directly influence Amazon’s bottom\-line.
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 2\+ years of software development, or 2\+ years of technical support experience
+* Experience troubleshooting and debugging technical systems
+* Experience scripting in modern program languages
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Knowledge of web services, distributed systems, and web application development
+* Experience troubleshooting \& maintaining hardware \& software RAID
+* Experience with REST web services, XML, JSON
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-1a6d7c553ff28ba3,indeed,https://in.indeed.com/viewjob?jk=1a6d7c553ff28ba3,https://www.amazon.jobs/jobs/3156840/support-engineer?cmpid=DA_INAD200785B,Support Engineer,Amazon.com,"KA, IN",2025-12-10,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Are you passionate about using your technical problem\-solving skills to enhance operational processes through automation and innovation? We are seeking a talented Support Engineer to join the Trustworthy Shopping Experience (TSE); TOPS Tech Team, where you will design, develop, test, and continuously improve high\-quality self\-service software products called Paramount workflows. In this role, you will collaborate across functions with Operations, Product Managers, Software Engineers, Business Analysts, Data Scientists, and Program Managers to deliver medium to large\-scale projects.  
+
+You will analyze operational processes, develop technical requirements, and implement effective solutions through code implementations that leverage Amazon technology and services. As a Support Engineer III, you'll have opportunities to embrace Agentic AI and LLM orchestration to optimize workplan development, testing, and automation. Your ability to identify process improvements and collaborate with development teams will be crucial in enhancing workflow efficiency and contributing to technical design decisions that help orchestrate multiple automation systems.  
+
+  
+
+Key job responsibilities  
+
+* Engage with operations, product, tech, and program stakeholders to document requirements, create functional specifications and generate process maps.
+* Lead the end\-to\-end development of self\-service software products, with a focus on Paramount workflows, including design, development, testing, launch, and continuous improvement.
+* Serve as a Subject Matter Expert for Amazon's internal authoring application and workflow engine to develop Paramount workflows.
+* Possess strong expertise in Generative AI and Agentic systems and concepts, with the ability to integrate these technologies into daily workflows. You will be expected to leverage this knowledge to enhance workflow designs and improve builder productivity through AI\-driven solutions.
+* Develop deep expertise as a subject matter expert in specific focus areas, serving as the technical point of contact for your team.
+* Demonstrate comprehensive understanding of various features and systems, including their impact on workplans and orchestration, ensuring all components integrate and function as designed.
+* Lead the comprehensive design, development, and testing of new workflow implementations, with a strong emphasis on Failure Mode and Effects Analysis (FMEA). Develop and implement robust mitigation strategies to identify potential risks and prevent operational disruptions, ensuring seamless workflow deployment and performance.
+* Demonstrate strong analytical capabilities to investigate technical product and operational issues, developing straightforward yet effective solutions.
+* Provide technical guidance while encouraging team members to identify and address root causes. Take ownership of documentation improvement by identifying gaps, enhancing existing materials, and creating new documentation where needed to support operational excellence.
+* Design, develop, test, launch and improve self\-service software products such as Paramount workflows.
+* Demonstrate strong leadership by guiding team members through root cause analysis and problem resolution. Act as a collaborative team player who readily steps across functional boundaries to share technical expertise, best practices, and provide valuable technical guidance to colleagues.
+* Partner proactively with various Technology teams to understand their roadmap and assess its impact on workplan designs and outcomes.
+* Contribute to the evolution of program technology by gaining deep insights into different implementation strategies across our proprietary tools, internal applications, and service architectures. Leverage this comprehensive understanding to implement effective bug fixes and system improvements.
+* Design and implement efficient solutions through development of low to medium complexity code, focusing on API integration and development to leverage Large Language Models (LLMs). This includes both utilizing existing APIs and creating new ones to harness the full potential of AI capabilities.
+
+  
+
+A day in the life  
+
+Join us for an exciting and dynamic role where every day brings new challenges and opportunities to innovate!  
+
+Your day starts with strategic planning \- reviewing product roadmaps and prioritizing high\-impact and priority initiatives. Engage in collaborative sessions with Product, Program, and Operations teams to understand process requirements. Put your technical expertise to work by analyzing technical designs (LLDs and HLDs) and architecting robust workflow designs.  
+
+Drive innovation by leveraging
+  
+
+technologies \- from implementing Gen AI solutions to enhancing workflow automation through AI integration. Take ownership of critical problem\-solving, whether it's resolving urgent escalations to improve customer experience, optimizing operational productivity, or collaborating with tech teams to implement solutions.  
+
+This role offers you the perfect blend of technical depth and business impact. You'll have the opportunity to architect solutions, write code, troubleshoot complex issues, and drive continuous improvement through documentation and process enhancement. If you're passionate about building scalable solutions and want to work at the intersection of technology and business operations, this role is for you!  
+
+  
+
+About the team  
+
+The Trustworthy Shopping Experience (TSE) team strives to guarantee customers a trustworthy shopping and ordering experience so they can shop with confidence on Amazon. We do this by (1\) eliminating catalog defects, (2\) ensuring listings are compliant with Amazon’s selling policies, (3\) helping customers find selling partners that have a good ordering and fulfillment record, (4\) ensuring customers receive authentic products in the condition they expect, and (5\) in the rare chance the order experience does not meet customer expectations, protecting them by making things right with our A\-to\-z Guarantee. Our selling partners are also our customers and we work hard to educate and support them to facilitate a positive and friction\-free selling partner experience. We design workplans and implement policies, tools and technology innovations to protect the buying experience on Amazon while minimizing friction for sellers.  
+
+TOPS Tech team delivers AI\-first solutions that make quick, accurate decisions at scale while protecting customers and enabling brands and selling partners to succeed. We drive automations in human workflows and optimization of investigator experience to achieve business goals while reducing the cost to serve.  
+
+We are looking for a Support Engineer with a passion for technology, innovation with analytical and communication skills. You will enjoy working with technology, and the ability to see your insights drive the creation of real tools and features for our operations teams, thereby, impacting customer experience and seller experience of merchants participating in our Marketplace on a regular basis. You will collaborate with Software Engineering, Data Science, Product Management, Program Management and Operations Teams to build a deeper understanding of operational performance and drive improvements which directly influence Amazon’s bottom\-line.
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 2\+ years of software development, or 2\+ years of technical support experience
+* Experience troubleshooting and debugging technical systems
+* Experience scripting in modern program languages
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Knowledge of web services, distributed systems, and web application development
+* Experience troubleshooting \& maintaining hardware \& software RAID
+* Experience with REST web services, XML, JSON
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-ab38f2236cff5e0d,indeed,https://in.indeed.com/viewjob?jk=ab38f2236cff5e0d,https://www.amazon.jobs/jobs/3156840/support-engineer?cmpid=DA_INAD200785B,Support Engineer,Amazon.com,"KA, IN",2025-12-10,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Are you passionate about using your technical problem\-solving skills to enhance operational processes through automation and innovation? We are seeking a talented Support Engineer to join the Trustworthy Shopping Experience (TSE); TOPS Tech Team, where you will design, develop, test, and continuously improve high\-quality self\-service software products called Paramount workflows. In this role, you will collaborate across functions with Operations, Product Managers, Software Engineers, Business Analysts, Data Scientists, and Program Managers to deliver medium to large\-scale projects.  
+
+You will analyze operational processes, develop technical requirements, and implement effective solutions through code implementations that leverage Amazon technology and services. As a Support Engineer III, you'll have opportunities to embrace Agentic AI and LLM orchestration to optimize workplan development, testing, and automation. Your ability to identify process improvements and collaborate with development teams will be crucial in enhancing workflow efficiency and contributing to technical design decisions that help orchestrate multiple automation systems.  
+
+  
+
+Key job responsibilities  
+
+* Engage with operations, product, tech, and program stakeholders to document requirements, create functional specifications and generate process maps.
+* Lead the end\-to\-end development of self\-service software products, with a focus on Paramount workflows, including design, development, testing, launch, and continuous improvement.
+* Serve as a Subject Matter Expert for Amazon's internal authoring application and workflow engine to develop Paramount workflows.
+* Possess strong expertise in Generative AI and Agentic systems and concepts, with the ability to integrate these technologies into daily workflows. You will be expected to leverage this knowledge to enhance workflow designs and improve builder productivity through AI\-driven solutions.
+* Develop deep expertise as a subject matter expert in specific focus areas, serving as the technical point of contact for your team.
+* Demonstrate comprehensive understanding of various features and systems, including their impact on workplans and orchestration, ensuring all components integrate and function as designed.
+* Lead the comprehensive design, development, and testing of new workflow implementations, with a strong emphasis on Failure Mode and Effects Analysis (FMEA). Develop and implement robust mitigation strategies to identify potential risks and prevent operational disruptions, ensuring seamless workflow deployment and performance.
+* Demonstrate strong analytical capabilities to investigate technical product and operational issues, developing straightforward yet effective solutions.
+* Provide technical guidance while encouraging team members to identify and address root causes. Take ownership of documentation improvement by identifying gaps, enhancing existing materials, and creating new documentation where needed to support operational excellence.
+* Design, develop, test, launch and improve self\-service software products such as Paramount workflows.
+* Demonstrate strong leadership by guiding team members through root cause analysis and problem resolution. Act as a collaborative team player who readily steps across functional boundaries to share technical expertise, best practices, and provide valuable technical guidance to colleagues.
+* Partner proactively with various Technology teams to understand their roadmap and assess its impact on workplan designs and outcomes.
+* Contribute to the evolution of program technology by gaining deep insights into different implementation strategies across our proprietary tools, internal applications, and service architectures. Leverage this comprehensive understanding to implement effective bug fixes and system improvements.
+* Design and implement efficient solutions through development of low to medium complexity code, focusing on API integration and development to leverage Large Language Models (LLMs). This includes both utilizing existing APIs and creating new ones to harness the full potential of AI capabilities.
+
+  
+
+A day in the life  
+
+Join us for an exciting and dynamic role where every day brings new challenges and opportunities to innovate!  
+
+Your day starts with strategic planning \- reviewing product roadmaps and prioritizing high\-impact and priority initiatives. Engage in collaborative sessions with Product, Program, and Operations teams to understand process requirements. Put your technical expertise to work by analyzing technical designs (LLDs and HLDs) and architecting robust workflow designs.  
+
+Drive innovation by leveraging
+  
+
+technologies \- from implementing Gen AI solutions to enhancing workflow automation through AI integration. Take ownership of critical problem\-solving, whether it's resolving urgent escalations to improve customer experience, optimizing operational productivity, or collaborating with tech teams to implement solutions.  
+
+This role offers you the perfect blend of technical depth and business impact. You'll have the opportunity to architect solutions, write code, troubleshoot complex issues, and drive continuous improvement through documentation and process enhancement. If you're passionate about building scalable solutions and want to work at the intersection of technology and business operations, this role is for you!  
+
+  
+
+About the team  
+
+The Trustworthy Shopping Experience (TSE) team strives to guarantee customers a trustworthy shopping and ordering experience so they can shop with confidence on Amazon. We do this by (1\) eliminating catalog defects, (2\) ensuring listings are compliant with Amazon’s selling policies, (3\) helping customers find selling partners that have a good ordering and fulfillment record, (4\) ensuring customers receive authentic products in the condition they expect, and (5\) in the rare chance the order experience does not meet customer expectations, protecting them by making things right with our A\-to\-z Guarantee. Our selling partners are also our customers and we work hard to educate and support them to facilitate a positive and friction\-free selling partner experience. We design workplans and implement policies, tools and technology innovations to protect the buying experience on Amazon while minimizing friction for sellers.  
+
+TOPS Tech team delivers AI\-first solutions that make quick, accurate decisions at scale while protecting customers and enabling brands and selling partners to succeed. We drive automations in human workflows and optimization of investigator experience to achieve business goals while reducing the cost to serve.  
+
+We are looking for a Support Engineer with a passion for technology, innovation with analytical and communication skills. You will enjoy working with technology, and the ability to see your insights drive the creation of real tools and features for our operations teams, thereby, impacting customer experience and seller experience of merchants participating in our Marketplace on a regular basis. You will collaborate with Software Engineering, Data Science, Product Management, Program Management and Operations Teams to build a deeper understanding of operational performance and drive improvements which directly influence Amazon’s bottom\-line.
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 2\+ years of software development, or 2\+ years of technical support experience
+* Experience troubleshooting and debugging technical systems
+* Experience scripting in modern program languages
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Knowledge of web services, distributed systems, and web application development
+* Experience troubleshooting \& maintaining hardware \& software RAID
+* Experience with REST web services, XML, JSON
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-949022aeb4447f9d,indeed,https://in.indeed.com/viewjob?jk=949022aeb4447f9d,https://www.amazon.jobs/jobs/3156839/support-engineer-trustworthy-shopping-experience-tse--tops-tech-team?cmpid=DA_INAD200785B,"Support Engineer, Trustworthy Shopping Experience (TSE) : TOPS Tech Team",Amazon.com,"KA, IN",2025-12-10,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Are you passionate about using your technical problem\-solving skills to enhance operational processes through automation and innovation? We are seeking a talented Support Engineer to join the Trustworthy Shopping Experience (TSE); TOPS Tech Team, where you will design, develop, test, and continuously improve high\-quality self\-service software products called Paramount workflows. In this role, you will collaborate across functions with Operations, Product Managers, Software Engineers, Business Analysts, Data Scientists, and Program Managers to deliver medium to large\-scale projects.  
+
+You will analyze operational processes, develop technical requirements, and implement effective solutions through code implementations that leverage Amazon technology and services. As a Support Engineer III, you'll have opportunities to embrace Agentic AI and LLM orchestration to optimize workplan development, testing, and automation. Your ability to identify process improvements and collaborate with development teams will be crucial in enhancing workflow efficiency and contributing to technical design decisions that help orchestrate multiple automation systems.  
+
+  
+
+Key job responsibilities  
+
+* Engage with operations, product, tech, and program stakeholders to document requirements, create functional specifications and generate process maps.
+* Lead the end\-to\-end development of self\-service software products, with a focus on Paramount workflows, including design, development, testing, launch, and continuous improvement.
+* Serve as a Subject Matter Expert for Amazon's internal authoring application and workflow engine to develop Paramount workflows.
+* Possess strong expertise in Generative AI and Agentic systems and concepts, with the ability to integrate these technologies into daily workflows. You will be expected to leverage this knowledge to enhance workflow designs and improve builder productivity through AI\-driven solutions.
+* Develop deep expertise as a subject matter expert in specific focus areas, serving as the technical point of contact for your team.
+* Demonstrate comprehensive understanding of various features and systems, including their impact on workplans and orchestration, ensuring all components integrate and function as designed.
+* Lead the comprehensive design, development, and testing of new workflow implementations, with a strong emphasis on Failure Mode and Effects Analysis (FMEA). Develop and implement robust mitigation strategies to identify potential risks and prevent operational disruptions, ensuring seamless workflow deployment and performance.
+* Demonstrate strong analytical capabilities to investigate technical product and operational issues, developing straightforward yet effective solutions.
+* Provide technical guidance while encouraging team members to identify and address root causes. Take ownership of documentation improvement by identifying gaps, enhancing existing materials, and creating new documentation where needed to support operational excellence.
+* Design, develop, test, launch and improve self\-service software products such as Paramount workflows.
+* Demonstrate strong leadership by guiding team members through root cause analysis and problem resolution. Act as a collaborative team player who readily steps across functional boundaries to share technical expertise, best practices, and provide valuable technical guidance to colleagues.
+* Partner proactively with various Technology teams to understand their roadmap and assess its impact on workplan designs and outcomes.
+* Contribute to the evolution of program technology by gaining deep insights into different implementation strategies across our proprietary tools, internal applications, and service architectures. Leverage this comprehensive understanding to implement effective bug fixes and system improvements.
+* Design and implement efficient solutions through development of low to medium complexity code, focusing on API integration and development to leverage Large Language Models (LLMs). This includes both utilizing existing APIs and creating new ones to harness the full potential of AI capabilities.
+
+  
+
+A day in the life  
+
+Join us for an exciting and dynamic role where every day brings new challenges and opportunities to innovate!  
+
+Your day starts with strategic planning \- reviewing product roadmaps and prioritizing high\-impact and priority initiatives. Engage in collaborative sessions with Product, Program, and Operations teams to understand process requirements. Put your technical expertise to work by analyzing technical designs (LLDs and HLDs) and architecting robust workflow designs.  
+
+Drive innovation by leveraging technologies \- from implementing Gen AI solutions to enhancing workflow automation through AI integration. Take ownership of critical problem\-solving, whether it's resolving urgent escalations to improve customer experience, optimizing operational productivity, or collaborating with tech teams to implement solutions.  
+
+This role offers you the perfect blend of technical depth and business impact. You'll have the opportunity to architect solutions, write code, troubleshoot complex issues, and drive continuous improvement through documentation and process enhancement. If you're passionate about building scalable solutions and want to work at the intersection of technology and business operations, this role is for you!  
+
+  
+
+About the team  
+
+The Trustworthy Shopping Experience (TSE) team strives to guarantee customers a trustworthy shopping and ordering experience so they can shop with confidence on Amazon. We do this by (1\) eliminating catalog defects, (2\) ensuring listings are compliant with Amazon’s selling policies, (3\) helping customers find selling partners that have a good ordering and fulfillment record, (4\) ensuring customers receive authentic products in the condition they expect, and (5\) in the rare chance the order experience does not meet customer expectations, protecting them by making things right with our A\-to\-z Guarantee. Our selling partners are also our customers and we work hard to educate and support them to facilitate a positive and friction\-free selling partner experience. We design workplans and implement policies, tools and technology innovations to protect the buying experience on Amazon while minimizing friction for sellers.  
+
+TOPS Tech team delivers AI\-first solutions that make quick, accurate decisions at scale while protecting customers and enabling brands and selling partners to succeed. We drive automations in human workflows and optimization of investigator experience to achieve business goals while reducing the cost to serve.  
+
+We are looking for a Support Engineer with a passion for technology, innovation with analytical and communication skills. You will enjoy working with technology, and the ability to see your insights drive the creation of real tools and features for our operations teams, thereby, impacting customer experience and seller experience of merchants participating in our Marketplace on a regular basis. You will collaborate with Software Engineering, Data Science, Product Management, Program Management and Operations Teams to build a deeper understanding of operational performance and drive improvements which directly influence Amazon’s bottom\-line.
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 2\+ years of software development, or 2\+ years of technical support experience
+* Experience troubleshooting and debugging technical systems
+* Experience scripting in modern program languages
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Knowledge of web services, distributed systems, and web application development
+* Experience troubleshooting \& maintaining hardware \& software RAID
+* Experience with REST web services, XML, JSON
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-75e1f183490d4657,indeed,https://in.indeed.com/viewjob?jk=75e1f183490d4657,https://www.amazon.jobs/jobs/3136117/sr-quality-assurance-engineer-alexa-connections?cmpid=DA_INAD200785B,"Sr. Quality Assurance Engineer, Alexa Connections",Amazon.com,"TN, IN",2025-12-02,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Are you ready to be at the forefront of Agentic AI innovation and redefine the future of communication? Join our dynamic Alexa Connections team as a Sr. Quality Assurance Engineer, and lead futuristic initiatives that will shape the next generation of intelligent, conversational experiences. In this role, you'll work at the intersection of disruptive AI technologies and real\-world impact, making a difference for millions of customers. You'll collaborate with a team of passionate professionals who are as excited about innovation as you are, and together, you'll push the boundaries of what's possible with Alexa\+.  
+
+  
+
+As a Sr. QAE, you'll drive the testing automation and quality initiatives of next\-generation communication features powered by advanced AI technologies, including Generative, Agentic, and Real\-time AI. You'll work closely with cross\-functional teams, including product management, engineering, design, and data science, to design and deliver innovative solutions that leverage these AI technologies to enable seamless, intelligent communication experiences. You'll also lead the integration, UAT and scale testing of these advanced AI systems into Alexa's core capabilities, ensuring a seamless and intuitive user experience.  
+
+  
+
+Key job responsibilities  
+
+* End to End test automation for LLM/Agentic AI systems with AI technologies
+* Improve customer experience by maintaining a high quality bar
+* Experienced in testing hardware devices, and/or backend services and test automation
+* Creating Test Plans, and test strategy for non\-deterministic AI powered systems
+* Review and raise the CX bar for conformity and functionality
+* Find, isolate, document, regress and track bugs through resolution
+* Interpret and report testing results and be a vocal proponent for quality in every phase of the development process
+* Work with software development engineers to understand the overall technical architecture and how each feature is implemented
+* Collaborate across teams to enhance total product quality
+
+  
+
+About the team  
+
+Alexa Connections aspires to make Alexa\+ the world’s most trusted connection assistant for getting things done and creating moments of joy. Our vision emphasizes a) Trust as our foundation for becoming a daily habit, knowing our customers have plentiful choices, b) Completion of end\-to\-end customer journeys, beyond shipping features, and c) Joy through personalized, proactive experiences, that create a memory.
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 6\+ years of quality assurance engineering experience
+* 4\+ years of delivering test frameworks, test tools, leading the QA projects and initiatives experience
+* Knowledge of QA methodology and tools, with demonstrated experience in an QAE role
+* Experience in manual testing
+* Experience in automation testing
+* Experience scripting or coding
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* 2\+ years of UI Automation (preferably on mobile platforms) experience
+* Knowledge of at least one modern object\-oriented programming language such as C\+\+, Java, Objective C
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-554963788fd39f7c,indeed,https://in.indeed.com/viewjob?jk=554963788fd39f7c,https://www.amazon.jobs/jobs/3136117/sr-quality-assurance-engineer-alexa-connections?cmpid=DA_INAD200785B,"Sr. Quality Assurance Engineer, Alexa Connections",Amazon.com,"KA, IN",2025-12-02,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Are you ready to be at the forefront of Agentic AI innovation and redefine the future of communication? Join our dynamic Alexa Connections team as a Sr. Quality Assurance Engineer, and lead futuristic initiatives that will shape the next generation of intelligent, conversational experiences. In this role, you'll work at the intersection of disruptive AI technologies and real\-world impact, making a difference for millions of customers. You'll collaborate with a team of passionate professionals who are as excited about innovation as you are, and together, you'll push the boundaries of what's possible with Alexa\+.  
+
+  
+
+As a Sr. QAE, you'll drive the testing automation and quality initiatives of next\-generation communication features powered by advanced AI technologies, including Generative, Agentic, and Real\-time AI. You'll work closely with cross\-functional teams, including product management, engineering, design, and data science, to design and deliver innovative solutions that leverage these AI technologies to enable seamless, intelligent communication experiences. You'll also lead the integration, UAT and scale testing of these advanced AI systems into Alexa's core capabilities, ensuring a seamless and intuitive user experience.  
+
+  
+
+Key job responsibilities  
+
+* End to End test automation for LLM/Agentic AI systems with AI technologies
+* Improve customer experience by maintaining a high quality bar
+* Experienced in testing hardware devices, and/or backend services and test automation
+* Creating Test Plans, and test strategy for non\-deterministic AI powered systems
+* Review and raise the CX bar for conformity and functionality
+* Find, isolate, document, regress and track bugs through resolution
+* Interpret and report testing results and be a vocal proponent for quality in every phase of the development process
+* Work with software development engineers to understand the overall technical architecture and how each feature is implemented
+* Collaborate across teams to enhance total product quality
+
+  
+
+About the team  
+
+Alexa Connections aspires to make Alexa\+ the world’s most trusted connection assistant for getting things done and creating moments of joy. Our vision emphasizes a) Trust as our foundation for becoming a daily habit, knowing our customers have plentiful choices, b) Completion of end\-to\-end customer journeys, beyond shipping features, and c) Joy through personalized, proactive experiences, that create a memory.
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 6\+ years of quality assurance engineering experience
+* 4\+ years of delivering test frameworks, test tools, leading the QA projects and initiatives experience
+* Knowledge of QA methodology and tools, with demonstrated experience in an QAE role
+* Experience in manual testing
+* Experience in automation testing
+* Experience scripting or coding
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* 2\+ years of UI Automation (preferably on mobile platforms) experience
+* Knowledge of at least one modern object\-oriented programming language such as C\+\+, Java, Objective C
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-3d826afc7a9c3115,indeed,https://in.indeed.com/viewjob?jk=3d826afc7a9c3115,https://www.amazon.jobs/jobs/3136126/software-development-manager-alexa-connections?cmpid=DA_INAD200785B,"Software Development Manager, Alexa Connections",Amazon.com,"TN, IN",2025-12-01,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Are you ready to be at the forefront of Agentic AI innovation and redefine the future of communication? Join our dynamic Alexa Connections team as a Manager of Software Development, and lead futuristic initiatives that will shape the next generation of intelligent, conversational experiences. In this role, you'll work at the intersection of disruptive AI technologies and real\-world impact, making a difference for millions of customers. You'll collaborate with a team of passionate professionals who are as excited about innovation as you are, and together, you'll push the boundaries of what's possible with Alexa\+.  
+
+  
+
+As a Manager, you'll drive the development of next\-generation communication features powered by advanced AI technologies, including Generative, Agentic, and Real\-time AI. You'll work closely with cross\-functional teams, including product management, design, and data science, to design and deliver innovative solutions that leverage these AI technologies to enable seamless, intelligent communication experiences. You'll also lead the integration of these advanced AI systems into Alexa's core capabilities, ensuring a seamless and intuitive user experience.  
+
+  
+
+Key job responsibilities  
+
+* Define the structure and strategic goals for connected experiences as we grow and invest further into this space.
+* Hire, grow, and actively manage a team of software engineers. This includes guiding and managing the careers of your team members, encouraging software development best practices, and setting up the right development process(es) for your team.
+* Partner with leadership and product management to define achievable product definition and customer experience.
+* Create and execute on iterative roadmaps for your team to deliver these products to our customers. You will own prioritization, trade\-off discussions, and updates to stakeholders.
+* Collaborate and influence peer and partner teams in the broader Alexa organization and across our partner teams at Amazon.
+* Take ownership for the long\-term quality and success of the products that your team builds.
+
+  
+
+About the team  
+
+Alexa Connections vision is to make Alexa\+ the world’s most trusted connection assistant for getting things done and creating moments of joy. Our vision emphasizes a) Trust as our foundation for becoming a daily habit, knowing our customers have plentiful choices, b) Completion of end\-to\-end customer journeys, beyond shipping features, and c) Joy through personalized, proactive experiences, that create a memory.
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 7\+ years of engineering experience
+* 3\+ years of engineering team management experience
+* 8\+ years of leading the definition and development of multi tier web services experience
+* Knowledge of engineering practices and patterns for the full software/hardware/networks development life cycle, including coding standards, code reviews, source control management, build processes, testing, certification, and livesite operations
+* Experience partnering with product or program management teams
+* Experience designing or architecting (design patterns, reliability and scaling) of new and existing systems
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Experience in communicating with users, other technical teams, and senior leadership to collect requirements, describe software product features, technical designs, and product strategy
+* Experience in recruiting, hiring, mentoring/coaching and managing teams of Software Engineers to improve their skills, and make them more effective, product software engineers
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-f8d2cf8cc3168ac5,indeed,https://in.indeed.com/viewjob?jk=f8d2cf8cc3168ac5,https://www.amazon.jobs/jobs/3136126/software-development-manager-alexa-connections?cmpid=DA_INAD200785B,"Software Development Manager, Alexa Connections",Amazon.com,"KA, IN",2025-12-01,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Are you ready to be at the forefront of Agentic AI innovation and redefine the future of communication? Join our dynamic Alexa Connections team as a Manager of Software Development, and lead futuristic initiatives that will shape the next generation of intelligent, conversational experiences. In this role, you'll work at the intersection of disruptive AI technologies and real\-world impact, making a difference for millions of customers. You'll collaborate with a team of passionate professionals who are as excited about innovation as you are, and together, you'll push the boundaries of what's possible with Alexa\+.  
+
+  
+
+As a Manager, you'll drive the development of next\-generation communication features powered by advanced AI technologies, including Generative, Agentic, and Real\-time AI. You'll work closely with cross\-functional teams, including product management, design, and data science, to design and deliver innovative solutions that leverage these AI technologies to enable seamless, intelligent communication experiences. You'll also lead the integration of these advanced AI systems into Alexa's core capabilities, ensuring a seamless and intuitive user experience.  
+
+  
+
+Key job responsibilities  
+
+* Define the structure and strategic goals for connected experiences as we grow and invest further into this space.
+* Hire, grow, and actively manage a team of software engineers. This includes guiding and managing the careers of your team members, encouraging software development best practices, and setting up the right development process(es) for your team.
+* Partner with leadership and product management to define achievable product definition and customer experience.
+* Create and execute on iterative roadmaps for your team to deliver these products to our customers. You will own prioritization, trade\-off discussions, and updates to stakeholders.
+* Collaborate and influence peer and partner teams in the broader Alexa organization and across our partner teams at Amazon.
+* Take ownership for the long\-term quality and success of the products that your team builds.
+
+  
+
+About the team  
+
+Alexa Connections vision is to make Alexa\+ the world’s most trusted connection assistant for getting things done and creating moments of joy. Our vision emphasizes a) Trust as our foundation for becoming a daily habit, knowing our customers have plentiful choices, b) Completion of end\-to\-end customer journeys, beyond shipping features, and c) Joy through personalized, proactive experiences, that create a memory.
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 7\+ years of engineering experience
+* 3\+ years of engineering team management experience
+* 8\+ years of leading the definition and development of multi tier web services experience
+* Knowledge of engineering practices and patterns for the full software/hardware/networks development life cycle, including coding standards, code reviews, source control management, build processes, testing, certification, and livesite operations
+* Experience partnering with product or program management teams
+* Experience designing or architecting (design patterns, reliability and scaling) of new and existing systems
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Experience in communicating with users, other technical teams, and senior leadership to collect requirements, describe software product features, technical designs, and product strategy
+* Experience in recruiting, hiring, mentoring/coaching and managing teams of Software Engineers to improve their skills, and make them more effective, product software engineers
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-06b11a8ea36d411e,indeed,https://in.indeed.com/viewjob?jk=06b11a8ea36d411e,https://www.amazon.jobs/jobs/3113118/software-development-manager-alexa-devices--alexa-ai-developer-tech?cmpid=DA_INAD200785B,"Software Development Manager, Alexa Devices - Alexa AI Developer Tech",Amazon.com,"KA, IN",2025-10-16,fulltime,,,,,,True,,,,,"**DESCRIPTION**
+---------------
+
+
+Alexa\+: An AI assistant that gets things done—she's smarter, more conversational, and more capable.  
+
+With 600 million Alexa devices now out in the world, the latest advancements in generative AI have unlocked new possibilities—enabling us to reimagine the experience in our pursuit of making customers' lives better and easier every day.  
+
+Experts enables Alexa\+ to complete complex tasks using Amazon and third\-party (3P) APIs and websites. Some of these include: playing your favorite music, control your smart devices, reserving a table at a restaurant, setting your morning alarms, kitchen timers, booking event tickets, scheduling an appointment and planning a trip. No more jumping between apps — just say what you want, and it's done.  
+
+Developers and partners have been core to our vision since the beginning. With Alexa\+, we reimagined how developers can build for Alexa. Alexa AI developer Technology charter is to enable creation of experts at scale and make it seamless for 1P and 3P developers to integrate their businesses with Alexa\+. We are measurably making Alexa\+ smarter, and we need your help to define and build the next generation of capabilities using GenerativeAI.  
+
+  
+
+Key job responsibilities  
+
+As an SDM, you will be responsible for leading a team delivering large projects across Alexa. Your team will build the foundational architecture for Alexa's LLM based experiences, and will coordinate the implementation efforts between internal teams and external partners. You will be expected to make appropriate trade offs to optimize time\-to\-market, clearly communicate goals, roles, responsibilities, and desired outcomes to internal cross\-functional and remote project teams. You’ll also be responsible for ensuring your team operates efficiently. You’ll coordinate cross\-team programs to deliver state\-of\-the\-art natural language based capabilities. You’ll help teams identify key risks, provide guidance on how to communicate them, and ensure leadership has the right visibility. This role will have to work closely with senior leaders across Alexa and lead strategic initiatives.  
+
+You will join a growing organization working on top technology using GenerativeAI and have an enormous opportunity to make an impact on the design, architecture, and implementation of products used every day, by people you know.  
+
+  
+
+About the team  
+
+Alexa AI Developer Tech is an organization within Alexa\+ on a mission to empower experience builders to create delightful and engaging experiences by making Alexa\+ conversational, smarter, personalized, and gets things done.
+
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 3\+ years of engineering team management experience
+* 7\+ years of engineering experience
+* 8\+ years of leading the definition and development of multi tier web services experience
+* Knowledge of engineering practices and patterns for the full software/hardware/networks development life cycle, including coding standards, code reviews, source control management, build processes, testing, certification, and livesite operations
+* Experience partnering with product or program management teams
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Experience in communicating with users, other technical teams, and senior leadership to collect requirements, describe software product features, technical designs, and product strategy
+* Experience in recruiting, hiring, mentoring/coaching and managing teams of Software Engineers to improve their skills, and make them more effective, product software engineers
+* Experience in building developer platform, SDKs and developing Agentic applications.
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-9262c73ae6805143,indeed,https://in.indeed.com/viewjob?jk=9262c73ae6805143,https://www.amazon.jobs/jobs/3113118/software-development-manager-alexa-devices--alexa-ai-developer-tech?cmpid=DA_INAD200785B,"Software Development Manager, Alexa Devices - Alexa AI Developer Tech",Amazon.com,"MH, IN",2025-10-16,fulltime,,,,,,True,,,,,"**DESCRIPTION**
+---------------
+
+
+Alexa\+: An AI assistant that gets things done—she's smarter, more conversational, and more capable.  
+
+With 600 million Alexa devices now out in the world, the latest advancements in generative AI have unlocked new possibilities—enabling us to reimagine the experience in our pursuit of making customers' lives better and easier every day.  
+
+Experts enables Alexa\+ to complete complex tasks using Amazon and third\-party (3P) APIs and websites. Some of these include: playing your favorite music, control your smart devices, reserving a table at a restaurant, setting your morning alarms, kitchen timers, booking event tickets, scheduling an appointment and planning a trip. No more jumping between apps — just say what you want, and it's done.  
+
+Developers and partners have been core to our vision since the beginning. With Alexa\+, we reimagined how developers can build for Alexa. Alexa AI developer Technology charter is to enable creation of experts at scale and make it seamless for 1P and 3P developers to integrate their businesses with Alexa\+. We are measurably making Alexa\+ smarter, and we need your help to define and build the next generation of capabilities using GenerativeAI.  
+
+  
+
+Key job responsibilities  
+
+As an SDM, you will be responsible for leading a team delivering large projects across Alexa. Your team will build the foundational architecture for Alexa's LLM based experiences, and will coordinate the implementation efforts between internal teams and external partners. You will be expected to make appropriate trade offs to optimize time\-to\-market, clearly communicate goals, roles, responsibilities, and desired outcomes to internal cross\-functional and remote project teams. You’ll also be responsible for ensuring your team operates efficiently. You’ll coordinate cross\-team programs to deliver state\-of\-the\-art natural language based capabilities. You’ll help teams identify key risks, provide guidance on how to communicate them, and ensure leadership has the right visibility. This role will have to work closely with senior leaders across Alexa and lead strategic initiatives.  
+
+You will join a growing organization working on top technology using GenerativeAI and have an enormous opportunity to make an impact on the design, architecture, and implementation of products used every day, by people you know.  
+
+  
+
+About the team  
+
+Alexa AI Developer Tech is an organization within Alexa\+ on a mission to empower experience builders to create delightful and engaging experiences by making Alexa\+ conversational, smarter, personalized, and gets things done.
+
+**BASIC QUALIFICATIONS**
+------------------------
+
+* 3\+ years of engineering team management experience
+* 7\+ years of engineering experience
+* 8\+ years of leading the definition and development of multi tier web services experience
+* Knowledge of engineering practices and patterns for the full software/hardware/networks development life cycle, including coding standards, code reviews, source control management, build processes, testing, certification, and livesite operations
+* Experience partnering with product or program management teams
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* Experience in communicating with users, other technical teams, and senior leadership to collect requirements, describe software product features, technical designs, and product strategy
+* Experience in recruiting, hiring, mentoring/coaching and managing teams of Software Engineers to improve their skills, and make them more effective, product software engineers
+* Experience in building developer platform, SDKs and developing Agentic applications.
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,

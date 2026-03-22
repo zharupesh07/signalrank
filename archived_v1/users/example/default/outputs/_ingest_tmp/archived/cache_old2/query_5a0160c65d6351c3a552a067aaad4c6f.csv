@@ -1,0 +1,948 @@
+id,site,job_url,job_url_direct,title,company,location,date_posted,job_type,salary_source,interval,min_amount,max_amount,currency,is_remote,job_level,job_function,listing_type,emails,description,company_industry,company_url,company_logo,company_url_direct,company_addresses,company_num_employees,company_revenue,company_description,skills,experience_range,company_rating,company_reviews_count,vacancy_count,work_from_home_type
+in-0573ab9151432e0d,indeed,https://in.indeed.com/viewjob?jk=0573ab9151432e0d,https://amdocs.eightfold.ai/careers/?pid=563431012015231&domain=amdocs.com&sort_by=relevance,Software Principal Engineer,Amdocs,"HR, IN",2026-01-26,,,,,,,False,,,,,"**Job ID:** 208194
+  
+
+**Required Travel** : Minimal
+  
+
+**Managerial \- No**  
+
+**Location:** :India\- Gurgaon (Amdocs Site)
+
+
+**Who are we?**
+---------------
+
+Amdocs helps those who build the future to make it amazing. With our market\-leading portfolio of software products and services, we unlock our customers’ innovative potential, empowering them to provide next\-generation communication and media experiences for both the individual end user and enterprise customers. Our employees around the globe are here to accelerate service providers’ migration to the cloud, enable them to differentiate in the 5G era, and digitalize and automate their operations. Listed on the NASDAQ Global Select Market, Amdocs had revenue of $5\.00 billion in fiscal 2024\. For more information, visit www.amdocs.com
+
+
+At Amdocs, our mission is to empower our employees to 'Live Amazing, Do Amazing' every day. We believe in creating a workplace where you not only excel professionally but also thrive personally. Through our culture of making a real impact, fostering growth, embracing flexibility, and building connections, we enable them to live meaningful lives while making a difference in the world.  
+
+
+
+**In one sentence**
+-------------------
+
+As AI reshapes the future of software, we aim to harness its power to transform the way networks, IT systems, and business operations are built and managed. We seek a visionary and hands\-on AI Evangelist \& Enablement Lead to join amdocs.
+This is a unique hybrid role that combines deep technical expertise with a passion for teaching, enabling, and advocacy. As a member of the Amdocs agentic AI office. you will join our internal team of champions for AI—driving the adoption of Agentic and Generative AI across Amdocs engineering and product teams, while also positioning Amdocs as a thought leader in the global technology ecosystem.
+**What will your job look like?**
+---------------------------------
+
+**Internal AI Enablement \& Strategy**
+
+* Partner with engineering and product development teams to integrate and optimize AI/GenAI tools throughout the software delivery lifecycle, from coding and testing to deployment and operations.
+* Define and champion best practices, coding standards, and standardized workflows for AI\-assisted development across the organization.
+* Establish and lead an internal AI community of practice, fostering a culture of innovation, knowledge sharing, and responsible AI adoption.
+
+**Hands\-on Implementation \& Prototyping**
+
+* Lead the evaluation, piloting, and integration of new AI development platforms (e.g., advanced coding assistants, MLOps frameworks, internal LLM deployments).
+* Build proof\-of\-concept projects and reusable AI components to showcase the value of emerging technologies and architectural patterns.
+* Design and document robust frameworks for leveraging AI services with a focus on scalability, performance, security, and cost\-effectiveness.
+
+**Knowledge Sharing \& Education**
+
+* Create and deliver hands\-on workshops, tech talks, and practical tutorials on topics like prompt engineering, AI\-powered debugging, and integrating LLMs into production workflows.
+* Develop an internal knowledge base with code samples, case studies, and technical documentation to empower engineers to adopt and scale AI independently.
+* Mentor engineers and team leads, helping them grow their skills and confidence in applying AI to complex telecom and enterprise challenges.
+
+**External Evangelism \& Thought Leadership** 
+
+* Represent Amdocs as a technical expert at industry conferences, customer events, and developer communities.
+* Publish technical blog posts, whitepapers, and open\-source contributions that showcase Amdocs’ innovative use of AI in the telecom and enterprise software domains.
+* Stay at the forefront of the rapidly evolving AI landscape, bringing back insights and opportunities to the organization.
+**All you need is...**
+----------------------
+
+* **Extensive Technical Background:**
+
+
+	+ 7\+ years of hands\-on software development experience, with proficiency in multiple programming languages (e.g., Java, Python, C\#, TypeScript).**AI/ML Expertise:** 
+
+
+	+ Hands\-on experience with AI coding assistants (e.g., GitHub Copilot, Tabnine) and conversational AI tools for development (e.g., ChatGPT, Claude, Gemini).
+	+ Strong knowledge of LLMs, prompt engineering, and AI\-assisted software development practices.
+	+ Understanding of AI/ML model lifecycle, context management, and API integration protocols.**Leadership \& Influence:**
+
+
+	+ Proven ability to drive technology adoption and influence engineering culture across large, distributed teams without formal authority.
+	+ Strong communication and presentation skills, with the ability to simplify and explain complex technical concepts to executives, engineers, and customers.
+	+ Prior experience in Developer Advocacy, Technical Evangelism, or platform/tool enablement roles is a strong plus.
+**Why you will love this job:**
+-------------------------------
+
+* You will be in charge for the improvement of engineering and quality practices and work across Amdocs various business groups
+* You will lead key processes and prioritize work across teams
+* You will work with a team that responsible for shaping and constantly improving Amdocs products
+* You will work in a fast growing innovative environment
+**Amdocs is an equal opportunity employer. We welcome applicants from all backgrounds and are committed to fostering a diverse and inclusive workforce**",,https://in.indeed.com/cmp/Amdocs,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/e0336b28cf20f843426e9e3635055c6f,http://www.amdocs.com,"Chesterfield, MO","10,000+",$1B to $5B (USD),"Our people make an impact on the world. They are passionate, they see beyond limits and are not afraid to dare.",,,,,,
+in-83d211045a1b3900,indeed,https://in.indeed.com/viewjob?jk=83d211045a1b3900,https://jobs.thecignagroup.com/us/en/job/CIGNUS26000547EXTERNALENUS/Prompt-Engineer-AI-Applications-Lead?utm_source=indeed&utm_medium=phenom-feeds,Prompt Engineer & AI Applications Lead,The Cigna Group,"KA, IN",2026-01-26,fulltime,,,,,,False,,,,"SeeYourselfEMEA@cigna.com, SeeYourselfEMEA@cigna.com","**Prompt Engineer \& AI Applications Lead**  
+
+*(Madrid, Spain or**Bengaluru,**India — Hybrid/Flexible)*
+
+**About the Role**
+
+
+Cigna is accelerating responsible AI adoption across the enterprise. We’re seeking a **Prompt Engineer \& AI Applications Lead** to partner with product, data, engineering, and business stakeholders to discover, evaluate, and scale AI use cases—while ensuring safety, compliance, and measurable value. This role blends hands‑on prompt design with business relationship management and vendor collaboration to drive outcomes across multiple time zones.
+
+**What****You’ll****Do (Key Responsibilities)**
+
+**AI Use Case Discovery \& Shaping**
+
+* Identify, qualify, and prioritize high‑impact AI opportunities across functions (operations, clinical, customer support, finance, IT).
+* Facilitate discovery workshops to define problem statements, success metrics, guardrails, and adoption plans.
+* Translate business needs into AI solution patterns (e.g., retrieval‑augmented generation, summarization, classification, extraction, assistants/agents).
+**Prompt Engineering \& Experimentation**
+
+* Design, test, and optimize prompts, chains, and system instructions for performance, safety, and reliability across multiple LLMs and tools.
+* Develop prompt evaluation frameworks (A/B tests, golden sets, bias \& hallucination checks, cost/latency tracking).
+* Create reusable prompt templates, style guides, and prompt libraries for enterprise use.
+**Vendor \& Partner Management**
+
+* Assess AI vendors for capability, compliance, total cost of ownership, integration complexity, and roadmap fit.
+* Co‑develop POCs/pilots with vendors; define SLAs, acceptance criteria, and transition plans to scale or sunset.
+* Coordinate security, privacy, legal, and procurement reviews; document decisions and risks.
+**Solution Delivery \& Governance**
+
+* Partner with Data/ML Engineering to integrate RAG pipelines, guardrails, and observability (prompt logs, red‑teaming results, monitoring).
+* Ensure adherence to responsible AI, data privacy, and healthcare compliance requirements (e.g., PHI handling, HIPAA‑aligned processes in consultation with compliance teams).
+* Contribute to model cards, risk assessments, and human‑in‑the‑loop controls.
+**Stakeholder Enablement \& BRM**
+
+* Serve as a trusted advisor to business leaders—clarify value cases, manage expectations, and align roadmaps and budgets.
+* Build enablement materials (playbooks, demos, FAQs) and deliver training for non‑technical and technical audiences.
+* Communicate progress, risks, and ROI via clear narratives and dashboards.
+**What****You’ll****Bring (Qualifications)**
+
+**Must‑Have**
+
+* **\~5\+ years** of relevant experience in AI/ML product work, data‑driven solutions, or technical consulting, with at least **2\+ years hands‑on prompt engineering** (or demonstrable expertise).
+* **Business Relationship Management (BRM)** experience: stakeholder alignment, requirements shaping, roadmap facilitation, and value realization.
+* Proficiency with **LLMs and tooling** (e.g., prompt design, few‑shot techniques, function calling/tools, vector search/RAG, evaluation methods).
+* Practical knowledge of **data fundamentals** (data quality, governance, metadata, PII/PHI concepts) and safe AI patterns.
+* Strong communication: can translate complex AI concepts for executives and non‑technical teams; excellent storytelling and documentation.
+* **Collaborative mindset** and experience working **across multiple time zones** and cross‑functional teams.
+* Bachelor’s degree in a relevant field (Computer Science, Data/AI, Engineering, or related); equivalent experience considered.
+* Location: **Madrid,****Spain** or **India** (major hubs such as Bengaluru/Hyderabad/Pune preferred; flexible).
+**Nice‑to‑Have**
+
+* Experience in **healthcare/insurance** processes and analytics.
+* Familiarity with **evaluation frameworks** (e.g., golden datasets, rubric‑based scoring), **guardrails/red‑teaming**, and **observability**.
+* Exposure to **MLOps****/****LangChain****/LlamaIndex**, vector databases, and API integration patterns.
+* Practical understanding of **responsible AI** principles and risk controls; experience partnering with **Legal/Privacy/Compliance**.
+* Comfort with one or more languages or tools (Python, SQL, REST APIs, YAML), and with cloud platforms (Azure/AWS/GCP).
+**Success Metrics (KPIs)**
+
+* **Validated use cases discovered** per quarter and percent advancing from POC Pilot Scale.
+* **Model quality gains** (e.g., accuracy, factuality, reduction in hallucination) and **experience metrics** (latency, cost per task).
+* **Risk reduction** (guardrail coverage, incident rate, red‑team findings addressed).
+* **Stakeholder satisfaction** (NPS/CSAT) and **enablement****reach** (teams trained, assets reused).
+* **Vendor outcomes** (SLA adherence, value realization, cost savings/avoidance).
+**Ways of Working**
+
+* Hybrid work with core collaboration hours overlapping **European and India time zones**; occasional evening/morning meetings to align with global teams.
+* Limited travel for workshops or vendor evaluations as needed.
+* Partner closely with Product Owners, Data/ML Engineering, Architecture, Security, Privacy, Legal, and Procurement.
+ **About Cigna Healthcare**
+
+
+Cigna Healthcare, a division of The Cigna Group, is an advocate for better health through every stage of life. We guide our customers through the health care system, empowering them with the information and insight they need to make the best choices for improving their health and vitality. Join us in driving growth and improving lives.*Qualified applicants will be considered without regard to race, color, age, disability, sex, childbirth (including pregnancy) or related medical conditions including but not limited to lactation, sexual orientation, gender identity or expression, veteran or military status, religion, national origin, ancestry, marital or familial status, genetic information, status with regard to public assistance, citizenship status or any other characteristic protected by applicable equal employment opportunity laws.*
+
+*If* *you require reasonable accommodation in completing the online application process, please email:* *SeeYourselfEMEA@cigna.com* *for support. Do not email* *SeeYourselfEMEA@cigna.com* *for an update on your application or to provide your resume as you will not receive a response.*",Insurance,https://in.indeed.com/cmp/The-Cigna-Group,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/ad7fc2c9fecc225c63ee5025b330aebb,https://www.thecignagroup.com/,"900 Cottage Grove Rd.
+Bloomfield CT, United States 06002","10,000+",more than $10B (USD),"The Cigna Group is a global health service company, dedicated to helping the people we serve improve their health, well-being and sense of security.",,,,,,
+in-6bf6252c171b8779,indeed,https://in.indeed.com/viewjob?jk=6bf6252c171b8779,https://job-boards.greenhouse.io/xgs/jobs/5564309004,Xebia_ Data Engineer,Xebia USA,"KA, IN",2026-01-26,,,,,,,False,,,,,"### **About Xebia**
+
+
+**Xebia** is a trusted advisor in the modern era of digital transformation, serving hundreds of leading brands worldwide with end\-to\-end IT solutions. The company has experts specializing in t**echnology consulting, software engineering, AI, digital products and platforms, data, cloud, intelligent automation, agile transformation, and industry digitization.** In addition to providing high\-quality digital consulting and state\-of\-the\-art software development, Xebia has a host of standardized solutions that substantially reduce the time\-to\-market for businesses.
+
+
+
+Xebia also offers a diverse portfolio of training courses to help support forward\-thinking organizations as they look to upskill and educate their workforce to capitalize on the latest digital capabilities. The company has a strong presence across 16 countries with development centres across the **US, Latin America, Western Europe, Poland, the Nordics, the Middle East, and Asia Pacific.**
+
+
+**Job Description:**
+
+
+
+We are looking for a skilled **Data science Data Engineer** to join our team, working on end\-to\-end data engineering and data science use cases. The ideal candidate will have strong expertise in **Python or Scala, Spark (Databricks), and SQL**, building scalable and efficient data pipelines on **Azure**.
+
+  
+
+
+
+Primary Skills:
+
+
+
+Data Engineering \& Cloud:
+
+
+* + Proficiency in Azure Data Platform (Data Factory, Databricks).
+	+ Strong skills in SQL and \[Python or Scala] for data manipulation.
+	+ Experience with ETL/ELT pipelines and data transformations.
+	+ Familiarity with Big Data technologies (Spark, Delta Lake, Parquet).
+
+ML \& MLOps Integration:
+
+
+* + Experience supporting ML pipelines with efficient data workflows.
+	+ Knowledge of MLOps practices (CI/CD, model monitoring, versioning).
+
+Data Optimization \& Performance:
+
+
+* + Expertise in data pipeline optimization and performance tuning.
+	+ Experience on feature engineering and model deployment.
+
+Analytical \& Problem\-Solving:
+
+
+* + Strong troubleshooting and problem\-solving skills.
+	+ Experience with data quality checks and validation.
+
+  
+
+
+
+
+Nice\-to\-Have Skills:
+
+  
+
+
+* Exposure to NLP, time\-series forecasting, and anomaly detection.
+* Familiarity with data governance frameworks and compliance practices.
+* Understanding of retail, or workforce analytics.
+
+
+**Some useful links:**
+
+
+**Xebia \| Creating Digital Leaders.**
+
+
+
+https://www.linkedin.com/company/xebia/mycompany/
+
+
+
+http://twitter.com/xebiaindia
+
+
+
+http://www.youtube.com/XebiaIndia",,https://in.indeed.com/cmp/Xebia-USA,,,,,,,,,,,,
+in-0a0a4904bbea21dd,indeed,https://in.indeed.com/viewjob?jk=0a0a4904bbea21dd,http://in.indeed.com/job/aiml-lead-applied-machine-learning-0a0a4904bbea21dd,AI/ML Lead - Applied Machine Learning,"Cywarden, Inc.","PB, IN",2026-01-26,fulltime,,,,,,False,,,,,"**Job Title:** **AI/ML Lead – Applied Machine Learning**
+
+**Experience:** 5–8 Years  
+**Employment Type:** Full\-time  
+**Location:** Mohali, US Shifts
+
+**About the Role**
+
+We are looking for a highly skilled **AI/ML Lead** to design, build, and scale **production\-grade machine learning systems**. This role focuses on **applied ML**, combining **statistical models, rule\-based decision engines, and real\-time analytics** to solve complex problems involving **log/event data, ranking, and anomaly detection**.
+
+The ideal candidate will bring strong hands\-on expertise in **Python, ML system design, and MLOps**, along with the ability to lead technical execution and mentor engineers.
+
+**Key Responsibilities:** 
+
+**Applied ML \& Model Development**
+
+* Design, develop, and deploy **machine learning models** for ranking, classification, anomaly detection, and event correlation.
+* Build **hybrid ML \+ rules\-based decision engines** to balance accuracy, interpretability, and operational reliability.
+* Work with large\-scale **log and event data** to extract actionable insights and drive intelligent automation.
+* Implement **confidence scoring and model explainability** to improve trust, auditability, and business adoption.
+
+**ML Architecture \& MLOps**
+
+* Own end\-to\-end **ML system architecture**, from data ingestion to model serving and monitoring.
+* Implement robust **MLOps pipelines** using AWS, Docker, and Kubernetes.
+* Automate model training, testing, deployment, versioning, and rollback.
+* Monitor model performance, drift, and reliability in production environments.
+
+**Data, Analytics \& Experimentation**
+
+* Perform feature engineering on high\-volume, high\-velocity datasets.
+* Design experimentation frameworks to evaluate model effectiveness and business impact.
+* Continuously improve models based on feedback loops and real\-world data.
+
+**Technical Leadership \& Collaboration**
+
+* Lead and mentor ML engineers and data scientists.
+* Collaborate closely with product, engineering, and platform teams to translate requirements into scalable ML solutions.
+* Contribute to technical decision\-making, architecture reviews, and roadmap planning.
+
+**Required Skills \& Qualifications**
+
+* 5–8 years of experience in **applied machine learning** or data science roles.
+* Strong proficiency in **Python** and ML libraries (scikit\-learn, XGBoost, LightGBM, PyTorch, TensorFlow).
+* Hands\-on experience with **ranking algorithms, anomaly detection, and event/log analytics**.
+* Experience designing **ML \+ rules\-based decision systems**.
+* Strong understanding of **model explainability techniques** (SHAP, LIME, feature attribution).
+* Experience implementing **confidence scoring and uncertainty estimation**.
+* Proven expertise in **MLOps**, including AWS, Docker, and Kubernetes.
+
+**Preferred Qualifications**
+
+* Experience working with **real\-time or near\-real\-time ML systems**.
+* Familiarity with streaming platforms (Kafka, Kinesis).
+* Exposure to **security analytics, observability, or operational intelligence domains**.
+* Experience with feature stores and model monitoring tools.
+* AWS certifications or equivalent cloud experience.
+
+**What We Offer**
+
+* Opportunity to lead and scale **production ML systems** with real\-world impact.
+* Work on challenging problems involving **high\-volume data and intelligent decisioning**.
+* Collaborative, engineering\-driven culture with strong ownership.
+* Competitive compensation and career growth opportunities.
+
+Job Types: Full\-time, Permanent
+
+Pay: ₹808,307\.21 \- ₹2,087,530\.11 per year
+
+Work Location: In person",,https://in.indeed.com/cmp/Cywarden-Inc.,,,,,,,,,,,,
+in-235e21b6bb017a80,indeed,https://in.indeed.com/viewjob?jk=235e21b6bb017a80,https://jobs.bechtel.com/job/Gurugram-AI-Specialist-%28ML-&-LLM%29-HR-122015/1359156100/?feedId=4&utm_source=Indeed,AI Specialist (ML & LLM),Bechtel,"HR, IN",2026-01-26,fulltime,,,,,,False,,,,acesstmt@bechtel.com,"**Requisition ID: 291555**
+
+* **Relocation Authorized: None**
+* **Telework Type: Full\-Time Office/Project**
+* **Work Location: Gurugram**
+
+**Extraordinary teams building inspiring projects:**
+----------------------------------------------------
+
+
+Since 1898, we have helped customers complete more than 25,000 projects in 160 countries on all seven continents that have created jobs, grown economies, improved the resiliency of the world's infrastructure, increased access to energy, resources, and vital services, and made the world a safer, cleaner place.
+
+
+Differentiated by the quality of our people and our relentless drive to deliver the most successful outcomes, we align our capabilities to our customers' objectives to create a lasting positive impact. We serve the Infrastructure; Nuclear, Security \& Environmental; Energy; Mining \& Metals, and the Manufacturing and Technology markets. Our services span from initial planning and investment, through start\-up and operations.
+
+
+Core to Bechtel is our Vision, Values and Commitments. They are what we believe, what customers can expect, and how we deliver. Learn more about our extraordinary teams building inspiring projects in our Impact Report.
+
+  
+
+Bechtel’s India offices support the execution of projects and services around the world. Working seamlessly with Bechtel’s global business units, project sites, customers, and suppliers, our teams have delivered more than 125 projects since 1994\. With offices in Gurgaon, Vadodara, and Chennai there are exciting career opportunities for candidates who are passionate about delivering projects that make a lasting, meaningful difference for people and communities around the world.
+
+**Job Summary:**
+----------------
+
+
+We are seeking an AI specialist primarily as **Data Scientist \& Data Engineer** with hands‑on experience in **Azure OpenAI Studio**, **Databricks**, and modern data/AI engineering practices. The ideal candidate will work at the intersection of **data engineering, machine learning, and applied generative AI**, driving end‑to‑end solutions from data ingestion to model deployment for unique challenges and opportunities within the engineering, procurement and construction (EPC) sector.
+
+
+In this role, you may be required to travel to other corporate or project offices.
+
+**Major Responsibilities:**
+---------------------------
+
+* Identify AI Opportunities: Work closely with different departments to identify potential AI use cases that can solve business problems and create value.
+* Use Case Development: Develop detailed AI use cases, including problem statements, objectives, expected outcomes, and success metrics.
+* Feasibility Analysis: Conduct feasibility studies to assess the technical and economic viability of proposed AI use cases.
+* Solution Design:
+	+ Develop and maintain data ingestion workflows from varied sources (APIs, databases, file systems).
+	+ Implement data quality checks, validation, and monitoring frameworks
+	+ Translate business problems into technical solutions leveraging Azure and Databricks ecosystems.
+	+ Design secure, scalable architectures for data storage, processing, and model deployment.
+	+ Integrate AI/ML workloads with enterprise applications using APIs, orchestrators, and Azure services (Functions, Logic Apps, Synapse, etc.).
+	+ Fine\-tune and deploy **Azure OpenAI** models (GPT, embeddings, assistants, and custom models).
+	+ Build prompt engineering frameworks and evaluation strategies for LLM\-based applications.
+	+ Develop production\-grade ML systems using **MLflow**, **Databricks Model Registry**, or Azure ML.
+* Documentation: Maintain comprehensive documentation of AI use cases, including requirements, design, implementation, and performance metrics.
+* Continuous Improvement: Stay up\-to\-date with the latest advancements in AI and continuously seek opportunities to improve existing AI solutions and processes.
+**Education and Experience Requirements:**
+------------------------------------------
+
+* **Education:** Bachelor’s degree in computer science, AI, Classic Machine Learning models, Data Science, or a related field. Master’s degree preferred.
+* **Experience:** 4\+ years of experience in AI/machine learning, preferably within the engineering and construction (EPC) industry or a related field.
+* Experience in data science, data engineering, or ML engineering.
+* Proven experience building production\-grade ML/AI systems.
+* Prior exposure to LLMs, foundation models, or generative AI solutions
+* Experience with Vector databases (Pinecone, Weaviate, Azure AI Search).
+* Experience with RAG, LLMOps, or LLM application frameworks (LangChain, Semantic Kernel).
+* Understanding of security, governance, and compliance for AI workloads
+**Required Knowledge and Skills:**
+----------------------------------
+
+* Strong understanding of **LLM concepts** (RAG, grounding, evaluation, hallucination mitigation)
+* Hands\-on expertise with **Azure OpenAI Studio** (prompting, fine\-tuning, deployments)
+* Experience with **MLflow**, **MLOps**, CI/CD pipelines.
+
+
+Solid understanding of data modeling, distributed systems, and cloud\-native architectures.
+
+**Total Rewards/Benefits:**
+---------------------------
+
+
+For decades, Bechtel has worked to inspire the next generation of employees and beyond! Because our teams face some of the world's toughest challenges, we offer robust benefits to ensure our people thrive. Whether it is advancing careers, delivering programs to enhance our culture, or providing time to recharge, Bechtel has the benefits to build a legacy of sustainable growth. Learn more at bechtel.com/total\-rewards.
+
+**Diverse teams build the extraordinary:**
+------------------------------------------
+
+
+As a global company, Bechtel has long been home to a vibrant multitude of nationalities, cultures, ethnicities, and life experiences. This diversity has made us a more trusted partner, more effective problem solvers and innovators, and a more attractive destination for leading talent.
+
+
+We are committed to being a company where every colleague feels that they belong\-where colleagues feel part of ""One Team,"" respected and rewarded for what they bring, supported in pursuing their goals, invested in our values and purpose, and treated equitably.
+
+ ***Bechtel is an Equal Opportunity Employer. All qualified applicants will receive consideration for employment without regard to race, color, religion, sex, sexual orientation, gender identity and expression, age, national origin, disability, citizenship status (except as authorized by law), protected veteran status, genetic information, and any other characteristic protected by federal, state or local law. Applicants with a disability, who require a reasonable accommodation for any part of the application or hiring process, may e\-mail their request to*** **acesstmt@bechtel.com**",,https://in.indeed.com/cmp/Bechtel,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/abfeaf5cdbab5e3ee32aee3051121bd4,http://www.bechtel.com,"Reston, VA","10,000+",more than $10B (USD),"Bechtel is one of the world’s most respected global engineering, construction, and project management organizations.",,,,,,
+in-bd193be1b9eeb96e,indeed,https://in.indeed.com/viewjob?jk=bd193be1b9eeb96e,https://jobs.bechtel.com/job/Gurugram-AI-Specialist-%28Copilot%29-HR-122015/1359155700/?feedId=4&utm_source=Indeed,AI Specialist (Copilot),Bechtel,"HR, IN",2026-01-26,fulltime,,,,,,False,,,,acesstmt@bechtel.com,"**Requisition ID: 291554**
+
+* **Relocation Authorized: None**
+* **Telework Type: Full\-Time Office/Project**
+* **Work Location: Gurugram**
+
+**Extraordinary teams building inspiring projects:**
+----------------------------------------------------
+
+
+Since 1898, we have helped customers complete more than 25,000 projects in 160 countries on all seven continents that have created jobs, grown economies, improved the resiliency of the world's infrastructure, increased access to energy, resources, and vital services, and made the world a safer, cleaner place.
+
+
+Differentiated by the quality of our people and our relentless drive to deliver the most successful outcomes, we align our capabilities to our customers' objectives to create a lasting positive impact. We serve the Infrastructure; Nuclear, Security \& Environmental; Energy; Mining \& Metals, and the Manufacturing and Technology markets. Our services span from initial planning and investment, through start\-up and operations.
+
+
+Core to Bechtel is our Vision, Values and Commitments. They are what we believe, what customers can expect, and how we deliver. Learn more about our extraordinary teams building inspiring projects in our Impact Report.
+
+  
+
+Bechtel’s India offices support the execution of projects and services around the world. Working seamlessly with Bechtel’s global business units, project sites, customers, and suppliers, our teams have delivered more than 125 projects since 1994\. With offices in Gurgaon, Vadodara, and Chennai there are exciting career opportunities for candidates who are passionate about delivering projects that make a lasting, meaningful difference for people and communities around the world.
+
+**Job Summary:**
+----------------
+
+
+We are seeking an AI specialist with hands\-on expertise in building, integrating, and deploying solutions using Copilot Studio and Copilot Agents. You will design intelligent agent workflows, integrate enterprise data and tools, implement grounding and guardrails, and operationalize copilots with robust monitoring, governance, and lifecycle management. driving end‑to‑end solutions from data ingestion to model deployment for unique challenges and opportunities within the engineering, procurement and construction (EPC) sector.
+
+**Major Responsibilities:**
+---------------------------
+
+* Identify AI Opportunities: Work closely with different departments to identify potential AI use cases that can solve business problems and create value.
+* Use Case Development: Develop detailed AI use cases, including problem statements, objectives, expected outcomes, and success metrics.
+* Feasibility Analysis: Conduct feasibility studies to assess the technical and economic viability of proposed AI use cases.
+* Solution Design:  
+
+	+ Develop and maintain data ingestion workflows from varied sources (APIs, databases, file systems).
+	+ Design and implement Copilot Agents with autonomous planning, multi\-turn reasoning, memory, and tool/function calling.
+	+ Configure system prompts, guardrails, policies, and content filters to ensure safety and reliability.
+	+ Build actions, plugins, and custom connectors to integrate with REST APIs, Dataverse, Dynamics 365, SharePoint, Azure SQL, and internal systems.
+	+ Implement RAG (Retrieval\-Augmented Generation) using embeddings, vector indexes, and enterprise knowledge sources.
+	+ Optimize prompt engineering for accuracy, determinism, and cost\-performance tradeoffs.
+	+ Develop end\-to\-end orchestration flows in Copilot Studio, including triggers, branching, grounding, and hand\-offs to tools.
+	+ Configure data connections, knowledge sources, and security contexts via Entra ID and RBAC.
+	
+	Create reusable templates and components for rapid solutioning and scale.  
+	+
+* Documentation: Maintain comprehensive documentation of AI use cases, including requirements, design, implementation, and performance metrics.
+* Continuous Improvement: Stay up\-to\-date with the latest advancements in AI and continuously seek opportunities to improve existing AI solutions and processes.
+* Enforce Responsible AI policies: safety, fairness, privacy, and content filtering.
+**Education and Experience Requirements:**
+------------------------------------------
+
+* **Education:** Bachelor’s degree in computer science, AI, Classic Machine Learning models, Data Science, or a related field. Master’s degree preferred.
+* **Experience:** 4\+ years of experience in AI/ML engineering, software engineering, or data engineering.
+* 1–3 years building and deploying LLM\-based assistants or conversational/agentic systems.
+* Proven track record shipping production copilots with monitoring and lifecycle controls.
+* Experience with Semantic Kernel or LangChain.
+* Vector databases/search: Azure AI Search, Pinecone, Weaviate, or similar.
+* MLOps/LLMOps: model/versioning, automated evaluations, CI/CD for AI assets.
+* Certifications (any of):  
+
+	+ Microsoft Certified: Azure AI Engineer Associate
+	+ Microsoft Power Platform Developer Associate
+**Required Knowledge and Skills:**
+----------------------------------
+
+* Copilot Studio: agent configuration, orchestration, grounding, connectors, actions/plugins.
+* Copilot Agents: planning, tool calling, memory, safety guardrails, evaluation.
+* Azure OpenAI: GPT family, embeddings, function calling; prompt design \& optimization.
+* Integrations: REST APIs, OAuth, JSON schemas; Azure API Management is a plus.
+* Azure Services: Azure Functions, Azure Storage/ADLS, Azure AI Search/Vector index, Event Grid/Service Bus (nice to have).
+* Programming: Proficiency in Python and SQL; Power Automate/Power Fx exposure is a bonus.
+* Hands\-on expertise with Azure OpenAI Studio (prompting, fine\-tuning, deployments)
+* Experience with MLflow, MLOps, CI/CD pipelines.
+* Solid understanding of data modeling, distributed systems, and cloud\-native architectures.
+**Total Rewards/Benefits:**
+---------------------------
+
+
+For decades, Bechtel has worked to inspire the next generation of employees and beyond! Because our teams face some of the world's toughest challenges, we offer robust benefits to ensure our people thrive. Whether it is advancing careers, delivering programs to enhance our culture, or providing time to recharge, Bechtel has the benefits to build a legacy of sustainable growth. Learn more at bechtel.com/total\-rewards.
+
+**Diverse teams build the extraordinary:**
+------------------------------------------
+
+
+As a global company, Bechtel has long been home to a vibrant multitude of nationalities, cultures, ethnicities, and life experiences. This diversity has made us a more trusted partner, more effective problem solvers and innovators, and a more attractive destination for leading talent.
+
+
+We are committed to being a company where every colleague feels that they belong\-where colleagues feel part of ""One Team,"" respected and rewarded for what they bring, supported in pursuing their goals, invested in our values and purpose, and treated equitably.
+
+ ***Bechtel is an Equal Opportunity Employer. All qualified applicants will receive consideration for employment without regard to race, color, religion, sex, sexual orientation, gender identity and expression, age, national origin, disability, citizenship status (except as authorized by law), protected veteran status, genetic information, and any other characteristic protected by federal, state or local law. Applicants with a disability, who require a reasonable accommodation for any part of the application or hiring process, may e\-mail their request to*** **acesstmt@bechtel.com**",,https://in.indeed.com/cmp/Bechtel,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/abfeaf5cdbab5e3ee32aee3051121bd4,http://www.bechtel.com,"Reston, VA","10,000+",more than $10B (USD),"Bechtel is one of the world’s most respected global engineering, construction, and project management organizations.",,,,,,
+in-099e0004a2b199dc,indeed,https://in.indeed.com/viewjob?jk=099e0004a2b199dc,https://careers.irissoftware.com/job/Noida-Playwright-Test-Automation-Senior-Engineer-UP/51809044/,Playwright Test Automation - Senior Engineer,Iris Software,"UP, IN",2026-01-26,,,,,,,False,,,,,"**Posted On:** 26 Jan 2026
+
+
+**Location:** Noida, UP, India
+
+
+**Company:** Iris Software
+
+
+**Why Join Iris?**  
+
+Are you ready to do the best work of your career at one of **India’s Top 25 Best Workplaces in IT industry**? Do you want to grow in an award\-winning culture that **truly values your talent and ambitions**?  
+
+Join Iris Software — one of the **fastest\-growing IT services companies** — where **you own and shape your success story**.
+
+**About Us**  
+
+At Iris Software, our vision is to be our client’s most trusted technology partner, and the first choice for the industry’s top professionals to realize their full potential.
+With over 4,300 associates across India, U.S.A, and Canada, we help our enterprise clients thrive with technology\-enabled transformation across financial services, healthcare, transportation \& logistics, and professional services.
+Our work covers complex, mission\-critical applications with the latest technologies, such as high\-value complex Application \& Product Engineering, Data \& Analytics, Cloud, DevOps, Data \& MLOps, Quality Engineering, and Business Automation.  
+
+
+**Working with Us**  
+
+At Iris, every role is more than a job — it’s a launchpad for growth.
+Our Employee Value Proposition, **“Build Your Future. Own Your Journey.”** reflects our belief that people thrive when they have ownership of their career and the right opportunities to shape it.
+We foster a culture where your potential is valued, your voice matters, and your work creates real impact. With cutting\-edge projects, personalized career development, continuous learning and mentorship, we support you to grow and become your best — both personally and professionally.
+Curious what it’s like to work at Iris? Head to this video for an inside look at the people, the passion, and the possibilities. Watch it here.**Job Description**
+-------------------
+
+
+* As a Test Automation Consultant with 5\-7 years of experience and a strong background in Playwright Test automation
+* Responsibility to ensure the quality and reliability of software applications.
+* Playwright Test Automation expertise is mandatory and ability of driving automated testing strategies, optimizing testing processes, and mentoring junior team members.
+* Responsibilities
+* **Automation Strategy**: Develop and implement automated testing strategies that align with project goals and quality standards.
+* **Test Framework Development**: Design, develop, and maintain scalable and robust test automation frameworks using Typescript, ensuring reusability and low maintainability.
+* **Test Script Creation**: Write, review, and enhance automated test scripts to cover functional, regression, and integration testing scenarios.
+* **Test Execution**: Ability to record \& play and execute automated test scripts, analyze results, and report defects to the development team. Monitor and maintain test environments to ensure consistent test execution.
+* **Continuous Integration**: Integrate automated tests into the CI/CD pipeline, working collaboratively with development and DevOps teams to ensure timely and reliable test execution.
+* **Test Data Management**: Manage test data setup and ensure data consistency for different testing phases.
+* **Defect Tracking**: Identify, document, and prioritize defects using issue tracking tools. Collaborate with the development team to ensure timely defect resolution.
+* **Performance and Load Testing**: Contribute to performance and load testing efforts by creating automated tests to validate system responsiveness and stability.
+* **Test Reporting**: Generate comprehensive test reports and metrics for various stakeholders, highlighting test coverage, results, and areas for improvement – by logging details in Jira.
+* **Test Process Enhancement**: Continuously enhance testing processes and methodologies to increase efficiency, accuracy, and effectiveness.
+* **Mentorship**: Provide guidance and mentorship to junior team members, helping them develop their automation skills and best practices.
+* **Stay Current**:Stay updated on industry trends, emerging tools, and technologies related to test automation, and suggest improvements to the existing testing practices.
+* **Nice to have:** Exposure to any of the cloud computing platform (Azure \\ AWS \\ GCP)
+
+
+* **What you need to succeed:**
+
+
+* Bachelor's degree in Computer Science, Engineering, or related field.
+
+
+* 5\-7 years of hands\-on experience in test automation using Typescript
+
+
+* Strong coding skills in Typescript and experience with object\-oriented programming.
+
+
+* In\-depth understanding of software testing concepts, methodologies, and best practices.
+
+
+* Proficiency in creating and maintaining automation frameworks from scratch.
+
+
+* Experience with version control systems (e.g., Git) and CI/CD pipelines.
+
+
+* Solid knowledge of testing web applications, APIs, and databases.
+
+
+* Excellent problem\-solving skills and attention to detail.
+
+
+* Strong communication and collaboration skills to work effectively with cross\-functional teams.
+
+
+* Relevant certifications in testing or test automation (e.g., Playwright with Typescript) is a plus.
+**Mandatory Competencies**
+--------------------------
+
+
+Development Tools and Management \- Development Tools and Management \- JIRA
+Development Tools and Management \- Development Tools and Management \- CI/CD
+DevOps/Configuration Mgmt \- DevOps/Configuration Mgmt \- Git
+QA/QE \- QA Automation \- Playwright
+User Interface \- Typescript \- Typescript
+QA/QE \- QA Automation \- Performance testing (Jmeter, Loadrunner, NeoLoad etc)
+QE \- Test Automation Preparation
+Beh \- Communication and collaboration**Perks and Benefits for Irisians**  
+
+Iris provides world\-class benefits for a personalized employee experience. These benefits are designed to support financial, health and well\-being needs of Irisians for a holistic professional and personal growth. Click here to view the benefits.",,https://in.indeed.com/cmp/Iris-Software,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/7d764e02a8ee5c7c716dee3eb7bc2477,https://www.irissoftware.com/,,"1,001 to 5,000",,"Helping our clients achieve their business goals by fully leveraging technology, while providing an unparalleled, personalized client and employee experience.",,,,,,
+in-36dae80a30328419,indeed,https://in.indeed.com/viewjob?jk=36dae80a30328419,https://careers.irissoftware.com/job/Noida-Google-Vertex-AI-Senior-Engineer-UP/51807044/,Google Vertex AI - Senior Engineer,Iris Software,"UP, IN",2026-01-26,,,,,,,False,,,,,"**Posted On:** 26 Jan 2026
+
+
+**Location:** Noida, UP, India
+
+
+**Company:** Iris Software
+
+
+**Why Join Iris?**  
+
+Are you ready to do the best work of your career at one of **India’s Top 25 Best Workplaces in IT industry**? Do you want to grow in an award\-winning culture that **truly values your talent and ambitions**?  
+
+Join Iris Software — one of the **fastest\-growing IT services companies** — where **you own and shape your success story**.
+
+**About Us**  
+
+At Iris Software, our vision is to be our client’s most trusted technology partner, and the first choice for the industry’s top professionals to realize their full potential.
+With over 4,300 associates across India, U.S.A, and Canada, we help our enterprise clients thrive with technology\-enabled transformation across financial services, healthcare, transportation \& logistics, and professional services.
+Our work covers complex, mission\-critical applications with the latest technologies, such as high\-value complex Application \& Product Engineering, Data \& Analytics, Cloud, DevOps, Data \& MLOps, Quality Engineering, and Business Automation.  
+
+
+**Working with Us**  
+
+At Iris, every role is more than a job — it’s a launchpad for growth.
+Our Employee Value Proposition, **“Build Your Future. Own Your Journey.”** reflects our belief that people thrive when they have ownership of their career and the right opportunities to shape it.
+We foster a culture where your potential is valued, your voice matters, and your work creates real impact. With cutting\-edge projects, personalized career development, continuous learning and mentorship, we support you to grow and become your best — both personally and professionally.
+Curious what it’s like to work at Iris? Head to this video for an inside look at the people, the passion, and the possibilities. Watch it here.**Job Description**
+-------------------
+
+
+* Building multi\-agents solutions using VertexAI studio or ADK that have been promoted to production for large scale adoption, solid in conversational engineering and prompt engineering.
+* Tool / service integration into GCP ecosystem supporting Gemini Enterprise agents, such as MuleSoft, ServiceNow, Salesforce – understanding transaction types and standard agent protocols (A2A, MCP).
+* Data integration (e.g. BigQuery) and ingestion process (e.g. knowledge) for complex data feeds.
+**Mandatory Competencies**
+--------------------------
+
+
+Middleware \- Integration Middleware \- MuleSoft
+LowCode/NoCode \- LowCode/NoCode \- ServiceNow
+LowCode/NoCode \- LowCode/NoCode \- SalesForce
+Cloud \- GCP \- Cloud Data Fusion, Dataproc, BigQuery, Cloud Composer, Cloud Bigtable
+Beh \- Communication and collaboration**Perks and Benefits for Irisians**  
+
+Iris provides world\-class benefits for a personalized employee experience. These benefits are designed to support financial, health and well\-being needs of Irisians for a holistic professional and personal growth. Click here to view the benefits.",,https://in.indeed.com/cmp/Iris-Software,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/7d764e02a8ee5c7c716dee3eb7bc2477,https://www.irissoftware.com/,,"1,001 to 5,000",,"Helping our clients achieve their business goals by fully leveraging technology, while providing an unparalleled, personalized client and employee experience.",,,,,,
+in-8cc1b6f3663cc209,indeed,https://in.indeed.com/viewjob?jk=8cc1b6f3663cc209,https://careers.irissoftware.com/job/Noida-Google-Vertex-AI-Senior-Engineer-UP/51807144/,Google Vertex AI - Senior Engineer,Iris Software,"UP, IN",2026-01-26,,,,,,,False,,,,,"**Posted On:** 26 Jan 2026
+
+
+**Location:** Noida, UP, India
+
+
+**Company:** Iris Software
+
+
+**Why Join Iris?**  
+
+Are you ready to do the best work of your career at one of **India’s Top 25 Best Workplaces in IT industry**? Do you want to grow in an award\-winning culture that **truly values your talent and ambitions**?  
+
+Join Iris Software — one of the **fastest\-growing IT services companies** — where **you own and shape your success story**.
+
+**About Us**  
+
+At Iris Software, our vision is to be our client’s most trusted technology partner, and the first choice for the industry’s top professionals to realize their full potential.
+With over 4,300 associates across India, U.S.A, and Canada, we help our enterprise clients thrive with technology\-enabled transformation across financial services, healthcare, transportation \& logistics, and professional services.
+Our work covers complex, mission\-critical applications with the latest technologies, such as high\-value complex Application \& Product Engineering, Data \& Analytics, Cloud, DevOps, Data \& MLOps, Quality Engineering, and Business Automation.  
+
+
+**Working with Us**  
+
+At Iris, every role is more than a job — it’s a launchpad for growth.
+Our Employee Value Proposition, **“Build Your Future. Own Your Journey.”** reflects our belief that people thrive when they have ownership of their career and the right opportunities to shape it.
+We foster a culture where your potential is valued, your voice matters, and your work creates real impact. With cutting\-edge projects, personalized career development, continuous learning and mentorship, we support you to grow and become your best — both personally and professionally.
+Curious what it’s like to work at Iris? Head to this video for an inside look at the people, the passion, and the possibilities. Watch it here.**Job Description**
+-------------------
+
+
+* Building multi\-agents solutions using VertexAI studio or ADK that have been promoted to production for large scale adoption, solid in conversational engineering and prompt engineering.
+* Tool / service integration into GCP ecosystem supporting Gemini Enterprise agents, such as MuleSoft, ServiceNow, Salesforce – understanding transaction types and standard agent protocols (A2A, MCP).
+* Data integration (e.g. BigQuery) and ingestion process (e.g. knowledge) for complex data feeds.
+**Mandatory Competencies**
+--------------------------
+
+
+Middleware \- Integration Middleware \- MuleSoft
+LowCode/NoCode \- LowCode/NoCode \- ServiceNow
+LowCode/NoCode \- LowCode/NoCode \- SalesForce
+Cloud \- GCP \- Cloud Data Fusion, Dataproc, BigQuery, Cloud Composer, Cloud Bigtable
+Beh \- Communication and collaboration**Perks and Benefits for Irisians**  
+
+Iris provides world\-class benefits for a personalized employee experience. These benefits are designed to support financial, health and well\-being needs of Irisians for a holistic professional and personal growth. Click here to view the benefits.",,https://in.indeed.com/cmp/Iris-Software,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/7d764e02a8ee5c7c716dee3eb7bc2477,https://www.irissoftware.com/,,"1,001 to 5,000",,"Helping our clients achieve their business goals by fully leveraging technology, while providing an unparalleled, personalized client and employee experience.",,,,,,
+in-93b293a126c93edb,indeed,https://in.indeed.com/viewjob?jk=93b293a126c93edb,https://jobs.smartrecruiters.com/Visa/744000105596084-sr-consultant-agentic-tools-automation,Sr Consultant - Agentic Tools & Automation,Visa,"KA, IN",2026-01-26,fulltime,,,,,,False,,,,,"**Company Description**  
+
+Visa is a world leader in payments technology, facilitating transactions between consumers, merchants, financial institutions and government entities across more than 200 countries and territories, dedicated to uplifting everyone, everywhere by being the best way to pay and be paid.
+
+
+At Visa, you'll have the opportunity to create impact at scale — tackling meaningful challenges, growing your skills and seeing your contributions impact lives around the world. Join Visa and do work that matters — to you, to your community, and to the world.
+
+
+Progress starts with you.
+
+ **Job Description**  
+
+Visa’s Technology Organization is a community of problem solvers and innovators reshaping the future of commerce. We operate the world’s most sophisticated processing networks capable of handling more than 65k secure transactions a second across 80M merchants, 15k Financial Institutions, and billions of everyday people. While working with us you’ll get to work on complex distributed systems and solve massive scale problems centered on new payment flows, business and data solutions, cyber security, and B2C platforms.
+
+
+We are looking for Versatile, curious, and energetic Software Engineers who embrace solving complex challenges on a global scale. As a Visa Software Engineer, you will be an integral part of a multi\-functional development team inventing, designing, building, and testing software products that reach a truly global customer base. While building components of powerful payment technology, you will get to see your efforts shaping the digital future of monetary transactions. This position is ideal for an experienced software engineer passionate about solving challenging business problems, building applications with excellent user experience, and leveraging cutting\-edge GenAI technologies. The candidate will be deeply involved in hands\-on activities including POCs, design, documentation, development, and testing of new functionality, with a special emphasis on agentic solutions powered by GenAI tools.
+
+
+Responsibilities:
+
+* Design, develop, and own mission\-critical systems for highly scalable infrastructure supporting low\-latency, high\-throughput core payment processing.
+* Architect, code, and integrate application business layers with external components, including GenAI\-powered modules and agentic workflows.
+* Deliver zero\-defect code and ensure the team's deliverables meet or exceed prescribed SLAs.
+* Break down architected solutions into smaller tasks, including GenAI and agentic workflows.
+* Ensure instrumentation and monitoring for AI\-driven components.
+* Document design tradeoffs, best practices, and GenAI/agentic solution patterns.
+* Optimize production systems including traditional and AI\-enabled flows.
+* Collaborate across engineering teams to ensure scalability and stability.
+* Lead POCs including GenAI prototypes and agentic workflows.
+
+
+This is a hybrid position. Expectation of days in office will be confirmed by your hiring manager.
+
+ **Qualifications**  
+
+Basic Qualifications:  
+
+13\+ years of experience with Bachelor's Degree or 10\+ with Advanced Degree.  
+
+Experience delivering enterprise\-class applications with high\-throughput and low\-latency.  
+
+Experience with GoLang, Java, Python/Ruby and GenAI integration frameworks.  
+
+Strong coding abilities including building GenAI agents and orchestration logic.  
+
+Experience with containerization, NoSQL, and GenAI deployment.  
+
+Understanding of microservice architecture including those enhanced with AI.  
+
+Experience with security analysis including for GenAI modules.  
+
+Experience with DevOps and MLOps practices.  
+
+Strong communication skills including explaining GenAI concepts.  
+
+  
+
+Preferred Qualifications:  
+
+Experience with GenAI tools (OpenAI, Azure AI, Hugging Face).  
+
+Experience designing and scaling agentic workflows.  
+
+Payment domain experience.
+
+ **Additional Information**  
+
+Visa is an EEO Employer. Qualified applicants will receive consideration for employment without regard to race, color, religion, sex, national origin, sexual orientation, gender identity, disability or protected veteran status. Visa will also consider for employment qualified applicants with criminal histories in a manner consistent with EEOC guidelines and applicable local law.",,https://in.indeed.com/cmp/Visa,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/860a54ecfd7d7cab270f291d2d877922,http://www.visa.com,,"10,000+",more than $10B (USD),"Our Purpose is to... Uplift everyone, everywhere by being the best way to pay and be paid.",,,,,,
+in-e1e57386dd3490da,indeed,https://in.indeed.com/viewjob?jk=e1e57386dd3490da,https://careers.irissoftware.com/job/Noida-DevOps-GenAI-Senior-Engineer-UP/51780244/,DevOps GenAI - Senior Engineer,Iris Software,"UP, IN",2026-01-25,,,,,,,False,,,,,"**Posted On:** 25 Jan 2026
+
+
+**Location:** Noida, UP, India
+
+
+**Company:** Iris Software
+
+
+**Why Join Iris?**  
+
+Are you ready to do the best work of your career at one of **India’s Top 25 Best Workplaces in IT industry**? Do you want to grow in an award\-winning culture that **truly values your talent and ambitions**?  
+
+Join Iris Software — one of the **fastest\-growing IT services companies** — where **you own and shape your success story**.
+
+**About Us**  
+
+At Iris Software, our vision is to be our client’s most trusted technology partner, and the first choice for the industry’s top professionals to realize their full potential.
+With over 4,300 associates across India, U.S.A, and Canada, we help our enterprise clients thrive with technology\-enabled transformation across financial services, healthcare, transportation \& logistics, and professional services.
+Our work covers complex, mission\-critical applications with the latest technologies, such as high\-value complex Application \& Product Engineering, Data \& Analytics, Cloud, DevOps, Data \& MLOps, Quality Engineering, and Business Automation.  
+
+
+**Working with Us**  
+
+At Iris, every role is more than a job — it’s a launchpad for growth.
+Our Employee Value Proposition, **“Build Your Future. Own Your Journey.”** reflects our belief that people thrive when they have ownership of their career and the right opportunities to shape it.
+We foster a culture where your potential is valued, your voice matters, and your work creates real impact. With cutting\-edge projects, personalized career development, continuous learning and mentorship, we support you to grow and become your best — both personally and professionally.
+Curious what it’s like to work at Iris? Head to this video for an inside look at the people, the passion, and the possibilities. Watch it here.**Job Description**
+-------------------
+
+
+* Build / release / promotions for agents built in VertexAI studio or ADK
+* Designing and managing Gemini Enterprise instance(s) and supporting GCP service(s) (e.g. BigQuery, Identity Management)
+* Observability of Gemini Enterprise, Agents, and GCP runtime(s) services, familiar in using relevant tools for diagnostic and troubleshooting
+**Mandatory Competencies**
+--------------------------
+
+
+Data Science and Machine Learning \- Data Science and Machine Learning \- Gen AI
+DevOps/Configuration Mgmt \- Cloud Platforms \- GCP
+Cloud \- GCP \- Cloud Data Fusion, Dataproc, BigQuery, Cloud Composer, Cloud Bigtable
+Beh \- Communication and collaboration**Perks and Benefits for Irisians**  
+
+Iris provides world\-class benefits for a personalized employee experience. These benefits are designed to support financial, health and well\-being needs of Irisians for a holistic professional and personal growth. Click here to view the benefits.",,https://in.indeed.com/cmp/Iris-Software,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/7d764e02a8ee5c7c716dee3eb7bc2477,https://www.irissoftware.com/,,"1,001 to 5,000",,"Helping our clients achieve their business goals by fully leveraging technology, while providing an unparalleled, personalized client and employee experience.",,,,,,
+in-facc95d1fe6f692a,indeed,https://in.indeed.com/viewjob?jk=facc95d1fe6f692a,https://www.novartis.com/careers/career-search/job/details/req-10069903-s-manager-ai-innovation,S. Manager - AI & Innovation,Novartis,"TS, IN",2026-01-23,fulltime,,,,,,False,,,,,"### **Summary**
+
+We are seeking a Senior AI Architect to lead the design and delivery of enterprise grade AI platforms and solutions across business units. You will define reference architectures, steer build vs buy decisions, and guide multi disciplinary teams from discovery through production and ongoing operations. The ideal candidate combines deep hands on engineering with architectural judgment across data, ML/GenAI, applications, security, and governance—translating business strategy into secure, scalable, cost efficient AI systems.
+### **About the Role**
+
+**Key Responsibilities**
+
+* Translate business strategies into AI roadmaps and target architectures that guide enterprise\-wide adoption.
+* Lead architecture governance, establishing reference patterns for RAG, fine‑tuning, classical ML, and hybrid search/graph solutions.
+* Define and enforce NFRs, SLOs, and FinOps guardrails to ensure scalable, reliable, and cost‑efficient AI systems.
+* Design and deliver end‑to‑end AI solutions, from data acquisition and feature engineering to model/prompt development and production deployment.
+* Embed security, privacy, and compliance controls across AI workflows, including PII protection and audit readiness.
+* Establish evaluation frameworks (offline metrics, HITL, A/B testing, safety filters) to ensure quality, safety, and robustness of GenAI and ML solutions.
+* Integrate AI systems with enterprise data platforms, vector databases, graph stores, and ontology‑driven data contracts for interoperability.
+* Implement and mature ML/LLMOps practices, including CI/CD pipelines, registries, observability, drift monitoring, and automated rollback processes.
+* Drive Responsible AI and governance, partnering with legal, risk, and compliance teams to meet regulatory and ethical standards.
+* Lead cross‑functional teams, mentor engineers, promote agile ways of working, and communicate complex topics to technical and non‑technical stakeholders
+
+**Essential Requirements**
+
+* Bachelor’s or Master’s degree in computer science, IT, or other quantitative disciplines.
+* 10\+ years overall experience, including 5\+ years in AI/ML or data‑intensive solution architecture at enterprise scale.
+* Demonstrated success delivering production AI systems that meet enterprise NFRs (security, latency, cost, compliance).
+* Strong engineering background in at least two programming languages (e.g., Python, Java, Scala).
+* Deep expertise in cloud‑native architectures (Kubernetes, microservices, event streaming) and at least one major cloud platform.
+* Practical proficiency with MLOps/LLMOps tools: model/prompt registries, evaluators, feature stores, pipelines.
+* Strong understanding of NLP, semantic search, and text mining techniques.
+* Ability to manage multiple priorities, work under tight deadlines, and operate within a global team environment.
+
+
+Desired Requirements
+
+* Experience in the pharmaceutical industry with understanding of industry‑specific data standards.
+* Domain expertise in at least one area Pharma R\&D,Manufacturing, Procurement \& Supply Chain, Marketing \& Sales
+* Strong background in semantic technologies and knowledge representation (OWL, RDF, SPARQL, SWRL, JSON‑LD, Turtle).
+
+**Why Novartis:** Helping people with disease and their families takes more than innovative science. It takes a community of smart, passionate people like you. Collaborating, supporting and inspiring each other. Combining to achieve breakthroughs that change patients’ lives. Ready to create a brighter future together? https://www.novartis.com/about/strategy/people\-and\-culture
+
+**Benefits and Rewards:** Learn about all the ways we’ll help you thrive personally and professionally.  
+
+Read our handbook (PDF 30 MB)
+
+
+  
+Division
+US
+Business Unit
+General Management
+Location
+India
+Site
+Hyderabad (Office)
+Company / Legal Entity
+IN10 (FCRS \= IN010\) Novartis Healthcare Private Limited
+Functional Area
+Marketing
+Job Type
+Full time
+Employment Type
+Regular
+Shift Work
+No
+VIDEO
+
+Novartis is committed to building an outstanding, inclusive work environment and diverse teams' representative of the patients and communities we serve.
+
+
+### **Accessibility and accommodation**
+
+
+Novartis is committed to working with and providing reasonable accommodation to individuals with disabilities. If, because of a medical condition or disability, you need a reasonable accommodation for any part of the recruitment process, or in order to perform the essential functions of a position, please send an e\-mail to \[email protected] and let us know the nature of your request and your contact information. Please include the job requisition number in your message.",,https://in.indeed.com/cmp/Novartis,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/1c9d9bc97826a2c0c335266459b68e47,https://www.novartis.com/,Basel,"10,000+",Decline to state,,,,,,,
+in-c39e87539f0f1676,indeed,https://in.indeed.com/viewjob?jk=c39e87539f0f1676,https://apply.careers.microsoft.com/careers/job/1970393556657674?utm_source=indeed&domain=microsoft.com,Senior Consultant - Data & AI,Microsoft,"TS, IN",2026-01-08,fulltime,,,,,,False,,,,,"**Overview**  
+
+Microsoft Industry Solutions \- Global Center for Innovation and Delivery Center (GCID) delivers end\-to\-end solutions by enabling accelerated adoption and productive use of Microsoft technologies. An organization of well over 2000\+ exceptional people, GCID presents a great opportunity for highly skilled services professionals to make a foray into consulting, solution development and delivery roles. The ideal consultant is passionate about technology, has breadth rather than specific product depth, and has the drive and courage to articulate and stand up for a great solution delivering true value for the client.
+
+
+As a Senior Data \& AI Consultant, you will design and deliver modern, cloud\-native and AI\-powered data solutions that drive measurable business outcomes, deliver quality engagements with your expertise, either as an advisor, reviewer, or contributor in high profile projects to ensure customer value. The ideal candidate must have the ability to combine their technical skills, leadership skills, creativity, and customer focus to deliver great solutions to the customers and ensure they get the best out of our technologies and solutions. Consulting Delivery professionals bring subject matter and solution expertise to architectural teams, customers, and partners. They apply deep technical and business knowledge to accelerate the adoption of Microsoft devices and services by ensuring strategic, architectural, and operational alignment to customer and partner objectives.
+
+ **Responsibilities*** Lead technical delivery of complex, cloud native and AI enabled engagements, contributing as a hands\-on individual contributor and, where required, leading engineering teams to ensure high\-quality, predictable outcomes.
+* Define and drive the technology strategy for large and complex customer engagements, ensuring solutions are scalable, secure, compliant, and aligned to business objectives, architectural best practices, and Microsoft reference architectures.
+* Design, develop, and deploy solutions on Microsoft Azure, accelerating customer value through the effective use of Microsoft technologies, platforms, and delivery methodologies while meeting quality, time, and cost constraints.
+* Identifies the best practice approach for a project, across a wide scope of technical issues, and develops or reuses intellectual capital (IP) with customers, world\-wide, and programs and initiatives across Microsoft.
+* Identifies dependencies and risks that go beyond the immediate scope and timeframe for a complex project. Develops contingency plans, risk\-mitigation implementation criteria, and alternative strategies to manage short\- and long\-term risks and manages technical escalations.
+* Collaborates, as appropriate, with peers and cross\-functional teams to scale the business with existing high\-stake or strategic customers, by articulating/developing value propositions for strategic Microsoft products and services.
+* Drives AI\-First data engineering principles and mindset in the team to make the best of AI tools and services while helping in orchestration, transformation, and operationalization of AI/ML\-powered data solutions.
+* Continuously upskill self to become strong Full stack data engineer, inspire their team as much, to be able to build future\-ready skills, collaborate with other specialist teams, product teams, and customers to co\-create innovative solutions and help the customers tackle some of their biggest challenges.
+* Drives new ways of thinking, across the division and subsidiary, to improve quality, engineering productivity, and responsiveness to feedback and changing priorities.
+* Implement rapid prototyping and able to lead from brainstorming and whiteboarding ideas to production\-ready solutions driven by AI\-first mindset. Upskill consistently to get better in this and deliver innovation for customers using Azure stacks.
+* Embody Microsoft culture and values
+ **Qualifications**  
+
+Qualifications
+
+* 10\+ years of experience
+* Bachelor's degree in computer science engineering or equivalent work experience. Higher relevant education is preferred.
+* Customer facing Project delivery leadership experience involving solution design, project envisioning, planning, development and deployment of complex solutions with minimum of 5 plus years.
+
+One or more of the following certifications, or other industry equivalent ones, is a plus:
+
+* Microsoft Certified: Fabric Analytics Engineer Associate (DP600\)
+* Microsoft Certified: Azure AI Engineer Associate (AI102\)
+* Microsoft Certified: Azure Solution Architect Expert (AZ\-305\)
+
+
+Areas of Expertise
+
+
+Data Architecture \& Platform Engineering
+
+* Lead enterprise data architecture/design across cloud, on\-prem, and hybrid environments, designing scalable Data Warehouse, Lakehouse, and analytics platforms using Microsoft Fabric, Azure Synapse Analytics. Knowledge of Azure Databricks is a plus
+* Architect modern platforms using Azure Data Services, serverless and microservices architectures, including largescale data migrations, platform modernization, and multitenant, security hardened designs
+* Apply deep expertise across OLTP/OLAP, columnar, opensource, and NoSQL databases (e.g., Cosmos DB, Redis, Cassandra, MongoDB) with strong governance and access control models
+
+AI\-First Delivery
+
+* Embed AI first principles across solution design, delivery workflows, automation, and intelligent orchestration for complex data and AI enabled programs
+* Own end\-to\-end technical execution—architecture decisions, engineering standards, quality, compliance, and delivery governance—aligning solutions to business outcomes
+* Help define delivery strategies, milestones, risk mitigation, recovery paths, and adoption of AI native delivery models (MLOps, intelligent pipelines)
+
+Engineering Excellence \& DataOps
+
+* Champion high quality engineering practices including coding standards, architectural integrity, performance benchmarks, security, testing, observability, and optimization
+* Drive Data Ops and DevOps excellence using Agile methodologies, Azure DevOps, CI/CD, and automation
+* Promote reuse through accelerators, reference architectures, shared components, and continuous learning via certifications and emerging platforms
+  
+
+AI / ML \& Intelligent Systems
+
+* Lead AI powered data engineering, ML ready pipelines, and operationalized MLOps using Azure AI services
+* Apply hands\-on expertise in Python, deep learning/Gen AI frameworks (PyTorch, TensorFlow), orchestration frameworks like LangChain/LangGraph, prompt engineering, RAG frameworks, AI Search, and agentic workflows on Azure AI stack
+* Integrate AI into enterprise data platforms, enabling intelligent automation and applying Responsible AI principles (fairness, governance, security, compliance, interpretability)
+
+Innovation \& Technical Thought Leadership
+
+* Apply design thinking and user centric approaches to deliver high impact data and AI solutions
+* Track and influence emerging technologies, delivery models, and platform strategy
+* Build and share intellectual property (IP), reusable assets, and best practices to improve delivery predictability, quality, and efficiency
+  
+
+Team Leadership \& Mentorship
+
+* Lead and mentor engineering teams, fostering collaboration, technical excellence, and accountability
+* Provide guidance through design and code reviews, coaching, and feedback
+* Support professional development and build a strong, inclusive engineering culture
+
+Soft Skills \& Mindset
+
+* Strong communication and presentation skills with the ability to engage both technical and non\-technical stakeholders.
+* Passion for mentoring, knowledge sharing, and continuous learning.
+* Proven adaptability to new technologies and evolving customer requirements.
+* Experience working in Agile/Scrum environments.
+* Awareness of AI technologies and their integration into cloud solutions.
+  
+
+Good to have:
+
+
+Customer Co\-Innovation Mindset \& Customer Enablement
+
+* Lead rapid prototyping, pilots, and early\-stage production deployments for enterprise customers, accelerating time\-to\-value
+* Translate from whiteboard to production with minimal friction, engineering alongside customer teams to unblock delivery and adoption
+* Own troubleshooting across performance, reliability, cost, security, and data quality, delivering outcome\-driven engineering in ambiguous, high\-pressure environments
+  
+
+  
+
+This position will be open for a minimum of 5 days, with applications accepted on an ongoing basis until the position is filled.
+
+  
+
+Microsoft is an equal opportunity employer. All qualified applicants will receive consideration for employment without regard to age, ancestry, citizenship, color, family or medical care leave, gender identity or expression, genetic information, immigration status, marital status, medical condition, national origin, physical or mental disability, political affiliation, protected veteran or military status, race, ethnicity, religion, sex (including pregnancy), sexual orientation, or any other characteristic protected by applicable local laws, regulations and ordinances. If you need assistance with religious accommodations and/or a reasonable accommodation due to a disability during the application process**.**",Internet And Software,https://in.indeed.com/cmp/Microsoft,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/88813b3f866a5b58c9685073e3b87e05,http://www.microsoft.com/,"One Microsoft Way Redmond, Washington 98052-6399","10,000+",more than $10B (USD),Our mission is to empower every person and every organization on the planet to achieve more.,,,,,,

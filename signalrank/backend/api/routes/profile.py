@@ -19,23 +19,31 @@ class ProfileUpdate(BaseModel):
     role_intent: str | None = None
     config_overrides: dict | None = None
     onboarding_complete: bool | None = None
+    target_lpa: float | None = None
+    custom_search_queries: list[str] | None = None
+    target_roles: list[str] | None = None
+    preferred_locations: list[str] | None = None
 
 
 @router.get("/profile")
 async def get_profile(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
     profile = result.scalar_one_or_none()
+    p = profile
     return {
         "user_id": current_user.id,
         "email": current_user.email,
-        "profile": {
-            "resume_text": profile.resume_text if profile else None,
-            "distilled_text": profile.distilled_text if profile else None,
-            "min_salary": profile.min_salary if profile else None,
-            "role_intent": profile.role_intent if profile else None,
-            "config_overrides": profile.config_overrides if profile else None,
-            "onboarding_complete": profile.onboarding_complete if profile else False,
-        } if profile else None,
+        "role_intent": p.role_intent if p else None,
+        "min_salary": p.min_salary if p else None,
+        "min_yoe": p.min_yoe if p else None,
+        "max_yoe": p.max_yoe if p else None,
+        "target_lpa": p.target_lpa if p else None,
+        "target_roles": p.target_roles if p else None,
+        "preferred_locations": p.preferred_locations if p else None,
+        "custom_search_queries": p.custom_search_queries if p else None,
+        "config_overrides": p.config_overrides if p else None,
+        "onboarding_complete": p.onboarding_complete if p else False,
+        "skills": [],
     }
 
 

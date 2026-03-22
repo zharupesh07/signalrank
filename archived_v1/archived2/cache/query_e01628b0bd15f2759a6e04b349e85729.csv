@@ -1,0 +1,2252 @@
+id,site,job_url,job_url_direct,title,company,location,date_posted,job_type,salary_source,interval,min_amount,max_amount,currency,is_remote,job_level,job_function,listing_type,emails,description,company_industry,company_url,company_logo,company_url_direct,company_addresses,company_num_employees,company_revenue,company_description,skills,experience_range,company_rating,company_reviews_count,vacancy_count,work_from_home_type
+in-8a15f49fc685aa79,indeed,https://in.indeed.com/viewjob?jk=8a15f49fc685aa79,https://thomsonreuters.wd5.myworkdayjobs.com/en-US/External_Career_Site/job/India-Bengaluru-Karnataka/Senior-Software-Engineer---AI-I_JREQ197405-1,Senior Software Engineer - AI I,Thomson Reuters,"KA, IN",2026-01-27,fulltime,,,,,,True,,,,,"Job Description
+Job Description
+**Senior Software Engineer\- AI**
+
+Are you passionate about building AI\-driven software that transforms how professionals work? Join a dynamic and highly skilled team at Thomson Reuters, where we invest deeply in AI technologies and explore emerging fields with the backing of a global leader. As a Senior Software Engineer – AI, you will play a key role in developing intelligent systems that power the next generation of expert solutions across legal, tax, risk, and compliance domains.
+
+
+**About The Role:**
+
+As a **Senior Software Engineer – AI** , you will collaborate with a cross\-functional team of product managers, UX designers, and engineers to design, build, and deliver AI\-powered solutions.
+
+
+**Build AI\-Driven Systems** :
+
+
+* Architect and implement advanced AI systems, including multi\-component pipelines, retrieval\-augmented generation (RAG), and custom AI agents with multi\-step reasoning.
+* Integrate AI models into production software through robust APIs and scalable data pipelines.
+* Adapt AI models and techniques to specialized domains, tailoring solutions for expert systems in areas such as legal, tax, and compliance.
+
+**Innovate** :
+
+
+* Evaluate and prototype cutting\-edge AI techniques to solve business challenges.
+* Conduct proof\-of\-concept projects for new AI\-driven features.
+* Stay current with AI research and emerging technologies.
+
+**Provide Technical Leadership** :
+
+
+* Break down functional requirements into scalable technical specifications.
+* Mentor junior engineers and facilitate technical discussions
+* Contribute to MLOps and LLMOps practices, both in design and implementation.
+* Act as a thought leader, sharing expertise in company\-wide forums and representing the organization in emerging technology areas.
+
+**Ensure Quality \& Operations** :
+
+
+* Implement comprehensive testing frameworks and monitoring systems for AI model performance
+* Ensure compliance with ethical AI principles and security standards.
+* Conduct systems analysis and recommend operational improvements.
+
+**Collaborate Across Functions** :
+
+
+* Work closely with AI researchers, engineers, designers and product teams to translate AI capabilities into real\-world applications.
+* Optimize AI system performance considering factors like latency and resource usage.
+* Support application feature enhancements through AI capabilities.
+
+**About You:**
+
+You are a fit for the position of Senior Software Engineer\- AI if your background includes:
+
+
+**Required Skills and experience:**
+
+* Bachelor's degree in computer science or equivalent experience.
+* 7\+ years of experience in software engineering; at least 2 years focused on AI/ML.
+* Proficiency in Python and experience with AI/ML frameworks (e.g., PyTorch, TensorFlow).
+* Strong understanding of machine learning principles, evaluation, and system design.
+* Knowledge of MLOps and the end\-to\-end lifecycle of AI\-powered software applications.
+* Experience integrating AI models into production systems using APIs and data pipelines.
+* Experience with cloud platforms (e.g., AWS, Azure, GCP) and containerization tools (e.g., Docker, Kubernetes).
+* Excellent problem\-solving skills and ability to work independently in a fast\-paced environment.
+* Strong communication skills and experience working in cross\-functional teams.
+
+**Preferred Qualifications:**
+
+* Experience with AI\-driven systems, agent\-based architectures, or AI APIs from providers like OpenAI and Anthropic.
+* Knowledge of vector databases, embeddings, or search\-based AI.
+* Domain knowledge in legal, tax, or accounting.
+* A portfolio of projects demonstrating creativity and skill building solutions with LLMs.
+
+\#LI\-SS5
+
+
+**What’s in it For You?**
+
+* **Hybrid Work Model:** We’ve adopted a flexible hybrid working environment (2\-3 days a week in the office depending on the role) for our office\-based roles while delivering a seamless experience that is digitally and physically connected.
+* **Flexibility \& Work\-Life Balance:** Flex My Way is a set of supportive workplace policies designed to help manage personal and professional responsibilities, whether caring for family, giving back to the community, or finding time to refresh and reset. This builds upon our flexible work arrangements, including work from anywhere for up to 8 weeks per year, empowering employees to achieve a better work\-life balance.
+* **Career Development and Growth:** By fostering a culture of continuous learning and skill development, we prepare our talent to tackle tomorrow’s challenges and deliver real\-world solutions. Our Grow My Way programming and skills\-first approach ensures you have the tools and knowledge to grow, lead, and thrive in an AI\-enabled future.
+* **Industry Competitive Benefits:** We offer comprehensive benefit plans to include flexible vacation, two company\-wide Mental Health Days off, access to the Headspace app, retirement savings, tuition reimbursement, employee incentive programs, and resources for mental, physical, and financial wellbeing.
+* **Culture:** Globally recognized, award\-winning reputation for inclusion and belonging, flexibility, work\-life balance, and more. We live by our values: Obsess over our Customers, Compete to Win, Challenge (Y)our Thinking, Act Fast / Learn Fast, and Stronger Together.
+* **Social Impact:** Make an impact in your community with our Social Impact Institute. We offer employees two paid volunteer days off annually and opportunities to get involved with pro\-bono consulting projects and Environmental, Social, and Governance (ESG) initiatives.
+* **Making a Real\-World Impact:** We are one of the few companies globally that helps its customers pursue justice, truth, and transparency. Together, with the professionals and institutions we serve, we help uphold the rule of law, turn the wheels of commerce, catch bad actors, report the facts, and provide trusted, unbiased information to people all over the world.
+**About Us**
+
+Thomson Reuters informs the way forward by bringing together the trusted content and technology that people and organizations need to make the right decisions. We serve professionals across legal, tax, accounting, compliance, government, and media. Our products combine highly specialized software and insights to empower professionals with the data, intelligence, and solutions needed to make informed decisions, and to help institutions in their pursuit of justice, truth, and transparency. Reuters, part of Thomson Reuters, is a world leading provider of trusted journalism and news.
+
+
+We are powered by the talents of 26,000 employees across more than 70 countries, where everyone has a chance to contribute and grow professionally in flexible work environments. At a time when objectivity, accuracy, fairness, and transparency are under attack, we consider it our duty to pursue them. Sound exciting? Join us and help shape the industries that move society forward.
+
+
+As a global business, we rely on the unique backgrounds, perspectives, and experiences of all employees to deliver on our business goals. To ensure we can do that, we seek talented, qualified employees in all our operations around the world regardless of race, color, sex/gender, including pregnancy, gender identity and expression, national origin, religion, sexual orientation, disability, age, marital status, citizen status, veteran status, or any other protected classification under applicable law. Thomson Reuters is proud to be an Equal Employment Opportunity Employer providing a drug\-free workplace.
+
+
+We also make reasonable accommodations for qualified individuals with disabilities and for sincerely held religious beliefs in accordance with applicable law. More information on requesting an accommodation here .
+
+
+Learn more on how to protect yourself from fraudulent job postings here .
+
+
+More information about Thomson Reuters can be found on thomsonreuters.com.",,https://in.indeed.com/cmp/Thomson-Reuters,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/23bc0e691fd6e10460f36a6de4ce8b02,http://www.thomsonreuters.com,"Toronto, ON","10,000+",$5B to $10B (USD),"Thomson Reuters provides professionals with the intelligence, technology and human expertise they need to find trusted answers.",,,,,,
+in-facc95d1fe6f692a,indeed,https://in.indeed.com/viewjob?jk=facc95d1fe6f692a,https://www.novartis.com/careers/career-search/job/details/req-10069903-s-manager-ai-innovation,S. Manager - AI & Innovation,Novartis,"TS, IN",2026-01-23,fulltime,,,,,,False,,,,,"### **Summary**
+
+We are seeking a Senior AI Architect to lead the design and delivery of enterprise grade AI platforms and solutions across business units. You will define reference architectures, steer build vs buy decisions, and guide multi disciplinary teams from discovery through production and ongoing operations. The ideal candidate combines deep hands on engineering with architectural judgment across data, ML/GenAI, applications, security, and governance—translating business strategy into secure, scalable, cost efficient AI systems.
+### **About the Role**
+
+**Key Responsibilities**
+
+* Translate business strategies into AI roadmaps and target architectures that guide enterprise\-wide adoption.
+* Lead architecture governance, establishing reference patterns for RAG, fine‑tuning, classical ML, and hybrid search/graph solutions.
+* Define and enforce NFRs, SLOs, and FinOps guardrails to ensure scalable, reliable, and cost‑efficient AI systems.
+* Design and deliver end‑to‑end AI solutions, from data acquisition and feature engineering to model/prompt development and production deployment.
+* Embed security, privacy, and compliance controls across AI workflows, including PII protection and audit readiness.
+* Establish evaluation frameworks (offline metrics, HITL, A/B testing, safety filters) to ensure quality, safety, and robustness of GenAI and ML solutions.
+* Integrate AI systems with enterprise data platforms, vector databases, graph stores, and ontology‑driven data contracts for interoperability.
+* Implement and mature ML/LLMOps practices, including CI/CD pipelines, registries, observability, drift monitoring, and automated rollback processes.
+* Drive Responsible AI and governance, partnering with legal, risk, and compliance teams to meet regulatory and ethical standards.
+* Lead cross‑functional teams, mentor engineers, promote agile ways of working, and communicate complex topics to technical and non‑technical stakeholders
+
+**Essential Requirements**
+
+* Bachelor’s or Master’s degree in computer science, IT, or other quantitative disciplines.
+* 10\+ years overall experience, including 5\+ years in AI/ML or data‑intensive solution architecture at enterprise scale.
+* Demonstrated success delivering production AI systems that meet enterprise NFRs (security, latency, cost, compliance).
+* Strong engineering background in at least two programming languages (e.g., Python, Java, Scala).
+* Deep expertise in cloud‑native architectures (Kubernetes, microservices, event streaming) and at least one major cloud platform.
+* Practical proficiency with MLOps/LLMOps tools: model/prompt registries, evaluators, feature stores, pipelines.
+* Strong understanding of NLP, semantic search, and text mining techniques.
+* Ability to manage multiple priorities, work under tight deadlines, and operate within a global team environment.
+
+
+Desired Requirements
+
+* Experience in the pharmaceutical industry with understanding of industry‑specific data standards.
+* Domain expertise in at least one area Pharma R\&D,Manufacturing, Procurement \& Supply Chain, Marketing \& Sales
+* Strong background in semantic technologies and knowledge representation (OWL, RDF, SPARQL, SWRL, JSON‑LD, Turtle).
+
+**Why Novartis:** Helping people with disease and their families takes more than innovative science. It takes a community of smart, passionate people like you. Collaborating, supporting and inspiring each other. Combining to achieve breakthroughs that change patients’ lives. Ready to create a brighter future together? https://www.novartis.com/about/strategy/people\-and\-culture
+
+**Benefits and Rewards:** Learn about all the ways we’ll help you thrive personally and professionally.  
+
+Read our handbook (PDF 30 MB)
+
+
+  
+Division
+US
+Business Unit
+General Management
+Location
+India
+Site
+Hyderabad (Office)
+Company / Legal Entity
+IN10 (FCRS \= IN010\) Novartis Healthcare Private Limited
+Functional Area
+Marketing
+Job Type
+Full time
+Employment Type
+Regular
+Shift Work
+No
+VIDEO
+
+Novartis is committed to building an outstanding, inclusive work environment and diverse teams' representative of the patients and communities we serve.
+
+
+### **Accessibility and accommodation**
+
+
+Novartis is committed to working with and providing reasonable accommodation to individuals with disabilities. If, because of a medical condition or disability, you need a reasonable accommodation for any part of the recruitment process, or in order to perform the essential functions of a position, please send an e\-mail to \[email protected] and let us know the nature of your request and your contact information. Please include the job requisition number in your message.",,https://in.indeed.com/cmp/Novartis,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/1c9d9bc97826a2c0c335266459b68e47,https://www.novartis.com/,Basel,"10,000+",Decline to state,,,,,,,
+in-6331e75e53adb2eb,indeed,https://in.indeed.com/viewjob?jk=6331e75e53adb2eb,https://jsv3.recruitics.com/redirect?rx_cid=3409&rx_jobId=883361&rx_url=https%3A%2F%2Fkimberlyclark.wd1.myworkdayjobs.com%2FGLOBAL%2Fjob%2FIT-Centre-Bengaluru-GDTC%2FSenior-Generative-AI-Engineer_883361%3Frx_a%3D1%26rx_c%3Dapac_india_stem_ppc%26rx_ch%3Djobp4p%26rx_group%3D527058%26rx_id%3D8217d80d-f878-11f0-a501-d33748a1732b%26rx_job%3D883361%26rx_medium%3Dcpc%26rx_r%3Dnone%26rx_source%3DIndeed%26rx_ts%3D20260128T150004Z%26rx_vp%3Dcpc%26source%3DIndeed%26utm_campaign%3DStem_APAC_India_PPC%26utm_medium%3Dcpc%26utm_source%3DIndeed_Sponsored,Senior Generative AI Engineer,Kimberly-Clark,"KA, IN",2026-01-23,fulltime,,,,,,False,,,,,"You’re not the person who will settle for just any role. Neither are we. Because we’re out to create Better Care for a Better World, and that takes a certain kind of person and teams who care about making a difference. Here, you’ll bring your professional expertise, talent, and drive to building and managing our portfolio of iconic, ground\-breaking brands. In this role, you’ll help us deliver better care for billions of people around the world. It starts with YOU.
+
+
+In this role, you will:
+
+* Lead the architecture and development of scalable GenAI solutions including LLMs, multimodal models, retrieval\-augmented generation (RAG) systems and AI Agents.
+* Evaluate and select appropriate foundation models (open\-source or commercial) based on business needs and constraints.
+* Fine\-tune and optimize large language models (LLMs) using techniques like prompt engineering, LoRA, PEFT, reinforcement learning (RLHF), and transfer learning.
+* Drive innovation through experimentation with GANs, VAEs, diffusion models, and transformer\-based architectures.
+* Implement robust LLMOps practices for model lifecycle management, versioning, evaluation, and rollback strategies.
+* Lead model deployment using cloud\-native tools (Azure \[preferred], AWS, GCP) and MLOps platforms (e.g Databricks).
+* Develop and Enhance features for AI observability including hallucination detection, prompt drift monitoring, and output explainability etc.
+* Champion responsible AI practices, ensuring compliance with privacy, security, and fairness standards.
+* Act as a technical mentor and thought leader within the AI/ML engineering team.
+* Work closely with business and product stakeholders to translate ambiguous problems into AI\-driven solutions.
+* Stay abreast of the latest advancements in GenAI, LLMs, and deep learning research.
+* Publish internal research, prototype new capabilities, and drive knowledge sharing across teams.
+
+**About Us**
+
+
+Huggies®. Kleenex®. Cottonelle®. Scott®. Kotex®. Poise®. Depend®. Kimberly\-Clark Professional®. You already know our legendary brands—and so does the rest of the world. In fact, millions of people use Kimberly\-Clark products every day. We know these amazing Kimberly\-Clark products wouldn’t exist without talented professionals, like you.
+
+
+At Kimberly\-Clark, you’ll be part of the best team committed to driving innovation, growth and impact. We’re founded on more than 150 years of market leadership, and we’re always looking for new and better ways to perform – so there’s your open door of opportunity. It’s all here for you at Kimberly\-Clark.
+
+**Led by Purpose. Driven by You**
+
+**About You**
+
+
+You perform at the highest level possible, and you appreciate a performance culture fueled by authentic caring. You want to be part of a company actively dedicated to sustainability, inclusion, wellbeing, and career development. You love what you do, especially when the work you do makes a difference. At Kimberly\-Clark, we’re constantly exploring new ideas on how, when, and where we can best achieve results. When you join our team, you’ll experience Flex That Works: flexible work arrangements that empower you to have purposeful time in the office and partner with your leader to make flexibility work for both you and the business.
+
+
+In one of our technical roles, you’ll focus on winning with consumers and the market, while putting safety, mutual respect, and human dignity at the center. To succeed in this role, you will need the following qualifications:
+
+
+Key Qualifications and Experiences:
+
+* Bachelor’s or Master’s degree in Computer Science, Engineering, or a related field.
+* 6\+ years of experience in machine learning, deep learning, or NLP, with 2\+ years in GenAI/LLM development.
+* Proficient in Python and frameworks such as PyTorch, TensorFlow, Hugging Face Transformers, LangChain, LangGraph etc.
+* Strong experience in training and/or fine\-tuning foundation models and integrating them into production pipelines.
+* Proven experience in designing and deploying scalable APIs and microservices using FastAPI or Flask.
+* Familiarity with vector databases (FAISS, Pinecone, Weaviate), embeddings, and semantic search.
+* Hands\-on experience with CI/CD, containerization (Docker/Kubernetes), and cloud\-based AI infrastructure (Azure \[preferred], AWS, or GCP).
+* Deep understanding of prompt engineering, model evaluation, observability, and responsible AI.
+* Experience with large\-scale data processing and distributed computing.
+* Experience with reinforcement learning and/or unsupervised learning.
+* Experience with natural language generation and/or image generation.
+* Experience with containerization technologies such as Docker and Kubernetes.
+* Experience leading technical teams or AI initiatives end\-to\-end.
+* Exposure to multimodal GenAI (e.g., image, audio, and video generation).
+* Familiarity with enterprise\-grade data governance and AI risk frameworks.
+* Contributions to open\-source GenAI/ML projects or research publications.
+
+**To Be Considered**  
+
+Click the Apply button and complete the online application process. A member of our recruiting team will review your application and follow up if you seem like a great fit for this role.
+
+
+In the meantime, please check out the careers website.
+
+**And finally, the fine print….**
+
+*For Kimberly\-Clark to grow and prosper, we must be an inclusive organization that applies the diverse experiences and passions of its team members to brands that make life better for people all around the world. We actively seek to build a workforce that reflects the experiences of our consumers. When you bring your original thinking to Kimberly\-Clark, you fuel the continued success of our enterprise. We are a committed equal opportunity employer, and all qualified applicants will receive consideration for employment without regard to race, color, religion, sex, national origin, disability status, protected veteran status, sexual orientation, gender identity, age, pregnancy, genetic information, citizenship status, or any other characteristic protected by law.*
+
+*The statements above are intended to describe the general nature and level of work performed by employees assigned to this classification. Statements are not intended to be construed as an exhaustive list of all duties, responsibilities and skills required for this position.*
+
+*Employment is subject to verification of pre\-screening tests, which may include drug screening, background check, and DMV check.*
+
+*\#LI\-Hybrid*
+
+
+.",,https://in.indeed.com/cmp/Kimberly--clark,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/43e57ff131f46f4d55b26dc5efbfeecf,http://www.kimberly-clark.com,"Irving, TX","10,000+",more than $10B (USD),"As a Kimberly-Clark employee, you have an opportunity to impact billions of lives through the products we make, the workplaces we create and the communities we serve. Led by Purpose. Driven by You.",,,,,,
+in-203071c75346ec86,indeed,https://in.indeed.com/viewjob?jk=203071c75346ec86,https://careers.equinix.com/jobs/senior-software-engineer-ai-ml-bengaluru-karnataka-india,Senior Software Engineer - AI/ML,Equinix,"KA, IN",2026-01-22,fulltime,,,,,,False,,,,,"### **Senior Software Engineer \- AI/ML**
+
+* JR\-157602
+* Hybrid
+* Bengaluru
+* Technology
+* Full time
+
+**Who are we?**
+
+
+
+Equinix is the world’s digital infrastructure company®, shortening the path to connectivity to enable the innovations that enrich our work, life and planet.
+
+  
+
+
+A place where bold ideas are welcomed, human connection is valued, and everyone has the opportunity to shape their future.
+
+
+
+Help us challenge assumptions, uncover bias, and remove barriers—because progress starts with fresh ideas. You’ll find belonging, purpose, and a team that welcomes you—because when you feel valued, you’re empowered to do your best work.**Job Summary**
+
+
+Equinix is seeking a highly motivated Senior Software Engineer with a strong focus on building AI/ML‑driven solutions to join our Bangalore team. In this role, you will design, build, and launch production‑grade, multi‑agent systems and conversational experiences, spanning orchestration, RAG design, model serving, real‑time inference, and observability. You will work with state‑of‑the‑art Large Language Models (LLMs), agentic AI frameworks, and modern engineering practices to deliver solutions that meet real customer and business needs.
+
+
+As a Senior Software Engineer, you will own the AI roadmap, serve as the primary technical subject‑matter expert, and collaborate closely with IT, security, and business teams to deliver secure, compliant, and highly scalable AI solutions. This role offers the opportunity to shape how AI is adopted and operationalized across the organization.
+
+
+This position is ideal for someone passionate about applying cutting‑edge AI technologies (such as GPT, Claude, and LLaMA) to real‑world problems, with strong engineering fundamentals and product intuition. You will work at the intersection of AI reasoning, automation, and user experience, building intelligent agents capable of decision‑making, context retention, and multi‑step task execution.
+
+**Responsibilities**
+
+* Design, build, and own production‑grade Agentic AI systems using frameworks such as OpenAI, LangChain, LlamaIndex, AutoGen, CrewAI, Google ADK, or similar platforms, with a focus on scalability, reliability, and maintainability
+* Architect and develop conversational AI assistants and intelligent agents across multiple channels (chat, APIs, embedded applications), ensuring seamless user experiences and enterprise readiness
+* Integrate Large Language Models (OpenAI, Anthropic, Gemini, etc.) with APIs, databases, vector stores, and enterprise systems to enable end‑to‑end AI‑driven workflows
+* Design and implement memory, retrieval, planning, and reasoning components to build goal‑oriented, context‑aware agents capable of multi‑step decision making.
+* Apply and optimize advanced prompting strategies (prompt engineering, chain‑of‑thought reasoning, tool use, and agent orchestration) to improve accuracy, reliability, latency, and cost efficiency
+* Lead the design and adoption of RAG (Retrieval‑Augmented Generation) architectures, ensuring high factual accuracy, relevance, and traceability across enterprise knowledge sources
+* Establish evaluation frameworks for AI systems, including offline and online metrics, hallucination detection, regression testing, guardrails, and human‑in‑the‑loop feedback mechanisms
+* Operationalize AI systems in production, including monitoring, logging, observability, cost controls, and continuous improvement using feedback loops and performance analytics
+* Build and maintain LLMOps / MLOps pipelines, covering model versioning, experimentation, deployment, rollback strategies, and environment promotion
+* Ensure security, privacy, and ethical AI practices by implementing data protection, prompt and output safeguards, policy enforcement, and compliance with enterprise standards
+* Collaborate closely with Product Managers, business stakeholders, and cross‑functional teams to translate business objectives into AI‑driven solutions with measurable impact
+* Conduct feasibility assessments and develop proofs‑of‑concept, validating emerging AI approaches, tools, and architectures before production adoption
+* Stay ahead of emerging AI technologies and trends, proactively identifying opportunities for automation, efficiency gains, and AI‑powered enhancements
+* Own technical decision‑making and architecture tradeoffs, balancing performance, scalability, security, and cost in enterprise environments
+* Mentor junior engineers and guide technical best practices, while educating non‑technical stakeholders on AI capabilities, limitations, and responsible use.
+* Contribute to engineering excellence by defining standards, documenting architectures, and fostering a collaborative, high‑performance team culture
+
+**Qualifications**
+
+
+Required
+
+* Bachelor’s or Master’s degree in Computer Science, Engineering, or a related field, or equivalent practical experience
+* 5\+ years of strong software engineering experience with proficiency in Python and familiarity with JavaScript / TypeScript or similar languages
+* 2\+ years of hands‑on experience building solutions using Agentic AI and LLM frameworks such as OpenAI, Hugging Face, LangChain, LlamaIndex, AutoGen, CrewAI, or Semantic Kernel
+* Strong understanding of software engineering best practices, including version control, CI/CD pipelines, automated testing, and code review
+* Experience with cloud platforms (AWS, GCP, or Azure) and modern deployment practices, including Docker and Kubernetes
+* Proficiency working with vector databases and embedding systems such as Pinecone, FAISS, Weaviate, Chroma, or Milvus
+* Demonstrated experience building, deploying, and maintaining generative AI applications in production environments
+* Solid background in NLP, machine learning, including model training, fine‑tuning, or evaluation techniques
+* Experience designing and implementing multi‑agent systems, autonomous workflows, or AI‑driven orchestration pipelines
+* Understanding of LLM performance considerations, including latency, cost optimization, prompt reliability, and evaluation
+* Awareness of AI security, data privacy, and responsible AI principles in enterprise environments
+* Ability to work effectively across cross‑functional teams and global time zones, with strong communication skills and the ability to influence both technical and non‑technical stakeholders
+* Proven ability to drive technical decisions, mentor peers, and contribute to a high‑performing engineering culture
+
+
+How You will find success
+
+* Cultivate a strong sense of curiosity and a product\-focused mindset
+* Collaborate effectively with managers, cross\-functional teams, and teammates to achieve shared goals
+* Demonstrate persistence, creativity, and an unwavering drive to deliver results
+* Take pride in ownership and consistently strive for excellence in every initiative
+* Apply an analytical approach to tackle complex problems, identify root causes, and develop data\-driven, impactful solutions
+
+
+Equinix is committed to ensuring that our employment process is open to all individuals, including those with a disability. If you are a qualified candidate and need assistance or an accommodation, please let us know by completing form.
+
+
+Equinix is an Equal Employment Opportunity and, in the U.S., an Affirmative Action employer. All qualified applicants will receive consideration for employment without regard to unlawful consideration of race, color, religion, creed, national or ethnic origin, ancestry, place of birth, citizenship, sex, pregnancy / childbirth or related medical conditions, sexual orientation, gender identity or expression, marital or domestic partnership status, age, veteran or military status, physical or mental disability, medical condition, genetic information, political / organizational affiliation, status as a victim or family member of a victim of crime or abuse, or any other status protected by applicable law.
+
+**We use artificial intelligence in our hiring process. Learn more** **here****.**",,https://in.indeed.com/cmp/Equinix,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/218db74f2a27d5d37acc325835c07d0c,http://www.equinix.com,"Redwood City, CA","10,000+",$25M to $100M (USD),Equinix (Nasdaq: EQIX) is the world’s digital infrastructure company®.,,,,,,
+in-503d059993da577b,indeed,https://in.indeed.com/viewjob?jk=503d059993da577b,https://careers.equinix.com/jobs/senior-software-engineer-ai-ml-bengaluru-karnataka-india?source=indeed,Senior Software Engineer - AI/ML,Equinix,"KA, IN",2026-01-22,fulltime,,,,,,False,,,,,"**Who are we?**
+
+
+
+Equinix is the world’s digital infrastructure company®, shortening the path to connectivity to enable the innovations that enrich our work, life and planet.
+
+  
+
+
+A place where bold ideas are welcomed, human connection is valued, and everyone has the opportunity to shape their future.
+
+
+
+Help us challenge assumptions, uncover bias, and remove barriers—because progress starts with fresh ideas. You’ll find belonging, purpose, and a team that welcomes you—because when you feel valued, you’re empowered to do your best work.**Job Summary**
+
+
+Equinix is seeking a highly motivated Senior Software Engineer with a strong focus on building AI/ML‑driven solutions to join our Bangalore team. In this role, you will design, build, and launch production‑grade, multi‑agent systems and conversational experiences, spanning orchestration, RAG design, model serving, real‑time inference, and observability. You will work with state‑of‑the‑art Large Language Models (LLMs), agentic AI frameworks, and modern engineering practices to deliver solutions that meet real customer and business needs.
+
+
+As a Senior Software Engineer, you will own the AI roadmap, serve as the primary technical subject‑matter expert, and collaborate closely with IT, security, and business teams to deliver secure, compliant, and highly scalable AI solutions. This role offers the opportunity to shape how AI is adopted and operationalized across the organization.
+
+
+This position is ideal for someone passionate about applying cutting‑edge AI technologies (such as GPT, Claude, and LLaMA) to real‑world problems, with strong engineering fundamentals and product intuition. You will work at the intersection of AI reasoning, automation, and user experience, building intelligent agents capable of decision‑making, context retention, and multi‑step task execution.
+
+**Responsibilities**
+
+* Design, build, and own production‑grade Agentic AI systems using frameworks such as OpenAI, LangChain, LlamaIndex, AutoGen, CrewAI, Google ADK, or similar platforms, with a focus on scalability, reliability, and maintainability
+* Architect and develop conversational AI assistants and intelligent agents across multiple channels (chat, APIs, embedded applications), ensuring seamless user experiences and enterprise readiness
+* Integrate Large Language Models (OpenAI, Anthropic, Gemini, etc.) with APIs, databases, vector stores, and enterprise systems to enable end‑to‑end AI‑driven workflows
+* Design and implement memory, retrieval, planning, and reasoning components to build goal‑oriented, context‑aware agents capable of multi‑step decision making.
+* Apply and optimize advanced prompting strategies (prompt engineering, chain‑of‑thought reasoning, tool use, and agent orchestration) to improve accuracy, reliability, latency, and cost efficiency
+* Lead the design and adoption of RAG (Retrieval‑Augmented Generation) architectures, ensuring high factual accuracy, relevance, and traceability across enterprise knowledge sources
+* Establish evaluation frameworks for AI systems, including offline and online metrics, hallucination detection, regression testing, guardrails, and human‑in‑the‑loop feedback mechanisms
+* Operationalize AI systems in production, including monitoring, logging, observability, cost controls, and continuous improvement using feedback loops and performance analytics
+* Build and maintain LLMOps / MLOps pipelines, covering model versioning, experimentation, deployment, rollback strategies, and environment promotion
+* Ensure security, privacy, and ethical AI practices by implementing data protection, prompt and output safeguards, policy enforcement, and compliance with enterprise standards
+* Collaborate closely with Product Managers, business stakeholders, and cross‑functional teams to translate business objectives into AI‑driven solutions with measurable impact
+* Conduct feasibility assessments and develop proofs‑of‑concept, validating emerging AI approaches, tools, and architectures before production adoption
+* Stay ahead of emerging AI technologies and trends, proactively identifying opportunities for automation, efficiency gains, and AI‑powered enhancements
+* Own technical decision‑making and architecture tradeoffs, balancing performance, scalability, security, and cost in enterprise environments
+* Mentor junior engineers and guide technical best practices, while educating non‑technical stakeholders on AI capabilities, limitations, and responsible use.
+* Contribute to engineering excellence by defining standards, documenting architectures, and fostering a collaborative, high‑performance team culture
+
+**Qualifications**
+
+
+Required
+
+* Bachelor’s or Master’s degree in Computer Science, Engineering, or a related field, or equivalent practical experience
+* 5\+ years of strong software engineering experience with proficiency in Python and familiarity with JavaScript / TypeScript or similar languages
+* 2\+ years of hands‑on experience building solutions using Agentic AI and LLM frameworks such as OpenAI, Hugging Face, LangChain, LlamaIndex, AutoGen, CrewAI, or Semantic Kernel
+* Strong understanding of software engineering best practices, including version control, CI/CD pipelines, automated testing, and code review
+* Experience with cloud platforms (AWS, GCP, or Azure) and modern deployment practices, including Docker and Kubernetes
+* Proficiency working with vector databases and embedding systems such as Pinecone, FAISS, Weaviate, Chroma, or Milvus
+* Demonstrated experience building, deploying, and maintaining generative AI applications in production environments
+* Solid background in NLP, machine learning, including model training, fine‑tuning, or evaluation techniques
+* Experience designing and implementing multi‑agent systems, autonomous workflows, or AI‑driven orchestration pipelines
+* Understanding of LLM performance considerations, including latency, cost optimization, prompt reliability, and evaluation
+* Awareness of AI security, data privacy, and responsible AI principles in enterprise environments
+* Ability to work effectively across cross‑functional teams and global time zones, with strong communication skills and the ability to influence both technical and non‑technical stakeholders
+* Proven ability to drive technical decisions, mentor peers, and contribute to a high‑performing engineering culture
+
+
+How You will find success
+
+* Cultivate a strong sense of curiosity and a product\-focused mindset
+* Collaborate effectively with managers, cross\-functional teams, and teammates to achieve shared goals
+* Demonstrate persistence, creativity, and an unwavering drive to deliver results
+* Take pride in ownership and consistently strive for excellence in every initiative
+* Apply an analytical approach to tackle complex problems, identify root causes, and develop data\-driven, impactful solutions
+
+
+Equinix is committed to ensuring that our employment process is open to all individuals, including those with a disability. If you are a qualified candidate and need assistance or an accommodation, please let us know by completing this form.
+
+
+Equinix is an Equal Employment Opportunity and, in the U.S., an Affirmative Action employer. All qualified applicants will receive consideration for employment without regard to unlawful consideration of race, color, religion, creed, national or ethnic origin, ancestry, place of birth, citizenship, sex, pregnancy / childbirth or related medical conditions, sexual orientation, gender identity or expression, marital or domestic partnership status, age, veteran or military status, physical or mental disability, medical condition, genetic information, political / organizational affiliation, status as a victim or family member of a victim of crime or abuse, or any other status protected by applicable law.
+
+**We use artificial intelligence in our hiring process. Learn more** **here****.**",,https://in.indeed.com/cmp/Equinix,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/218db74f2a27d5d37acc325835c07d0c,http://www.equinix.com,"Redwood City, CA","10,000+",$25M to $100M (USD),Equinix (Nasdaq: EQIX) is the world’s digital infrastructure company®.,,,,,,
+in-c1907f0a05a7cabb,indeed,https://in.indeed.com/viewjob?jk=c1907f0a05a7cabb,https://apply.workable.com/j/23A7214075,Databricks Automation & AI Platform Engineer,Xenon7,"TS, IN",2026-01-22,,,,,,,True,,,,,"**About us:**
+
+
+Where elite tech talent meets world\-class opportunities!
+
+
+At Xenon7, we work with leading enterprises and innovative startups on exciting, cutting\-edge projects that leverage the latest technologies across various domains of IT including Data, Web, Infrastructure, AI, and many others. Our expertise in IT solutions development and on\-demand resources allows us to partner with clients on transformative initiatives, driving innovation and business growth. Whether it's empowering global organizations or collaborating with trailblazing startups, we are committed to delivering advanced, impactful solutions that meet today’s most complex challenges.
+
+
+We are building a community of top\-tier experts and we’re opening the doors to an exclusive group of exceptional **AI \& ML Professionals** ready to solve real\-world problems and shape the future of intelligent systems.
+
+**Requirements**
+
+**Role Overview**
+
+
+We are seeking a senior Databricks Automation \& AI Platform Engineer with deep expertise in Python, Databricks platform components, and AI/MLOps/LLMOps workflows. The engineer will support the Next‑Gen Platform Integration team by building automation frameworks, enabling scalable deployment workflows, and integrating AI capabilities across Databricks environments.
+
+
+This role requires strong systems‑level Python knowledge, Databricks governance experience, and hands‑on AWS automation skills.
+
+
+
+
+**Key Responsibilities**
+
+**Databricks Automation \& Integration**
+
+* Build automation workflows for MLOps, LLMOps, and application deployment within Databricks.
+* Enhance workspace onboarding automation including Unity Catalog, permissions, and environment setup.
+* Develop reusable modules for workspace provisioning, catalog configuration, model deployment, and governance workflows.
+* Integrate Mosaic AI components (Gateway, Model Serving, Agents) into platform automation.
+
+**Platform Engineering \& Deployment**
+
+* Develop Python automation scripts for Databricks services including:
+* + Unity Catalog
+	+ MLflow
+	+ Mosaic AI
+	+ Model Serving
+	+ Databricks Apps
+* Ensure consistency, reliability, and scalability across multi‑workspace environments.
+* Implement automated rollback strategies, fail‑fast mechanisms, and environment stability checks.
+
+**AWS Integration \& Automation**
+
+* Build integrations using AWS Lambda, API Gateway, and Service Principal authentication.
+* Automate Databricks Job orchestration, monitoring, and deployment pipelines.
+* Implement secure, scalable automation bridging AWS and Databricks.
+
+
+
+
+**Required Skills**
+
+**Technical Skills**
+
+* Strong hands‑on Python experience including:
+* + GIL behavior
+	+ Multiprocessing vs multithreading
+	+ Memory overhead trade‑offs
+	+ Data structure time complexities
+* Deep understanding of Databricks ecosystem:
+* + Unity Catalog governance
+	+ Delta architecture (Bronze/Silver/Gold)
+	+ MLflow tracking \& model lifecycle
+	+ Mosaic AI Gateway \& LLMOps workflows
+	+ Model Serving \& Databricks Apps
+* Experience with Docker image immutability, container state management, and environment reproducibility.
+
+**Cloud \& Automation Skills**
+
+* AWS Lambda, API Gateway, IAM, and automation pipelines.
+* Service Principal‑based authentication for secure Databricks automation.
+* Experience with platform engineering, deployment automation, and production stability patterns.
+
+
+
+
+**Ideal Candidate Profile**
+
+* 6\+ years of Python development and cloud automation experience.
+* Hands‑on Databricks platform engineering and governance expertise.
+* Strong understanding of MLOps/LLMOps and AI deployment workflows.
+* Experience working with platform, ML, and data engineering teams.
+* Immediate availability preferred.",,https://in.indeed.com/cmp/Xenon7,,,,,,,,,,,,
+in-2132dfc092ad8621,indeed,https://in.indeed.com/viewjob?jk=2132dfc092ad8621,https://indeed.njoyn.com/corp/xweb/XWeb.asp?page=jobdetails&clid=21001&JobID=J0126-1226&BRID=1263212&sbdid=936,Senior Software Engineer -AI Engineer,CGI,"KA, IN",2026-01-21,fulltime,,,,,,False,,,,,"Company Profile:  
+
+  
+
+Founded in 1976, CGI is among the largest independent IT and business consulting services firms in the world. With 94,000 consultants and professionals across the globe, CGI delivers an end\-to\-end portfolio of capabilities, from strategic IT and business consulting to systems integration, managed IT and business process services and intellectual property solutions. CGI works with clients through a local relationship model complemented by a global delivery network that helps clients digitally transform their organizations and accelerate results. CGI Fiscal 2024 reported revenue is CA$14\.68 billion and CGI shares are listed on the TSX (GIB.A) and the NYSE (GIB). Learn more at cgi.com.  
+
+  
+
+Job Title: AI/ML Developer  
+
+  
+
+Position: Senior Software Engineer  
+
+  
+
+Experience: 5 \-8 Yrs  
+
+  
+
+Category: Software Development/ Engineering  
+
+  
+
+Shift: 9AM to 6 PM  
+
+Main location: Any CGI Location  
+
+  
+
+Position ID: J0126\-1226  
+
+  
+
+Employment Type: Full Time  
+
+  
+
+Position Description: 5 to 8 Years of strong development experience on AI/ML Implementations.  
+
+Responsibilities:  
+
+ Stakeholder Communication  
+
+* Act as the liaison between business users and IT teams.
+* Provide clear updates on issue status and resolution timelines.
+* Facilitate discussions to ensure smooth coordination.
+
+  
+
+Must\-Have Skills:  
+
+ Working Experience in Python, PyTorch, SQL, TensorFlow, PySpark, Scikit\-Learn  
+
+* Expertise in AI, Agentic AI \& LLMs \- LangChain, LangGraph, Hugging Face, OpenAI GPT, Gemini, LLaMA
+* Hands\-on in Data Lake : Data Bricks
+* Experience in MLOps \& LLMOps: MLflow, Docker, Kubernetes,Git CI/CD, Postman, Streamlit, FastAPI/Flask
+* Knowledge on Cloud AI Platforms: AWS (SageMaker, S3, etc), Azure (AI, OpenAI, Cognitive Search, App Services), Google Cloud (Vertex AI)
+
+
+Ability to create functional specifications and process flow diagrams  
+
+CGI is an equal opportunity employer. In addition, CGI is committed to providing accommodation for people with disabilities in accordance with provincial legislation. Please let us know if you require reasonable accommodation due to a disability during any aspect of the recruitment process and we will work with you to address your needs.  
+
+  
+
+Life at CGI:
+  
+
+It is rooted in ownership, teamwork, respect and belonging. Here, you’ll reach your full potential because…  
+
+You are invited to be an owner from day 1 as we work together to bring our Dream to life. That’s why we call ourselves CGI Partners rather than employees. We benefit from our collective success and actively shape our company’s strategy and direction  
+
+Your work creates value. You’ll develop innovative solutions and build relationships with teammates and clients while accessing global capabilities to scale your ideas, embrace new opportunities, and benefit from expansive industry and technology expertise  
+
+You’ll shape your career by joining a company built to grow and last. You’ll be supported by leaders who care about your health and well\-being and provide you with opportunities to deepen your skills and broaden your horizons  
+
+Come join our team, one of the largest IT and business consulting services firms in the world**Your future duties and responsibilities**
+
+**Required qualifications to be successful in this role**
+
+
+Education Qualification: Bachelor's degree in computer science or related field or Exposure  
+
+  
+
+\#LI\-SB2
+
+**Together, as owners, let’s turn meaningful insights into action.**  
+
+  
+
+Life at CGI is rooted in ownership, teamwork, respect and belonging. Here, you’ll reach your full potential because…  
+
+  
+
+You are invited to be an owner from day 1 as we work together to bring our Dream to life. That’s why we call ourselves CGI Partners rather than employees. We benefit from our collective success and actively shape our company’s strategy and direction.  
+
+  
+
+Your work creates value. You’ll develop innovative solutions and build relationships with teammates and clients while accessing global capabilities to scale your ideas, embrace new opportunities, and benefit from expansive industry and technology expertise.  
+
+  
+
+You’ll shape your career by joining a company built to grow and last. You’ll be supported by leaders who care about your health and well\-being and provide you with opportunities to deepen your skills and broaden your horizons.
+  
+
+  
+
+Come join our team—one of the largest IT and business consulting services firms in the world.",,https://in.indeed.com/cmp/CGI,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/51c3df578fe3a264ab17a8b8a6cb5426,https://www.cgi.com,"Montreal, QC","10,000+",more than $10B (USD),"Founded in 1976, CGI is among the largest IT and business consulting services firms in the world.",,,,,,
+in-f943fd315fc600a1,indeed,https://in.indeed.com/viewjob?jk=f943fd315fc600a1,https://tarento.keka.com/careers/jobdetails/55376?source=indeed%20job%20posts,Senior AI Engineer,Tarento Technologies Pvt. Ltd.,"KA, IN",2026-01-20,,,,,,,False,,,,,"**About Tarento:**
+
+Tarento is a fast\-growing technology consulting company headquartered in Stockholm, with a strong presence in India and clients across the globe. We specialize in digital transformation, product engineering, and enterprise solutions, working across diverse industries including retail, manufacturing, and healthcare. Our teams combine Nordic values with Indian expertise to deliver innovative, scalable, and high\-impact solutions.
+
+We're proud to be recognized as a **Great Place to Work**, a testament to our inclusive culture, strong leadership, and commitment to employee well\-being and growth. At Tarento, you’ll be part of a collaborative environment where ideas are valued, learning is continuous, and careers are built on passion and purpose. **Key Responsibilities*** Develop and execute the organization’s overall AI strategy and roadmap, aligned with business objectives.
+* Build, deploy, and optimize advanced AI/ML models and Generative AI applications (including LLMs, RAG systems, and NLP solutions).
+* Establish scalable LLMOps and AI architectures, ensuring robust, secure, and compliant integrations with enterprise systems.
+* Lead and mentor a high\-performing team of AI Engineers, Data Scientists, and Analysts.
+* Drive continuous innovation by exploring emerging technologies such as LLMs, multimodal models, and intelligent automation.
+* Experienced in Teams frameworks like Bot framework, Teams AI library, Copilot studio, etc
+* Implement best practices for AI lifecycle management, including model monitoring, retraining, and governance.
+* Ensure AI ethics, data privacy, and responsible AI adoption in all model deployments.
+* Collaborate with cross\-functional teams (Technology, Product, Risk, Operations) to embed AI across business workflows and decision\-making.
+* Partner with senior leadership to quantify business value generated through AI\-led initiatives.
+* Contribute to a culture of experimentation and data\-driven innovation across the organization.
+
+ **Desired Skills \& Experience*** Hands\-on expertise in Python, SQL, PyTorch, TensorFlow, and modern ML libraries (Hugging Face, LangChain, etc.).
+* Proven experience in Generative AI, LLMOps, NLP, Computer Vision, and production\-grade AI deployments.
+* Strong understanding of retrieval\-augmented generation (RAG), embeddings, and prompt engineering.
+* Demonstrated success in designing and deploying data/AI solutions with measurable business impact.
+* Familiarity with cloud platforms (AWS, Azure, GCP) and MLOps tools (Docker, Kubernetes, CI/CD).
+* Excellent leadership, stakeholder management, and communication skills.
+* Experience in financial services or enterprise\-scale AI implementations preferred.
+* Education: Bachelor’s/Master’s degree in Computer Science, Artificial Intelligence, Data Science, or related field.
+* Experience: 5–10 years of progressive experience in AI/ML engineering, including 2\+ years leading teams.",,https://in.indeed.com/cmp/Tarento-Technologies-Pvt.-Ltd.,,,,,,,,,,,,
+in-2757282e5c593763,indeed,https://in.indeed.com/viewjob?jk=2757282e5c593763,https://gartner.wd5.myworkdayjobs.com/en-US/EXT/job/Gurgaon/Sr-Software-Engineer---Backend_106844-1,Sr Software Engineer - API Development/AI Engineering,Gartner,"HR, IN",2026-01-19,fulltime,,,,,,False,,,,ApplicantAccommodations@gartner.com,"**About Gartner IT:**
+
+Join a world\-class team of skilled engineers who build creative digital solutions to support our colleagues and clients. We make a broad organizational impact by delivering cutting\-edge technology solutions that power Gartner. Gartner IT values its culture of nonstop innovation, an outcome\-driven approach to success, and the notion that great ideas can come from anyone on the team.
+
+
+**About the Role:**
+
+Gartner is looking for passionate and motivated Senior Software Engineers who are excited to foray into new technologies and help build / maintain data driven components for realizing business needs. This role is in Digital Platform Technology (DPT) team focused on Personalization of content and feeds. The personalization Engineering team is a high velocity agile team responsible for developing and maintaining components crucial to customer\-facing channels, data science teams, and reporting \& analysis. These components include but are not limited to Spark jobs, REST APIs, AI/ML model training \& inference, MLOps / LLMOps / devops pipelines, data transformation \& quality pipelines, data lake \& data catalogs, data streams etc.
+
+
+**What you will do:**
+
+* **Lead cross\-functional collaboration** with engineering teams to swiftly triage and resolve complex operational bottlenecks.
+* **Accelerate onboarding** through proactive self\-learning, rapidly integrating into the team to contribute high\-value code with minimal oversight.
+* **Execute high\-precision task estimation** and delivery, ensuring all deployments meet rigorous quality standards and industry best practices.
+* **Diagnose and remediate systemic operational inefficiencies** to improve long\-term system stability and performance.
+* **Empower and elevate team members** through active technical mentorship and continuous knowledge sharing.
+* **Spearhead the research and development** of Proof of Concepts (POCs) for cutting\-edge technologies and emerging frameworks.
+* **Champion end\-to\-end task ownership** , taking full accountability for successful delivery from initial development through to production.
+* **Partner directly with business stakeholders** to solve critical problems and translate complex requirements into technical solutions.
+* **Demonstrate executive\-level communication** and ruthless prioritization to successfully manage competing project demands.
+* **Rapidly assimilate Gartner\-specific domain expertise** to drive context\-aware technical decisions and business value.
+
+**What you will need:**
+
+4\-7 years of post\-college experience in API development with Data Science or AI Engineering.
+
+
+**Must\-have:**
+
+* Demonstrated experience in API development.
+* Experience in Python and related API / DS frameworks
+* Experience with data science / AI Engineering.
+* Skills to transform data, prepare it for analysis, and analyze it – including structured and unstructured data
+* Demonstrated experience with cloud platforms (AWS, Azure, GCP, etc.)
+* Experience with tools such as Apache Spark, Databricks, AWS EMR
+* Experience with Kanban or Agile Scrum development
+* Experience with collaboration tools such as Git, Jenkins, Jira, Confluence
+* Experience with Data modeling and Database schema / table design
+
+**Nice to have:**
+
+* Experience working with data platforms – building and maintaining ETL flows and data stores for ML and reporting applications.
+* Experience on Sagemaker / Sagemaker pipelines / Sagemaker Notebooks
+* Experience with performance tuning APIs and batch jobs.
+* Experience with DevOps frameworks and tools like terraform.
+* Experience / fair understanding of web applications development frameworks and tools
+* Experience with Streaming and related tools like Kafka or Kinesis
+
+**Who you are:**
+
+* Bachelor’s degree or foreign equivalent degree in Computer Science or a related field required
+* Excellent communication skills.
+* Quick learner and self\-motivated
+* Able to work independently or within a team proactively in a fast\-paced AGILE\-SCRUM environment.
+* Owns success – Takes responsibility for the successful delivery of the solutions.
+* Strong desire to improve upon their skills in tools and technologies
+Don’t meet every single requirement? We encourage you to apply anyway. You might just be the right candidate for this, or other roles.
+
+
+\#LI\-SG4
+
+
+**Who are we?**
+
+At Gartner, Inc. (NYSE:IT), we guide the leaders who shape the world.
+
+
+Our mission relies on expert analysis and bold ideas to deliver actionable, objective business and technology insights, helping enterprise leaders and their teams succeed with their mission\-critical priorities.
+
+
+Since our founding in 1979, we’ve grown to 21,000 associates globally who support \~14,000 client enterprises in \~90 countries and territories. We do important, interesting and substantive work that matters. That’s why we hire associates with the intellectual curiosity, energy and drive to want to make a difference. The bar is unapologetically high. So is the impact you can have here.
+
+
+**What makes Gartner a great place to work?**
+
+Our vast, virtually untapped market potential offers limitless opportunities – opportunities that may not even exist right now – for you to grow professionally and flourish personally. How far you go is driven by your passion and performance.
+
+
+We hire remarkable people who collaborate and win as a team. Together, our singular, unifying goal is to deliver results for our clients.
+
+
+Our teams are inclusive and composed of individuals from different geographies, cultures, religions, ethnicities, races, genders, sexual orientations, abilities and generations.
+
+
+We invest in great leaders who bring out the best in you and the company, enabling us to multiply our impact and results. This is why, year after year, we are recognized worldwide as a great place to work.
+
+
+**What do we offer?**
+
+Gartner offers world\-class benefits, highly competitive compensation and disproportionate rewards for top performers.
+
+
+In our hybrid work environment, we provide the flexibility and support for you to thrive — working virtually when it's productive to do so and getting together with colleagues in a vibrant community that is purposeful, engaging and inspiring.
+
+
+Ready to grow your career with Gartner? Join us.  
+
+
+
+  
+
+The policy of Gartner is to provide equal employment opportunities to all applicants and employees without regard to race, color, creed, religion, sex, sexual orientation, gender identity, marital status, citizenship status, age, national origin, ancestry, disability, veteran status, or any other legally protected status and to seek to advance the principles of equal employment opportunity.
+
+
+Gartner is committed to being an Equal Opportunity Employer and offers opportunities to all job seekers, including job seekers with disabilities. If you are a qualified individual with a disability or a disabled veteran, you may request a reasonable accommodation if you are unable or limited in your ability to use or access the Company’s career webpage as a result of your disability. You may request reasonable accommodations by calling Human Resources at \+1 (203\) 964\-0096 or by sending an email to ApplicantAccommodations@gartner.com .
+
+
+Job Requisition ID:106844
+By submitting your information and application, you confirm that you have read and agree to the country or regional recruitment notice linked below applicable to your place of residence.
+
+
+Gartner Applicant Privacy Link: https://jobs.gartner.com/applicant\-privacy\-policy  
+
+
+
+  
+
+**For efficient navigation through the application, please only use the back button within the application, not the back arrow within your browser.**",Consulting And Business Services,https://in.indeed.com/cmp/Gartner,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/09d3729ae8085a881e068e34a310dc27,https://jobs.gartner.com/,"56 Top Gallant Rd, Stamford, CT 06902, USA","10,000+",$5B to $10B (USD),"Gartner delivers actionable, objective business and technology insights that drive smarter decisions and stronger performance on an organization’s mission-critical priorities.",,,,,,
+in-dcf00c7703d5b7d3,indeed,https://in.indeed.com/viewjob?jk=dcf00c7703d5b7d3,https://thomsonreuters.wd5.myworkdayjobs.com/en-US/External_Career_Site/job/India-Hyderabad-Telangana/Senior-Software-Engineer--AI-II_JREQ195536,"Senior Software Engineer, AI II",Thomson Reuters,"TS, IN",2026-01-16,fulltime,,,,,,True,,,,,"Are you passionate about building AI\-driven software that transforms how professionals work? Join a dynamic and highly skilled team at Thomson Reuters, where we invest deeply in AI technologies and explore emerging fields with the backing of a global leader.As a Senior Software Engineer – AI, you will play a key role in developing intelligent systems that power the next generation of expert solutions across legal, tax, risk, and compliance domains.
+ **About The Role:**
+
+**As a Senior Software Engineer – AI,** you will collaborate with a cross\-functional team of product managers, UX designers, and engineers to design, build, and deliver AI\-powered solutions.
+
+
+* Architect and implement advanced AI systems, including multi\-component pipelines, retrieval\-augmented generation (RAG), and custom AI agents with multi\-step reasoning.
+* Integrate AI models into production software through robust APIs and scalable data pipelines.
+* Adapt AI models and techniques to specialized domains, tailoring solutions for expert systems in areas such as legal, tax, and compliance.
+* Evaluate and prototype cutting\-edge AI techniques to solve business challenges
+* Conduct proof\-of\-concept projects for new AI\-driven features
+* Stay current with AI research and emerging technologies
+* Break down functional requirements into scalable technical specifications
+* Mentor junior engineers and facilitate technical discussions
+* Contribute to MLOps and LLMOps practices, both in design and implementation
+* Act as a thought leader, sharing expertise in company\-wide forums and representing the organization in emerging technology areas.
+* Implement comprehensive testing frameworks and monitoring systems for AI model performance
+* Ensure compliance with ethical AI principles and security standards
+* Conduct systems analysis and recommend operational improvements
+* Work closely with AI researchers, engineers, designers and product teams to translate AI capabilities into real\-world applications.
+* Optimize AI system performance considering factors like latency and resource usage
+* Support application feature enhancements through AI capabilities.
+
+**About You:**
+
+**You are a fit for the position of Senior Software Engineer\- AI if your background includes:**
+
+**Required Skills and experience:**
+
+* Bachelor's degree in computer science or equivalent experience
+* 5\+ years of experience in software engineering; at least 2 years focused on AI/ML
+* Proficiency in Python and experience with AI/ML frameworks (e.g., PyTorch, TensorFlow)
+* Strong understanding of machine learning principles, evaluation, and system design
+* Knowledge of MLOps and the end\-to\-end lifecycle of AI\-powered software applications
+* Experience integrating AI models into production systems using APIs and data pipelines
+* Experience with cloud platforms (e.g., AWS, Azure, GCP) and containerization tools (e.g., Docker, Kubernetes)
+* Excellent problem\-solving skills and ability to work independently in a fast\-paced environment
+* Strong communication skills and experience working in cross\-functional teams.
+* Experience with AI\-driven systems, agent\-based architectures, or AI APIs from providers like OpenAI and Anthropic.
+* Knowledge of vector databases, embeddings, or search\-based AI.
+* Domain knowledge in legal, tax, or accounting
+* A portfolio of projects demonstrating creativity and skill building solutions with LLMs.
+
+\#LI\-VGA1
+
+
+**What’s in it For You?**
+
+* **Hybrid Work Model:** We’ve adopted a flexible hybrid working environment (2\-3 days a week in the office depending on the role) for our office\-based roles while delivering a seamless experience that is digitally and physically connected.
+* **Flexibility \& Work\-Life Balance:** Flex My Way is a set of supportive workplace policies designed to help manage personal and professional responsibilities, whether caring for family, giving back to the community, or finding time to refresh and reset. This builds upon our flexible work arrangements, including work from anywhere for up to 8 weeks per year, empowering employees to achieve a better work\-life balance.
+* **Career Development and Growth:** By fostering a culture of continuous learning and skill development, we prepare our talent to tackle tomorrow’s challenges and deliver real\-world solutions. Our Grow My Way programming and skills\-first approach ensures you have the tools and knowledge to grow, lead, and thrive in an AI\-enabled future.
+* **Industry Competitive Benefits:** We offer comprehensive benefit plans to include flexible vacation, two company\-wide Mental Health Days off, access to the Headspace app, retirement savings, tuition reimbursement, employee incentive programs, and resources for mental, physical, and financial wellbeing.
+* **Culture:** Globally recognized, award\-winning reputation for inclusion and belonging, flexibility, work\-life balance, and more. We live by our values: Obsess over our Customers, Compete to Win, Challenge (Y)our Thinking, Act Fast / Learn Fast, and Stronger Together.
+* **Social Impact:** Make an impact in your community with our Social Impact Institute. We offer employees two paid volunteer days off annually and opportunities to get involved with pro\-bono consulting projects and Environmental, Social, and Governance (ESG) initiatives.
+* **Making a Real\-World Impact:** We are one of the few companies globally that helps its customers pursue justice, truth, and transparency. Together, with the professionals and institutions we serve, we help uphold the rule of law, turn the wheels of commerce, catch bad actors, report the facts, and provide trusted, unbiased information to people all over the world.
+**About Us**
+
+Thomson Reuters informs the way forward by bringing together the trusted content and technology that people and organizations need to make the right decisions. We serve professionals across legal, tax, accounting, compliance, government, and media. Our products combine highly specialized software and insights to empower professionals with the data, intelligence, and solutions needed to make informed decisions, and to help institutions in their pursuit of justice, truth, and transparency. Reuters, part of Thomson Reuters, is a world leading provider of trusted journalism and news.
+
+
+We are powered by the talents of 26,000 employees across more than 70 countries, where everyone has a chance to contribute and grow professionally in flexible work environments. At a time when objectivity, accuracy, fairness, and transparency are under attack, we consider it our duty to pursue them. Sound exciting? Join us and help shape the industries that move society forward.
+
+
+As a global business, we rely on the unique backgrounds, perspectives, and experiences of all employees to deliver on our business goals. To ensure we can do that, we seek talented, qualified employees in all our operations around the world regardless of race, color, sex/gender, including pregnancy, gender identity and expression, national origin, religion, sexual orientation, disability, age, marital status, citizen status, veteran status, or any other protected classification under applicable law. Thomson Reuters is proud to be an Equal Employment Opportunity Employer providing a drug\-free workplace.
+
+
+We also make reasonable accommodations for qualified individuals with disabilities and for sincerely held religious beliefs in accordance with applicable law. More information on requesting an accommodation here .
+
+
+Learn more on how to protect yourself from fraudulent job postings here .
+
+
+More information about Thomson Reuters can be found on thomsonreuters.com.",,https://in.indeed.com/cmp/Thomson-Reuters,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/23bc0e691fd6e10460f36a6de4ce8b02,http://www.thomsonreuters.com,"Toronto, ON","10,000+",$5B to $10B (USD),"Thomson Reuters provides professionals with the intelligence, technology and human expertise they need to find trusted answers.",,,,,,
+in-32b993f76ca1ccfc,indeed,https://in.indeed.com/viewjob?jk=32b993f76ca1ccfc,https://jobs.smartrecruiters.com/Nagarro1/744000103748555-senior-staff-engineer-cloud-,Senior Staff Engineer (Cloud),Nagarro,IN,2026-01-15,fulltime,,,,,,False,,,,,"**Company Description** **We're Nagarro**
+
+
+We are a Digital Product Engineering company that is scaling in a big way! We build products, services, and experiences that inspire, excite, and delight. We work at scale across all devices and digital mediums, and our people exist everywhere in the world (17500 experts across 36 countries, to be exact). Our work culture is dynamic and non\-hierarchical. We are looking for great new colleagues. That is where you come in!
+
+ **Job Description** **REQUIREMENTS:**
+
+* Experience : 7\.5\+ Years
+* 10\-12 years in infrastructure, platform, DevOps, or MLOps roles
+* Strong experience with cloud platforms (AWS/GCP/Azure) and Kubernetes
+* Hands\-on experience deploying and operating LLMs (OpenAI, Anthropic, open\-source models)
+* Proficiency with GPU infrastructure, model serving frameworks, and vector databases
+* Strong programming skills in Python; experience with Bash/Go is a plus
+* Experience with monitoring, logging, and performance tuning for distributed systems
+* Preferred Qualifications
+* Experience with LLM fine\-tuning, RAG pipelines, and prompt/version management
+* Familiarity with tools like Terraform, Helm, Argo, Ray, or similar
+* Exposure to cost optimization strategies for large\-scale AI systems
+
+ **Responsibilities:**
+
+* Design and manage scalable infrastructure for training, fine\-tuning, serving, and monitoring LLMs
+* Build and maintain LLMOps pipelines (deployment, versioning, rollback, monitoring, evaluation)
+* Optimize inference performance (latency, throughput, cost) across GPU/accelerator stacks
+* Implement CI/CD, IaC, and automation for AI/ML workloads
+* Ensure observability, reliability, and governance of LLM systems in production
+* Collaborate with ML, platform, and product teams to operationalize AI solutions
+* Manage security, compliance, and access control for model and data pipelines
+
+  
+
+**Qualifications**  
+
+Bachelor’s or master’s degree in computer science, Information Technology, or a related field.",,https://in.indeed.com/cmp/Nagarro,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/b06e4ef63fcccb694fe0a10b53046a22,http://www.nagarro.com/,"San Jose, California, United States",,,,,,,,,
+in-1ae680e177f62e70,indeed,https://in.indeed.com/viewjob?jk=1ae680e177f62e70,https://www.cabotsolutions.com/current-openings,AI CoE Lead – Healthcare,Cabot Corporation,"KL, IN",2026-01-15,fulltime,,,,,,False,,,,,"Job Information
+We are looking for a visionary and execution\-driven AI Centre of Excellence (CoE) Lead to establish and scale our artificial intelligence capabilities within the healthcare domain. You will act as the founder and chief architect of our AI practice, owning the strategy, platform, products, and delivery from inception to enterprise and global scale. This role blends deep technical leadership, healthcare domain expertise, and strong business ownership.
+Key Responsibilities
+
+**AI Platform \& Ecosystem Design**
+
+* Define and build an enterprise\-ready AI platform with modular architecture and reusable components.
+* Design and oversee multi\-model orchestration, including LLMOps, MLOps, vector databases, and RAG pipelines.
+* Ensure scalability, reliability, observability, and cost efficiency across all AI services.
+* Establish platform standards for APIs, integrations, security, and monitoring.
+
+**Healthcare Product Strategy \& Roadmap**
+
+* Develop a clear AI product vision aligned to hospital and healthcare system needs.
+* Identify and prioritize use cases such as clinical decision support, revenue cycle automation, operational efficiency, and patient monitoring.
+* Drive an API\-first, integration\-friendly approach for EHRs and healthcare systems.
+* Own the roadmap from proof\-of\-concept to enterprise\-grade products.
+
+**Value Articulation \& Stakeholder Engagement**
+
+* Translate complex AI capabilities into clear business value and ROI for healthcare leaders.
+* Create solution frameworks and outcome\-based success metrics for customers.
+* Engage directly with C\-suite stakeholders (CIO, CMIO, CFO, CEO) to shape adoption and investment decisions.
+* Support sales and growth teams with AI vision, demos, and executive\-level narratives.
+
+
+End\-to\-End Delivery \& Execution
+
+* Lead the full lifecycle of AI initiatives: ideation, PoCs, MVPs, enterprise rollout, and global expansion.
+* Ensure delivery velocity while maintaining clinical safety, compliance, and quality.
+* Act as the escalation point for critical technical, delivery, or customer challenges.
+* Maintain hands\-on involvement through reviews, key design decisions, and customer interactions.
+
+
+Responsible AI, Security \& Compliance
+
+* Embed Security\-by\-Design and Responsible AI principles across all platforms and products.
+* Ensure compliance with healthcare regulations and standards including HIPAA, FHIR, and PHI handling.
+* Define governance for model risk, bias, explainability, and auditability.
+* Work closely with legal, compliance, and security teams to meet clinical and regulatory requirements.
+
+
+Business Growth \& Partnerships
+
+* Own budgets, investment planning, and commercial outcomes for AI initiatives.
+* Convert AI use cases into sustainable revenue streams and long\-term contracts.
+* Build strategic partnerships with cloud providers (AWS, Azure, GCP), AI model vendors, and healthcare system integrators.
+* Represent the AI CoE externally with partners, customers, and industry forums.
+
+
+Team Building \& CoE Leadership
+
+* Hire, mentor, and lead a high\-performing team of ML engineers, data engineers, platform engineers, and solution experts.
+* Define the AI CoE operating model, best practices, and delivery standards.
+* Foster a culture of trust, innovation, ownership, and continuous learning
+
+Skills you Need* Advanced degree in Computer Science, AI/ML, Software Engineering, or a related field.
+* Solid experience in senior leadership roles across product engineering, platforms, or technology\-led businesses.
+* Proven experience building and scaling AI/ML or SaaS platforms from early stage to enterprise adoption.
+* Strong hands\-on knowledge of Generative AI, LLMs, vector databases, cloud architecture, and enterprise security.
+* Deep understanding of healthcare systems, workflows, EHR integrations, and data privacy requirements.
+* Excellent communication skills with the ability to influence technical and non\-technical stakeholders.
+
+Experience
+12\-15 years
+Work Location
+Kochi
+Work Type
+Full Time
+Apply Now",Industrial Manufacturing,https://in.indeed.com/cmp/Cabot-Corporation,,http://www.cabotcorp.com,"2 Seaport Lane
+Suite 1300
+Boston, MA
+02210","5,001 to 10,000",$1B to $5B (USD),"Cabot Corporation is a global specialty chemicals and performance materials company headquartered in Boston, Massachusetts.",,,,,,
+in-71c01052b9b9328a,indeed,https://in.indeed.com/viewjob?jk=71c01052b9b9328a,https://thomsonreuters.wd5.myworkdayjobs.com/en-US/External_Career_Site/job/India-Bengaluru-Karnataka/Senior-Software-Engineer---AI--Westlaw-AI-_JREQ197250,Senior Software Engineer – AI (Westlaw AI),Thomson Reuters,"KA, IN",2026-01-14,fulltime,,,,,,True,,,,,"Job Description
+As a **Senior Software Engineer – AI** , you will collaborate with a cross\-functional team of product managers, UX designers, and engineers to design, build, and deliver AI\-powered solutions.  
+
+
+
+  
+
+**About the role:**  
+
+
+
+Build AI\-Driven Systems:
+
+
+* Architect and implement advanced AI systems, including multi\-component pipelines, retrieval\-augmented generation (RAG), and custom AI agents with multi\-step reasoning.
+* Integrate AI models into production software through robust APIs and scalable data pipelines.
+* Adapt AI models and techniques to specialized domains, tailoring solutions for expert systems in areas such as legal, tax, and compliance.
+
+Innovate:
+
+
+* Evaluate and prototype cutting\-edge AI techniques to solve business challenges.
+* Conduct proof\-of\-concept projects for new AI\-driven features.
+* Stay current with AI research and emerging technologies.
+
+Provide Technical Leadership:
+
+
+* Break down ambiguous requirements into scalable technical specifications.
+* Mentor junior engineers and facilitate technical discussions.
+* Contribute to ML blogs and LLMOps practices within the team.
+* Present thought leadership at internal and external forums representing the organization in emerging technology areas.
+
+Ensure Quality \& Operations:
+
+
+* Implement comprehensive testing frameworks and monitoring systems for AI model performance.
+* Ensure strong data governance, bias analysis, and security standards.
+* Conduct scalability analysis and recommend operational improvements.
+
+Collaborate Across Functions:
+
+
+* Work closely with AI researchers, designers, and product teams to translate AI capabilities into real\-world applications.
+* Optimize AI system performance considering factors like latency and resource usage.
+* Drive collaboration to feature enhancements through AI capabilities.
+
+**About You**
+
+You are a fit for the position of Senior Software Engineer – AI if your background includes:
+
+
+**Required Skills and Experience:**
+
+* Bachelor’s degree in computer science or equivalent experience.
+* **6\+ years of experience in software engineering; at least 2 years focused on AI/ML.**
+* **Hands on with AI/ML frameworks, LLMs, Understanding of Cloud \& Deployments**
+* Strong foundation and experience with AI/ML model development.
+* Sound understanding of machine learning principles, evaluation, and system design.
+* Experience with integrating models into end\-to\-end production\-grade applications.
+* Experience integrating AI models into production systems and APIs at scale.
+* Experience with cloud platforms (e.g., AWS, Azure, GCP) and containerized tools (e.g., Docker, Kubernetes).
+* Proficiency in Python and related frameworks for building AI\-powered systems.
+* Strong communication skills and experience working in cross\-functional teams.
+* Experience with LLM\-driven systems, agent\-based architectures, or AI APIs from providers like OpenAI and Anthropic.
+* Experience with vector databases, embeddings, or search\-based AI.
+* Domain knowledge in legal, tax, or compliance systems.
+* A portfolio of projects demonstrating creativity and skill building solutions with LLMs.
+
+  
+
+\#LI\-AD2
+
+
+**What’s in it For You?**
+
+* **Hybrid Work Model:** We’ve adopted a flexible hybrid working environment (2\-3 days a week in the office depending on the role) for our office\-based roles while delivering a seamless experience that is digitally and physically connected.
+* **Flexibility \& Work\-Life Balance:** Flex My Way is a set of supportive workplace policies designed to help manage personal and professional responsibilities, whether caring for family, giving back to the community, or finding time to refresh and reset. This builds upon our flexible work arrangements, including work from anywhere for up to 8 weeks per year, empowering employees to achieve a better work\-life balance.
+* **Career Development and Growth:** By fostering a culture of continuous learning and skill development, we prepare our talent to tackle tomorrow’s challenges and deliver real\-world solutions. Our Grow My Way programming and skills\-first approach ensures you have the tools and knowledge to grow, lead, and thrive in an AI\-enabled future.
+* **Industry Competitive Benefits:** We offer comprehensive benefit plans to include flexible vacation, two company\-wide Mental Health Days off, access to the Headspace app, retirement savings, tuition reimbursement, employee incentive programs, and resources for mental, physical, and financial wellbeing.
+* **Culture:** Globally recognized, award\-winning reputation for inclusion and belonging, flexibility, work\-life balance, and more. We live by our values: Obsess over our Customers, Compete to Win, Challenge (Y)our Thinking, Act Fast / Learn Fast, and Stronger Together.
+* **Social Impact:** Make an impact in your community with our Social Impact Institute. We offer employees two paid volunteer days off annually and opportunities to get involved with pro\-bono consulting projects and Environmental, Social, and Governance (ESG) initiatives.
+* **Making a Real\-World Impact:** We are one of the few companies globally that helps its customers pursue justice, truth, and transparency. Together, with the professionals and institutions we serve, we help uphold the rule of law, turn the wheels of commerce, catch bad actors, report the facts, and provide trusted, unbiased information to people all over the world.
+**About Us**
+
+Thomson Reuters informs the way forward by bringing together the trusted content and technology that people and organizations need to make the right decisions. We serve professionals across legal, tax, accounting, compliance, government, and media. Our products combine highly specialized software and insights to empower professionals with the data, intelligence, and solutions needed to make informed decisions, and to help institutions in their pursuit of justice, truth, and transparency. Reuters, part of Thomson Reuters, is a world leading provider of trusted journalism and news.
+
+
+We are powered by the talents of 26,000 employees across more than 70 countries, where everyone has a chance to contribute and grow professionally in flexible work environments. At a time when objectivity, accuracy, fairness, and transparency are under attack, we consider it our duty to pursue them. Sound exciting? Join us and help shape the industries that move society forward.
+
+
+As a global business, we rely on the unique backgrounds, perspectives, and experiences of all employees to deliver on our business goals. To ensure we can do that, we seek talented, qualified employees in all our operations around the world regardless of race, color, sex/gender, including pregnancy, gender identity and expression, national origin, religion, sexual orientation, disability, age, marital status, citizen status, veteran status, or any other protected classification under applicable law. Thomson Reuters is proud to be an Equal Employment Opportunity Employer providing a drug\-free workplace.
+
+
+We also make reasonable accommodations for qualified individuals with disabilities and for sincerely held religious beliefs in accordance with applicable law. More information on requesting an accommodation here .
+
+
+Learn more on how to protect yourself from fraudulent job postings here .
+
+
+More information about Thomson Reuters can be found on thomsonreuters.com.",,https://in.indeed.com/cmp/Thomson-Reuters,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/23bc0e691fd6e10460f36a6de4ce8b02,http://www.thomsonreuters.com,"Toronto, ON","10,000+",$5B to $10B (USD),"Thomson Reuters provides professionals with the intelligence, technology and human expertise they need to find trusted answers.",,,,,,
+in-4916ab5235538923,indeed,https://in.indeed.com/viewjob?jk=4916ab5235538923,https://careers.te.com/job/SR_-DATA-SCIENTIST/145347-en_US,SR. DATA SCIENTIST,TE Connectivity,"KA, IN",2026-01-13,,,,,,,False,,,,,"At TE, we strongly believe that data and AI are strategic drivers for future success. We are building a world\-class advanced analytics team that will solve some of the most complex strategic problems and deliver topline growth and operational efficiencies across our business units.  
+
+The Data and AI teams at TE are part of the TE Information Solutions (TEIS) Organization, building scalable solutions with AI agents and workflow for organization.  
+
+The Senior Data Scientist \- Agentic AI \& Workflow Automation will spearhead the development of intelligent agent systems and orchestrated workflows. This role focuses on designing, building, and deploying autonomous AI agents that drive business automation and operational excellence through cutting\-edge Generative AI and LLM technologies.
+
+**Job Responsibilities**
+**Agentic AI \& Automation:**  
+
+* Design, develop, and deploy multi\-agent systems and agentic applications using frameworks like AutoGen, LangGraph, CrewAI, or similar
+* Build intelligent workflow orchestration systems that enable autonomous decision\-making and task execution
+* Implement Agent\-to\-Agent (A2A) communication protocols and Model Context Protocol (MCP) for seamless agent collaboration
+* Develop automation solutions using OpenAPI standards for integration with enterprise systems
+* Create self\-healing, adaptive workflows that optimize business processes autonomously
+
+**Generative AI \& LLM Solutions:**  
+
+* Use ML, deep learning, and Generative AI tools to design, evangelize, and implement state\-of\-the\-art solutions
+* Define and implement best practices for building, testing, and deploying scalable AI solutions, with a focus on generative models and LLMs using proprietary or open\-source models
+* Drive successful business outcomes by designing and building cloud\-hosted Generative AI solutions
+
+**Technical Implementation:**  
+
+* Work closely with internal teams to integrate RAG workflows, agent\-based systems, and automation frameworks into applications
+* Design and implement architectural solutions for Information Retrieval using RAG, Vector DBs, and Knowledge Graphs
+* Work with public cloud (AWS) and on\-premises infrastructure for deploying LLMs, agents, and orchestration systems
+* Evaluate, build, and fine\-tune ML models and LLMs to solve complex business problems
+* Stay abreast of latest developments in agentic AI, autonomous systems, language models, and generative AI technologies
+**Desired Candidate Profile**
+**Education \& Experience:**  
+
+* BE, Master's or Ph.D. in Computer Science, Artificial Intelligence, Machine Learning, or equivalent practical experience
+* 8\+ years of overall technical experience with 2\-3\+ years of hands\-on experience in Generative AI and LLM technologies
+* 1\+ years of experience building agentic systems, workflow automation, or autonomous AI applications
+
+**Agentic AI \& Workflow Expertise:**  
+
+* Deep hands\-on experience with agentic frameworks (AutoGen, LangGraph, CrewAI, Agency Swarm, or similar)
+* Strong knowledge of workflow orchestration tools and patterns (Temporal, Airflow, Prefect, or similar)
+* Expertise in OpenAPI standards, Agent\-to\-Agent (A2A) protocols, and Model Context Protocol (MCP)
+* Experience designing multi\-agent architectures with memory, planning, and tool\-use capabilities
+* Knowledge of agent evaluation, testing frameworks, and observability patterns
+
+**LLM \& Generative AI:**  
+
+* Proven track record of deploying and optimizing LLM models for inference in production environments
+* Extensive experience with LLM orchestration frameworks (LangChain, LlamaIndex required)
+* Hands\-on experience with Amazon Bedrock, SageMaker JumpStart, and other cloud\-based LLM platforms
+* Expertise in RAG architectures, Fine\-tuning techniques, and Prompt Engineering
+* Deep understanding of Vector Databases (Pinecone, Weaviate, Milvus, ChromaDB) and Knowledge Graphs
+
+**ML/DL Foundations:**  
+
+* Expert in NLP techniques and deep learning libraries (Transformer models, LSTM, BiLSTM, CNN, BERT, GPT, T5\)
+* Proficiency with ML frameworks: TensorFlow, PyTorch, Hugging Face Transformers, scikit\-learn
+* Strong programming skills in Python (required), plus JavaScript/TypeScript or Node.js
+* Deep understanding of data structures, algorithms, and system design patterns
+
+**MLOps/LLMOps:**  
+
+* Hands\-on experience in MLOps/LLMOps including data pipelines, model training/refinement, validation, drift management, and serving
+* Experience with containerization (Docker, Kubernetes) and CI/CD pipelines for ML systems
+* Knowledge of monitoring, logging, and observability tools for production AI system.
+
+**Nice to Have**  
+
+* Experience with function calling, tool use, and external API integration in agent systems
+* Knowledge of reinforcement learning and agent training methodologies
+* Familiarity with semantic reasoning, planning algorithms (ReAct, Chain\-of\-Thought, Tree\-of\-Thoughts)
+* Experience with graph databases (Neo4j, Neptune) and ontology design
+* Contributions to open\-source AI/ML projects
+* Publications or patents in AI/ML domain
+**Competencies**
+Values: Integrity, Accountability, Inclusion, Innovation, Teamwork
+**ABOUT TE CONNECTIVITY**
+
+
+
+TE Connectivity plc (NYSE: TEL) is a global industrial technology leader creating a safer, sustainable, productive, and connected future. As a trusted innovation partner, our broad range of connectivity and sensor solutions enable the distribution of power, signal and data to advance next\-generation transportation, energy networks, automated factories, data centers enabling artificial intelligence, and more.
+
+
+
+Our more than 90,000 employees, including 10,000 engineers, work alongside customers in approximately 130 countries. In a world that is racing ahead, TE ensures that EVERY CONNECTION COUNTS. Learn more at www.te.com and on LinkedIn, Facebook, WeChat, Instagram and X (formerly Twitter).
+
+  
+
+
+**WHAT TE CONNECTIVITY OFFERS:**  
+
+We are pleased to offer you an exciting total package that can also be flexibly adapted to changing life situations \- the well\-being of our employees is our top priority!
+
+
+* Competitive Salary Package
+* Performance\-Based Bonus Plans
+* Health and Wellness Incentives
+* Employee Stock Purchase Program
+* Community Outreach Programs / Charity Events
+* Employee Resource Group
+
+  
+
+
+**IMPORTANT NOTICE REGARDING RECRUITMENT FRAUD**  
+
+TE Connectivity has become aware of fraudulent recruitment activities being conducted by individuals or organizations falsely claiming to represent TE Connectivity. Please be advised that TE Connectivity **never requests payment or fees** from job applicants at any stage of the recruitment process. All legitimate job openings are posted exclusively on our official careers website at te.com/careers, and all email communications from our recruitment team will come **only from** **actual** **email addresses ending in @te.com**. If you receive any suspicious communications, we strongly advise you not to engage or provide any personal information, and to report the incident to your local authorities.
+
+
+
+Across our global sites and business units, we put together packages of benefits that are either supported by TE itself or provided by external service providers. In principle, the benefits offered can vary from site to site.
+
+  
+
+
+**Job Locations:**
+
+
+Bangalore, 560066  
+
+India
+
+  
+
+**Posting City:** Bangalore
+**Job Country:** India
+**Travel Required:** Less than 10%
+**Requisition ID:** 145347
+**Workplace Type:****External Careers Page:** Information Technology",,https://in.indeed.com/cmp/Te-Connectivity,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/99ad094688784d8b6945865207a0c502,http://www.te.com,Schaffhausen,"10,000+",more than $10B (USD),"We create a safer, sustainable, productive and more connected future.",,,,,,
+in-86737a9ae515811b,indeed,https://in.indeed.com/viewjob?jk=86737a9ae515811b,https://thomsonreuters.wd5.myworkdayjobs.com/en-US/External_Career_Site/job/India-Bengaluru-Karnataka/Staff-Software-Engineer---AI--Westlaw-AI-_JREQ197135,Staff Software Engineer – AI (Westlaw AI),Thomson Reuters,"KA, IN",2026-01-13,fulltime,,,,,,True,,,,,"As a, **Staff Software Engineer – AI** , you will spearhead the development of cutting\-edge AI\-powered solutions and guiding technical strategy. You will collaborate with senior stakeholders, product leadership, and cross\-functional teams to architect, build, and scale enterprise\-grade AI systems that transform how our organization delivers value to customers.
+  
+
+  
+
+**About the role:**  
+
+  
+
+**Build \& Architect AI\-Driven Systems**
+
+* Design and lead the implementation of complex, enterprise\-scale AI systems, including sophisticated multi\-component pipelines, advanced retrieval\-augmented generation (RAG) architectures, and autonomous AI agents with multi\-step reasoning capabilities.
+* Architect scalable AI model integration strategies for production software through robust APIs, distributed data pipelines, and microservices architectures.
+* Lead the adaptation and customization of AI models for specialized domains, driving innovation in expert systems for legal, tax, fraud, and compliance.
+* Define technical solutions for AI system architecture across the organization.
+
+**Drive Innovation \& Technical Strategy**
+
+* Lead evaluation and scalable adoption of cutting\-edge AI technologies to solve complex business challenges.
+* Oversee proof\-of\-concept projects and guide technical feasibility assessments for new AI\-driven features.
+* Stay at the forefront of AI research and emerging technologies, translating insights into actionable technical roadmaps.
+* Drive innovation initiatives and establish the organization’s position in emerging AI technology areas.
+
+**Provide Senior Technical Leadership**
+
+* Lead senior technical discussions and translate high\-level business requirements into complete technical specifications.
+* Mentor a team of senior and junior Software Engineers, fostering technical growth and career development.
+* Champion new MLOps and LLMOps practices across the organization, leading both design and implementation initiatives.
+* Serve as a senior thought leader, driving technical discussions in executive forums and representing the organization at industry conferences and events.
+
+**Champion Security, Quality \& Operational Excellence**
+
+* Design and implement comprehensive testing frameworks, monitoring systems, and observability solutions for AI model performance at scale.
+* Lead compliance initiatives ensuring adherence to ethical AI principles, security standards, and regulatory requirements.
+* Conduct advanced systems analysis and drive operational improvements across AI lifecycle management.
+
+**Cross\-Functional Collaboration**
+
+* Partner with AI researchers, senior engineering leadership, design, and product teams to translate AI capabilities into market\-leading applications.
+* Drive optimization of AI system performance across multiple dimensions including latency, resource usage, cost, and user experience.
+* Lead strategy initiatives for production feature enhancement and advanced AI applications informed through technical expertise and market understanding.
+
+**About You**  
+
+You are a fit for the position of Staff Software Engineer – AI if your background includes:
+
+
+* **Qualifications and Experience**
+* Bachelor’s or Master’s degree in Computer Science, Engineering, or equivalent experience. Master’s degree preferred.
+* 8\+ years of experience in software engineering with at least 4 years in senior or lead roles focused on AI/ML.
+* **Hands on with AI/ML frameworks, LLMs, Understanding of Cloud \& Deployments**
+* Expert\-level proficiency in Python and extensive experience with AI/ML frameworks (PyTorch, TensorFlow, JAX).
+* Deep understanding of LLM architectures, advanced training methodologies, and distributed agent system design.
+* Demonstrated success in building AI\-driven systems that deliver expert\-based, authoritative solutions.
+* Experience with large\-scale enterprise data (OpenAI, Anthropic, etc.) and advanced knowledge of vector databases, semantic search, and information retrieval systems.
+* Domain expertise in legal, tax, accounting, or other regulated industries.
+* Track record of successful AI product launches and scaling AI systems to enterprise customers.
+* Portfolio demonstrating leadership in innovative LLM\-based solutions and AI product development.
+* Experience with AI governance, model risk management, and regulatory compliance.
+* Publications, patents, or speaking experience in AI/ML domains.
+
+\#LI\-AD2
+
+
+**What’s in it For You?**
+
+* **Hybrid Work Model:** We’ve adopted a flexible hybrid working environment (2\-3 days a week in the office depending on the role) for our office\-based roles while delivering a seamless experience that is digitally and physically connected.
+* **Flexibility \& Work\-Life Balance:** Flex My Way is a set of supportive workplace policies designed to help manage personal and professional responsibilities, whether caring for family, giving back to the community, or finding time to refresh and reset. This builds upon our flexible work arrangements, including work from anywhere for up to 8 weeks per year, empowering employees to achieve a better work\-life balance.
+* **Career Development and Growth:** By fostering a culture of continuous learning and skill development, we prepare our talent to tackle tomorrow’s challenges and deliver real\-world solutions. Our Grow My Way programming and skills\-first approach ensures you have the tools and knowledge to grow, lead, and thrive in an AI\-enabled future.
+* **Industry Competitive Benefits:** We offer comprehensive benefit plans to include flexible vacation, two company\-wide Mental Health Days off, access to the Headspace app, retirement savings, tuition reimbursement, employee incentive programs, and resources for mental, physical, and financial wellbeing.
+* **Culture:** Globally recognized, award\-winning reputation for inclusion and belonging, flexibility, work\-life balance, and more. We live by our values: Obsess over our Customers, Compete to Win, Challenge (Y)our Thinking, Act Fast / Learn Fast, and Stronger Together.
+* **Social Impact:** Make an impact in your community with our Social Impact Institute. We offer employees two paid volunteer days off annually and opportunities to get involved with pro\-bono consulting projects and Environmental, Social, and Governance (ESG) initiatives.
+* **Making a Real\-World Impact:** We are one of the few companies globally that helps its customers pursue justice, truth, and transparency. Together, with the professionals and institutions we serve, we help uphold the rule of law, turn the wheels of commerce, catch bad actors, report the facts, and provide trusted, unbiased information to people all over the world.
+**About Us**
+
+Thomson Reuters informs the way forward by bringing together the trusted content and technology that people and organizations need to make the right decisions. We serve professionals across legal, tax, accounting, compliance, government, and media. Our products combine highly specialized software and insights to empower professionals with the data, intelligence, and solutions needed to make informed decisions, and to help institutions in their pursuit of justice, truth, and transparency. Reuters, part of Thomson Reuters, is a world leading provider of trusted journalism and news.
+
+
+We are powered by the talents of 26,000 employees across more than 70 countries, where everyone has a chance to contribute and grow professionally in flexible work environments. At a time when objectivity, accuracy, fairness, and transparency are under attack, we consider it our duty to pursue them. Sound exciting? Join us and help shape the industries that move society forward.
+
+
+As a global business, we rely on the unique backgrounds, perspectives, and experiences of all employees to deliver on our business goals. To ensure we can do that, we seek talented, qualified employees in all our operations around the world regardless of race, color, sex/gender, including pregnancy, gender identity and expression, national origin, religion, sexual orientation, disability, age, marital status, citizen status, veteran status, or any other protected classification under applicable law. Thomson Reuters is proud to be an Equal Employment Opportunity Employer providing a drug\-free workplace.
+
+
+We also make reasonable accommodations for qualified individuals with disabilities and for sincerely held religious beliefs in accordance with applicable law. More information on requesting an accommodation here .
+
+
+Learn more on how to protect yourself from fraudulent job postings here .
+
+
+More information about Thomson Reuters can be found on thomsonreuters.com.",,https://in.indeed.com/cmp/Thomson-Reuters,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/23bc0e691fd6e10460f36a6de4ce8b02,http://www.thomsonreuters.com,"Toronto, ON","10,000+",$5B to $10B (USD),"Thomson Reuters provides professionals with the intelligence, technology and human expertise they need to find trusted answers.",,,,,,
+in-61a816b57f23ba9f,indeed,https://in.indeed.com/viewjob?jk=61a816b57f23ba9f,https://thomsonreuters.wd5.myworkdayjobs.com/en-US/External_Career_Site/job/India-Bengaluru-Karnataka/Senior-Software-Engineer---AI--Westlaw-AI-_JREQ197251,Senior Software Engineer – AI (Westlaw AI),Thomson Reuters,"KA, IN",2026-01-13,fulltime,,,,,,True,,,,,"As a **Senior Software Engineer – AI** , you will collaborate with a cross\-functional team of product managers, UX designers, and engineers to design, build, and deliver AI\-powered solutions.  
+
+
+
+  
+
+**About the Role:**  
+
+
+
+**Build AI\-Driven Systems:**
+
+* Architect and implement advanced AI systems, including multi\-component pipelines, retrieval\-augmented generation (RAG), and custom AI agents with multi\-step reasoning.
+* Integrate AI models into production software through robust APIs and scalable data pipelines.
+* Adapt AI models and techniques to specialized domains, tailoring solutions for expert systems in areas such as legal, tax, and compliance.
+
+**Innovate:**
+
+* Evaluate and prototype cutting\-edge AI techniques to solve business challenges.
+* Conduct proof\-of\-concept projects for new AI\-driven features.
+* Stay current with AI research and emerging technologies.
+
+**Provide Technical Leadership:**
+
+* Break down ambiguous requirements into scalable technical specifications.
+* Mentor junior engineers and facilitate technical discussions.
+* Contribute to ML blogs and LLMOps practices within the team.
+* Present thought leadership at internal and external forums representing the organization in emerging technology areas.
+
+**Ensure Quality \& Operations:**
+
+* Implement comprehensive testing frameworks and monitoring systems for AI model performance.
+* Ensure strong data governance, bias analysis, and security standards.
+* Conduct scalability analysis and recommend operational improvements.
+
+**Collaborate Across Functions:**
+
+* Work closely with AI researchers, designers, and product teams to translate AI capabilities into real\-world applications.
+* Optimize AI system performance considering factors like latency and resource usage.
+* Drive collaboration to feature enhancements through AI capabilities.
+
+**About You**
+
+You are a fit for the position of Senior Software Engineer – AI if your background includes:
+
+
+**Required Skills and Experience:**
+
+* Bachelor’s degree in computer science or equivalent experience.
+* 6\+ years of experience in software engineering; at least 2 years focused on AI/ML.
+* **Hands on with AI/ML frameworks, LLMs, Understanding of Cloud \& Deployments**
+* Strong foundation and experience with AI/ML model development.
+* Sound understanding of machine learning principles, evaluation, and system design.
+* Experience with integrating models into end\-to\-end production\-grade applications.
+* Experience integrating AI models into production systems and APIs at scale.
+* Experience with cloud platforms (e.g., AWS, Azure, GCP) and containerized tools (e.g., Docker, Kubernetes).
+* Proficiency in Python and related frameworks for building AI\-powered systems.
+* Strong communication skills and experience working in cross\-functional teams.
+* Experience with LLM\-driven systems, agent\-based architectures, or AI APIs from providers like OpenAI and Anthropic.
+* Experience with vector databases, embeddings, or search\-based AI.
+* Domain knowledge in legal, tax, or compliance systems.
+* A portfolio of projects demonstrating creativity and skill building solutions with LLMs.
+
+  
+
+\#LI\-AD2
+
+
+**What’s in it For You?**
+
+* **Hybrid Work Model:** We’ve adopted a flexible hybrid working environment (2\-3 days a week in the office depending on the role) for our office\-based roles while delivering a seamless experience that is digitally and physically connected.
+* **Flexibility \& Work\-Life Balance:** Flex My Way is a set of supportive workplace policies designed to help manage personal and professional responsibilities, whether caring for family, giving back to the community, or finding time to refresh and reset. This builds upon our flexible work arrangements, including work from anywhere for up to 8 weeks per year, empowering employees to achieve a better work\-life balance.
+* **Career Development and Growth:** By fostering a culture of continuous learning and skill development, we prepare our talent to tackle tomorrow’s challenges and deliver real\-world solutions. Our Grow My Way programming and skills\-first approach ensures you have the tools and knowledge to grow, lead, and thrive in an AI\-enabled future.
+* **Industry Competitive Benefits:** We offer comprehensive benefit plans to include flexible vacation, two company\-wide Mental Health Days off, access to the Headspace app, retirement savings, tuition reimbursement, employee incentive programs, and resources for mental, physical, and financial wellbeing.
+* **Culture:** Globally recognized, award\-winning reputation for inclusion and belonging, flexibility, work\-life balance, and more. We live by our values: Obsess over our Customers, Compete to Win, Challenge (Y)our Thinking, Act Fast / Learn Fast, and Stronger Together.
+* **Social Impact:** Make an impact in your community with our Social Impact Institute. We offer employees two paid volunteer days off annually and opportunities to get involved with pro\-bono consulting projects and Environmental, Social, and Governance (ESG) initiatives.
+* **Making a Real\-World Impact:** We are one of the few companies globally that helps its customers pursue justice, truth, and transparency. Together, with the professionals and institutions we serve, we help uphold the rule of law, turn the wheels of commerce, catch bad actors, report the facts, and provide trusted, unbiased information to people all over the world.
+**About Us**
+
+Thomson Reuters informs the way forward by bringing together the trusted content and technology that people and organizations need to make the right decisions. We serve professionals across legal, tax, accounting, compliance, government, and media. Our products combine highly specialized software and insights to empower professionals with the data, intelligence, and solutions needed to make informed decisions, and to help institutions in their pursuit of justice, truth, and transparency. Reuters, part of Thomson Reuters, is a world leading provider of trusted journalism and news.
+
+
+We are powered by the talents of 26,000 employees across more than 70 countries, where everyone has a chance to contribute and grow professionally in flexible work environments. At a time when objectivity, accuracy, fairness, and transparency are under attack, we consider it our duty to pursue them. Sound exciting? Join us and help shape the industries that move society forward.
+
+
+As a global business, we rely on the unique backgrounds, perspectives, and experiences of all employees to deliver on our business goals. To ensure we can do that, we seek talented, qualified employees in all our operations around the world regardless of race, color, sex/gender, including pregnancy, gender identity and expression, national origin, religion, sexual orientation, disability, age, marital status, citizen status, veteran status, or any other protected classification under applicable law. Thomson Reuters is proud to be an Equal Employment Opportunity Employer providing a drug\-free workplace.
+
+
+We also make reasonable accommodations for qualified individuals with disabilities and for sincerely held religious beliefs in accordance with applicable law. More information on requesting an accommodation here .
+
+
+Learn more on how to protect yourself from fraudulent job postings here .
+
+
+More information about Thomson Reuters can be found on thomsonreuters.com.",,https://in.indeed.com/cmp/Thomson-Reuters,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/23bc0e691fd6e10460f36a6de4ce8b02,http://www.thomsonreuters.com,"Toronto, ON","10,000+",$5B to $10B (USD),"Thomson Reuters provides professionals with the intelligence, technology and human expertise they need to find trusted answers.",,,,,,
+in-c93cb785fb0ff5cc,indeed,https://in.indeed.com/viewjob?jk=c93cb785fb0ff5cc,https://careers.alvarezandmarsal.com/en/jobs/17208410-associate-director-genai-and-data-solution-architect-global-capability-center?tm_job=202600093&tm_event=view&tm_company=47710,"Associate Director, GenAI & Data Solution Architect - Global Capability Center",Alvarez & Marsal,"Remote, IN",2026-01-12,fulltime,,,,,,True,,,,,"**Description**
+
+
+**About Alvarez \& Marsal**
+
+
+Alvarez \& Marsal (A\&M) is a global consulting firm with over 10,000 entrepreneurial, action and results\-oriented professionals in over 40 countries. We take a hands\-on approach to solving our clients' problems and assisting them in reaching their potential. Our culture celebrates independent thinkers and doers who positively impact our clients and shape our industry. The collaborative environment and engaging work\-guided by A\&M's core values of Integrity, Quality, Objectivity, Fun, Personal Reward, and Inclusive Diversity \- are why our people love working at A\&M.  
+
+
+
+  
+
+  
+
+**The Team**
+
+
+Our DTS team covers the full breadth of Technology Consulting and M\&A services, including \-
+
+* Technology M\&A and Strategy \- Assist clients to manage the technology aspects and business enablement of complex M\&A, integrations and carve\-outs as well as post\-deal value creation
+* Technology Consulting \- End to end technology advisory for clients, including developing technology roadmaps, platform/cloud/data advisory as well as transformation excellence for a digital transformation
+* Data \& AI services \- Helping clients in harnessing the power of data and cutting\-edge analytics to drive intelligent decision\-making and transform businesses
+* Develop GenAI and Agentic AI solutions that create real business value for clients through process re\-invention
+
+ **The Role**
+
+* This role serves as the single\-threaded technical owner for enterprise\-scale AI and Generative AI solutions. The GenAI \& Data Solution Architect is responsible for defining, designing, and governing end\-to\-end AI systems \- from data ingestion and model orchestration to user experience and production deployment.
+* The role requires deep hands\-on expertise in Generative AI, LLMs, RAG, agentic architectures, and cloud\-native AI platforms, combined with strong architectural judgment to balance innovation, scalability, security, and cost.
+* We are seeking an innovator with deep expertise in Generative AI, large language models (LLMs), and cloud\-based AI platforms (Azure, AWS, or GCP). The candidate should be comfortable working in a fast\-paced, dynamic consulting environment, leading teams, experienced in building end\-to\-end AI strategy and roadmaps, ensuring customer success to scale enterprise\-wide AI programs
+
+ **How you will contribute**
+
+ **1\. AI \& Data Architecture**
+
+* Own end\-to\-end AI and data architecture, including ingestion, feature engineering, model layers, orchestration, APIs, and UI integration
+* Define reference architectures for GenAI, predictive ML, and hybrid AI systems
+* Ensure alignment with enterprise platforms such as ERP, CMMS, Data Lakes, and IAM
+* Design and govern AI operating models (MLOps / LLMOps), standardizing model development, deployment, monitoring, and iteration
+* Establish CI/CD pipelines, monitoring, and retraining workflows using tools such as Azure DevOps, GitHub Actions, or AWS CodePipeline
+* Build production\-grade AI microservices and APIs using Python, Flask, FastAPI, Docker, and Kubernetes
+* Continuously optimize AI systems for performance, scalability, reliability, and operational efficiency
+* Lead Responsible AI initiatives addressing ethics, bias, privacy, transparency, and regulatory compliance (e.g., EU AI Act)
+* Communicate complex AI concepts effectively to both technical and non\-technical stakeholders
+
+**2\. Generative AI Strategy \& Agentic Systems**
+
+* Architect and govern scalable, modular AI agent frameworks for enterprise reuse
+* Define event\-driven orchestration and agentic execution patterns (e.g., LangGraph, Temporal, reflection\-based workflows
+* Drive integration across GenAI platforms and internal frameworks to ensure consistency in observability, security, and governance
+* Develop reusable agent templates, blueprints, and context frameworks to accelerate onboarding of new use cases
+* Standardize GenAI design patterns including RAG, agentic workflows, tool calling, and memory/context management
+* Lead technical planning across delivery sprints, vendor integrations, and GenAI product releases
+* Design and build production\-aligned PoCs and MVPs, ensuring smooth evolution into scalable enterprise solutions
+* Evaluate feasibility across business value, data readiness, performance, and cost
+* Decide optimal use of LLMs versus classical ML or deterministic logic based on use case requirements
+
+**3\. Model Lifecycle, Quality, Cost \& Risk Management**
+
+* Optimize retrieval strategies, chunking, embeddings, grounding, and caching
+* Reduce hallucinations, latency, and token costs
+* Define evaluation frameworks covering accuracy, relevance, bias, explainability, and robustness
+* Establish prompt versioning, model versioning, retraining cadence, drift detection, and traceability across the AI lifecycle
+
+**4\. Governance \& Release Authority**
+
+* Define non\-functional requirements including SLAs, reliability, scalability, and cost controls
+* Act as the final technical authority for architecture decisions and production releases
+
+ **Qualifications**  
+
+
+
+  
+
+* 12\+ years of experience in AI/ML and data platforms, with deep focus on enterprise GenAI and LLM\-based system
+* Advanced degree (Master's or Ph.D.) in AI, Data Science, Computer Science, or a related field
+* Strong expertise in machine learning, deep learning, NLP, and generative models
+* Hands\-on experience with Python and frameworks such as PyTorch, TensorFlow, Hugging Face, scikit\-learn, LangChain, and agent frameworks
+* Experience building and deploying AI solutions on Azure, AWS, or GCP using services such as Azure ML, SageMaker, Vertex AI, and Kubernetes
+* Strong understanding of MLOps / LLMOps, APIs, and cloud\-native architectures
+* Proven experience delivering AI\-powered SaaS or internal platforms to automate workflows and enhance customer experience
+* Strong business acumen with the ability to align AI strategy with enterprise goals
+* Ability to engage senior stakeholders, lead cross\-functional teams, and mentor AI engineers and data scientists
+* Excellent problem\-solving, communication, and leadership skills, with adaptability to the rapidly evolving AI landscape
+
+ **Your journey at A\&M**
+
+We recognize that our people are the driving force behind our success, which is why we prioritize an employee experience that fosters each person's unique professional and personal development. Our robust performance development process promotes continuous learning, rewards your contributions, and fosters a culture of meritocracy. With top\-notch training and on\-the\-job learning opportunities, you can acquire new skills and advance your career. We prioritize your well\-being, providing benefits and resources to support you on your personal journey. Our people consistently highlight the growth opportunities, our unique, entrepreneurial culture, and the fun we have together as their favorite aspects of working at A\&M. The possibilities are endless for high\-performing and passionate professionals.",,https://in.indeed.com/cmp/Alvarez-&-Marsal,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/99f08e8304d82718f819395f00e29a54,https://www.alvarezandmarsal.com/,"New York, NY","10,000+",$1B to $5B (USD),"Alvarez & Marsal (A&M) is a global professional services firm specializing in turnaround and interim management, performance improvement and business advisory services.",,,,,,
+in-775dd32d957cce96,indeed,https://in.indeed.com/viewjob?jk=775dd32d957cce96,https://careers.alvarezandmarsal.com/jobs/17208410-associate-director-genai-and-data-solution-architect-global-capability-center,"Associate Director, GenAI & Data Solution Architect - Global Capability Center",Alvarez & Marsal,"HR, IN",2026-01-12,,,,,,,False,,,,,"Location: Gurugram, India  
+
+Date Posted: Jan 12, 2026
+
+  
+
+**Description**
+
+
+**About Alvarez \& Marsal**
+
+
+Alvarez \& Marsal (A\&M) is a global consulting firm with over 10,000 entrepreneurial, action and results\-oriented professionals in over 40 countries. We take a hands\-on approach to solving our clients' problems and assisting them in reaching their potential. Our culture celebrates independent thinkers and doers who positively impact our clients and shape our industry. The collaborative environment and engaging work—guided by A\&M's core values of Integrity, Quality, Objectivity, Fun, Personal Reward, and Inclusive Diversity \- are why our people love working at A\&M.
+
+ **The Team**
+
+
+Our DTS team covers the full breadth of Technology Consulting and M\&A services, including \-
+
+* Technology M\&A and Strategy \- Assist clients to manage the technology aspects and business enablement of complex M\&A, integrations and carve\-outs as well as post\-deal value creation
+* Technology Consulting – End to end technology advisory for clients, including developing technology roadmaps, platform/cloud/data advisory as well as transformation excellence for a digital transformation
+* Data \& AI services \- Helping clients in harnessing the power of data and cutting\-edge analytics to drive intelligent decision\-making and transform businesses
+* Develop GenAI and Agentic AI solutions that create real business value for clients through process re\-invention
+
+ **The Role**
+
+* This role serves as the single\-threaded technical owner for enterprise\-scale AI and Generative AI solutions. The GenAI \& Data Solution Architect is responsible for defining, designing, and governing end\-to\-end AI systems \- from data ingestion and model orchestration to user experience and production deployment.
+* The role requires deep hands\-on expertise in Generative AI, LLMs, RAG, agentic architectures, and cloud\-native AI platforms, combined with strong architectural judgment to balance innovation, scalability, security, and cost.
+* We are seeking an innovator with deep expertise in Generative AI, large language models (LLMs), and cloud\-based AI platforms (Azure, AWS, or GCP). The candidate should be comfortable working in a fast\-paced, dynamic consulting environment, leading teams, experienced in building end\-to\-end AI strategy and roadmaps, ensuring customer success to scale enterprise\-wide AI programs
+
+ **How you will contribute**
+
+**1\. AI \& Data Architecture**
+
+* Own end\-to\-end AI and data architecture, including ingestion, feature engineering, model layers, orchestration, APIs, and UI integration
+* Define reference architectures for GenAI, predictive ML, and hybrid AI systems
+* Ensure alignment with enterprise platforms such as ERP, CMMS, Data Lakes, and IAM
+* Design and govern AI operating models (MLOps / LLMOps), standardizing model development, deployment, monitoring, and iteration
+* Establish CI/CD pipelines, monitoring, and retraining workflows using tools such as Azure DevOps, GitHub Actions, or AWS CodePipeline
+* Build production\-grade AI microservices and APIs using Python, Flask, FastAPI, Docker, and Kubernetes
+* Continuously optimize AI systems for performance, scalability, reliability, and operational efficiency
+* Lead Responsible AI initiatives addressing ethics, bias, privacy, transparency, and regulatory compliance (e.g., EU AI Act)
+* Communicate complex AI concepts effectively to both technical and non\-technical stakeholders
+
+**2\. Generative AI Strategy \& Agentic Systems**
+
+* Architect and govern scalable, modular AI agent frameworks for enterprise reuse
+* Define event\-driven orchestration and agentic execution patterns (e.g., LangGraph, Temporal, reflection\-based workflows
+* Drive integration across GenAI platforms and internal frameworks to ensure consistency in observability, security, and governance
+* Develop reusable agent templates, blueprints, and context frameworks to accelerate onboarding of new use cases
+* Standardize GenAI design patterns including RAG, agentic workflows, tool calling, and memory/context management
+* Lead technical planning across delivery sprints, vendor integrations, and GenAI product releases
+* Design and build production\-aligned PoCs and MVPs, ensuring smooth evolution into scalable enterprise solutions
+* Evaluate feasibility across business value, data readiness, performance, and cost
+* Decide optimal use of LLMs versus classical ML or deterministic logic based on use case requirements
+
+**3\. Model Lifecycle, Quality, Cost \& Risk Management**
+
+* Optimize retrieval strategies, chunking, embeddings, grounding, and caching
+* Reduce hallucinations, latency, and token costs
+* Define evaluation frameworks covering accuracy, relevance, bias, explainability, and robustness
+* Establish prompt versioning, model versioning, retraining cadence, drift detection, and traceability across the AI lifecycle
+
+**4\. Governance \& Release Authority**
+
+* Define non\-functional requirements including SLAs, reliability, scalability, and cost controls
+* Act as the final technical authority for architecture decisions and production releases
+ **Qualifications**
+
+* 12\+ years of experience in AI/ML and data platforms, with deep focus on enterprise GenAI and LLM\-based system
+* Advanced degree (Master’s or Ph.D.) in AI, Data Science, Computer Science, or a related field
+* Strong expertise in machine learning, deep learning, NLP, and generative models
+* Hands\-on experience with Python and frameworks such as PyTorch, TensorFlow, Hugging Face, scikit\-learn, LangChain, and agent frameworks
+* Experience building and deploying AI solutions on Azure, AWS, or GCP using services such as Azure ML, SageMaker, Vertex AI, and Kubernetes
+* Strong understanding of MLOps / LLMOps, APIs, and cloud\-native architectures
+* Proven experience delivering AI\-powered SaaS or internal platforms to automate workflows and enhance customer experience
+* Strong business acumen with the ability to align AI strategy with enterprise goals
+* Ability to engage senior stakeholders, lead cross\-functional teams, and mentor AI engineers and data scientists
+* Excellent problem\-solving, communication, and leadership skills, with adaptability to the rapidly evolving AI landscape
+
+ **Your journey at A\&M**
+
+We recognize that our people are the driving force behind our success, which is why we prioritize an employee experience that fosters each person’s unique professional and personal development. Our robust performance development process promotes continuous learning, rewards your contributions, and fosters a culture of meritocracy. With top\-notch training and on\-the\-job learning opportunities, you can acquire new skills and advance your career. We prioritize your well\-being, providing benefits and resources to support you on your personal journey. Our people consistently highlight the growth opportunities, our unique, entrepreneurial culture, and the fun we have together as their favorite aspects of working at A\&M. The possibilities are endless for high\-performing and passionate professionals.
+
+
+**Inclusive Diversity**
+-----------------------
+
+
+A\&M’s entrepreneurial culture celebrates independent thinkers and doers who can positively impact our clients and shape our industry. The collaborative environment and engaging work—guided by A\&M’s core values of Integrity, Quality, Objectivity, Fun, Personal Reward, and Inclusive Diversity—are the main reasons our people love working at A\&M. Inclusive Diversity means we embrace diversity, and we foster inclusiveness, encouraging everyone to bring their whole self to work each day. It runs through how we recruit, develop employees, conduct business, support clients, and partner with vendors. It is the A\&M way.
+
+
+**Equal Opportunity Employer**
+------------------------------
+
+
+It is Alvarez \& Marsal’s practice to provide and promote equal opportunity in employment, compensation, and other terms and conditions of employment without discrimination because of race, color, creed, religion, national origin, ancestry, citizenship status, sex or gender, gender identity or gender expression (including transgender status), sexual orientation, marital status, military service and veteran status, physical or mental disability, family medical history, genetic information or other protected medical condition, political affiliation, or any other characteristic protected by and in accordance with applicable laws. .
+
+
+**Unsolicited Resumes from Third\-Party Recruiters**
+----------------------------------------------------
+
+
+Please note that as per A\&M policy, we do not accept unsolicited resumes from third\-party recruiters unless such recruiters are engaged to provide candidates for a specified opening. Any employment agency, person or entity that submits an unsolicited resume does so with the understanding that A\&M will have the right to hire that applicant at its discretion without any fee owed to the submitting employment agency, person or entity.",,https://in.indeed.com/cmp/Alvarez-&-Marsal,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/99f08e8304d82718f819395f00e29a54,https://www.alvarezandmarsal.com/,"New York, NY","10,000+",$1B to $5B (USD),"Alvarez & Marsal (A&M) is a global professional services firm specializing in turnaround and interim management, performance improvement and business advisory services.",,,,,,
+in-d40c08b0659396bf,indeed,https://in.indeed.com/viewjob?jk=d40c08b0659396bf,https://apply.ukg.com/careers/job/893392763266,Sr Principal Data Engineer,UKG,"KA, IN",2026-01-09,,,,,,,False,,,,UKGCareers@ukg.com,"**Job description****Company and benefits**
+Job ID**SRPRI017125**
+Employment Type**Regular**
+Work Style**hybrid**
+Location**Bangalore,INKA,India**
+Travel**Up to 25%**
+Role**Sr Principal Data Engineer**
+Why UKG:
+
+
+
+At UKG, the work you do matters. The code you ship, the decisions you make, and the care you show a customer all add up to real impact. Today, tens of millions of workers start and end their days with our workforce operating platform. Helping people get paid, grow in their careers, and shape the future of their industries. That’s what we do.
+
+
+
+We never stop learning. We never stop challenging the norm. We push for better, and we celebrate the wins along the way. Here, you’ll get flexibility that’s real, benefits you can count on, and a team that succeeds together. Because at UKG, your work matters—and so do you.  
+
+  
+
+Senior Principal Data Engineer, Enterprise Data \& Analytics Office) \- P6  
+
+  
+
+About the Role  
+
+As a Senior Principal Data Engineer (P6\) within the Enterprise Data \& Analytics Office (EDAO), you will play a strategic leadership role in shaping UKG’s enterprise data ecosystem. You will architect next\-generation data platforms and solutions that advance EDAO’s mission — empowering every decision\-maker with the right insights at the right time through a connected data ecosystem and trusted autonomous agents.  
+
+  
+
+This role spans data strategy, architecture, and delivery, with responsibility for designing scalable, governed, and AI\-ready data capabilities across UKG. You will collaborate with enterprise and domain teams to deliver strategic initiatives such as the Nexus Unified Data Platform, Data Mesh enablement, and governed analytics modernization.  
+
+  
+
+Key Responsibilities  
+
+  
+
+Strategic Leadership \& Architecture  
+
+* Define and drive the enterprise data architecture strategy, aligning with EDAO’s vision, UKG’s business imperatives (Growth, Innovation, IPO Readiness), and cloud modernization goals.
+* Architect and evolve data mesh and medallion frameworks (Bronze–Silver–Gold) across domains, enabling scalable, federated, and governed data products.
+* Partner with Enterprise Architecture (EA) and AI teams to align platform modernization, AI enablement, and integration strategies.
+* Evaluate emerging technologies (Databricks, BigQuery, Vertex AI, Atlan, Dataplex) and guide adoption to ensure UKG’s data landscape remains modern, compliant, and future\-ready.
+
+
+Solution Architecture \& Delivery  
+
+* Translate business strategies and analytics needs into reference architectures and technical blueprints.
+* Oversee design and implementation of complex data solutions — from ingestion to curation to consumption — that are performant, secure, and compliant (SOX, PCI).
+* Ensure architectural alignment across Data Platform Simplification, Customer 360, Metrics Operationalization, and AI/ML enablement initiatives.
+* Standardize data modeling practices (conceptual, logical, physical) across EDAO and business domains.
+
+  
+
+Governance, Quality \& Standards  
+
+* Lead definition and adoption of enterprise standards for data modeling, lineage, and metadata management.
+* Partner with the Data Governance Office to embed governance\-by\-design principles into data pipelines and platforms.
+* Establish frameworks for data quality, policy enforcement, and metadata traceability using Unity Catalog, Atlan, and Dataplex.
+* Promote security\-first architecture ensuring protection of sensitive data (PII, financial, regulatory).
+
+  
+
+Thought Leadership \& Collaboration  
+
+* Serve as a trusted advisor to senior leadership, influencing strategic data decisions and investment priorities.
+* Act as a thought leader within EDAO, driving innovation in cloud data engineering, self\-service analytics, and AI adoption.
+* Collaborate with cross\-functional leaders in Finance, CX, GTM, and Engineering to operationalize data\-driven decision\-making.
+* Represent UKG in external architecture, governance, and analytics communities as an ambassador for excellence.
+
+  
+
+Mentorship \& Organizational Impact  
+
+* Mentor and coach architects, engineers, and analysts, fostering a culture of technical excellence and continuous learning.
+* Build architecture capability maturity across teams through reusable patterns, design reviews, and governance forums.
+* Drive continuous improvement in platform performance, cost optimization, and architectural simplicity.
+
+  
+
+Qualifications  
+
+* Bachelor’s or Master’s degree in Computer Science, Engineering, or related field (or equivalent experience).
+* 12\+ years in enterprise data architecture, engineering, and analytics roles with progressive leadership.
+* Deep expertise in cloud data ecosystems — especially GCP (BigQuery, Dataplex, Pub/Sub, Dataflow, Vertex AI) and Databricks (Delta Lake, DLT, Unity Catalog).
+* Proven experience with data lakehouse architectures, and governance frameworks.
+* Mastery in data modeling (star, snowflake, 3NF, denormalized, semantic models).
+* Strong understanding of AI/ML lifecycle, MLOps, and data science enablement.
+* Demonstrated success leading complex cross\-functional programs with measurable business impact.
+* Experience building SOX\- and PCI\-compliant data solutions with enterprise\-level auditability.
+* Exceptional communication, stakeholder influence, and strategic storytelling skills.
+* Proven ability to operate at executive altitude while maintaining technical depth.
+
+  
+
+Preferred Qualifications  
+
+* Experience in Data Mesh architecture enablement within large\-scale enterprises.
+* Familiarity with Atlan, Dataplex, dbt, Terraform, and Cloud Composer.
+* Previous experience in a governed, federated analytics organization or horizontal data office.
+* Strong knowledge of FinOps and cloud cost optimization strategies.
+* Exposure to Conversational Analytics, LLMOps, or AI Agents integration.
+  
+
+Company Overview:
+
+  
+
+
+
+UKG is the Workforce Operating Platform that puts workforce understanding to work. With the world's largest collection of workforce insights, and people\-first AI, our ability to reveal unseen ways to build trust, amplify productivity, and empower talent, is unmatched. It's this expertise that equips our customers with the intelligence to solve any challenge in any industry — because great organizations know their workforce is their competitive edge. Learn more at ukg.com.
+
+  
+
+
+
+UKG is proud to be an equal opportunity employer and is committed to promoting diversity and inclusion in the workplace, including the recruitment process.
+
+
+
+Disability Accommodation in the Application and Interview Process
+
+
+
+For individuals with disabilities that need additional assistance at any point in the application and interview process, please email UKGCareers@ukg.com
+
+
+NOTICE ON HIRING SCAMS  
+
+UKG will never ask you for a copy of your driver’s license, social security card, or passport during a job inter  
+
+
+ABOUT OUR JOB DESCRIPTIONS  
+
+All job descriptions are written to accurately reflect the open job and include general work responsibilities. They do not present a comprehensive, detailed inventory of all duties, responsibilities, and qualifications required for the job. Management reserves the right to revise the job or require that other or different tasks be performed if or when circumstances change.",,https://in.indeed.com/cmp/Ukg-6,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/b34ed47baabd681dd8ac5edd3dce983d,https://www.ukg.com/,"Weston, FL","10,000+",$1B to $5B (USD),"Here at UKG, our purpose is people. UKG combines the strength and innovation of Ultimate Software and Kronos, uniting two award-winning, employee-centered cultures.",,,,,,
+in-b6ba87f838a9b49e,indeed,https://in.indeed.com/viewjob?jk=b6ba87f838a9b49e,https://artingdigital.zohorecruit.in/jobs/Careers/107457000057810862/Senior-Python-AI-Engineer?source=Indeed,Senior Python AI Engineer,Arting Digital Private Limited,"Jalalabad, UP, IN",2026-01-09,,,,,,,True,,,,,"### **Position:** **Senior Python AI Engineer**
+**Experience:** **7\+ Years**
+**Location:** **Remote**
+**Notice Period:** **Immediate – 15 Days**
+
+#### **Job Summary**
+
+  
+
+We are hiring a **Senior Python AI Engineer** to lead the design and delivery of AI and Generative AI solutions for global clients.
+
+#### **Key Responsibilities**
+
+* Design and develop Python\-based AI systems, APIs, and microservices
+* Build and manage GenAI and agentic AI workflows using modern LLM frameworks
+* Lead end\-to\-end AI project delivery, from requirements to production
+* Design LLM pipelines, prompts, and agent orchestration systems
+* Ensure scalability, security, and reliability of AI solutions
+* Mentor junior engineers and provide technical leadership
+* Collaborate with global clients to translate business needs into AI solutions
+
+#### **Required Skills**
+
+* 7\+ years of hands\-on Python development experience
+* Strong knowledge of FastAPI, Flask, Pydantic, SQLAlchemy
+* Experience with LLMs \& GenAI (OpenAI, Claude, Gemini, open\-source models)
+* Hands\-on with agentic AI frameworks (LangChain, LangGraph, LlamaIndex, etc.)
+* Experience with REST APIs, microservices, and cloud\-native architectures
+* Cloud deployment experience on AWS / Azure / GCP
+* Familiarity with MLOps/LLMOps, CI/CD, Git, and production pipelines
+
+#### **Good to Have**
+
+* Advanced cloud architecture experience
+* Model monitoring, evaluation, and observability exposure",,https://in.indeed.com/cmp/Arting-Digital-Private-Limited,,,,,,,,,,,,
+in-3238fcab4a530c17,indeed,https://in.indeed.com/viewjob?jk=3238fcab4a530c17,https://maersk.wd3.myworkdayjobs.com/en-US/Maersk_Careers/job/India-Bengaluru-560064/Senior-AI-ML-Engineer_R170177,Senior AI/ML Engineer,MAERSK,"KA, IN",2026-01-09,fulltime,,,,,,False,,,,accommodationrequests@maersk.com,"Data AI/ML (Artificial Intelligence and Machine Learning) Engineering involves the use of algorithms and statistical models to enable systems to analyze data, learn patterns, and make data\-driven predictions or decisions without explicit human programming. AI/ML applications leverage vast amounts of data to identify insights, automate processes, and solve complex problems across a wide range of fields, including healthcare, finance, e\-commerce, and more. AI/ML processes transform raw data into actionable intelligence, enabling automation, predictive analytics, and intelligent solutions. Data AI/ML combines advanced statistical modeling, computational power, and data engineering to build intelligent systems that can learn, adapt, and automate decisions.
+Senior AI/ML Engineer  
+
+
+
+  
+
+A.P. Moller – Maersk is the global leader in container shipping services. The business operates in 130 countries and employs 80,000 staff. An integrated container logistics company, Maersk aims to connect and simplify its customers’ supply chains.
+  
+
+  
+
+Today, we have more than 180 nationalities represented in our workforce across 131 Countries and this mean, we have elevated level of responsibility to continue to build inclusive workforce that is truly representative of our customers and their customers and our vendor partners too.
+
+
+Shape the Future with Generative AI
+
+
+Are you passionate about harnessing cutting\-edge Generative AI to create transformative real\-world applications? Do you dream of building autonomous systems that learn, adapt, and make decisions independently? At Maersk, we’re reimagining how businesses solve complex problems with the power of Generative AI and Autonomous Agents.
+
+
+We’re looking for a Gen AI Engineer to join our dynamic team and play a pivotal role in building AI solutions that will define the future of intelligent systems. If you're excited about applying your expertise to projects that disrupt industries and drive measurable impact, we want to hear from you! This is an exciting opportunity for self\-motivated engineers with technical expertise, creative problem\-solving skills, and a talent for disruptive process transformation using Gen AI
+
+
+What you’ll do:
+
+
+* Lead with autonomy: Take ownership of Gen AI projects from ideation to deployment, pushing boundaries of innovation
+* Design the future: Develop and fine\-tune Generative AI models (LLMs, diffusion models, GANs, VAEs, etc.) to optimize SCP business processes and enhance productivity;
+* Empower AI agents: Create agent AI architectures for autonomous decision\-making, task delegation, and multi\-agent collaboration using Agentic AI frameworks like AutoGPT.
+* Innovate with LLM’s: Build \& optimize LLM’s applications, leveraging RAG and build robust Machine Learning pipelines for NLP, Multimodal AI tasks;
+* Work with cutting\-edge tools: Harness the power of Vector Databases (e.g., Pinecone, FAISS, ChromaDB) and LLM APIs (OpenAI, Anthropic, Hugging Face, Mistral, Llama).
+* Collaborate for impact: Partner with cross\-functional teams to integrate AI solutions into real\-world applications like chatbots, copilots, automation tools, etc.).
+* Stay ahead: Perform continuous research on state\-of\-the\-art AI methodologies, exploring advancements in Generative AI, Autonomous Agents, andNLP to drive innovation.
+
+Required Skills \& Experience \[Must Have]
+
+
+* 9–13 years of experience in AI/ML and software engineering
+* Proven experience building multi\-agent AI systems in production environments
+* Hands\-on experience designing and operating MCP servers for agent orchestration and lifecycle management
+* Strong experience with LLMs, RAG, and agent frameworks (LangGraph, AutoGen, CrewAI, custom frameworks, etc.)
+* Solid background in deep learning (PyTorch, TensorFlow) and traditional ML techniques
+* Strong understanding of agent communication patterns, tool use, memory, and planning
+* Expertise in Python and backend service development (FastAPI, REST/gRPC)
+* Experience deploying AI systems in cloud environments (AWS, Azure, or GCP)
+* Strong experience with observability, monitoring, and reliability engineering for AI services
+* Hands\-on knowledge of MLOps / LLMOps best practices
+
+Good to Have
+
+
+* Experience with event\-driven or distributed agent systems
+* Knowledge of security, access control, and compliance in agent platforms
+* Experience optimizing latency and cost in multi\-agent and LLM\-heavy systems
+
+Maersk is committed to a diverse and inclusive workplace, and we embrace different styles of thinking. Maersk is an equal opportunities employer and welcomes applicants without regard to race, colour, gender, sex, age, religion, creed, national origin, ancestry, citizenship, marital status, sexual orientation, physical or mental disability, medical condition, pregnancy or parental leave, veteran status, gender identity, genetic information, or any other characteristic protected by applicable law. We will consider qualified applicants with criminal histories in a manner consistent with all legal requirements.  
+
+
+
+We are happy to support your need for any adjustments during the application and hiring process. If you need special assistance or an accommodation to use our website, apply for a position, or to perform a job, please contact us by emailing accommodationrequests@maersk.com .
+
+
+CORE SKILLS Programming: Writing code to manipulate, analyze, and visualize data, often using languages like Python, R, and SQL. Proficiency Level: Proficient AI \& Machine Learning: Creating systems that can perform tasks that typically require human intelligence. Using Machine learning (ML), a subset of AI that uses algorithms to learn from and make predictions based on data Proficiency Level: Proficient Data Analysis: Inspecting, cleansing, transforming, and modeling data to discover useful information, draw conclusions, and support decision\-making Proficiency Level: Proficient Machine Learning Pipelines: Using automated workflows that manage the end\-to\-end process of training and deploying machine learning models. Proficiency Level: Advanced Model Deployment: Making a trained machine learning model available for use in production environments. Proficiency Level: Advanced SPECIALIZED SKILLS Big Data Technologies: Using continuous integration and continuous delivery (CI/CD) pipelines to automate the process of software development, including building, testing, and deploying code Natural Language Processing (NLP): Focusing on the interaction between computers and humans through natural language. Data Architecture: Designing and structuring of data systems, ensuring that data is stored, managed, and utilized efficiently Data Processing Frameworks: Using tools and libraries to process large data sets efficiently, such as Apache Hadoop and Apache Spark. Technical Documentation: Creating and maintaining documentation that explains the functionality, use, and maintenance of software or systems. Deep Learning: Using a subset of machine learning involving neural networks with many layers, used to model complex patterns in data. Statistical Analysis: Collecting and analyzing data to identify patterns and trends, and to make informed decisions. Data Engineering: Designing and building systems for collecting, storing, and analyzing data at scale. Definition of Proficiency Levels: Foundational: This is the entry level of the skill, typically expected when starting a new role or working with the skill for the first time. You rely on strong manager support, coaching, and training as you build the capability to progress to higher proficiency levels. Proficient: This is the level at which you are considered effective in the skill. You demonstrate more than just functional competence—you begin to have a noticeable impact in your role by applying the skill consistently and meaningfully. You require only minimal support, coaching, or training to apply the skill successfully. Advanced: This is the level where you move beyond meeting expectations to actively leading, influencing, and delivering considerable impact across the wider business. You are seen as a role model, demonstrate the skill independently, and require little to no manager support.",,https://in.indeed.com/cmp/Maersk,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/da6eac5322453a95f0044e20d3412b9f,https://www.maersk.com/careers,"Copenhagen, Capital Region","10,000+",more than $10B (USD),,,,,,,
+in-0f9805e4278ca060,indeed,https://in.indeed.com/viewjob?jk=0f9805e4278ca060,https://jaiinfoway.com/careers/senior-artificial-intelligence-engineer,Senior Artificial Intelligence Engineer,JAI INFOWAY,"JH, IN",2026-01-09,fulltime,,,,,,True,,,,,"AI Development* 
+
+
+Ranchi* 
+
+**Full Time**
+
+
+Posted: 12/31/2025**Job Description**
+-------------------
+
+
+Lead GenAI Engineers (5–8 yrs) to build production\-grade solutions using LLMs, RAG, and agentic AI for global clients in healthcare, fintech, and real estate. Strong Python; solid understanding of LLMs, prompt engineering, and RAG concepts. Hands\-on experience with at least one LLM stack (OpenAI/Anthropic/Bedrock/Gemini) and LangChain/LlamaIndex. Experience with Git and at least one cloud (AWS/Azure/GCP). Good to Have Experience with tools/agents (AutoGen, CrewAI, Semantic Kernel, or similar) and MLOps/LLMOps tooling.
+
+**Key Responsibilities**
+------------------------
+
+* AI / GenAI Engineer \& Lead LLMs \& Agentic AI
+* Company: Jaiinfoway
+* Location: \[Bangalore / Pune / Remote – India]
+* Job Description
+* Jaiinfoway is hiring AI / GenAI Engineers (1–3 yrs) and Lead GenAI Engineers (5–8 yrs) to build production‑grade solutions using LLMs, RAG, and agentic AI for global clients in healthcare, fintech, and real estate.
+* Key Responsibilities – AI / GenAI Engineer (1–3 yrs)
+* Build and fine‑tune LLM‑based applications: chatbots, copilots, document Q\&A, and workflow assistants.
+* Implement RAG pipelines using LangChain / LlamaIndex and vector databases (Pinecone, FAISS, etc.).
+* Develop multi‑step/agentic workflows (task decomposition, tools, routing, memory) for real business processes.
+* Integrate models via APIs/microservices (Python, FastAPI/Flask) and work with frontend/backend teams.
+* Evaluate LLM apps using qualitative and quantitative metrics (latency, cost, hallucinations, accuracy).
+* Additional – Lead GenAI Engineer (5–8 yrs)
+* Own end‑to‑end LLM \& agentic architecture: model/provider selection, context strategy, safety \& security.
+* Design reusable agent frameworks (orchestration, tools, observability) on AWS/Azure/GCP.
+* Lead and mentor a small team; review prompts, flows, and code; enforce GenAI best practices and guardrails.
+* Work directly with clients to shape the GenAI roadmap, PoCs, and production rollouts.
+* Required Skills
+* Strong Python; solid understanding of LLMs, prompt engineering, and RAG concepts.
+* Hands‑on experience with at least one LLM stack (OpenAI/Anthropic/Bedrock/Gemini) and LangChain/LlamaIndex.
+* Experience with Git and at least one cloud (AWS/Azure/GCP).
+* Good to Have
+* Experience with tools/agents (AutoGen, CrewAI, Semantic Kernel, or similar) and MLOps/LLMOps tooling.
+
+**Requirements**
+----------------
+
+* Graduate or Post Graduate / BCA/MCA
+
+**Benefits \& Perks**
+---------------------
+
+* 2\.5LPA to 7\.5LPA
+
+  
+### **About Jai**
+
+
+Jai is a leading software development company with a mission to transform businesses through innovative technology solutions. We work with clients across various industries to build powerful, scalable, and user\-friendly applications.
+
+
+
+
+### **Job Summary**
+
+
+Department
+AI Development
+Location
+Ranchi
+Employment Type
+Full Time
+Posted Date
+2026\-01\-01T00:00:00\.000Z",,https://in.indeed.com/cmp/Jai-Infoway,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/d5adfa6aac2655dd001466e9211395d5,https://jaiinfoway.com,"Ranchi
+Pune
+Miami (United States )",51 to 200,,"Using cutting-edge technology, blockchain, robotics, artificial intelligence, and the internet of things, Jai Infoway Pvt. Ltd. is able to efficiently understand your business needs and solve them.",,,,,,
+in-0ae76d2227b6a68a,indeed,https://in.indeed.com/viewjob?jk=0ae76d2227b6a68a,https://eeho.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/job/321729,Senior Applications Engineer,Oracle,"TS, IN",2026-01-07,fulltime,,,,,,False,,,,,"Analyze, design develop, troubleshoot and debug software programs for commercial or end user applications. Writes code, completes programming and performs testing and debugging of applications.
+  
+
+  
+
+As a member of the software engineering division, you will perform high\-level design based on provided external specifications. Specify, design and implement minor changes to existing software architecture. Build highly complex enhancements and resolve complex bugs. Build and execute unit tests and unit plans. Review integration and regression test plans created by QA. Communicate with QA and porting engineering as necessary to discuss minor changes to product functionality and to ensure quality and consistency across specific products.
+  
+
+  
+
+Duties and tasks are varied and complex needing independent judgment. Fully competent in own area of expertise. May have project lead role and or supervise lower level personnel. BS or MS degree or equivalent experience relevant to functional area. 4 years of software engineering or related experience.  
+
+
+
+Responsibilities displayed in the job posting  
+
+  
+
+Oracle Fleet Manager (FM) is a very critical application to manage the Cloud environments, register customer and licenses. Fleet Manager is the core system for Change Manager processing and automation of Cloud environment patching and other system change tracking.
+
+
+Fleet Manager is core system for tracking, automatic and managing the cloud environment activities.
+  
+
+Fleet manager is a secure system which provides ability for difference user will respective riles to manage the cloud related activities, it allows user to:
+   
+
+* Manage Customers and related configuration.
+* Manage Customer Success Administrator/Viewer to assign customers.
+* Environment Administrators, Operations and Provisioning team view and manage the various configuration and setup properties at environment level.
+* Environment schedules are planned using FM system
+* Data Center and other OCI information is maintained in FM system.
+* Patch Bundles, Repository and Change Requests are created and life cycle is managed in FM system
+* Playbook and Runbook allows user to track and communicate to end user
+* User assign CRs to engineer and automated the system
+* FM System is integrated to various system like E2E, JC, etc. for CR processing activities, and get back the status.
+* CR Processing allows user to track and update the status
+* FM System has robust notification functionality for internal and external communications.
+Job Requirements:  
+
+  
+
+
+
+Responsibilities:
+ 
+
+* Participate in the overall development effort and complete cycle of the project
+* Analyze complex technical situations and propose creative, effective solutions
+* Investigate existing and new technologies to build new features and integration points
+* Provide high\-quality design, code and maintian product features using Oracle Fusion technologies
+* Interact closely with all the stake holders such as other Development teams, QA, Documentation, Release, Customers etc in ensuring eventual success of the product
+* Rapidly develop AI\-based prototypes and demos to showcase solutions and ideas to stakeholders, incorporating their feedback into future development iterations.
+* Define and implement sophisticated evaluation metrics to measure and analyze model performance.
+* Conduct quantitative and qualitative analysis, including error analysis, to enhance model development and data quality.
+* Prepare detailed reports with evidence\-based insights to support strategic decision\-making.
+* Work closely with team members to ensure successful and timely service integration.
+* Participate actively in project planning, review, and retrospective sessions.
+* Write production\-grade code, advocate for best coding practices, and conduct peer reviews to maintain high engineering standards.
+* Collaborate with internal and external team to collect and curate high\-quality data for building and testing AI models based solution.
+
+Minimum Qualifications:
+ 
+
+* Strong academic background from top\-tier institutes
+* 4 \- 6 years of experience in product development with Java and J2EE technologies
+* Proven experience designing and deploying scalable AI models for production environments, with a successful track record of applying AI in real\-world applications. Experience building applications using Large Language Models (LLMs) is a strong advantage.
+* Demonstrated hands\-on experience in full\-stack development of generative AI models, from data preparation to model deployment, ensuring end\-to\-end AI system functionality.
+* Practical experience with emerging LLM frameworks and plugins such as LangChain, LlamaIndex, VectorStores, Retrievers, LLM Cache, LLMOps (MLFlow), LMQL, and Guidance, showcasing your ability to stay at the forefront of AI technology.
+* Proven experience in designing data collection and annotation solutions, as well as systematic evaluation processes crucial for developing and maintaining high\-quality production systems.
+* Strong collaboration skills with cross\-functional teams, including data scientists, software engineers, and product managers, to integrate AI solutions into broader systems and deliver impactful results.
+* Demonstrated experience in optimizing, scaling, and monitoring AI systems in production environments, ensuring models meet performance, reliability, and scalability requirements.
+* Analyze, design develop, troubleshoot and debug software programs for commercial or end user applications. Writes code, completes programming and performs testing and debugging of applications.
+* Experience with Java view technologies such as JSP and JSF and demonstrated knowledge of J2EE, Java, XML, Web Services, Micro Services, REST, Object\-Oriented Design
+* Experience developing web applications using at least one popular web framework (JSF, GWT, Spring MVC)
+* Strong knowledge in Object Oriented Programming
+* Good understanding Oracle Database programming including Database design, Oracle SQL and PL/SQL
+* Excellent communication, analytical and problem solving skills
+* Should be a fast learner and be able to collaborate with senior members / architects in the team
+* Ability to excel under under pressure
+* Familiarity with SOA Suite, Web Application Automation Testing is a big plus, but not mandatory
+
+  
+
+As a member of the software engineering division, you will perform high\-level design based on provided external specifications. Specify, design and implement minor changes to existing software architecture. Build highly complex enhancements and resolve complex bugs. Build and execute unit tests and unit plans. Review integration and regression test plans created by QA. Communicate with QA and porting engineering as necessary to discuss minor changes to product functionality and to ensure quality and consistency across specific products.
+  
+
+  
+
+Duties and tasks are varied and complex needing independent judgment. Fully competent in own area of expertise. May have project lead role and or supervise lower level personnel. BS or MS degree or equivalent experience relevant to functional area. 4 years of software engineering or related experience.
+  
+Job Description
+
+
+Oracle Fleet Manager (FM) is a very critical application to manage the Cloud environments, register customer and licenses. Fleet Manager is the core system for Change Manager processing and automation of Cloud environment patching and other system change tracking.
+
+
+Fleet Manager is core system for tracking, automatic and managing the cloud environment activities.
+  
+
+Fleet manager is a secure system which provides ability for difference user will respective riles to manage the cloud related activities, it allows user to:
+   
+
+* Manage Customers and related configuration.
+* Manage Customer Success Administrator/Viewer to assign customers.
+* Environment Administrators, Operations and Provisioning team view and manage the various configuration and setup properties at environment level.
+* Environment schedules are planned through FM system
+* Data Center and exa\-pair information is maintained in FM system.
+* Patch Bundles, Repository and Change Requests are created and life cycle is managed in FM system
+* Playbook and Run\-book allows user to track and communicate to end user
+* User assign CRs to engineer and automated the system
+* FM System is integrated to various system like E2E, JC, etc. for CR processing activities, and get back the status.
+* CR Processing allows user to track and update the status
+* FM System has robust notification functionality for internal and external communications.
+Job Requirements:  
+
+  
+
+
+
+Responsibilities:
+   
+
+* Participate in the overall development effort and complete cycle of the project
+* Analyze complex technical situations and propose creative, effective solutions
+* Investigate existing and new technologies to build new features and integration points
+* Provide high\-quality design, code and maintian product features using Oracle Fusion technologies
+* Interact closely with all the stake holders such as other Development teams, QA, Documentation, Release, Customers etc in ensuring eventual success of the product
+* Rapidly develop AI\-based prototypes and demos to showcase solutions and ideas to stakeholders, incorporating their feedback into future development iterations.
+* Define and implement sophisticated evaluation metrics to measure and analyze model performance.
+* Conduct quantitative and qualitative analysis, including error analysis, to enhance model development and data quality.
+* Prepare detailed reports with evidence\-based insights to support strategic decision\-making.
+* Work closely with team members to ensure successful and timely service integration.
+* Participate actively in project planning, review, and retrospective sessions.
+* Write production\-grade code, advocate for best coding practices, and conduct peer reviews to maintain high engineering standards.
+* Collaborate with internal and external team to collect and curate high\-quality data for building and testing AI models based solution.
+
+Minimum Qualifications:
+   
+
+* Strong academic background from top\-tier institutes
+* 4 \- 6 years of experience in product development with Java and J2EE technologies
+* Proven experience designing and deploying scalable AI models for production environments, with a successful track record of applying AI in real\-world applications. Experience building applications using Large Language Models (LLMs) is a strong advantage.
+* Demonstrated hands\-on experience in full\-stack development of generative AI models, from data preparation to model deployment, ensuring end\-to\-end AI system functionality.
+* Practical experience with emerging LLM frameworks and plugins such as LangChain, LlamaIndex, VectorStores, Retrievers, LLM Cache, LLMOps (MLFlow), LMQL, and Guidance, showcasing your ability to stay at the forefront of AI technology.
+* Proven experience in designing data collection and annotation solutions, as well as systematic evaluation processes crucial for developing and maintaining high\-quality production systems.
+* Strong collaboration skills with cross\-functional teams, including data scientists, software engineers, and product managers, to integrate AI solutions into broader systems and deliver impactful results.
+* Demonstrated experience in optimizing, scaling, and monitoring AI systems in production environments, ensuring models meet performance, reliability, and scalability requirements.
+* Analyze, design develop, troubleshoot and debug software programs for commercial or end user applications. Writes code, completes programming and performs testing and debugging of applications.
+* Experience with Java view technologies such as JSP and JSF and demonstrated knowledge of J2EE, Java, XML, Web Services, Micro Services, REST, Object\-Oriented Design
+* Experience developing web applications using at least one popular web framework (JSF, GWT, Spring MVC)
+* Strong knowledge in Object Oriented Programming
+* Good understanding Oracle Database programming including Database design, Oracle SQL and PL/SQL
+* Excellent communication, analytical and problem solving skills
+* Should be a fast learner and be able to collaborate with senior members / architects in the team
+* Ability to excel under under pressure
+* Familiarity with SOA Suite, Web Application Automation Testing is a big plus, but not mandatory",Internet And Software,https://in.indeed.com/cmp/Oracle,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/7469a5861d5fac78de05b68853a2b2ee,https://oracle.com/careers,"2300 Oracle Way
+Austin, TX 78741","10,000+",more than $10B (USD),"Oracle is the cloud leader for global business. Our technologies are transforming the world and no matter how complex, they have one thing in common: making our shared future better.",,,,,,
+in-05df91a2180bf290,indeed,https://in.indeed.com/viewjob?jk=05df91a2180bf290,https://careers.ey.com/ey/job/Bengaluru-EY-GDS-Consulting-AI-and-DATA%C2%A0-Responsible-AI-Senior-KA-560016/1280461301/?feedId=338701&utm_source=Indeed&utm_campaign=EY_indeed,EY - GDS Consulting - AI and DATA - Responsible AI - Senior,EY,"KA, IN",2026-01-06,,,,,,,False,,,,,"At EY, you’ll have the chance to build a career as unique as you are, with the global scale, support, inclusive culture and technology to become the best version of you. And we’re counting on your unique voice and perspective to help EY become even better, too. Join us and build an exceptional experience for yourself, and a better working world for all.
+
+ **Responsible AI Engineer (Governance \& Safety) \- Senior**
+
+**Role summary**
+
+
+You will lead **AI governance, safety, and compliance engineering**—operationalizing **LLMOps/Agentic Ops**, security and privacy controls, **LLM evaluation**, and **guardrails/ethics** for production AI systems. The remit spans policy to code: frameworks, controls, tooling, documentation, red teaming, and continuous evaluation.
+
+ **Key responsibilities**
+
+* Establish and run **LLMOps/Agentic Ops practic**es (lifecycle, approvals, versioning, observability, incident response/playbooks) integrated with platform tooling.
+* Define and enforce **governance \& security** controls (PII protection, data residency, model access, content safety, jailbreak/prompt injection defenses), integrating with enterprise security.
+* Build **LLM evaluation** pipelines (groundedness/faithfulness, toxicity/PII, bias/fairness, robustness) and quality gates for pre prod and ongoing **post deployment** monitoring.
+* Implement **guardrails/ethics** (policy as code, allow/deny lists, safety filters, red teaming harnesses) and ensure compliant documentation (model cards, data sheets, DPIAs).
+* Contribute production grade **Python** libraries, policies, and **APIs** that product teams can adopt “as a service”; partner with platform teams on **AWS/Azure** controls.
+
+ **Must have skills**
+
+* **LLMOps/Agentic Ops** patterns and tooling
+* **Governance/Security** (threat modeling for LLMs, privacy, access controls)
+* **LLM Evaluation** frameworks (human\+automatic metrics; eval harnesses)
+* **Guardrails/Ethics** techniques and incident playbooks
+* **Python**
+* **AWS/Azure**
+* **API development** for governance services
+
+ **Good to have**
+
+* Familiarity with **RAG/advanced agentic AI** to guide safe design choices
+
+ **Qualifications \& experience**
+
+* B.Tech/M.Tech/MS in CS/EE or equivalent.
+* **4\+ years** in Responsible AI Engineering
+
+ **EY \| Building a better working world**
+
+  
+
+  
+
+EY exists to build a better working world, helping to create long\-term value for clients, people and society and build trust in the capital markets.
+
+  
+
+  
+
+Enabled by data and technology, diverse EY teams in over 150 countries provide trust through assurance and help clients grow, transform and operate.
+
+  
+
+  
+
+Working across assurance, consulting, law, strategy, tax and transactions, EY teams ask better questions to find new answers for the complex issues facing our world today.",,https://in.indeed.com/cmp/Ey,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/82174c7d7afe2380d2d4631ea183f866,https://www.ey.com,"London, England","10,000+",more than $10B (USD),"At EY, we are committed to building a better working world.",,,,,,
+in-74862ff66c869a3f,indeed,https://in.indeed.com/viewjob?jk=74862ff66c869a3f,https://careers-international-realpagepms.icims.com/jobs/12726/job?utm_source=indeed_integration&iis=Job%20Board&iisn=Indeed&indeed-apply-token=73a2d2b2a8d6d5c0a62696875eaebd669103652d3f0c2cd5445d3e66b1592b0f,Senior Manager,RealPage Inc,"TS, IN",2026-01-05,,,,,,,False,,,,,"Overview:
+
+BEST is modernizing our data capabilities to accelerate product innovation, data\-driven decision making, and AI\-enabled experiences. Today the organization operates with traditional data engineering practices; we are hiring a transformation leader who will modernize the platform, build production\-grade ML/AI capabilities, and embed responsible AI across the business.
+
+
+We’re hiring a strategic, hands\-on **Sr. Manager, Data Services** to own and scale BEST’s data platform and teams—leading engineers and managers across ingestion, transformation, platform services, data products/APIs, governance, and production ML/AI. You’ll be accountable for MLOps, model serving, and the people/processes to safely operationalize AI at scale, transforming a traditional data\-engineering function into an AI\-first, product\-oriented organization. This role requires deep technical expertise in data platforms, MLOps and LLM/AI patterns, plus proven people leadership and cross\-functional influence.
+
+
+Responsibilities:
+* + 12\+ years’ experience in data engineering, data platform, analytics, or ML engineering roles, with at least 3\+ years in a people\-/team\-management role.
+	+ Hands\-on experience building and operating large\-scale data platforms (data lakes/warehouses, Spark/Databricks, Snowflake/Redshift/BigQuery, streaming with Kafka/Kinesis).
+	+ Demonstrated track record of taking ML/AI projects from POC to production. Practical experience with MLOps tooling and pipelines (e.g., MLflow, Kubeflow, SageMaker, or equivalent).
+	+ Deep familiarity with model serving and inference architectures (real\-time and batch), model monitoring, automated retraining, and drift detection.
+	+ Strong engineering skills: Python / SQL (and/or Scala/Java), data pipeline frameworks, and versioned data/model workflows.
+	+ Experience with LLMs and modern AI application patterns: prompt engineering, retrieval\-augmented generation (RAG), knowledge graphs, LLM safety/guardrails, and LLMOps frameworks (e.g., LangChain, LlamaIndex).
+	+ Cloud platform experience (AWS / Azure / GCP) and experience designing cost\-efficient, production\-grade ML inference at scale.
+	+ Experience with data governance, cataloging (Amundsen/Atlas/Data Catalog), lineage and privacy compliance (GDPR/CCPA) in a production environment.
+	+ Excellent people and cross\-functional leadership skills, with strong communication, stakeholder influence, and program management ability.
+	+ Bachelor’s degree in Computer Science, Engineering, Data Science, or related field. Advanced degree (MS/PhD) in a quantitative or engineering discipline preferred.
+
+
+Qualifications: **Key responsibilities**
+
+* **Strategy \& Roadmap** — Define and operationalize a 12–24 month roadmap for Data Services that supports company data and AI goals (data APIs, platform, governance, ML pipelines, model serving and monitoring).
+* **Team Leadership** — Hire, mentor and grow a high\-performing team (data engineers, platform engineers, ML engineers, SREs). Build leadership bench and establish clear career paths.
+* **Data Platform Ownership** — Own the design, delivery, and run\-book for data platforms (data lake/warehouse, streaming, ingestion, processing, metadata/catalog, lineage and observability).
+* **ML/AI Enablement** — Partner with AI/ML teams to build repeatable ML pipelines and production model serving (batch \& real\-time). Lead MLOps adoption: model training, deployment, CI/CD, drift detection, and model governance.
+* **AI Productionization** — Drive production\-grade implementations of AI use\-cases (including large language models, retrieval\-augmented generation, knowledge graphs, agentic/automated workflows). Ensure safe, scalable, and cost\-efficient model serving and inference.
+* **Data Products \& APIs** — Deliver production data products and APIs consumed by analytics, product teams, and AI systems. Enable self\-service data and ML capabilities for downstream teams.
+* **Quality, Observability \& Governance** — Implement enterprise\-grade data quality, lineage, cataloging, access controls, and privacy/compliance practices. Partner with security and legal on policy for AI model usage and data privacy.
+* **Stakeholder Management** — Work cross\-functionally with product, engineering, marketing, sales, and COE to translate business needs into data and AI programs, prioritizing high\-impact work and measuring outcomes.
+* **Metrics \& Outcomes** — Define and report KPIs for platform reliability, time\-to\-insight, model accuracy/performance, cost, and adoption.",,https://in.indeed.com/cmp/Realpage-Inc-1,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/af652c32c7d9978394cbfcc81fdfce5d,https://www.realpage.com,"Richardson, TX","5,001 to 10,000",$500M to $1B (USD),RealPage is the leading global provider of AI-enabled software platforms to the real estate industry.,,,,,,
+in-73e393f65207a64c,indeed,https://in.indeed.com/viewjob?jk=73e393f65207a64c,https://careers.ey.com/ey/job/Chennai-EY-GDS-Consulting-AIA%C2%A0-GEN-AI-Senior-Manager-TN-600032/1271073101/?feedId=338701&utm_source=Indeed&utm_campaign=EY_indeed,EY - GDS Consulting - AIA - GEN AI - Senior Manager,EY,"TN, IN",2025-12-26,fulltime,,,,,,False,,,,,"At EY, we’re all in to shape your future with confidence.
+
+
+We’ll help you succeed in a globally connected powerhouse of diverse teams and take your career wherever you want it to go.
+
+
+Join EY and help to build a better working world.
+
+ **Function: Consulting Position: Senior Manager**
+
+**Department: Technology Consulting, D\&A Title: AI Architect (GenAI/AI Insurance)**
+
+**Position: Full Time Educational qualification: BTech/Masters/PhD**
+
+  
+
+We are seeking an experienced AI Architect with over 15 years of professional experience. He needs to be passionate about D\&A and technology. With a deep understanding of data processing, data structure, algorithms, and machine learning. AI Architect will develop and implement the company's AI capabilities and solutions.
+
+ **Responsibilities:**
+
+* Design and implement AI/Gen AI applications, systems, and infrastructure across major clouds (Azure, AWS and GCP)
+* Collaborate with data engineers \& data scientists in designing data pipelines \& AI/ML models.
+* Collaborate with clients \& stakeholders to translate business and functional requirements into robust, scalable, operable solutions.
+* Participate in architectural decisions, contribute to the development of architectures for industry\-wide use cases, and design architectures for AI/ML and Generative AI
+* Set the standards for engineering best practices.
+* Identify opportunities where generative AI can provide value and solve business problems.
+* Responsible for creating POCs and POVs across horizontals and industry use cases.
+* Write high\-quality, efficient, testable code in Python and other languages.
+* Stay up to date with the latest AI trends and evaluate state\-of\-the\-art AI technologies/framework to drive innovation.
+* Facilitate design and architecture workshops and mentor AI engineers in coding best practices and problem\-solving.
+
+ **Qualifications:**
+
+* A minimum of 15 years of professional experience and around 5\-8 years in building and deploying AI solutions on\-premises or on cloud platforms.
+* Bachelor’s or master’s degree in computer science, Data Science, Engineering, or related field.
+* Experience in providing the MLOps, LLMOps and AgentOps Architecture design
+* Experience in deploying AI/ML solutions on different cloud platforms like Azure, AWS and/or Google Cloud.
+* Experience in using and orchestration LLM models on cloud platforms i.e., OpenAI @ Azure/AWS Bedrock/ GCP Vertex AI or Gemini AI
+* Experience in writing SQL and data modelling.
+* Experience in designing and implementation of AI solution using microservice based architecture.
+* Understanding of machine learning, deep learning, NLP and GenAI.
+* Strong programming skills in Python and/or pyspark.
+* Proven experience in integrating authentication security measures within machine learning operations and applications.
+* Excellent problem\-solving skills and ability to connect AI capabilities to business value.
+* Strong communication and presentation skills.
+* Proven experience in AI/ML solution deployment process on Kubernetes, Web Apps, Databricks or on similar platforms.
+* Familiarity with MLOps/ LLMOps and Agent Ops concepts and tech stack. Experience in code versioning, MLFlow, batch prediction and real\-time end point workflows.
+* Familiarity with Azure DevOps / GitHub actions/ Jenkins / Terraform / AWS CFT etc.
+* Experience with responsible AI concepts
+
+ **Other Responsibilities:**
+
+* Manage end to end project delivery\- scoping, solutioning, designing, developing, testing, deploying or maintaining.
+* Ensuring the solutions meet the client requirements and expectations.
+* Communicate effectively with the clients and internal stakeholders throughout the project.
+* Identify new opportunities and generate proposals for potential clients.
+* Present the solutions and showcase the value proposition to senior stakeholders.
+
+ **EY \| Building a better working world**
+
+EY is building a better working world by creating new value for clients, people, society and the planet, while building trust in capital markets.
+
+
+Enabled by data, AI and advanced technology, EY teams help clients shape the future with confidence and develop answers for the most pressing issues of today and tomorrow.
+
+
+EY teams work across a full spectrum of services in assurance, consulting, tax, strategy and transactions. Fueled by sector insights, a globally connected, multi\-disciplinary network and diverse ecosystem partners, EY teams can provide services in more than 150 countries and territories.",,https://in.indeed.com/cmp/Ey,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/82174c7d7afe2380d2d4631ea183f866,https://www.ey.com,"London, England","10,000+",more than $10B (USD),"At EY, we are committed to building a better working world.",,,,,,
+in-9c6d7c51fa0fdb42,indeed,https://in.indeed.com/viewjob?jk=9c6d7c51fa0fdb42,https://apply.careers.microsoft.com/careers/job/1970393556630679?utm_source=indeed&domain=microsoft.com,Senior Applied Science Engineer,Microsoft,"TS, IN",2025-11-25,fulltime,,,,,,False,,,,,"**Overview**  
+
+We are in an era of unprecedented innovation and openness, and as Microsoft continues to lead in AI, we are seeking individuals to help tackle some of the most exciting and meaningful challenges in the field.
+
+
+Join the **Dynamics 365 Finance \& Operations platform** as a Senior Applied Data Scientist and help shape the future of intelligent agents at Microsoft. In this role, you will apply your expertise in machine learning, data science, and AI to deliver innovative solutions that enhance Microsoft products and services. Your work will influence product strategy and create meaningful customer experiences.
+
+
+You will collaborate across research, engineering, and product teams to integrate cutting\-edge AI technologies that are ethical, inclusive, and impactful. This opportunity allows you to deepen your technical expertise, drive innovation, and contribute to Microsoft’s mission of empowering every person and organization to achieve more.
+
+
+Bring your growth mindset, customer empathy, and applied science skills to help us build the next generation of AI\-powered experiences.
+
+
+Microsoft’s mission is to empower every person and every organization on the planet to achieve more. As employees we come together with a growth mindset, innovate to empower others, and collaborate to realize our shared goals. Each day we build on our values of respect, integrity, and accountability to create a culture of inclusion where everyone can thrive at work and beyond.
+
+ **Responsibilities**  
+
+* Build collaborative relationships with product and business groups to deliver AI\-driven impact.
+* Research and implement state\-of\-the\-art using foundation models, prompt engineering, RAG, graphs, multi\-agent architectures, as well as classical machine learning techniques.
+* Build rapid AI solution prototypes, contribute to production deployment of these solutions, debug production code, support MLOps/AIOps. Contribute to papers, patents, and conference presentations.
+* Translate research into production\-ready solutions and measure their impact through A/B testing and telemetry that address customer needs.
+* Ability to use data to identify gaps in AI quality, uncover insights and implement PoCs to show proof of concepts.
+
+  
+
+Leveraging Research in real\-world problems
+
+* Demonstrate deep expertise in AI subfields (e.g., deep learning, Generative AI, NLP, muti\-modal models.
+* Share insights on industry trends and applied technologies with engineering and product teams.
+* Formulate strategic plans that integrate state\-of\-the\-art research to meet business goals.
+
+
+Ethics, Privacy and Security
+
+* Apply a deep understanding of fairness and bias in AI by proactively identifying and mitigating ethical and security risks—including XPIA (Cross\-Prompt Injection Attack) unfairness, bias, and privacy concerns—to ensure equitable and responsible outcomes.
+* Ensure responsible AI practices throughout the development lifecycle, from data collection to deployment and monitoring.
+* Contribute to internal ethics and privacy policies and ensure responsible AI practice throughout AI development cycle from data collection to model development, deployment, and monitoring.
+
+
+Specialty Responsibilities
+
+* Design, develop, and integrate generative AI solutions using foundation models and more.
+* Deep understanding of small and large language models architecture, Deep learning, fine tuning techniques, multi\-agent architectures, classical ML, and optimization techniques to adapt out\-of\-the\-box solutions to particular business problems.
+* Prepare and analyze data for machine learning, identifying optimal features and addressing data gaps.
+* Develop, train, and evaluate machine learning models and algorithms to solve complex business problems, using modern frameworks and state\-of\-the\-art models, open\-source libraries, statistical tools, and rigorous metrics.
+* Address scalability and performance issues using large\-scale computing frameworks.
+* Monitor model behavior, guide product monitoring and alerting, and adapt to changes in data streams.
+* Embody our culture and values.
+
+  
+
+**Qualifications**  
+
+Required Qualification(s):
+
+
+* Bachelor’s degree in Computer Science, Statistics, Electrical or Computer Engineering, Physics, Mathematics or related field AND 4\+ years of experience in AI/ML, predictive analytics, or research
+	+ OR Master’s degree in Computer Science, Statistics, Electrical or Computer Engineering, Physics, Mathematics or related field AND 3\+ years of experience in AI/ML, predictive analytics, or research
+	+ OR Doctorate in Computer Science, Statistics, Electrical or Computer Engineering, Physics, Mathematics, or related field AND 1\+ year(s) of experience in AI/ML, predictive analytics, or research
+	+ OR equivalent experience.
+
+
+Other Requirements: Ability to meet Microsoft, customer and/or government security screening requirements are required for this role. These requirements include but are not limited to the following specialized security screenings:
+
+* Microsoft Cloud Background Check: This position will be required to pass the Microsoft Cloud Background Check upon hire/transfer and every two years thereafter.
+
+
+Preferred Qualifications:
+
+* 1\+ years of experience with generative AI or LLM/ML algorithms.
+* Experience with MLOps Workflows, including CI/CD, monitoring, and retraining pipelines.
+* Familiarity with modern LLMOps frameworks (e.g., LangChain, PromptFlow).
+* 3\+ years of experience publishing in peer\-reviewed venues or filing patents.
+* 3\+ years of experience conducting research in academic or industry settings.
+* 1\+ year of experience developing and deploying live production systems.
+* 1\+ years of experience working with Generative AI models and ML stacks.
+* Experience across the product lifecycle from ideation to shipping.
+* Experience presenting at conferences or industry events.
+
+
+Microsoft is an equal opportunity employer. All qualified applicants will receive consideration for employment without regard to age, ancestry, citizenship, color, family or medical care leave, gender identity or expression, genetic information, immigration status, marital status, medical condition, national origin, physical or mental disability, political affiliation, protected veteran or military status, race, ethnicity, religion, sex (including pregnancy), sexual orientation, or any other characteristic protected by applicable local laws, regulations and ordinances. If you need assistance with religious accommodations and/or a reasonable accommodation due to a disability during the application process**.**
+
+
+\#BICjobs \#DynamicAgent365FnOplatformjobs
+
+  
+
+  
+
+This position will be open for a minimum of 5 days, with applications accepted on an ongoing basis until the position is filled.
+
+  
+
+Microsoft is an equal opportunity employer. All qualified applicants will receive consideration for employment without regard to age, ancestry, citizenship, color, family or medical care leave, gender identity or expression, genetic information, immigration status, marital status, medical condition, national origin, physical or mental disability, political affiliation, protected veteran or military status, race, ethnicity, religion, sex (including pregnancy), sexual orientation, or any other characteristic protected by applicable local laws, regulations and ordinances. If you need assistance with religious accommodations and/or a reasonable accommodation due to a disability during the application process**.**",Internet And Software,https://in.indeed.com/cmp/Microsoft,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/88813b3f866a5b58c9685073e3b87e05,http://www.microsoft.com/,"One Microsoft Way Redmond, Washington 98052-6399","10,000+",more than $10B (USD),Our mission is to empower every person and every organization on the planet to achieve more.,,,,,,

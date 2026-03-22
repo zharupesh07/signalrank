@@ -1,0 +1,4 @@
+{
+  "_error": "no_json",
+  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"Machine Learning\",\n      \"Python\",\n      \"Data Engineering\",\n      \"MLOps\",\n      \"SQL\",\n      \"NLP\",\n      \"Computer Vision\",\n      \"Recommendation Systems\",\n      \"Cloud Computing\",\n      \"CI/CD\",\n      \"Docker\",\n      \"Kubernetes\"\n    ],\n    [\n      \"Machine Learning\",\n      \"Deep Learning\",\n      \"LLMs\",\n      \"AI\",\n      \"Data Engineering\",\n      \"MLOps\",\n      \"Python\",\n      \"Cloud Computing\",\n      \"NLP\",\n      \"Computer Vision\",\n      \"Generative AI\""
+}

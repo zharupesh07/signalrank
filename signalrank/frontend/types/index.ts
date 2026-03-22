@@ -5,9 +5,17 @@ export interface User {
 
 export interface Profile {
   user_id: string;
+  email: string;
   role_intent: string | null;
   min_salary: number | null;
+  min_yoe: number | null;
+  max_yoe: number | null;
+  target_lpa: number | null;
   skills: string[];
+  target_roles: string[] | null;
+  preferred_locations: string[] | null;
+  custom_search_queries: string[] | null;
+  config_overrides: Record<string, unknown> | null;
   onboarding_complete: boolean;
 }
 
@@ -45,7 +53,14 @@ export type ApplicationStatus =
   | "interview"
   | "offer"
   | "rejected"
-  | "withdrawn";
+  | "archived";
+
+export interface ApplicationRecruiter {
+  id: string;
+  name: string | null;
+  email: string | null;
+  linkedin_url: string | null;
+}
 
 export interface Application {
   id: string;
@@ -55,14 +70,44 @@ export interface Application {
   status: ApplicationStatus;
   applied_at: string | null;
   notes: string | null;
+  priority: "P1" | "P2" | "P3" | null;
+  location_group: string | null;
+  interview_date: string | null;
+  offer_lpa: number | null;
+  system_score: number | null;
+  resume_match_pct: number | null;
+  job_url: string | null;
+  company_tier: string | null;
+  is_contract: boolean | null;
+  location: string | null;
+  recruiter: ApplicationRecruiter | null;
+}
+
+export interface TrackerStats {
+  total: number;
+  by_priority: Record<string, number>;
+  by_status: Record<string, number>;
+  offers_count: number;
+  best_offer_lpa: number | null;
+  target_lpa: number | null;
+}
+
+export interface RunProgress {
+  phase: string;
+  phase_num: number;
+  total_phases: number;
+  jobs_found: number;
+  message: string;
 }
 
 export interface Run {
   id: string;
-  status: "pending" | "running" | "done" | "failed";
+  status: "pending" | "scraping" | "ranking" | "running" | "done" | "failed";
   started_at: string;
   finished_at: string | null;
   job_count: number | null;
+  scrape_count: number | null;
+  progress: RunProgress | null;
 }
 
 export interface OnboardingStatus {

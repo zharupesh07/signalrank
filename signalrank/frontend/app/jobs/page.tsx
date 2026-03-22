@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
   useReactTable,
@@ -12,13 +12,14 @@ import {
 } from "@tanstack/react-table";
 import { api } from "@/lib/api";
 import type { Job } from "@/types";
+import { useToast } from "@/components/toast";
 import { TableRowSkeleton } from "@/components/skeleton";
-import { ExternalLink, ChevronUp, ChevronDown } from "lucide-react";
+import { ExternalLink, ChevronUp, ChevronDown, Search, X, Plus } from "lucide-react";
 
 const col = createColumnHelper<Job>();
 
 function ScoreCell({ value }: { value: number | null }) {
-  if (value == null) return <span className="text-[#52525b]">—</span>;
+  if (value == null) return <span className="text-[#71717a]">—</span>;
   const pct = value * 100;
   const color = pct >= 80 ? "#22c55e" : pct >= 60 ? "#facc15" : "#ef4444";
   return (
@@ -61,16 +62,16 @@ const columns = [
     cell: (i) => {
       const v = i.getValue();
       return v ? (
-        <span className="text-[9px] text-[#52525b] border border-[#3f3f46] px-1.5 py-0.5">
+        <span className="text-[11px] text-[#71717a] border border-[#3f3f46] px-1.5 py-0.5">
           T{v}
         </span>
-      ) : <span className="text-[#52525b]">—</span>;
+      ) : <span className="text-[#71717a]">—</span>;
     },
   }),
   col.accessor("is_contract", {
     header: "Type",
     cell: (i) => i.getValue() ? (
-      <span className="text-[9px] text-[#facc15] border border-[#facc15]/30 px-1.5 py-0.5">
+      <span className="text-[11px] text-[#facc15] border border-[#facc15]/30 px-1.5 py-0.5">
         CONTRACT
       </span>
     ) : null,
@@ -78,7 +79,7 @@ const columns = [
   col.accessor("site", {
     header: "Source",
     cell: (i) => (
-      <span className="text-[#52525b] text-xs">{i.getValue() ?? "—"}</span>
+      <span className="text-[#71717a] text-xs">{i.getValue() ?? "—"}</span>
     ),
   }),
   col.display({
@@ -89,7 +90,7 @@ const columns = [
         href={i.row.original.job_url}
         target="_blank"
         rel="noreferrer"
-        className="text-[#52525b] hover:text-[#22c55e] transition-colors"
+        className="text-[#71717a] hover:text-[#22c55e] transition-colors"
       >
         <ExternalLink size={12} />
       </a>
@@ -100,27 +101,76 @@ const columns = [
 export default function JobsPage() {
   const { data: session } = useSession();
   const token = (session as { accessToken?: string })?.accessToken ?? "";
+  const { toast } = useToast();
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [tracked, setTracked] = useState<Set<string>>(new Set());
   const limit = 50;
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => {
+    if (!token) return;
+    api.applications.list(token).then((apps) =>
+      setTracked(new Set(apps.filter((a) => a.job_id).map((a) => a.job_id!)))
+    ).catch(() => null);
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;
     setLoading(true);
-    api.jobs.list(token, page, limit).then((r) => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  useEffect(() => {
+    if (!token) return;
+    setLoading(true);
+    api.jobs.list(token, page, limit, debouncedSearch).then((r) => {
       setJobs(r.jobs);
       setTotal(r.total);
       setLoading(false);
     });
-  }, [token, page]);
+  }, [token, page, debouncedSearch]);
+
+  async function trackJob(job: Job) {
+    await api.applications.create(token, { job_id: job.id, company: job.company, title: job.title, status: "interested", system_score: job.final_score, resume_match_pct: job.semantic_score });
+    setTracked((prev) => new Set(prev).add(job.id));
+    toast("Added to tracker", "success");
+  }
+
+  const allColumns = useMemo(() => [
+    ...columns,
+    col.display({
+      id: "track",
+      header: "",
+      cell: (i) => {
+        const job = i.row.original;
+        return tracked.has(job.id) ? (
+          <span className="text-[11px] text-[#52525b] uppercase tracking-wider">tracked</span>
+        ) : (
+          <button
+            onClick={() => trackJob(job)}
+            className="flex items-center gap-0.5 text-[11px] text-[#22c55e]/60 border border-[#22c55e]/20 px-1.5 py-0.5 hover:border-[#22c55e] hover:text-[#22c55e] transition-colors uppercase tracking-wider"
+          >
+            <Plus size={8} />track
+          </button>
+        );
+      },
+    }),
+  ], [tracked]);
 
   const table = useReactTable({
     data: jobs,
-    columns,
+    columns: allColumns,
     state: { sorting },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
@@ -132,11 +182,28 @@ export default function JobsPage() {
   return (
     <div className="pt-14 min-h-screen page-content">
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-5">
-        <div>
-          <div className="section-label mb-1">job index</div>
-          <div className="flex items-baseline gap-3">
-            <h1 className="text-xl font-bold text-[#d4d4d8]">All Jobs</h1>
-            <span className="text-[#22c55e] text-sm tabular-nums text-glow-dim">{total}</span>
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <div className="section-label mb-1">job index</div>
+            <div className="flex items-baseline gap-3">
+              <h1 className="text-xl font-bold text-[#d4d4d8]">All Jobs</h1>
+              <span className="text-[#22c55e] text-sm tabular-nums text-glow-dim">{total}</span>
+            </div>
+          </div>
+          <div className="flex items-center border border-[#2a2a2e] bg-[#0d0d0f] focus-within:border-[#22c55e] transition-colors w-64">
+            <Search size={11} className="text-[#52525b] ml-3 shrink-0" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="search title, company..."
+              className="flex-1 bg-transparent px-2 py-2 text-xs text-[#e4e4e7] outline-none placeholder:text-[#52525b]"
+            />
+            {search && (
+              <button onClick={() => setSearch("")} className="pr-2 text-[#71717a] hover:text-[#a1a1aa] transition-colors">
+                <X size={11} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -149,7 +216,7 @@ export default function JobsPage() {
                     <th
                       key={h.id}
                       onClick={h.column.getToggleSortingHandler()}
-                      className="px-3 py-3 text-left text-[10px] text-[#3f3f46] uppercase tracking-[0.15em] cursor-pointer select-none hover:text-[#22c55e] transition-colors"
+                      className="px-3 py-3 text-left text-xs text-[#52525b] uppercase tracking-[0.15em] cursor-pointer select-none hover:text-[#22c55e] transition-colors"
                     >
                       <div className="flex items-center gap-1">
                         {flexRender(h.column.columnDef.header, h.getContext())}
@@ -187,7 +254,7 @@ export default function JobsPage() {
           </table>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-[#52525b]">
+        <div className="flex items-center justify-between text-xs text-[#71717a]">
           <span>
             Showing {((page - 1) * limit) + 1}–{Math.min(page * limit, total)} of {total}
           </span>

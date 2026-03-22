@@ -1,0 +1,4 @@
+{
+  "_error": "no_json",
+  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"DevOps\",\n      \"Infrastructure\",\n      \"Kubernetes\",\n      \"Ansible\",\n      \"Terraform\",\n      \"Chef\",\n      \"Puppet\",\n      \"GO\",\n      \"Python\",\n      \"Java\",\n      \"Mongo\",\n      \"Redis\",\n      \"Cassandra\",\n      \"Elasticsearch\",\n      \"Kafka\",\n      \"AWS\"\n    ],\n    [\n      \"Software Engineering\",\n      \"Web Applications\",\n      \"Laravel\",\n      \"Angular\",\n      \"NestJS\",\n      \"Node.js\",\n      \"Flask\",\n      \"MySQL\",\n      \"AWS\",\n      \"Docker\",\n      \"G"
+}

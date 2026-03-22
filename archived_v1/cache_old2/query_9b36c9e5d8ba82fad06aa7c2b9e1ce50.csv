@@ -1,0 +1,69 @@
+id,site,job_url,job_url_direct,title,company,location,date_posted,job_type,salary_source,interval,min_amount,max_amount,currency,is_remote,job_level,job_function,listing_type,emails,description,company_industry,company_url,company_logo,company_url_direct,company_addresses,company_num_employees,company_revenue,company_description,skills,experience_range,company_rating,company_reviews_count,vacancy_count,work_from_home_type
+in-93b293a126c93edb,indeed,https://in.indeed.com/viewjob?jk=93b293a126c93edb,https://jobs.smartrecruiters.com/Visa/744000105596084-sr-consultant-agentic-tools-automation,Sr Consultant - Agentic Tools & Automation,Visa,"KA, IN",2026-01-26,fulltime,,,,,,False,,,,,"**Company Description**  
+
+Visa is a world leader in payments technology, facilitating transactions between consumers, merchants, financial institutions and government entities across more than 200 countries and territories, dedicated to uplifting everyone, everywhere by being the best way to pay and be paid.
+
+
+At Visa, you'll have the opportunity to create impact at scale — tackling meaningful challenges, growing your skills and seeing your contributions impact lives around the world. Join Visa and do work that matters — to you, to your community, and to the world.
+
+
+Progress starts with you.
+
+ **Job Description**  
+
+Visa’s Technology Organization is a community of problem solvers and innovators reshaping the future of commerce. We operate the world’s most sophisticated processing networks capable of handling more than 65k secure transactions a second across 80M merchants, 15k Financial Institutions, and billions of everyday people. While working with us you’ll get to work on complex distributed systems and solve massive scale problems centered on new payment flows, business and data solutions, cyber security, and B2C platforms.
+
+
+We are looking for Versatile, curious, and energetic Software Engineers who embrace solving complex challenges on a global scale. As a Visa Software Engineer, you will be an integral part of a multi\-functional development team inventing, designing, building, and testing software products that reach a truly global customer base. While building components of powerful payment technology, you will get to see your efforts shaping the digital future of monetary transactions. This position is ideal for an experienced software engineer passionate about solving challenging business problems, building applications with excellent user experience, and leveraging cutting\-edge GenAI technologies. The candidate will be deeply involved in hands\-on activities including POCs, design, documentation, development, and testing of new functionality, with a special emphasis on agentic solutions powered by GenAI tools.
+
+
+Responsibilities:
+
+* Design, develop, and own mission\-critical systems for highly scalable infrastructure supporting low\-latency, high\-throughput core payment processing.
+* Architect, code, and integrate application business layers with external components, including GenAI\-powered modules and agentic workflows.
+* Deliver zero\-defect code and ensure the team's deliverables meet or exceed prescribed SLAs.
+* Break down architected solutions into smaller tasks, including GenAI and agentic workflows.
+* Ensure instrumentation and monitoring for AI\-driven components.
+* Document design tradeoffs, best practices, and GenAI/agentic solution patterns.
+* Optimize production systems including traditional and AI\-enabled flows.
+* Collaborate across engineering teams to ensure scalability and stability.
+* Lead POCs including GenAI prototypes and agentic workflows.
+
+
+This is a hybrid position. Expectation of days in office will be confirmed by your hiring manager.
+
+ **Qualifications**  
+
+Basic Qualifications:  
+
+13\+ years of experience with Bachelor's Degree or 10\+ with Advanced Degree.  
+
+Experience delivering enterprise\-class applications with high\-throughput and low\-latency.  
+
+Experience with GoLang, Java, Python/Ruby and GenAI integration frameworks.  
+
+Strong coding abilities including building GenAI agents and orchestration logic.  
+
+Experience with containerization, NoSQL, and GenAI deployment.  
+
+Understanding of microservice architecture including those enhanced with AI.  
+
+Experience with security analysis including for GenAI modules.  
+
+Experience with DevOps and MLOps practices.  
+
+Strong communication skills including explaining GenAI concepts.  
+
+  
+
+Preferred Qualifications:  
+
+Experience with GenAI tools (OpenAI, Azure AI, Hugging Face).  
+
+Experience designing and scaling agentic workflows.  
+
+Payment domain experience.
+
+ **Additional Information**  
+
+Visa is an EEO Employer. Qualified applicants will receive consideration for employment without regard to race, color, religion, sex, national origin, sexual orientation, gender identity, disability or protected veteran status. Visa will also consider for employment qualified applicants with criminal histories in a manner consistent with EEOC guidelines and applicable local law.",,https://in.indeed.com/cmp/Visa,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/860a54ecfd7d7cab270f291d2d877922,http://www.visa.com,,"10,000+",more than $10B (USD),"Our Purpose is to... Uplift everyone, everywhere by being the best way to pay and be paid.",,,,,,

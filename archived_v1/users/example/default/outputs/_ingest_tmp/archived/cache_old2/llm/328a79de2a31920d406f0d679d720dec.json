@@ -1,0 +1,4 @@
+{
+  "_error": "no_json",
+  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"Databricks\",\n      \"Spark\",\n      \"Delta Lake\",\n      \"ETL\",\n      \"ELT\",\n      \"Data Pipelines\",\n      \"Machine Learning Pipelines\",\n      \"CI/CD\",\n      \"DevOps\",\n      \"MLOps\",\n      \"Data Governance\",\n      \"Unity Catalog\",\n      \"Cloud Platforms\",\n      \"AWS\",\n      \"Azure\",\n      \"Streaming\",\n      \"Real-time Data Processing\",\n      \"Infrastructure as Code\",\n      \"Terraform\"\n    ],\n    [\n      \"AI Research\",\n      \"Machine Learning\",\n      \"Multi-Agent"
+}

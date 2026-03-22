@@ -1,0 +1,4 @@
+{
+  "_error": "no_json",
+  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"software engineering\",\n      \"embedded software\",\n      \"cloud edge software\",\n      \"system-level software design\",\n      \"performance requirements\",\n      \"interface design\"\n    ],\n    [\n      \"ARM CPU architecture\",\n      \"ARM Arch64 ISA\",\n      \"kernel optimization\",\n      \"vector processors\",\n      \"linear algebra\",\n      \"AI/ML\",\n      \"algorithm design\",\n      \"performance evaluation\",\n      \"performance optimization\",\n      \"ML model inferencing\",\n   "
+}

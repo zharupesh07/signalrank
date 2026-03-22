@@ -15,6 +15,8 @@ class RunResponse(BaseModel):
     run_id: str
     status: str
     job_count: int | None = None
+    scrape_count: int | None = None
+    progress: dict | None = None
     started_at: str | None = None
     finished_at: str | None = None
 
@@ -53,9 +55,37 @@ async def get_latest_run(
         run_id=run.id,
         status=run.status,
         job_count=run.job_count,
+        scrape_count=run.scrape_count,
+        progress=run.progress,
         started_at=str(run.started_at) if run.started_at else None,
         finished_at=str(run.finished_at) if run.finished_at else None,
     )
+
+
+@router.get("", response_model=list[RunResponse])
+async def list_runs(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Run)
+        .where(Run.user_id == current_user.id)
+        .order_by(Run.started_at.desc())
+        .limit(50)
+    )
+    runs = result.scalars().all()
+    return [
+        RunResponse(
+            run_id=r.id,
+            status=r.status,
+            job_count=r.job_count,
+            scrape_count=r.scrape_count,
+            progress=r.progress,
+            started_at=str(r.started_at) if r.started_at else None,
+            finished_at=str(r.finished_at) if r.finished_at else None,
+        )
+        for r in runs
+    ]
 
 
 @router.get("/{run_id}/status", response_model=RunResponse)
@@ -74,6 +104,8 @@ async def get_run_status(
         run_id=run.id,
         status=run.status,
         job_count=run.job_count,
+        scrape_count=run.scrape_count,
+        progress=run.progress,
         started_at=str(run.started_at) if run.started_at else None,
         finished_at=str(run.finished_at) if run.finished_at else None,
     )

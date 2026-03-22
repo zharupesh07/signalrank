@@ -1,0 +1,289 @@
+# Generated: 2026-03-16
+# Source: companies-2026-03-16.yaml
+# Job URLs sourced from live web search — verify before applying.
+
+roles:
+- company: Persistent Systems
+  title: LLMOps and AIOps Engineer
+  url: https://in.linkedin.com/jobs/view/llmops-and-aiops-engineer-at-persistent-systems-4329820249
+  location: Bangalore
+  salary_lpa: null
+  match_reason: Matches candidate's LLMOps/AIOps experience and target tech stack.
+  source: linkedin
+- company: Persistent Systems
+  title: LLMOps and AIOps Engineer
+  url: https://www.shine.com/jobs/llmops-and-aiops-engineer/persistent-systems-limited/18625136
+  location: Bangalore
+  salary_lpa: null
+  match_reason: Matches candidate's LLMOps/AIOps experience and target tech stack.
+  source: other
+- company: Qualcomm
+  title: Cloud Machine Learning LLM Serving Staff engineer
+  url: https://careers.qualcomm.com/careers/job/446705532313-cloud-machine-learning-llm-serving-lead-engineer-bangalore-karnataka-india?domain=qualcomm.com
+  location: Bangalore, Karnataka, India
+  salary_lpa: null
+  match_reason: Senior-level LLM/ML serving role aligns with candidate's LLMops and
+    cloud engineering experience
+  source: careers_page
+- company: Qualcomm
+  title: Engineer- Machine Learning
+  url: https://in.linkedin.com/jobs/view/engineer-machine-learning-at-qualcomm-4325172038?position=33&pageNum=0
+  location: Chennai, Tamil Nadu
+  salary_lpa: null
+  match_reason: Machine Learning engineering role matches candidate's ML platform
+    background
+  source: linkedin
+- company: Qualcomm
+  title: Senior Staff Engineer-C++ , Machine Learning
+  url: https://nodeflair.com/jobs/qualcomm-senior-staff-engineer-c-machine-learning-480896
+  location: India (unspecified)
+  salary_lpa: null
+  match_reason: Senior ML engineering role with C++ aligns with candidate's senior-level
+    platform engineering experience
+  source: other
+- company: Nvidia
+  title: Senior ML Platform Engineer, AI - MLOps
+  url: https://in.linkedin.com/jobs/view/senior-ml-platform-engineer-ai-mlops-at-nvidia-3674910745
+  location: Pune
+  salary_lpa: null
+  match_reason: Senior ML Platform Engineer role in Pune matches candidate's location
+    and MLOps expertise.
+  source: linkedin
+- company: Nvidia
+  title: Associate Architect - Platform Engineer (MLOps)
+  url: https://in.linkedin.com/jobs/nvidia-verification-engineer-jobs-bengaluru?position=1&pageNum=0
+  location: Bengaluru
+  salary_lpa: null
+  match_reason: Platform Engineer (MLOps) role aligns with candidate's MLOps skills.
+  source: linkedin
+- company: Nvidia
+  title: Staff MLOps Engineer (SF Based, Relocation Provided)
+  url: https://www.linkedin.com/jobs/nvidia-performance-engineer-jobs-austin-texas-metropolitan-area
+  location: Austin, Texas Metropolitan Area
+  salary_lpa: null
+  match_reason: Senior MLOps Engineer role matches candidate's MLOps expertise.
+  source: linkedin
+- company: Google
+  title: Engineering Manager, Machine Learning, Translate
+  url: https://www.google.com/about/careers/applications/jobs/results/139242253561275078-engineering-manager-machine-learning-translate?location=India
+  location: India
+  salary_lpa: null
+  match_reason: Senior-level ML role at Google with ML infrastructure and platform
+    focus matching candidate's MLOps and AI platform expertise.
+  source: careers_page
+- company: Google
+  title: Software Engineer, Machine Learning Infrastructure, Google Cloud Platform
+  url: https://www.google.com/about/careers/applications/jobs/results/115675539972203206-software-engineer-machine-learning-infrastructure-google-cloud-platform
+  location: India
+  salary_lpa: null
+  match_reason: ML infrastructure engineering role at Google Cloud Platform aligning
+    with candidate's GCP and Kubernetes experience.
+  source: careers_page
+- company: Amazon
+  title: Engineering Manager, MLOps, Amazon Advertising
+  url: https://in.linkedin.com/jobs/amazon-science-jobs-bengaluru
+  location: Bengaluru, Karnataka, India
+  salary_lpa: null
+  match_reason: Senior MLOps role at Amazon in Bengaluru matching candidate's MLOps
+    and AI platform engineering experience.
+  source: linkedin
+- company: Amazon
+  title: Software Development Engineer, Amazon Smart Vehicles
+  url: https://in.linkedin.com/jobs/amazon-science-jobs-bengaluru
+  location: Bengaluru, Karnataka, India
+  salary_lpa: null
+  match_reason: Software development role at Amazon in Bengaluru suitable for candidate's
+    engineering background.
+  source: linkedin
+- company: Salesforce
+  title: Principal AI Cloud Engineer
+  url: https://builtintoronto.com/job/principal-ai-cloud-engineer/7337353
+  location: Remote India
+  salary_lpa: 50+
+  match_reason: Matches senior AI platform engineering experience with cloud and ML
+    focus
+  source: other
+- company: Salesforce
+  title: Senior Machine Learning Engineer
+  url: https://builtinpune.in/job/senior-machine-learning-engineer/8388788
+  location: Pune
+  salary_lpa: 50+
+  match_reason: Matches experience with LLM Ops and ML platform engineering
+  source: other
+- company: Salesforce
+  title: ML Platform Engineer
+  url: https://www.linkedin.com/jobs/view/ml-platform-engineer-at-salesforce-4365695605
+  location: Remote India
+  salary_lpa: 50+
+  match_reason: Matches senior AI platform engineering with Python and scalable tools
+  source: linkedin
+- company: Salesforce
+  title: Software Engineering SMTS (Security/MLOps)
+  url: https://in.linkedin.com/jobs/view/software-engineering-smts-security-mlops-at-salesforce-4361380620
+  location: Remote India
+  salary_lpa: 50+
+  match_reason: Matches MLOps experience with software engineering and platform building
+  source: linkedin
+- company: ServiceNow
+  title: Senior Staff Machine Learning Engineer - ServiceNow
+  url: https://www.builtinsf.com/job/senior-staff-machine-learning-engineer/7804350
+  location: San Francisco, CA
+  salary_lpa: null
+  match_reason: Senior ML role at ServiceNow matches candidate's experience and stack.
+  source: careers_page
+- company: Atlassian
+  title: Machine Learning Engineer I
+  url: https://www.themuse.com/jobs/atlassian/machine-learning-engineer-i-96ec41
+  location: Bangalore, India
+  salary_lpa: null
+  match_reason: Entry-level ML role in Bangalore aligns with candidate's ML and cloud
+    experience.
+  source: other
+- company: Atlassian
+  title: Principal Machine Learning Engineer
+  url: https://www.builtinseattle.com/job/principal-machine-learning-engineer/7066597
+  location: Seattle, WA
+  salary_lpa: null
+  match_reason: Senior ML role matches candidate's 7+ years experience and ML infrastructure
+    expertise.
+  source: other
+- company: Atlassian
+  title: Machine Learning Software Engineer
+  url: https://www.linkedin.com/jobs/view/4375140149?skipRedirect=true
+  location: Remote India
+  salary_lpa: null
+  match_reason: ML platform role with remote option fits candidate's remote preference
+    and ML infrastructure skills.
+  source: linkedin
+- company: Atlassian
+  title: Software Engineer
+  url: https://www.builtinseattle.com/job/software-engineer/8369602
+  location: Seattle, WA
+  salary_lpa: null
+  match_reason: General software role mentions ML integration, matching candidate's
+    full-stack ML experience.
+  source: other
+- company: Databricks
+  title: Databricks Automation, AI Platform Engineer at Xenon Seven
+  url: https://www.remoterocketship.com/company/xenon7/jobs/databricks-automation-ai-platform-engineer-india-remote/
+  location: Remote India
+  salary_lpa: null
+  match_reason: Role requires Databricks platform engineering, MLOps/LLMOps, and AI
+    deployment workflows matching candidate's stack.
+  source: other
+- company: Databricks
+  title: Databrickshiring SoftwareEngineer(Ful Stack) in... | LinkedIn
+  url: https://in.linkedin.com/jobs/view/software-engineer-ful-stack-at-databricks-3967324066
+  location: Bengaluru, Karnataka, India
+  salary_lpa: null
+  match_reason: Role involves cloud technologies and SaaS platforms aligning with
+    candidate's experience.
+  source: linkedin
+- company: Razorpay
+  title: Consultant - Software Development Engineer (IOS SDK)
+  url: https://job-boards.greenhouse.io/razorpaysoftwareprivatelimited/jobs/4661764005
+  location: Bengaluru
+  salary_lpa: null
+  match_reason: Role is for software development engineer, not ML/AI focused, does
+    not match candidate profile.
+  source: careers_page
+- company: Razorpay
+  title: Machine Learning Engineer
+  url: https://in.linkedin.com/jobs/view/machine-learning-engineer-at-razorpay-4136479463
+  location: Bengaluru
+  salary_lpa: null
+  match_reason: Matches candidate's ML/AI background and experience level.
+  source: linkedin
+- company: Razorpay
+  title: Data Engineer
+  url: https://www.linkedin.com/posts/rakshit-mathur-8728601b1_razorpay-recently-offered-one-of-my-friends-activity-7417820071462457344-Cqor
+  location: Bengaluru
+  salary_lpa: 46 LPA
+  match_reason: Senior data engineering role aligns with candidate's experience and
+    technical stack.
+  source: linkedin
+- company: Meesho
+  title: Data Scientist IV
+  url: https://www.meesho.io/jobs/data-scientist-iv?id=38849bdb-6277-46ab-8865-7d9d83d43ba7
+  location: Bengaluru
+  salary_lpa: null
+  match_reason: Data Scientist IV role involves ML pipelines and inference performance,
+    aligning with MLOps experience
+  source: careers_page
+- company: Meesho
+  title: Machine Learning Engineer IV
+  url: https://startup.jobs/machine-learning-engineer-iv-meesho-3048268
+  location: Bengaluru
+  salary_lpa: null
+  match_reason: Machine Learning Engineer IV role involves building AI systems and
+    ML pipelines, matching MLOps expertise
+  source: other
+- company: Groww
+  title: ML Engineer IV
+  url: https://www.linkedin.com/jobs/view/4321136344
+  location: Bengaluru, Karnataka, India
+  salary_lpa: null
+  match_reason: Senior ML role at Groww with AI/ML focus matching candidate's experience.
+  source: linkedin
+- company: Groww
+  title: Platform Engineer - III
+  url: https://www.linkedin.com/jobs/view/4331933789/
+  location: Bengaluru, Karnataka, India
+  salary_lpa: null
+  match_reason: Platform engineering role at Groww aligns with candidate's AI platform/MLOps
+    experience.
+  source: linkedin
+- company: Groww
+  title: ML Engineer III
+  url: https://in.linkedin.com/jobs/view/ml-engineer-iii-at-groww-4311262673
+  location: Bengaluru, Karnataka, India
+  salary_lpa: null
+  match_reason: Mid-level ML engineering role at Groww matches candidate's AI/ML background.
+  source: linkedin
+- company: Groww
+  title: Platform Engineer - III
+  url: https://in.linkedin.com/jobs/view/platform-engineer-iii-at-groww-4323042854
+  location: Bengaluru, Karnataka, India
+  salary_lpa: null
+  match_reason: Platform engineering role at Groww aligns with candidate's AI platform/MLOps
+    experience.
+  source: linkedin
+- company: Groww
+  title: Platform Engineer - III
+  url: https://www.linkedin.com/jobs/view/platform-engineer-iii-at-groww-4382865702
+  location: Bengaluru, Karnataka, India
+  salary_lpa: null
+  match_reason: Platform engineering role at Groww aligns with candidate's AI platform/MLOps
+    experience.
+  source: linkedin
+- company: Zycus
+  title: Senior Machine Learning Engineer
+  url: https://in.linkedin.com/jobs/view/senior-machine-learning-engineer-at-zycus-4206639213?position=23&pageNum=0
+  location: Pune
+  salary_lpa: null
+  match_reason: Matches candidate's experience and location (Pune), aligns with ML
+    engineering and deployment responsibilities.
+  source: linkedin
+- company: Zycus
+  title: Machine Learning Engineer
+  url: https://zycus.sensehq.com/careers/jobs/56976
+  location: Mumbai
+  salary_lpa: null
+  match_reason: Relevant ML engineering role, though location is Mumbai (not Pune
+    or remote).
+  source: careers_page
+- company: Zycus
+  title: Machine Learning Engineer
+  url: https://www.linkedin.com/jobs/view/4343128685
+  location: Mumbai
+  salary_lpa: null
+  match_reason: ML engineering role, location is Mumbai (not Pune or remote).
+  source: linkedin
+- company: Zycus
+  title: Applied - AI Engineer
+  url: https://in.linkedin.com/jobs/view/applied-ai-engineer-at-zycus-4335454773
+  location: Bengaluru
+  salary_lpa: null
+  match_reason: AI engineering role with autonomous agents experience, though location
+    is Bengaluru (not Pune or remote).
+  source: linkedin

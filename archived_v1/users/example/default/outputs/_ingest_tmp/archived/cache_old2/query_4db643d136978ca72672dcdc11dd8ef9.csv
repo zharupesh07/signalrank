@@ -1,0 +1,594 @@
+id,site,job_url,job_url_direct,title,company,location,date_posted,job_type,salary_source,interval,min_amount,max_amount,currency,is_remote,job_level,job_function,listing_type,emails,description,company_industry,company_url,company_logo,company_url_direct,company_addresses,company_num_employees,company_revenue,company_description,skills,experience_range,company_rating,company_reviews_count,vacancy_count,work_from_home_type
+in-6331e75e53adb2eb,indeed,https://in.indeed.com/viewjob?jk=6331e75e53adb2eb,https://jsv3.recruitics.com/redirect?rx_cid=3409&rx_jobId=883361&rx_url=https%3A%2F%2Fkimberlyclark.wd1.myworkdayjobs.com%2FGLOBAL%2Fjob%2FIT-Centre-Bengaluru-GDTC%2FSenior-Generative-AI-Engineer_883361%3Frx_a%3D1%26rx_c%3Dapac_india_stem_ppc%26rx_ch%3Djobp4p%26rx_group%3D527058%26rx_id%3D8217d80d-f878-11f0-a501-d33748a1732b%26rx_job%3D883361%26rx_medium%3Dcpc%26rx_r%3Dnone%26rx_source%3DIndeed%26rx_ts%3D20260125T180143Z%26rx_vp%3Dcpc%26source%3DIndeed%26utm_campaign%3DStem_APAC_India_PPC%26utm_medium%3Dcpc%26utm_source%3DIndeed_Sponsored,Senior Generative AI Engineer,Kimberly-Clark,"KA, IN",2026-01-23,fulltime,,,,,,False,,,,,"You’re not the person who will settle for just any role. Neither are we. Because we’re out to create Better Care for a Better World, and that takes a certain kind of person and teams who care about making a difference. Here, you’ll bring your professional expertise, talent, and drive to building and managing our portfolio of iconic, ground\-breaking brands. In this role, you’ll help us deliver better care for billions of people around the world. It starts with YOU.
+
+
+In this role, you will:
+
+* Lead the architecture and development of scalable GenAI solutions including LLMs, multimodal models, retrieval\-augmented generation (RAG) systems and AI Agents.
+* Evaluate and select appropriate foundation models (open\-source or commercial) based on business needs and constraints.
+* Fine\-tune and optimize large language models (LLMs) using techniques like prompt engineering, LoRA, PEFT, reinforcement learning (RLHF), and transfer learning.
+* Drive innovation through experimentation with GANs, VAEs, diffusion models, and transformer\-based architectures.
+* Implement robust LLMOps practices for model lifecycle management, versioning, evaluation, and rollback strategies.
+* Lead model deployment using cloud\-native tools (Azure \[preferred], AWS, GCP) and MLOps platforms (e.g Databricks).
+* Develop and Enhance features for AI observability including hallucination detection, prompt drift monitoring, and output explainability etc.
+* Champion responsible AI practices, ensuring compliance with privacy, security, and fairness standards.
+* Act as a technical mentor and thought leader within the AI/ML engineering team.
+* Work closely with business and product stakeholders to translate ambiguous problems into AI\-driven solutions.
+* Stay abreast of the latest advancements in GenAI, LLMs, and deep learning research.
+* Publish internal research, prototype new capabilities, and drive knowledge sharing across teams.
+
+**About Us**
+
+
+Huggies®. Kleenex®. Cottonelle®. Scott®. Kotex®. Poise®. Depend®. Kimberly\-Clark Professional®. You already know our legendary brands—and so does the rest of the world. In fact, millions of people use Kimberly\-Clark products every day. We know these amazing Kimberly\-Clark products wouldn’t exist without talented professionals, like you.
+
+
+At Kimberly\-Clark, you’ll be part of the best team committed to driving innovation, growth and impact. We’re founded on more than 150 years of market leadership, and we’re always looking for new and better ways to perform – so there’s your open door of opportunity. It’s all here for you at Kimberly\-Clark.
+
+**Led by Purpose. Driven by You**
+
+**About You**
+
+
+You perform at the highest level possible, and you appreciate a performance culture fueled by authentic caring. You want to be part of a company actively dedicated to sustainability, inclusion, wellbeing, and career development. You love what you do, especially when the work you do makes a difference. At Kimberly\-Clark, we’re constantly exploring new ideas on how, when, and where we can best achieve results. When you join our team, you’ll experience Flex That Works: flexible work arrangements that empower you to have purposeful time in the office and partner with your leader to make flexibility work for both you and the business.
+
+
+In one of our technical roles, you’ll focus on winning with consumers and the market, while putting safety, mutual respect, and human dignity at the center. To succeed in this role, you will need the following qualifications:
+
+
+Key Qualifications and Experiences:
+
+* Bachelor’s or Master’s degree in Computer Science, Engineering, or a related field.
+* 6\+ years of experience in machine learning, deep learning, or NLP, with 2\+ years in GenAI/LLM development.
+* Proficient in Python and frameworks such as PyTorch, TensorFlow, Hugging Face Transformers, LangChain, LangGraph etc.
+* Strong experience in training and/or fine\-tuning foundation models and integrating them into production pipelines.
+* Proven experience in designing and deploying scalable APIs and microservices using FastAPI or Flask.
+* Familiarity with vector databases (FAISS, Pinecone, Weaviate), embeddings, and semantic search.
+* Hands\-on experience with CI/CD, containerization (Docker/Kubernetes), and cloud\-based AI infrastructure (Azure \[preferred], AWS, or GCP).
+* Deep understanding of prompt engineering, model evaluation, observability, and responsible AI.
+* Experience with large\-scale data processing and distributed computing.
+* Experience with reinforcement learning and/or unsupervised learning.
+* Experience with natural language generation and/or image generation.
+* Experience with containerization technologies such as Docker and Kubernetes.
+* Experience leading technical teams or AI initiatives end\-to\-end.
+* Exposure to multimodal GenAI (e.g., image, audio, and video generation).
+* Familiarity with enterprise\-grade data governance and AI risk frameworks.
+* Contributions to open\-source GenAI/ML projects or research publications.
+
+**To Be Considered**  
+
+Click the Apply button and complete the online application process. A member of our recruiting team will review your application and follow up if you seem like a great fit for this role.
+
+
+In the meantime, please check out the careers website.
+
+**And finally, the fine print….**
+
+*For Kimberly\-Clark to grow and prosper, we must be an inclusive organization that applies the diverse experiences and passions of its team members to brands that make life better for people all around the world. We actively seek to build a workforce that reflects the experiences of our consumers. When you bring your original thinking to Kimberly\-Clark, you fuel the continued success of our enterprise. We are a committed equal opportunity employer, and all qualified applicants will receive consideration for employment without regard to race, color, religion, sex, national origin, disability status, protected veteran status, sexual orientation, gender identity, age, pregnancy, genetic information, citizenship status, or any other characteristic protected by law.*
+
+*The statements above are intended to describe the general nature and level of work performed by employees assigned to this classification. Statements are not intended to be construed as an exhaustive list of all duties, responsibilities and skills required for this position.*
+
+*Employment is subject to verification of pre\-screening tests, which may include drug screening, background check, and DMV check.*
+
+*\#LI\-Hybrid*
+
+
+.",,https://in.indeed.com/cmp/Kimberly--clark,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/43e57ff131f46f4d55b26dc5efbfeecf,http://www.kimberly-clark.com,"Irving, TX","10,000+",more than $10B (USD),"As a Kimberly-Clark employee, you have an opportunity to impact billions of lives through the products we make, the workplaces we create and the communities we serve. Led by Purpose. Driven by You.",,,,,,
+in-c70d62d51bc5ae44,indeed,https://in.indeed.com/viewjob?jk=c70d62d51bc5ae44,https://infotalent.infocepts.com/infocepts/jobview/data-scientist-32946-india-r-python-dataiku-sagemaker-azureml-2023092615094713?id=327976,Consultant - Data Science,InfoCepts,"MH, IN",2026-01-23,fulltime,,,,,,False,,,,,"**Position**: Consultant \- Data Science
+
+  
+
+
+**Location**: Pune/Bangalore/Nagpur/Chennai
+
+  
+
+
+**Type of Employment**: Full\-Time
+
+  
+
+
+**Purpose of the Position**:  
+
+The Data Science Consultant will lead the design, development, and deployment of advanced data science solutions across business domains, with a strong focus on operational efficiency, forecasting, and AI integration. This role demands a blend of technical expertise, strategic thinking, and stakeholder collaboration to deliver measurable business impact through data\-driven innovation.
+
+  
+
+
+**Key Result Areas and Activities**:
+
+
+* **Advanced Model Development \& Deployment**: Build and deploy scalable machine learning and deep learning models (including CNNs and GenAI solutions) for anomaly detection, forecasting, and optimization.
+* **Data Engineering \& Processing**: Design and implement efficient data pipelines using Python, PySpark, and distributed computing frameworks to support large\-scale analytics.
+* **Cross\-functional Collaboration**: Work closely with business stakeholders, software engineers, and DevOps teams to translate business needs into actionable data science solutions.
+* **Governance \& Responsible AI Practices**: Ensure models adhere to responsible AI principles including fairness, transparency, and auditability, and comply with data governance standards.
+* **Continuous Improvement \& Innovation**: Monitor model performance, conduct evaluations, and iterate to improve accuracy and reliability. Stay abreast of emerging AI/ML technologies and integrate them into solutions.
+
+  
+
+
+
+**Essential Skills**:
+
+
+* Strong proficiency in Python and PySpark for data manipulation and modeling.
+* Experience with deep learning frameworks such as TensorFlow and PyTorch.
+* Hands\-on experience with CNNs and other advanced ML techniques for forecasting and anomaly detection.
+* Expertise in building and deploying models in production environments.
+* Familiarity with distributed computing tools (e.g., Spark, Databricks).
+* Knowledge of AI governance and responsible AI frameworks.
+* Experience with cloud platforms (AWS/GCP/Azure) and containerization (Docker/Kubernetes).
+
+
+**Desirable Skills**:
+
+
+* Experience with GenAI platforms and LLMOps tools (e.g., LangChain, MLflow).
+* Understanding of vector databases and RAG pipelines.
+* Exposure to CI/CD pipelines and DevOps practices.
+* Ability to conduct market research and contribute to product strategy.
+* Experience in supply chain or operations domain analytics.
+
+
+**Qualification**:
+
+
+* Experience: Overall 11 years of experience, including a minimum of 7\+ years in data science, machine learning, or AI development, with proven expertise in deploying solutions at scale.
+* Education: Bachelor’s or master’s degree in computer science, Engineering, Mathematics, Statistics, or a related field.
+
+
+**Qualities**:
+
+
+* Strong analytical and strategic thinking.
+* Excellent communication and stakeholder management.
+* Leadership and mentoring capabilities.
+* Adaptability in dynamic and multicultural environments.
+
+Passion for innovation and continuous learning.  
+* 
+**Years Of Exp**11 to 15 years
+
+**Location**Pune, Maharashtra, India",,https://in.indeed.com/cmp/Infocepts,,https://www.infocepts.ai,"McLean, VA","1,001 to 5,000",Decline to state,,,,,,,
+in-b0fe829175cbafd0,indeed,https://in.indeed.com/viewjob?jk=b0fe829175cbafd0,https://source-right.com/jobs/di-expert-python-genai-llm-ce815sf-rm-3882/,"DI – Expert Python, GenAI – LLM (CE815SF RM 3882)",Source-Right Inc.,"TS, IN",2026-01-23,fulltime,,,,,,False,,,,,"**Position: DI – Expert Python, GenAI – LLM (CE815SF RM 3882\)**
+
+
+**Primary skills: Expert\-level Python, GenAI Frameworks, LLM Integration, RAG \& Search, Vector Databases, Cloud \& AI Services**  
+
+**Secondary skills: 8–15 years in AI/ML development, with 3\+ years specialized in Generative AI and LLM applications.**
+
+
+**AI Lead Engineer – Generative AI \& LLM Applications**  
+
+**Experience Required**  
+
+**8–15 years in AI/ML development, with 3\+ years specialized in Generative AI and LLM applications.**
+
+
+**Role Overview**  
+
+The AI Lead Engineer will design, build, and operate production\-grade Generative AI solutions for complex enterprise scenarios. The role focuses on scalable LLM\-powered applications, robust RAG pipelines, and multi\-agent systems with MCP deployed across major cloud AI platforms.
+
+
+**Key Responsibilities**  
+
+**Technical Leadership \& Development**
+
+
+Design and implement enterprise\-grade GenAI solutions using LLMs (GPT, Claude, Llama and similar families).
+
+
+Build and optimize production\-ready RAG pipelines including chunking, embeddings, retrieval tuning, query rewriting, and prompt optimization.
+
+
+Develop single\- and multi\-agent systems using LangChain, LangGraph, LlamaIndex and similar orchestration frameworks.
+
+
+Design agentic systems with robust tool calling, memory management, and reasoning patterns.
+
+
+Build scalable Python \+ FastAPI/Flask or MCP microservices for AI\-powered applications, including integration with enterprise APIs.
+
+
+Implement model evaluation frameworks using RAGAS, DeepEval, or custom metrics aligned to business KPIs.
+
+
+Implement agent\-based memory management using Mem0, LangMem or similar libraries.
+
+
+Fine\-tune and evaluate LLMs for specific domains and business use cases.
+
+
+Deploy and manage AI solutions on Azure (Azure OpenAI, Azure AI Studio, Copilot Studio), AWS (Bedrock, SageMaker, Comprehend, Lex), and GCP (Vertex AI, Generative AI Studio).
+
+
+Implement observability, logging, and telemetry for AI systems to ensure traceability and performance monitoring.
+
+
+Ensure scalability, reliability, security, and cost\-efficiency of production AI applications.
+
+
+Deep understanding of RAG architectures, hybrid retrieval, and context engineering patterns.
+
+
+Translate business requirements into robust technical designs, architectures, and implementation roadmaps.
+
+
+Drive innovation by evaluating new LLMs, orchestration frameworks, and cloud AI capabilities (including Copilot Studio for copilots and workflow automation).
+
+
+
+**Required Skills \& Experience**  
+
+**Core Technical**  
+
+**Programming: Expert\-level Python with production\-quality code, testing, and performance tuning.**
+
+
+GenAI Frameworks: Strong hands\-on experience with LangChain, LangGraph, LlamaIndex, agentic orchestration libraries.
+
+
+LLM Integration: Practical experience integrating OpenAI, Anthropic Claude, Azure OpenAI, AWS Bedrock, and Vertex AI models via APIs/SDKs.
+
+
+RAG \& Search: Deep experience designing and operating RAG workflows (document ingestion, embeddings, retrieval optimization, query rewriting).
+
+
+Vector Databases: Production experience with at least two of OpenSearch, Pinecone, Qdrant, Weaviate, pgvector, FAISS.
+
+
+Cloud \& AI Services:  
+
+o Azure: Azure OpenAI, Azure AI Studio, Copilot Studio, Azure Cognitive Search.  
+
+o AWS: Bedrock, SageMaker endpoints, AWS nova, AWS Transform etc.  
+
+o GCP: Vertex AI (models, endpoints), Agent space, Agent Builder  
+
+Preferred Qualifications
+
+
+Master’s degree in Computer Science, AI/ML, Data Science, or related field.
+
+
+Experience with multi\-agent systems, Agent\-to\-Agent (A2A) communication, and MCP\-based ecosystems.
+
+
+Familiarity with LLMOps / observability platforms such as LangSmith, Opik, Azure AI Foundry
+
+
+Experience integrating graph databases and knowledge graphs to enhance retrieval and reasoning.
+
+
+
+**\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\***
+
+
+
+**Job Category:** Digital\_Cloud\_Web Technologies
+**Job Type:** Full Time
+**Job Location:** Hyderabad
+**Experience:** 8\-15 Years
+**Notice period:** 0\-15 days",,https://in.indeed.com/cmp/Source--right-Inc.,,,,,,,,,,,,
+in-1bd08fa8f3b0f26b,indeed,https://in.indeed.com/viewjob?jk=1bd08fa8f3b0f26b,https://careers.spglobal.com/jobs/323997?lang=en-us&utm_source=indeed,AI Application Security Lead,S&P Global,"TS, IN",2026-01-22,,,,,,,False,,,,"reportfraud@spglobal.com, EEO.Compliance@spglobal.com","**About the Role:**  
+
+**Grade Level (for internal use):** 12
+  
+**Location:** India
+  
+**Grade:** 12
+  
+Role Summary
+  
+We are seeking an experienced AI Application Security Lead to drive the secure development, deployment, and management of AI and GenAI applications across our enterprise. This role will focus on architecting and implementing robust security controls for AI/ML solutions, performing risk assessments, and leading threat modeling and security testing for agentic AI protocols (such as A2A, A2P, MCP). The ideal candidate brings a strong background in application security, cloud security, and hands\-on AI/ML security, with the ability to collaborate effectively with business, engineering, and compliance teams to deliver secure, compliant, and resilient AI systems.
+  
+Key Responsibilities
+  
+Develop, implement, and continuously improve comprehensive AI/ML and GenAI security strategies, standards, and best practices for application and data security.
+  
+Lead the creation and maintenance of security control frameworks and reference architectures for agentic AI applications, including protocols like A2A (Agent\-to\-Agent), A2P (Agent\-to\-Process), and MCP (Multi\-Agent Control Plane).
+  
+Collaborate with development and business teams to identify security requirements and embed security controls throughout the SDLC for AI/ML and GenAI applications.
+  
+Conduct threat modeling and risk assessments using industry\-standard methodologies (e.g., STRIDE, DREAD) for AI systems, APIs, and cloud\-native services.
+  
+Design and execute security testing strategies, including vulnerability assessments, penetration testing, and adversarial prompt testing for AI models and agentic protocols.
+  
+Lead security architecture reviews for AI applications deployed across cloud platforms (AWS, Azure, GCP, OCI) and on\-prem environments.
+  
+Develop configuration hardening guidelines for cloud\-native AI/ML services (e.g., AWS SageMaker, Bedrock, Azure Cognitive Services, GCP Vertex AI).
+  
+Ensure compliance with relevant regulations and standards (e.g., SOC 2, ISO 27001, NIST, GDPR) and collaborate with legal and compliance teams to align AI systems with industry requirements.
+  
+**Drive business stakeholder communications:** clearly articulate AI security risks, solutions, and value trade\-offs to both technical and non\-technical audiences.
+  
+Present security metrics, dashboards, and reports on AI application security posture, incidents, and improvements to management and business stakeholders.
+  
+Stay abreast of emerging threats, vulnerabilities, and innovations in AI/ML security, proactively recommending enhancements to security posture.
+  
+Mentor and enable engineering teams on secure coding, prompt engineering, and AI application security best practices.
+  
+Qualifications
+  
+8\+ years of experience in Information Security, with at least 3\+ years in secure SDLC, application security, or software engineering roles.
+  
+Minimum 1\+ year of hands\-on experience in AI/ML or LLMOps security.
+  
+Strong understanding of cloud security across AWS, Azure, GCP, OCI, and experience with native AI/ML services.
+  
+Proficiency in application and data security, GenAI, LLMs, and prompt engineering; familiarity with OWASP LLM Top 10\.
+  
+Demonstrated experience with agentic AI protocols (A2A, A2P, MCP) and security architecture for distributed AI systems.
+  
+Experience developing and executing security testing strategies, including penetration testing and adversarial testing for AI/ML applications.
+  
+Threat modeling expertise using STRIDE, DREAD, or similar methodologies.
+  
+Ability to develop reference security architectures and design patterns for proactive and automated controls.
+  
+Strong knowledge of information security standards, data confidentiality, and regulatory frameworks.
+  
+Excellent communication skills, with the ability to influence and present security metrics to business stakeholders.
+  
+Strong analytical, problem\-solving, and organizational skills, with experience managing multiple priorities in a global environment.
+  
+Preferred Certifications
+  
+Security certifications such as CISSP, CCSP, CISM, OSCP
+  
+Cloud certifications (AWS/Azure/GCP/OCI security specialties)
+  
+Kubernetes certification (CKA)
+  
+AI/ML certifications (e.g., AWS ML Specialty, Azure AI Engineer)
+  
+  
+
+What’s In It For You?
+  
+  
+
+**Our Mission:**  
+
+Advancing Essential Intelligence.
+  
+  
+
+**Our People:**  
+
+We're more than 35,000 strong worldwide—so we're able to understand nuances while having a broad perspective. Our team is driven by curiosity and a shared belief that Essential Intelligence can help build a more prosperous future for us all.From finding new ways to measure sustainability to analyzing energy transition across the supply chain to building workflow solutions that make it easy to tap into insight and apply it. We are changing the way people see things and empowering them to make an impact on the world we live in. We’re committed to a more equitable future and to helping our customers find new, sustainable ways of doing business. Join us and help create the critical insights that truly make a difference.
+  
+  
+
+**Our Values:**  
+
+Integrity, Discovery, Partnership
+  
+  
+
+Throughout our history, the world's leading organizations have relied on us for the Essential Intelligence they need to make confident decisions about the road ahead. We start with a foundation of integrity in all we do, bring a spirit of discovery to our work, and collaborate in close partnership with each other and our customers to achieve shared goals.
+  
+  
+
+**Benefits:**  
+
+We take care of you, so you can take care of business. We care about our people. That’s why we provide everything you—and your career—need to thrive at S\&P Global.
+  
+  
+
+**Our benefits include:**  
+
+**Health \& Wellness:** Health care coverage designed for the mind and body.
+  
+  
+
+**Flexible Downtime:** Generous time off helps keep you energized for your time on.
+  
+  
+
+**Continuous Learning:** Access a wealth of resources to grow your career and learn valuable new skills.
+  
+  
+
+**Invest in Your Future:** Secure your financial future through competitive pay, retirement planning, a continuing education program with a company\-matched student loan contribution, and financial wellness programs.
+  
+  
+
+**Family Friendly Perks:** It’s not just about you. S\&P Global has perks for your partners and little ones, too, with some best\-in class benefits for families.
+  
+  
+
+**Beyond the Basics:** From retail discounts to referral incentive awards—small perks can make a big difference.
+  
+**For more information on benefits by country visit:** https://spgbenefits.com/benefit\-summaries
+  
+  
+
+**Global Hiring and Opportunity at S\&P Global:**  
+
+At S\&P Global, we are committed to fostering a connected and engaged workplace where all individuals have access to opportunities based on their skills, experience, and contributions. Our hiring practices emphasize fairness, transparency, and merit, ensuring that we attract and retain top talent. By valuing different perspectives and promoting a culture of respect and collaboration, we drive innovation and power global markets.
+  
+  
+
+**Recruitment Fraud Alert:**  
+
+If you receive an email from a spglobalind.com domain or any other regionally based domains, it is a scam and should be reported to reportfraud@spglobal.com . S\&P Global never requires any candidate to pay money for job applications, interviews, offer letters, “pre\-employment training” or for equipment/delivery of equipment. Stay informed and protect yourself from recruitment fraud by reviewing our guidelines, fraudulent domains, and how to report suspicious activity here .
+  
+  
+
+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
+  
+  
+
+Equal Opportunity Employer
+  
+S\&P Global is an equal opportunity employer and all qualified candidates will receive consideration for employment without regard to race/ethnicity, color, religion, sex, sexual orientation, gender identity, national origin, age, disability, marital status, military veteran status, unemployment status, or any other status protected by law. Only electronic job submissions will be considered for employment.
+  
+  
+
+If you need an accommodation during the application process due to a disability, please send an email to: EEO.Compliance@spglobal.com and your request will be forwarded to the appropriate person.
+  
+  
+
+**US Candidates Only:** The EEO is the Law Poster http://www.dol.gov/ofccp/regs/compliance/posters/pdf/eeopost.pdf describes discrimination protections under federal law. Pay Transparency Nondiscrimination Provision \- https://www.dol.gov/sites/dolgov/files/ofccp/pdf/pay\-transp\_%20English\_formattedESQA508c.pdf
+  
+  
+
+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- 103 \- Middle Management (EEO Job Group) (inactive), 10 \- Officials or Managers (EEO\-2 Job Categories\-United States of America), IFTECH103\.2 \- Middle Management Tier II (EEO Job Group)
+  
+  
+
+**Job ID:** 323997
+  
+**Posted On:** 2026\-01\-22
+  
+**Location:** Hyderabad, Telangāna, India",,https://in.indeed.com/cmp/S&P-Global,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/f2c39edcfdb6298c4a18fdb1ffb00687,https://www.spglobal.com/en/,"New York, NY","10,000+",more than $10B (USD),"We deliver Essential Intelligence that powers decision making. S&P Global provides the world’s leading organizations with the right data, connected technologies and expertise they need to move ahead.",,,,,,
+in-b1be5a3feccbee26,indeed,https://in.indeed.com/viewjob?jk=b1be5a3feccbee26,https://apply.careers.microsoft.com/careers/job/1970393556735546?utm_source=indeed&domain=microsoft.com,Applied AI Engineer II,Microsoft,"KA, IN",2026-01-19,fulltime,,,,,,False,,,,,"**Overview**  
+
+Dynamics 365 is Microsoft’s suite of enterprise software that powers many of the largest businesses in the world. The Customer Experience Applications Team delivers Dynamics 365 Contact Center, an AI\-first solution that lets our customers run intelligent and highly scalable contact centers. We are building the next generation of our applications running on Azure that pull together Dynamics 365, Office 365 and a number of other Microsoft cloud services to deliver high value, complete, and predictive application scenarios across all devices and form factors.
+
+  
+
+D365 Contact Center is a robust application that extends the power of CRM’s like Dynamics 365 Customer Service to enable organizations to instantly connect and engage with their customers via channels like Live Chat, Voice, and SMS.
+
+  
+
+As an **Applied AI Engineer II** in the Microsoft Dynamics Customer Experience Applications team, you will apply both software engineering and AI expertise to design and implement intelligent solutions within Dynamics 365\. You’ll collaborate with business and technology leaders, internal users, and partners to build scalable, production\-ready systems that leverage AI to solve complex business requests. In this role, you are expected to bring software engineering fundamentals—architecture, coding, testing, and deployment—while also selecting and integrating the most effective AI models and frameworks to deliver measurable impact and innovation.
+
+
+We innovate quickly and collaborate closely with our partners and customers in a very agile environment. If the opportunity to collaborate with a diverse engineering team, on enabling end\-to\-end business scenarios using cutting\-edge AI first technologies and to solve problems for large scale 24x7 business SaaS applications excite you, we would love to talk to you!
+
+
+Microsoft’s mission is to empower every person and every organization on the planet to achieve more. As employees we come together with a growth mindset, innovate to empower others, and collaborate to realize our shared goals. Each day we build on our values of respect, integrity, and accountability to create a culture of inclusion where everyone can thrive at work and beyond.  
+
+
+
+  
+
+  
+
+**Responsibilities**  
+
+As a software engineer with applied AI focus in the Microsoft Dynamics Customer Experience Applications team, you will apply both software engineering and AI expertise to build intelligent, scalable solutions that power Dynamics 365 services used globally. You’ll collaborate with cross\-functional teams to deliver high\-impact features aligned with enterprise standards and cloud\-scale requirements. Your responsibilities include:
+
+* **Design and develop highly usable, scalable application capabilities**, integrating AI models and enhancing existing features to meet evolving customer needs.
+* **Build and debug production\-grade code** in distributed systems
+* **Translate business requirements into AI solutions,** collaborating with data scientists, product managers, and engineering teams to ensure alignment and impact
+* **Optimize AI model performance and reliability** in production environments, including retraining, evaluation, and continuous monitoring.
+* **Own deployment, quality and operation of** AI systems, including automated testing, CI/CD pipelines, deployment, and monitoring with strong MLOps and DevOps practices.
+* **Troubleshoot live site issues** as part of both product development and live site support rotations, ensuring rapid resolution and learning.
+* **Ensure high reliability and performance** of applications and services through intelligent monitoring, alerting, and proactive failover strategies.
+
+  
+
+**Qualifications** **Required Qualifications:**
+
+* Bachelor's Degree in Computer Science or related technical field AND 3\+ years technical engineering experience with coding in languages including, but not limited to, C, C\+\+, C\#, Java, JavaScript, or Python
+* OR equivalent experience.
+* 1\+ years of professional experience working with generative artificial intelligence, large language models, or agent\-based systems.
+
+ **Other Requirements:**
+
+
+Ability to meet Microsoft, customer and/or government security screening requirements are required for this role. These requirements include but are not limited to the following specialized security screenings: Microsoft Cloud Background Check:
+
+
+* This position will be required to pass the Microsoft Cloud Background Check upon hire/transfer and every two years thereafter.
+
+ **Preferred Qualifications:**
+
+* Master's Degree in Computer Science or related technical field AND 2\+ years technical engineering experience with coding in languages including, but not limited to, C, C\+\+, C\#, Java, JavaScript, or Python . 1\+ years of professional experience working with generative artificial intelligence, large language models, or agent\-based systems.
+* OR Bachelor's Degree in Computer Science or related technical field AND 3\+ years technical engineering experience with coding in languages including, but not limited to, C, C\+\+, C\#, Java, JavaScript, or Python. 1\+ years of professional experience working with generative artificial intelligence, large language models, or agent\-based systems.
+* Deep understanding of Distributed System Design, Design patterns, Algorithms, SDLC and Software Engineering experience.
+* AI \& Domain Expertise: Deep expertise in one or more AI domains, with a proven track record of deploying and scaling AI models in cloud environments.
+* MLOps \& LLMOps: Strong experience with MLOps workflows (CI/CD, monitoring, retraining pipelines) and familiarity with modern LLMOps frameworks.
+* Strong experience with Realtime APIs, open API, Rags, Lang chain, Caching, LLM Finetuning, prompt, Evals, MCP, graphRags
+* Cloud \& Infrastructure: Skilled in building and operating infrastructure using Azure, AWS, or Google Cloud, and deploying containerized models with Docker, Kubernetes, or similar tools.
+* Engineering Excellence: Passion for building high\-quality, reliable, and maintainable software with strong coding and debugging practices.
+* Collaboration \& Communication: Excellent verbal, written, and cross\-team communication skills; a collaborative team player across time zones and diverse stakeholder groups.
+* Experience with customers success, zero trust security and compliance
+Experience with proficient coding, debugging, and problem\-solving skills  
+* 
+
+  
+
+This position will be open for a minimum of 5 days, with applications accepted on an ongoing basis until the position is filled.
+
+  
+
+Microsoft is an equal opportunity employer. All qualified applicants will receive consideration for employment without regard to age, ancestry, citizenship, color, family or medical care leave, gender identity or expression, genetic information, immigration status, marital status, medical condition, national origin, physical or mental disability, political affiliation, protected veteran or military status, race, ethnicity, religion, sex (including pregnancy), sexual orientation, or any other characteristic protected by applicable local laws, regulations and ordinances. If you need assistance with religious accommodations and/or a reasonable accommodation due to a disability during the application process**.**",Internet And Software,https://in.indeed.com/cmp/Microsoft,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/88813b3f866a5b58c9685073e3b87e05,http://www.microsoft.com/,"One Microsoft Way Redmond, Washington 98052-6399","10,000+",more than $10B (USD),Our mission is to empower every person and every organization on the planet to achieve more.,,,,,,
+in-a49598dd18a4b8cb,indeed,https://in.indeed.com/viewjob?jk=a49598dd18a4b8cb,https://apply.careers.microsoft.com/careers/job/1970393556735550?utm_source=indeed&domain=microsoft.com,Applied Science,Microsoft,"KA, IN",2026-01-19,fulltime,,,,,,False,,,,,"**Overview**  
+
+Dynamics 365 is Microsoft’s suite of enterprise software that powers many of the largest businesses in the world. The Customer Experience Applications Team delivers Dynamics 365 Contact Center, an AI\-first solution that lets our customers run intelligent and highly scalable contact centers. We are building the next generation of our applications running on Azure that pull together Dynamics 365, Office 365 and a number of other Microsoft cloud services to deliver high value, complete, and predictive application scenarios across all devices and form factors.
+
+  
+
+  
+
+D365 Contact Center is a robust application that extends the power of CRM’s like Dynamics 365 Customer Service to enable organizations to instantly connect and engage with their customers via channels like Live Chat, Voice, and SMS.
+
+  
+
+  
+
+As an **Applied AI Engineer** in the Microsoft Dynamics Customer Experience Applications team, you will apply both software engineering and AI expertise to design and implement intelligent solutions within Dynamics 365\. You’ll collaborate with business and technology leaders, internal users, and partners to build scalable, production\-ready systems that leverage AI to solve complex business requests. In this role, you are expected to bring software engineering fundamentals—architecture, coding, testing, and deployment—while also selecting and integrating the most effective AI models and frameworks to deliver measurable impact and innovation.
+
+  
+
+  
+
+We innovate quickly and collaborate closely with our partners and customers in a very agile environment. If the opportunity to collaborate with a diverse engineering team, on enabling end\-to\-end business scenarios using cutting\-edge AI first technologies and to solve problems for large scale 24x7 business SaaS applications excite you, we would love to talk to you!
+
+
+Microsoft’s mission is to empower every person and every organization on the planet to achieve more. As employees we come together with a growth mindset, innovate to empower others, and collaborate to realize our shared goals. Each day we build on our values of respect, integrity, and accountability to create a culture of inclusion where everyone can thrive at work and beyond.
+
+ **Responsibilities**  
+
+As a software engineer with applied AI focus in the Microsoft Dynamics Customer Experience Applications team, you will apply both software engineering and AI expertise to build intelligent, scalable solutions that power Dynamics 365 services used globally. You’ll collaborate with cross\-functional teams to deliver high\-impact features aligned with enterprise standards and cloud\-scale requirements. Your responsibilities include:
+
+* **Design and develop highly usable, scalable application capabilities**, integrating AI models and enhancing existing features to meet evolving customer needs.
+* **Build and debug production\-grade code** in distributed systems
+* **Translate business requirements into AI solutions,** collaborating with data scientists, product managers, and engineering teams to ensure alignment and impact
+* **Optimize AI model performance and reliability** in production environments, including retraining, evaluation, and continuous monitoring.
+* **Own deployment, quality and operation of** AI systems, including automated testing, CI/CD pipelines, deployment, and monitoring with strong MLOps and DevOps practices.
+* **Troubleshoot live site issues** as part of both product development and live site support rotations, ensuring rapid resolution and learning.
+* **Ensure high reliability and performance** of applications and services through intelligent monitoring, alerting, and proactive failover strategies.
+
+  
+
+**Qualifications** **Required Qualifications:**
+
+* Bachelor's Degree in Computer Science or related technical field AND 1\+ years technical engineering experience with coding in Python for building scalable, production\-ready systems.
+* Experience with SQL for querying and managing large datasets; PySpark for distributed data processing and ETL workflows.
+* Hands\-on expertise with Power BI for dashboard creation, data modeling, and visualization of contact center metrics.
+* 1\+ years of professional experience working with generative artificial intelligence, large language models, or agent\-based systems.
+
+ **Other Requirements:**
+
+
+Ability to meet Microsoft, customer and/or government security screening requirements are required for this role. These requirements include but are not limited to the following specialized security screenings: Microsoft Cloud Background Check:
+
+* This position will be required to pass the Microsoft Cloud Background Check upon hire/transfer and every two years thereafter.
+
+ **Preferred Qualifications:**
+
+* Master's Degree in Computer Science or related technical field AND 1\+ years technical engineering experience with coding in languages C\#, Java preferably.
+* Bachelor's Degree in Computer Science or related technical field
+* AI \& Domain Expertise: Deep expertise in one or more AI domains, with a proven track record of deploying and scaling AI models in cloud environments.
+* MLOps \& LLMOps: Strong experience with MLOps workflows (CI/CD, monitoring, retraining pipelines) and familiarity with modern LLMOps frameworks.
+* Cloud \& Infrastructure: Skilled in building and operating infrastructure using Azure, AWS, or Google Cloud, and deploying containerized models with Docker, Kubernetes, or similar tools.
+* Engineering Excellence: Passion for building high\-quality, reliable, and maintainable software with strong coding and debugging practices.
+* Collaboration \& Communication: Excellent verbal, written, and cross\-team communication skills; a collaborative team player across time zones and diverse stakeholder groups.
+* Experience with customers success, zero trust security and compliance
+* Experience with proficient coding, debugging, and problem\-solving skills
+
+  
+
+  
+
+This position will be open for a minimum of 5 days, with applications accepted on an ongoing basis until the position is filled.
+
+  
+
+Microsoft is an equal opportunity employer. All qualified applicants will receive consideration for employment without regard to age, ancestry, citizenship, color, family or medical care leave, gender identity or expression, genetic information, immigration status, marital status, medical condition, national origin, physical or mental disability, political affiliation, protected veteran or military status, race, ethnicity, religion, sex (including pregnancy), sexual orientation, or any other characteristic protected by applicable local laws, regulations and ordinances. If you need assistance with religious accommodations and/or a reasonable accommodation due to a disability during the application process**.**",Internet And Software,https://in.indeed.com/cmp/Microsoft,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/88813b3f866a5b58c9685073e3b87e05,http://www.microsoft.com/,"One Microsoft Way Redmond, Washington 98052-6399","10,000+",more than $10B (USD),Our mission is to empower every person and every organization on the planet to achieve more.,,,,,,

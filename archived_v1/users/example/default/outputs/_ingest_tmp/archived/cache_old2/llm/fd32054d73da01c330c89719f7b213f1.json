@@ -1,0 +1,14 @@
+{
+  "roles": {
+    "0": "manager",
+    "1": "manager",
+    "2": "junior",
+    "3": "individual_contributor",
+    "4": "manager",
+    "5": "manager",
+    "6": "individual_contributor",
+    "7": "individual_contributor",
+    "8": "manager",
+    "9": "manager"
+  }
+}

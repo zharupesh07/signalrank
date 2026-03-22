@@ -1,0 +1,1145 @@
+id,site,job_url,job_url_direct,title,company,location,date_posted,job_type,salary_source,interval,min_amount,max_amount,currency,is_remote,job_level,job_function,listing_type,emails,description,company_industry,company_url,company_logo,company_url_direct,company_addresses,company_num_employees,company_revenue,company_description,skills,experience_range,company_rating,company_reviews_count,vacancy_count,work_from_home_type
+in-6c44e6d94102a7e3,indeed,https://in.indeed.com/viewjob?jk=6c44e6d94102a7e3,https://click.appcast.io/t/JDteWpf6cBRsGrKeYE36BM2t2mYcPLGx4LL_rxRD9A4=,"Senior Solution Architect, HPC - NVIS",NVIDIA,"MH, IN",2026-01-26,fulltime,,,,,,False,,,,,"NVIDIA has been transforming computer graphics, PC gaming, and accelerated computing for more than 25 years. It’s a unique legacy of innovation that’s fueled by great technology—and amazing people. Today, we’re tapping into the unlimited potential of AI to define the next era of computing. An era in which our GPU acts as the brains of computers, robots, and self\-driving cars that can understand the world. Doing what’s never been done before takes vision, innovation, and the world’s best talent. As an NVIDIAN, you’ll be immersed in a diverse, supportive environment where everyone is inspired to do their best work. Come join the team and see how you can make a lasting impact on the world.
+
+
+NVIDIA is looking for a Senior AI/HPC Engineer to join its infrastructure Specialist team. Academic and commercial groups around the world are using NVIDIA products to revolutionize deep learning and data analytics, and to power data centers. Join the team building many of the largest and fastest AI/HPC systems in the world! NVIDIA is looking for someone with the ability to work on a dynamic, customer\-focused team that requires excellent interpersonal skills. This role will be interacting with customers, partners, and internal teams to analyse, define, and implement large\-scale AI/HPC projects. The scope of these efforts includes a combination of Networking, System Design, and Automation, and being the face to the customer.
+
+**What you will be doing:**
+
+* Primary responsibilities will include deploying, managing and maintaining AI/HPC infrastructure in Linux\-based environments for new and existing customers.
+* Be the domain expert with customers during planning calls through implementation.
+* Handover\-related documentation and perform knowledge transfers required to support customers as they begin rolling out some of the most sophisticated systems in the world!
+* Provide feedback into internal teams such as opening bugs, documenting workarounds, and suggesting improvements.
+
+**What we need to see:**
+
+* BS/MS/PhD or equivalent experience in Computer Science, Electrical/Computer Engineering, Physics, Mathematics, or related fields.
+* 5\+ years providing in\-depth support and deployment services, solving problems for hardware and software products.
+* Knowledge and experience with Linux System Administration, process management, package management, task scheduling, kernel management, boot procedures/troubleshooting, performance reporting/optimization/logging, network routing/advanced networking (tuning and monitoring).
+* Cluster management technologies.
+* Scripting proficiency.
+* Good interpersonal skills with the ability to maintain and deliver resolutions for customer\-blocking issues as they arise. Excellent verbal and written English skills.
+* Strong organizational skills and ability to prioritize/multi\-task easily with limited supervision.
+* Industry\-standard Linux certifications.
+* Experience with Schedulers such as SLURM, LSF, UGE, etc.
+
+**Ways to stand out from crowd:**
+
+* Demonstrated hands\-on experience with MPI (e.g., OpenMPI, MPICH), proficient in distributed communication programming and cluster debugging.
+* In\-depth understanding of NCCL principles and applications, with expertise in collective communication optimization for NVIDIA GPU clusters.
+* Experience in deploying and optimizing high\-speed networks (InfiniBand/Ethernet), with a clear understanding of how network architecture impacts GPU cluster performance
+* Familiarity with automation tools (Ansible, Salt, Puppet, etc.), capable of implementing batch configuration and operational automation for GPU clusters and LLM deployment environments.
+* knowledge and hands\-on experience with Kubernetes, including container orchestration for AI/ML workloads, resource scheduling, scaling, and integration with HPC environments.
+
+
+NVIDIA is widely considered to be one of the technology world’s most desirable employers. We have some of the most forward\-thinking and hardworking people in the world working for us. Are you a creative and autonomous manager who loves a challenge? Are you ready to become the staff member you always wanted to be? Come and be part of the best SW design team in the industry!
+
+
+We are an equal opportunity employer and value diversity at our company. We do not discriminate on the basis of race, religion, color, national origin, gender, sexual orientation, age, marital status, veteran status, or disability status. We will ensure that individuals with disabilities are provided reasonable accommodation to participate in the job application or interview process, to perform essential job functions, and to receive other benefits and privileges of employment. Please contact us to request accommodation.",,https://in.indeed.com/cmp/Nvidia,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/b2996d44d9185b4c723f9f5f388bf1d1,http://www.nvidia.com,"Santa Clara, CA","10,000+",$5B to $10B (USD),,,,,,,
+in-196f4ba6b5204614,indeed,https://in.indeed.com/viewjob?jk=196f4ba6b5204614,https://jobs.mattel.com/en/job/hyderabad/senior-manager-tower-lead-for-india-infrastructure-and-operations/2015/91042341952,Senior Manager/Tower Lead for India-Infrastructure & Operations,"Mattel, Inc.","TS, IN",2026-01-26,,,,,,,False,,,,,"**CREATIVITY IS OUR SUPERPOWER.** It’s our heritage and it’s also our future. Because we don’t just make toys. We create innovative products and experiences that inspire fans, entertain audiences and develop children through play. Mattel is at its best when every member of our team feels respected, included, and heard—when everyone can show up as themselves and do their best work every day. We value and share an infinite range of ideas and voices that evolve and broaden our perspectives with a reach that extends into all our brands, partners, and suppliers.
+
+**The Team:**
+
+ **The Opportunity:**
+
+**What Your Impact Will Be:**
+
+**Key Responsibilities:**
+
+**Leadership and Team Management:**
+
+* Lead, mentor, and develop a team of infrastructure operations engineers and specialists.
+* Foster a collaborative, high\-performing, and results\-oriented team culture.
+* Set clear performance expectations, provide regular feedback, and conduct performance reviews.
+* Manage team schedules, on\-call rotations, and ensure adequate staffing levels.
+* Identify training and development needs within the team.
+
+**Infrastructure Operations and Maintenance:**
+
+* Oversee the day\-to\-day operations, maintenance, and monitoring of all IT infrastructure components (servers, storage, network, firewalls, load balancers, etc.).
+* Ensure high availability, performance, and stability of critical systems and services.
+* Implement and enforce ITIL best practices for incident, problem, change, and configuration management.
+* Develop and maintain comprehensive documentation for infrastructure configurations, processes, and procedures.
+* Manage and optimize backup, recovery, and disaster recovery processes.
+* Collaborate with Design, Engineering, Capacity, Strategy, Security and Application teams
+
+**Cloud Infrastructure Management:**
+
+* Manage and optimize our cloud infrastructure (e.g., AWS, Azure, GCP) for performance, cost\-efficiency, and security.
+* Implement and maintain cloud monitoring and alerting systems.
+* Ensure compliance with cloud security policies and best practices.
+
+**Security and Compliance:**
+
+* Collaborate with the security team to implement and maintain security policies and procedures for the infrastructure.
+* Ensure compliance with relevant industry regulations and standards (e.g., SOC 2, SOCr, NIST, RAP and PCI).
+* Participate in security audits and implement remediation plans.
+
+**Collaboration and Communication:**
+
+* Collaborate effectively with other IT teams (e.g., development, security, support) and business stakeholders.
+* Communicate clearly and concisely with technical and non\-technical audiences regarding infrastructure status, incidents, and projects.
+* Participate in strategic planning and contribute to the development of IT roadmaps.
+
+**Problem Solving and Incident Management:**
+
+* Lead the resolution of complex infrastructure issues and outages.
+* Conduct root cause analysis and implement preventative measures.
+* Develop and maintain incident response plans.
+
+**Continuous Improvement:**
+
+* Identify opportunities for process improvement and automation within infrastructure operations.
+* Implement solutions to enhance efficiency, reliability, and scalability.
+* Stay current with emerging technologies and industry trends.
+
+**Technical Expertise:**
+
+* Strong technical expertise across a broad range of infrastructure technologies, including:
+	+ Server operating systems (Windows Server, Linux)
+	+ Networking (TCP/IP, DNS, DHCP, routing, switching, firewalls, VPN)
+	+ Storage solutions (EMC, iSilon, SAN, NAS)
+	+ Virtualization technologies (VMware, NSX)
+	+ Cloud platforms (AWS, Azure, GCP) – deep understanding of at least one is required.
+	+ Monitoring and alerting tools (e.g., SolarWinds, Nagios, SCOM, CloudWatch, Azure Monitor)
+	+ Automation tools (e.g., Ansible, Chef, Puppet, scripting languages like Python, PowerShell)
+	+ Collaboration tools (O365, Zoom, Teams)
+	+ Database management (Oracle, OCI, MsSQL, MySQL)
+* Proven ability to lead and motivate technical teams.
+* Excellent problem\-solving and analytical skills.
+
+ **What We’re Looking For:**
+
+ **Experience:**
+
+* Minimum 5 years of experience in a global 24/7 operations Leadership
+* Experience in managing co\-location relationships with heavy emphasis on Outsourcing relationships
+* Experience in Cloud technologies AWS and/ or GCP and/ or Azure
+* Experience in managing RedHat Linux, Windows, VMWare, EMC \& NetApp Storage, Backups, and Cisco Networking devices
+* Experience in analysis of complex infrastructure problems
+* Strong interpersonal skills and the ability to effectively communicate with a wide range of stakeholders
+* Ability to gather data, compile information, and prepare reports for Executive Management
+* Ability to supervise and train employees, to include organizing, prioritizing, and scheduling work assignments.
+* Ability to provide technical guidance and leadership to professional personnel in area of expertise.
+* Ability to provide and drive data collection needs for various annual Corporate Audits: SOX, PCI, etc.
+* Strong understanding of ITIL principles and best practices.
+* Excellent communication (written and verbal) and interpersonal skills.
+* Experience in managing vendor relationships and budgets.
+* Knowledge of security best practices and compliance requirements.
+* Work with technology leadership team and assist with scheduled changes, maintenances and unplanned incidents
+* Coordinates and supports disaster recovery procedures and assists in the development of disaster recovery plans
+* Reviews historical data for trend analysis
+* Departmental Requirements
+	+ Available for all critical outages by driving the team to service restoration
+
+**Qualifications:**
+
+* **Education:** Bachelor's degree in Computer Science, Information Technology, or a related field. A Master's degree is preferred.
+* **Experience:** 15\+ years of experience inor a similar role, with at least 5 years of experience managing offshore technical teams.
+* **Technical Skills:** Strong understanding of software development, IT infrastructure, and project delivery methodologies.
+* **Leadership Skills:** Proven ability to lead and inspire technical teams, with excellent interpersonal and communication skills.
+* **Problem\-Solving:** Strong analytical and problem\-solving abilities, with a proactive approach to addressing challenges.
+* **Cultural Awareness:** Ability to work effectively in a multicultural environment and manage teams across different time zones.
+
+**Preferred Qualifications:**
+
+* Experience working in a global organization with distributed teams.
+* Certification in (Insert function here)
+* Knowledge and Certifications in ITIL, Agile and DevOps practices.
+* **Knowledge:**
+* Working knowledge on managing Cloud operational support services (AWS and/ or GCP and/ or Azure and/ or SaaS)
+* Working knowledge of service monitoring tools such as: SolarWinds Orion, Microsoft System Center Operations Manager, and Nagios
+* Working knowledge of RedHat Linux, Windows, VMWare, EMC \& NetApp Storage, Backups, and Cisco Networking devices
+* Working knowledge of ServiceNow and Alert Integrations
+* Working knowledge of Data Center Co\-Location Services with heavy emphasis on monitoring
+* Working knowledge of Change and Production Control Frameworks as set forth in the ITILv.3 library
+* **Skills:**
+* Ability to build, influence, lead and motivate effective teams towards end results
+* Ability to work effectively with all levels of staff, clients and other IT personnel
+* Ability to negotiate with customers to reach agreement on common goals and service levels
+* Ability to conduct thorough root cause analysis to resolve issues
+* Ability to create and present I\&O information to executive management
+
+  
+
+Don’t meet every single requirement? At Mattel, we are dedicated to an inclusive workplace and a culture of belonging. If you’re excited about this role but your past experience doesn’t align perfectly with every qualification in the job description, we still encourage you to apply. You may be just the right candidate for this or other roles.  
+
+  
+
+**How We Work:**  
+
+We are a purpose driven company aiming to empower generations to explore the wonder of childhood and reach their full potential. We live up to our purpose employing the following behaviors:
+
+* **We collaborate:** Being a part of Mattel means being part of one team with shared values and common goals. Every person counts and working closely together always brings better results. Partnership is our process and our collective capabilities is our superpower.
+* **We innovate:** At Mattel we always aim to find new and better ways to create innovative products and experiences. No matter where you work in the organization, you can always make a difference and have real impact. We welcome new ideas and value new initiatives that challenge conventional thinking.
+* **We execute:** We are a performance\-driven company. We strive for excellence and are focused on pursuing best\-in\-class outcomes. We believe in accountability and ownership and know that our people are at their best when they are empowered to create and deliver results.
+
+**Our Approach to Flexible Work:**  
+
+We embrace a flexible work model designed to empower a culture of growth, optimism, and wellbeing, where every employee can reach their full potential. Combining purposeful in\-person collaboration with flexibility, our focus is to optimize performance and drive connection for moments that matter.
+
+**Who We Are:**  
+
+Mattel is a leading global toy and family entertainment company and owner of one of the most iconic brand portfolios in the world. We engage consumers and fans through our franchise brands, including Barbie, Hot Wheels, Fisher\-Price, American Girl, Thomas \& Friends, UNO, Masters of the Universe, Matchbox, Monster High, MEGA and Polly Pocket, as well as other popular properties that we own or license in partnership with global entertainment companies. Our offerings include toys, content, consumer products, digital and live experiences. Our products are sold in collaboration with the world’s leading retail and ecommerce companies. Since its founding in 1945, Mattel is proud to be a trusted partner in empowering generations to explore the wonder of childhood and reach their full potential.
+
+
+Mattel’s award\-winning workplace culture has been recognized by Forbes, Fast Company, Newsweek, Great Place to Work, TIME, and more.
+
+
+Visit us at https://jobs.mattel.com/ and www.instagram.com/MattelCareers.  
+
+  
+
+Mattel is an Equal Opportunity Employer where we want you to bring your authentic self to work every day. We welcome all job seekers, and all applicants will receive consideration for employment.
+
+
+Videos to watch:  
+
+The Culture at Mattel  
+
+Corporate Philanthropy",Consumer Goods And Services,"https://in.indeed.com/cmp/Mattel,-Inc.",https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/a8c90c76d417e77d9840369861d08e7a,https://about.mattel.com/,"333 Continental Blvd.
+El Segundo CA, United States 90245","5,001 to 10,000",$1B to $5B (USD),"We create innovative products and experiences that inspire, entertain and develop children through play.",,,,,,
+in-93b293a126c93edb,indeed,https://in.indeed.com/viewjob?jk=93b293a126c93edb,https://jobs.smartrecruiters.com/Visa/744000105596084-sr-consultant-agentic-tools-automation,Sr Consultant - Agentic Tools & Automation,Visa,"KA, IN",2026-01-26,fulltime,,,,,,False,,,,,"**Company Description**  
+
+Visa is a world leader in payments technology, facilitating transactions between consumers, merchants, financial institutions and government entities across more than 200 countries and territories, dedicated to uplifting everyone, everywhere by being the best way to pay and be paid.
+
+
+At Visa, you'll have the opportunity to create impact at scale — tackling meaningful challenges, growing your skills and seeing your contributions impact lives around the world. Join Visa and do work that matters — to you, to your community, and to the world.
+
+
+Progress starts with you.
+
+ **Job Description**  
+
+Visa’s Technology Organization is a community of problem solvers and innovators reshaping the future of commerce. We operate the world’s most sophisticated processing networks capable of handling more than 65k secure transactions a second across 80M merchants, 15k Financial Institutions, and billions of everyday people. While working with us you’ll get to work on complex distributed systems and solve massive scale problems centered on new payment flows, business and data solutions, cyber security, and B2C platforms.
+
+
+We are looking for Versatile, curious, and energetic Software Engineers who embrace solving complex challenges on a global scale. As a Visa Software Engineer, you will be an integral part of a multi\-functional development team inventing, designing, building, and testing software products that reach a truly global customer base. While building components of powerful payment technology, you will get to see your efforts shaping the digital future of monetary transactions. This position is ideal for an experienced software engineer passionate about solving challenging business problems, building applications with excellent user experience, and leveraging cutting\-edge GenAI technologies. The candidate will be deeply involved in hands\-on activities including POCs, design, documentation, development, and testing of new functionality, with a special emphasis on agentic solutions powered by GenAI tools.
+
+
+Responsibilities:
+
+* Design, develop, and own mission\-critical systems for highly scalable infrastructure supporting low\-latency, high\-throughput core payment processing.
+* Architect, code, and integrate application business layers with external components, including GenAI\-powered modules and agentic workflows.
+* Deliver zero\-defect code and ensure the team's deliverables meet or exceed prescribed SLAs.
+* Break down architected solutions into smaller tasks, including GenAI and agentic workflows.
+* Ensure instrumentation and monitoring for AI\-driven components.
+* Document design tradeoffs, best practices, and GenAI/agentic solution patterns.
+* Optimize production systems including traditional and AI\-enabled flows.
+* Collaborate across engineering teams to ensure scalability and stability.
+* Lead POCs including GenAI prototypes and agentic workflows.
+
+
+This is a hybrid position. Expectation of days in office will be confirmed by your hiring manager.
+
+ **Qualifications**  
+
+Basic Qualifications:  
+
+13\+ years of experience with Bachelor's Degree or 10\+ with Advanced Degree.  
+
+Experience delivering enterprise\-class applications with high\-throughput and low\-latency.  
+
+Experience with GoLang, Java, Python/Ruby and GenAI integration frameworks.  
+
+Strong coding abilities including building GenAI agents and orchestration logic.  
+
+Experience with containerization, NoSQL, and GenAI deployment.  
+
+Understanding of microservice architecture including those enhanced with AI.  
+
+Experience with security analysis including for GenAI modules.  
+
+Experience with DevOps and MLOps practices.  
+
+Strong communication skills including explaining GenAI concepts.  
+
+  
+
+Preferred Qualifications:  
+
+Experience with GenAI tools (OpenAI, Azure AI, Hugging Face).  
+
+Experience designing and scaling agentic workflows.  
+
+Payment domain experience.
+
+ **Additional Information**  
+
+Visa is an EEO Employer. Qualified applicants will receive consideration for employment without regard to race, color, religion, sex, national origin, sexual orientation, gender identity, disability or protected veteran status. Visa will also consider for employment qualified applicants with criminal histories in a manner consistent with EEOC guidelines and applicable local law.",,https://in.indeed.com/cmp/Visa,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/860a54ecfd7d7cab270f291d2d877922,http://www.visa.com,,"10,000+",more than $10B (USD),"Our Purpose is to... Uplift everyone, everywhere by being the best way to pay and be paid.",,,,,,
+in-26f06d0585a30979,indeed,https://in.indeed.com/viewjob?jk=26f06d0585a30979,http://in.indeed.com/job/senior-engineer-network-administration-26f06d0585a30979,Senior Engineer (Network Administration),CORETECH INFOSYSTEMS,"KL, IN",2026-01-26,fulltime,,,,,,False,,,,,"**Job Description – Sr. Engineer/ Sr. Executive (Network Administration)**
+
+**Role Summary**
+
+We are seeking a technically proficient and proactive Senior Engineer / Senior Executive (Network Administration) to oversee the administration, optimization, and security of Windows and Linux server environments. This role combines hands\-on infrastructure and network management with team leadership to ensure reliable, secure, and efficient IT operations aligned with organizational objectives.
+
+The ideal candidate will lead system administrators and support engineers, manage client\-facing technical support as well as internal infrastructure, enforce security best practices, and drive continuous improvement across IT services.
+
+**Key Responsibilities**
+
+i. Leadership and Team management
+
+· Lead multiple teams of system administrators and support engineers to ensure high performance, accountability and continuous improvement.
+
+· Identify and address discrepancies between actual performance and expected outcomes, offering constructive guidance to support improvement and ensure seamless workflow.
+
+· Establish a culture of teamwork, innovation and professional growth within and across the teams.
+
+ii. Strategic Planning \& Execution
+
+· Develop and implement short\-term and long\-term strategies for network infrastructure, software solutions and quality assurance.
+
+· Develop and maintain comprehensive documentation of technical procedures, troubleshooting guidelines, system configurations and run books.
+
+· Prioritize projects, allocate resources effectively and manage multiple projects simultaneously.
+
+iii. Network Oversight \& IT Facility Management
+
+· Oversee the design, implementation and maintenance of network architecture.
+
+· Ensure reliable IT facility operations including servers, networking equipment, and workplace technology infrastructure.
+
+· Evaluate and recommend new networking technologies, tools and processes to enhance efficiency and scalability.
+
+· Manage vendor relationships, licensing, renewals, and third\-party services.
+
+· Assist in IT budgeting, cost optimization, and procurement planning.
+
+· Oversee the management, tracking, and lifecycle control of IT assets, including procurement, deployment, maintenance, and disposal.
+
+iv. Software \& Client Support Operations
+
+· Deliver prompt and effective technical support to clients, diagnosing and resolving website and web application issues to ensure optimal performance and user satisfaction.
+
+· Diagnose and resolve technical issues related to site performance, plugins, themes and user interface problems.
+
+· Coordinate with development and QA teams to resolve escalated production issues.
+
+v. Quality assurance \& Testing Oversight
+
+· Establish and maintain robust QA and testing processes to ensure software quality, reliability and compliance with standards.
+
+· Conduct functional, performance, and compatibility testing on WordPress sites prior to deployments or updates.
+
+· Monitor defect trends, perform root cause analysis and implement preventive measures to minimize errors.
+
+vi. Technical Governance \& Risk Management
+
+· Ensure adherence to IT policies, security protocols and compliance standards across all teams.
+
+· Identify, assess, and mitigate technical risks related to networks, servers, and application environments.
+
+· Conduct periodic audits of infrastructure, processes, and service quality.
+
+vii. Stakeholder Communication \& Reporting
+
+· Serve as the primary technical point of contact for senior management.
+
+· Facilitate informed decision\-making by translating technical insights into actionable business recommendations.
+
+· Report on infrastructure health, incident trends, team performance, and key IT metrics.
+
+viii. Innovation and Continuous Improvement
+
+· Research and assess emerging technologies, tools, and frameworks relevant to network and infrastructure management.
+
+· Drive automation, process optimization, and standardization initiatives.
+
+· Encourage documentation, knowledge sharing, training, and continuous upskilling within teams.
+
+ix. Cybersecurity \& Compliance
+
+· Experience with firewalls, VPNs, IDS/IPS, and network security tools.
+
+· Understanding of cybersecurity frameworks, vulnerability management, and incident response.
+
+· Familiarity with data protection, backup, disaster recovery (DR), and business continuity planning.
+
+· Exposure to compliance standards such as **ISO 27001**, **SOC**, or internal IT audits etc.
+
+**Required Skills and Qualifications**
+
+· BTech / MTech / MCA or equivalent degree in IT, Computer Science, or related fields.
+
+· Minimum 3\+ years of experience in network administration, system administration, or IT infrastructure roles, including team leadership exposure.
+
+· Strong understanding of networking protocols, system architecture, Software Development Life Cycle (SDLC) and testing processes. Hands\-on experience with Windows and Linux server environments.
+
+· Experience with Apache, Nginx, PHP, and open\-source platforms including WordPress.
+
+· Working knowledge of MySQL or similar databases with SQL troubleshooting capability.
+
+· Experience using project management and ticketing tools.
+
+· Strong analytical, troubleshooting, and decision\-making skills.
+
+· Excellent communication skills with the ability to explain technical concepts to non\-technical stakeholders.
+
+· Certifications in Windows, Linux, Networking, or Cybersecurity are an added advantage.
+
+Job Types: Full\-time, Permanent
+
+Benefits:
+
+* Health insurance
+* Provident Fund
+
+Work Location: In person",,https://in.indeed.com/cmp/Coretech-Infosystems-1,,,,,,,,,,,,
+in-10c3dc730412f8d2,indeed,https://in.indeed.com/viewjob?jk=10c3dc730412f8d2,https://dxctechnology.wd1.myworkdayjobs.com/en-US/DXCJobs/job/IND---AP---HYDERABAD/Sr-Analyst-1-DevOps--India-_51513898,Sr Analyst 1 DevOps (India),DXC Technology,"TS, IN",2026-01-25,fulltime,,,,,,False,,,,,"**Job Description:**
+
+**Job Summary:**
+
+We are looking for a motivated and detail\-oriented Junior DevOps Engineer to join our team. The ideal candidate will have foundational knowledge of cloud platforms (preferably AWS), DevOps tools, and CI/CD pipelines, with a strong desire to learn and grow in a fast\-paced cloud infrastructure environment. This role will support senior DevOps engineers in automating deployments, maintaining infrastructure, and assisting with monitoring and configuration tasks.
+
+
+**Key Responsibilities:**
+
+Assist in setting up and maintaining cloud infrastructure (primarily on AWS).
+
+
+Support CI/CD pipeline implementation and maintenance using Jenkins or similar tools.
+
+
+Work with containerization tools such as Docker, and support Kubernetes configurations.
+
+
+Help monitor system performance using tools like CloudWatch.
+
+
+Collaborate with development and operations teams to ensure smooth software delivery processes.
+
+
+Assist in scripting automation tasks using Python, Bash, json , maven and yaml scripts.
+
+
+Participate in troubleshooting and resolving infrastructure and deployment\-related issues.
+
+
+Follow security and compliance best practices in all DevOps activities.
+
+
+Document processes and contribute to internal knowledge sharing.  
+
+
+
+**Must\-Have Skills:**
+
+Overall Experience \~4 to 8 years
+
+
+Minimum 2\-3 years of Relevant Experience in Containerization and Kubernetes.
+
+
+Must have experience in creating docker containers with various technologies.
+
+
+Must have experience in CI/CD pipeline with Jenkins.
+
+
+Strong knowledge of DevOps tools: Git, Jenkins, Docker.
+
+
+Installing \& Upgrade DevOps tools
+
+
+Hands\-on experience in container Docker.
+
+
+Configuration of SSL certificates
+
+
+Good understanding master/slave configuration of Jenkins
+
+
+Hands\-on experience with scripting tools like \- Python, Bash, json , maven and yaml.
+
+
+Hand on experience in Unix Administration
+
+
+Good knowledge of Kubernetes cluster upgrades.
+
+
+Basic understanding of AWS services such as EC2, S3, IAM, VPC, CloudWatch.
+
+
+Strong willingness to learn new tools and technologies.
+
+
+**Good\-to\-Have Skills:**
+
+Exposure to Terraform or Ansible.
+
+
+Familiarity with container orchestration.
+
+
+Knowledge of reverse proxies (e.g., NGINX).
+
+
+Awareness of DevSecOps and security best practices.
+
+
+**Education and Experience:**
+
+• Bachelor’s degree in Computer Science, Information Technology, or a related field.
+  
+
+* 3 to 8 years of relevant experience in a DevOps or system administration role (internships count).
+* Certifications like AWS Cloud Practitioner or Certified DevOps Engineer (optional but preferred).
+**Soft Skills:**
+
+Good communication and collaboration skills.
+
+
+Analytical thinking and problem\-solving ability.
+
+
+Eagerness to learn and grow in the DevOps domain.
+
+
+Team player with a proactive attitude.
+
+
+At DXC Technology, we believe strong connections and community are key to our success. Our work model prioritizes in\-person collaboration while offering flexibility to support wellbeing, productivity, individual work styles, and life circumstances. We’re committed to fostering an inclusive environment where everyone can thrive.
+
+
+**Recruitment fraud is a scheme in which fictitious job opportunities are offered to job seekers typically through online services, such as false websites, or through unsolicited emails claiming to be from the company. These emails may request recipients to provide personal information or to make payments as part of their illegitimate recruiting process. DXC does not make offers of employment via social media networks and DXC never asks for any money or payments from applicants at any point in the recruitment process, nor ask a job seeker to purchase IT or other equipment on our behalf.**",,https://in.indeed.com/cmp/Dxc-Technology,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/dcf705be12911425bb9dd8aab9c971d0,http://www.dxc.com,"Ashburn, VA","10,000+",more than $10B (USD),DXC delivers the mission critical IT services that move the world,,,,,,
+in-cc006fbf0e248859,indeed,https://in.indeed.com/viewjob?jk=cc006fbf0e248859,https://dxctechnology.wd1.myworkdayjobs.com/en-US/DXCJobs/job/IND---TN---CHENNAI/Sr-Analyst-I-Infrastructure-Services_51568128,Sr Analyst I Infrastructure Services,DXC Technology,"TN, IN",2026-01-25,fulltime,,,,,,False,,,,,"**Job Description:**
+
+**Key Responsibilities:**
+
+* **Design, deploy, and manage AWS cloud infrastructure following best practices in scalability, reliability, and security.**
+* **Lead infrastructure automation efforts using tools such as Terraform, AWS CloudFormation, and AWS CLI.**
+* **Participate in and drive application and workload migrations from on\-premises or other cloud environments to AWS.**
+* **Implement and maintain CI/CD pipelines, monitoring systems, and operational runbooks.**
+* **Ensure infrastructure security by enforcing IAM policies, encryption, networking configurations, and compliance controls.**
+* **Collaborate with development, security, and DevOps teams to enhance cloud architecture and operations.**
+* **Troubleshoot complex infrastructure issues and coordinate resolution with stakeholders.**
+* **Contribute to technical documentation, architecture diagrams, and internal knowledge sharing.**
+* **Provide mentorship and guidance to junior team members.**
+
+**Required Skills and Qualifications:**
+
+* **Bachelor’s degree in computer science, Information Technology, Engineering, or a related field—or equivalent work experience.**
+* **4\+ years of hands\-on experience designing and managing AWS\-based infrastructure.**
+* **Good understanding of AWS service offerings (preferably an AWS\-certified engineer).**
+* **Proficient in the administration and management of Windows\-based infrastructure.**
+* **Skilled in managing and supporting Windows\-based web and database servers.**
+* **Strong analytical and troubleshooting skills with the ability to offer alternative solutions.**
+* **Experience with Incident and Change Management processes (e.g., ITIL frameworks).**
+* **Understanding of proactive and reactive monitoring tools and techniques.**
+* **Strong written and verbal communication skills.**
+* **Skilled in delivering training, creating documentation, and giving presentations.**
+* **A collaborative team player with the ability to work independently.**
+* **Willingness to support a night shift / 24x7 operational environment.**
+
+**Preferred Qualifications:**
+
+* **AWS Solutions Architect – Associate or higher certification.**
+* **Experience with container orchestration platforms such as Docker, ECS, or EKS.**
+* **Familiarity with observability and logging tools (e.g., CloudWatch, ELK Stack, Prometheus, Datadog).**
+* **Proficiency with CI/CD tools and pipelines (e.g., GitHub Actions, Jenkins, CodePipeline).**
+* **Exposure to Agile methodologies and DevOps workflows.**
+* **Familiarity with Git and version control practices.**
+* **Experienced in mainframe modernization with a background in core mainframe technologies including COBOL, DB2, etc.**
+* **Skilled in leveraging modernization tools and platforms such as Micro Focus, AWS Mainframe Modernization service to transition legacy systems to modern environments.**
+
+At DXC Technology, we believe strong connections and community are key to our success. Our work model prioritizes in\-person collaboration while offering flexibility to support wellbeing, productivity, individual work styles, and life circumstances. We’re committed to fostering an inclusive environment where everyone can thrive.
+
+
+**Recruitment fraud is a scheme in which fictitious job opportunities are offered to job seekers typically through online services, such as false websites, or through unsolicited emails claiming to be from the company. These emails may request recipients to provide personal information or to make payments as part of their illegitimate recruiting process. DXC does not make offers of employment via social media networks and DXC never asks for any money or payments from applicants at any point in the recruitment process, nor ask a job seeker to purchase IT or other equipment on our behalf.**",,https://in.indeed.com/cmp/Dxc-Technology,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/dcf705be12911425bb9dd8aab9c971d0,http://www.dxc.com,"Ashburn, VA","10,000+",more than $10B (USD),DXC delivers the mission critical IT services that move the world,,,,,,
+in-35d8d2cc8051b259,indeed,https://in.indeed.com/viewjob?jk=35d8d2cc8051b259,https://jobs.commscope.com/job/Bangalore-Technical-Consulting-Manager-Othe/1320755400/?feedId=221800&utm_source=Indeed&utm_campaign=Commscope_Indeed,Technical Consulting Manager,CommScope,"KA, IN",2026-01-24,,,,,,,False,,,,,"In our 'always on' world, we believe it's essential to have a genuine connection with the work you do.
+Due to growth and customer demand, we are looking to add a Sr. Technical Marketing Manager to our RUCKUS Networks’ Technical Marketing team. The ideal candidate will be based in Bangalore.**How You'll Help Us Connect the World:**
+As a hands\-on Senior Technical Marketing Manager, you will be lead and\\or participate in:* **Strategic Planning:** Develop comprehensive technical marketing strategies and plans to align with our strategic objectives.
+* **Technical Content Development:** Create compelling technical content including but not limited to reference architectures, best practice guides, feature notes, technical briefs, presentations, training decks and demo videos that effectively showcase the features, benefits, and competitive advantages of our products and solutions.
+* **Competitive Analysis:** Conduct feature, product, and solution\-level in\-depth competitive analysis to identify and demonstrate our differentiators from our competitors.
+* **Pre\-Sales/SE Enablement:** Collaborate with the SE team to develop SE enablement tools and resources such as technical training materials, competitive battle cards, solution guides, and customer\-facing technical presentations to support the sales engineering process and drive revenue growth.
+* **SME:** Act as a subject matter expert on campus networking technologies, providing guidance and support to SE teams and customers during pre\-sales and post\-sales activities.
+* **Technical Evangelism:** Represent the company as a subject matter expert at industry events, conferences, webinars, and customer meetings. Deliver technical presentations and demonstrations to showcase the capabilities and value proposition of our networking solutions. Author technical blogs, participate in technical podcasts, and more.
+* **Product Launch Support:** Lead the technical marketing aspects of product launches including developing launch plans, creating launch collateral, coordinating launch activities, and ensuring successful execution.
+* **Customer Engagement:** Engage with customers to understand their networking challenges, gather feedback on our products, and communicate customer success stories and case studies.
+* **Cross\-Functional Collaboration:** Work closely with product management, engineering, sales, and marketing teams to align technical marketing initiatives with overall business objectives and ensure consistency in messaging and positioning. Support or conduct POC tests (Proof of Concept) for RUCKUS products and write reports. Support the field teams and partners in responding with formal responses to documents such as RFI/RFQ/RFP.
+* **Management of local team:** This position will be the lead and mentor for the local TME team in our Bangalore office. As the lead and mentor, you will ensure that projects and tasks are being delivered on time and TME resources are actively engaged in that pursuit. As a mentor you will be asked to participate and guide the development and maturation of the team and its members. You will also report to the TME Director and will support initiatives laid out in project plans.
+
+  
+
+The Senior Technical Marketing Manager would typically have a very strong background in networking and a deep understanding of the various products of the company and solutions as well as competing products in the networking marketplace. They would also have excellent communication and presentation skills and the ability to work optimally with both technical and non\-technical stakeholders. This role requires a strong technical background and ability to articulate complex technical concepts to all the audiences. **Expert level technical knowledge and experience of Wired (Switching) and Wi\-Fi Enterprise Networks is a must.** **Required Qualifications for Consideration:*** Minimum 7\+ years relevant work experience as a technical marketing manager
+* Minimum of BS EE/CS/CE
+* Strong networking background in Wireless/RF, Switching/Routing, Secure Access protocols (802\.11a/b/g/n/ac/ax/be, 802\.1x, VLANs, STP, OSPF, RIP, BGP, Multicast, MPLS, etc)
+* Expert level experience on:
+* + Campus networking technologies
+	+ Wi\-Fi and RF
+	+ Switching
+	+ NGFW\\UTM firewalls \& SD\-WAN gateway solutions
+	+ Cloud networking
+	+ Network Analytics
+	+ Network security as it relates to campus networking.
+	+ Network Access Control (NAC)
+	+ Network design
+	+ Automation tools
+	+ IoT
+* Working knowledge of
+* + AI/ML
+	+ AIOps
+* Experience with scripting languages (Python, Ansible, Bash, etc.)
+* Experience utilizing test tools such as Wireshark, Chariot, and similar networking test tools.
+* Experience with AI \& other LLM tools for production work
+* Desire and ability to write detailed technical documents.
+* Desire and ability to create technical presentations.
+* Desire and ability to create and produce videos for presentations and training guides
+* Willingness to travel across the globe – up to 10% of the time
+* Must have solid understanding of sales cycle.
+* Configuration of complex WAN, LAN, and WLAN environments.
+* Ability to arm sales engineers and partners with accurate and detailed competitive information
+* Strong communication and listening skills, this resource will talk to CXO level customers and involves in events, meetings, and seminars with the end customers.
+
+**You Will Excite Us If You Have:*** Network industry related certifications like CWNA, CCNP, etc.
+* Other OEM Certifications also would make valuable contributions
+* Familiarity and knowledge of ZTNA, SASE and SSE solutions
+
+***Important Candidate Notice****: On January 9, 2026, CommScope finalized the sale of its Connectivity and Cable Solutions segment, which included the CommScope name and brand, to Amphenol Corporation. The remaining businesses — Access Networks Solutions**(now rebranded as* ***Aurora Networks****) and* ***RUCKUS Networks*** *have been unified under the new parent company, renamed as* ***Vistance Networks****. The role being advertised is part of RUCKUS Networks.*
+
+**Why Join Us?**
+
+Vistance Networks shapes the future of communications technology, pushing past what is possible. We deliver solutions that bring reliability and performance to a world always in motion. Our global team of innovators and employees are trusted advisors who listen to customers first, then deliver value.
+
+  
+
+RUCKUS Networks delivers purpose\-driven enterprise networks that enable superior business outcomes in demanding environments. Our solutions combine AI\-powered automation, proactive network assurance, and context\-aware security, providing exceptional performance with simplified management.
+
+  
+
+If you want to grow your career alongside bright, passionate, and caring people who strive to create what's next…..come connect to your future at Vistance Networks.
+
+  
+
+Vistance Networks is an Equal Opportunity Employer (EEO), including people with disabilities and veterans.",Telecommunications,https://in.indeed.com/cmp/Commscope,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/e36a51fed07ccc68003f91bb5c3c2175,https://careers.commscope.com/,"Hickory, NC","10,000+",$1B to $5B (USD),"We are pushing the boundaries of communications technology. We are leaders in innovating 5G, private networks & Gigabit speeds everywhere – we're always anticipating what’s next. Join us!",,,,,,
+in-04f633f91a2bf7f7,indeed,https://in.indeed.com/viewjob?jk=04f633f91a2bf7f7,https://www.amazon.jobs/jobs/3088347/sr-application-architect-professional-services?cmpid=DA_INAD200785B,"Sr. Application Architect, Professional Services",Amazon Web Services,"MH, IN",2025-09-19,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Are you an experienced cloud architect/developer who can assist our customers in design and development of cloud native applications and/or re\-engineering applications that can fully leverage the AWS Cloud? Do you like to work on a variety of game changing projects, at the forefront of application development and cloud technology adoption? This role is open for Mumbai/Pune/Bangalore/ Hyderabad.
+  
+
+In order for applications to be cloud optimized they need to be well\-architected enabling them to reap the benefits of elasticity, horizontal scalability, automation and high availability. On the AWS platform services such as Amazon EC2, Auto Scaling, Elastic Load Balancing, AWS Elastic Beanstalk, Amazon Elastic Container Services to name just a few, provide opportunities to design and build cloud ready applications.  
+
+  
+
+AWS ProServe India LLP is looking for highly talented hands on technical architects to help accelerate our growing Professional Services business in India. This is an opportunity to join Amazon’s world class technical teams, working with some of the brightest engineers while also developing your skills and furthering your career within one of the most innovative and progressive technology companies.  
+
+  
+
+Professional Services engage in a wide variety of projects for internal customers and partners, providing collective experience from across the AWS customer base and are obsessed about success for the internal customers. Our team collaborates across the entire AWS organization to bring access to product and service teams, to get the right solution delivered and drive feature innovation based upon customer needs.  
+
+  
+
+Amazon aims to be the most customer centric company on earth. Amazon Web Services (AWS) provides a highly reliable, scalable, low\-cost infrastructure platform in the cloud that powers critical applications for hundreds of thousands of businesses in 190 countries around the world.  
+
+  
+
+Key job responsibilities  
+
+We are looking for hands on application architects/developers who are passionate about:  
+
+* Previous experiences as Software / Solution Architect, Lead Architect or similar role
+* Experience in architecting, designing and developing applications that leverage AWS services
+* Experience in designing scalable, highly available applications using containers, serverless technologies and event\-driven architectures
+* Prior consulting experience working directly with customers and partners.
+* Acting as a trusted advisor to customers on industry trends, emerging technologies and assist customer in infrastructure and application development
+* Providing technical guidance and troubleshooting support throughout project delivery
+* Expert level proficiency in at least one programming language (Typescript/ NodeJS/AngularJS/ReactJS/ Java/C\#/GOLang)
+* Familiarity with AWS Storage, SQL and No SQL databases with awareness of protocols such as gRPC, Web\-sockets and graphql
+* Knowledge of cloud architecture design patterns, Event driven, Micro\-services architecture
+* Preferred experience in optimize cloud systems for scalability, security, and performance
+* Experience in agile software development
+* Advising and implementing AWS best practices
+
+  
+
+About the team  
+
+Diverse Experiences  
+
+AWS values diverse experiences. Even if you do not meet all of the qualifications and skills listed in the job description, we encourage candidates to apply. If your career is just starting, hasn’t followed a traditional path, or includes alternative experiences, don’t let it stop you from applying.  
+
+  
+
+Why AWS?  
+
+Amazon Web Services (AWS) is the world’s most comprehensive and broadly adopted cloud platform. We pioneered cloud computing and never stopped innovating — that’s why customers from the most successful startups to Global 500 companies trust our robust suite of products and services to power their businesses.  
+
+  
+
+Inclusive Team Culture  
+
+Here at AWS, it’s in our nature to learn and be curious. Our employee\-led affinity groups foster a culture of inclusion that empower us to be proud of our differences. Ongoing events and learning experiences, including our Conversations on Race and Ethnicity (CORE) and AmazeCon (gender diversity) conferences, inspire us to never stop embracing our uniqueness.  
+
+  
+
+Mentorship \& Career Growth  
+
+We’re continuously raising our performance bar as we strive to become Earth’s Best Employer. That’s why you’ll find endless knowledge\-sharing, mentorship and other career\-advancing resources here to help you develop into a better\-rounded professional.  
+
+  
+
+Work/Life Balance  
+
+We value work\-life harmony. Achieving success at work should never come at the expense of sacrifices at home, which is why we strive for flexibility as part of our working culture. When we feel supported in the workplace and at home, there’s nothing we can’t achieve in the cloud.**BASIC QUALIFICATIONS**
+------------------------
+
+* Bachelor's degree
+* Experience in cloud based solution (AWS or equivalent), system, network and operating system
+* Technical degree or equivalent experience; Computer Science or Engineering background preferred; Masters Degree desired.
+* 15\+ years of an application programming and/or hands\-on technical application architecture experience
+* 15\+ years of experience as a technical specialist in Customer\-facing roles.
+* Ability to travel to client locations as needed (25\-40%)
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* AWS Professional level certification
+* Extensive experience architecting, designing and programming applications in an AWS Cloud environment
+* Experience with designing and building application using AWS services such as EC2, AWS Elastic Beanstalk, AWS OpsWorks o Experience architecting highly available systems that utilize load balancing, horizontal scalability and high availability
+* Hands on programing skills in any of the following: Java, Node.js, Ruby, .NET or Scala
+* Agile software development expert
+* Experience with continuous integration tools (e.g. Jenkins) Hands on familiarity with CloudFormation Experience with configuration management platforms (e.g. Chef, Puppet, Salt, or Ansible)
+* Practical application development experience on Linux and Windows\-based systems
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",,https://in.indeed.com/cmp/Amazon-Web-Services-05cb4ad1,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/744e8603d216350c9c1d21837f2ed7a6,https://aws.amazon.com/careers/why-aws/,"Seattle, WA",Decline to state,more than $10B (USD),"Amazon Web Services (AWS) offers the world’s most comprehensive and broadly adopted cloud platform, with over 200 powerful services that enable our customers and our people to make more of an impact. ",,,,,,
+in-ae70bc0c2325d5b0,indeed,https://in.indeed.com/viewjob?jk=ae70bc0c2325d5b0,https://www.amazon.jobs/jobs/3088347/sr-application-architect-professional-services?cmpid=DA_INAD200785B,"Sr. Application Architect, Professional Services",Amazon Web Services,"HR, IN",2025-09-19,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Are you an experienced cloud architect/developer who can assist our customers in design and development of cloud native applications and/or re\-engineering applications that can fully leverage the AWS Cloud? Do you like to work on a variety of game changing projects, at the forefront of application development and cloud technology adoption? This role is open for Mumbai/Pune/Bangalore/ Hyderabad.
+  
+
+In order for applications to be cloud optimized they need to be well\-architected enabling them to reap the benefits of elasticity, horizontal scalability, automation and high availability. On the AWS platform services such as Amazon EC2, Auto Scaling, Elastic Load Balancing, AWS Elastic Beanstalk, Amazon Elastic Container Services to name just a few, provide opportunities to design and build cloud ready applications.  
+
+  
+
+AWS ProServe India LLP is looking for highly talented hands on technical architects to help accelerate our growing Professional Services business in India. This is an opportunity to join Amazon’s world class technical teams, working with some of the brightest engineers while also developing your skills and furthering your career within one of the most innovative and progressive technology companies.  
+
+  
+
+Professional Services engage in a wide variety of projects for internal customers and partners, providing collective experience from across the AWS customer base and are obsessed about success for the internal customers. Our team collaborates across the entire AWS organization to bring access to product and service teams, to get the right solution delivered and drive feature innovation based upon customer needs.  
+
+  
+
+Amazon aims to be the most customer centric company on earth. Amazon Web Services (AWS) provides a highly reliable, scalable, low\-cost infrastructure platform in the cloud that powers critical applications for hundreds of thousands of businesses in 190 countries around the world.  
+
+  
+
+Key job responsibilities  
+
+We are looking for hands on application architects/developers who are passionate about:  
+
+* Previous experiences as Software / Solution Architect, Lead Architect or similar role
+* Experience in architecting, designing and developing applications that leverage AWS services
+* Experience in designing scalable, highly available applications using containers, serverless technologies and event\-driven architectures
+* Prior consulting experience working directly with customers and partners.
+* Acting as a trusted advisor to customers on industry trends, emerging technologies and assist customer in infrastructure and application development
+* Providing technical guidance and troubleshooting support throughout project delivery
+* Expert level proficiency in at least one programming language (Typescript/ NodeJS/AngularJS/ReactJS/ Java/C\#/GOLang)
+* Familiarity with AWS Storage, SQL and No SQL databases with awareness of protocols such as gRPC, Web\-sockets and graphql
+* Knowledge of cloud architecture design patterns, Event driven, Micro\-services architecture
+* Preferred experience in optimize cloud systems for scalability, security, and performance
+* Experience in agile software development
+* Advising and implementing AWS best practices
+
+  
+
+About the team  
+
+Diverse Experiences  
+
+AWS values diverse experiences. Even if you do not meet all of the qualifications and skills listed in the job description, we encourage candidates to apply. If your career is just starting, hasn’t followed a traditional path, or includes alternative experiences, don’t let it stop you from applying.  
+
+  
+
+Why AWS?  
+
+Amazon Web Services (AWS) is the world’s most comprehensive and broadly adopted cloud platform. We pioneered cloud computing and never stopped innovating — that’s why customers from the most successful startups to Global 500 companies trust our robust suite of products and services to power their businesses.  
+
+  
+
+Inclusive Team Culture  
+
+Here at AWS, it’s in our nature to learn and be curious. Our employee\-led affinity groups foster a culture of inclusion that empower us to be proud of our differences. Ongoing events and learning experiences, including our Conversations on Race and Ethnicity (CORE) and AmazeCon (gender diversity) conferences, inspire us to never stop embracing our uniqueness.  
+
+  
+
+Mentorship \& Career Growth  
+
+We’re continuously raising our performance bar as we strive to become Earth’s Best Employer. That’s why you’ll find endless knowledge\-sharing, mentorship and other career\-advancing resources here to help you develop into a better\-rounded professional.  
+
+  
+
+Work/Life Balance  
+
+We value work\-life harmony. Achieving success at work should never come at the expense of sacrifices at home, which is why we strive for flexibility as part of our working culture. When we feel supported in the workplace and at home, there’s nothing we can’t achieve in the cloud.**BASIC QUALIFICATIONS**
+------------------------
+
+* Bachelor's degree
+* Experience in cloud based solution (AWS or equivalent), system, network and operating system
+* Technical degree or equivalent experience; Computer Science or Engineering background preferred; Masters Degree desired.
+* 15\+ years of an application programming and/or hands\-on technical application architecture experience
+* 15\+ years of experience as a technical specialist in Customer\-facing roles.
+* Ability to travel to client locations as needed (25\-40%)
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* AWS Professional level certification
+* Extensive experience architecting, designing and programming applications in an AWS Cloud environment
+* Experience with designing and building application using AWS services such as EC2, AWS Elastic Beanstalk, AWS OpsWorks o Experience architecting highly available systems that utilize load balancing, horizontal scalability and high availability
+* Hands on programing skills in any of the following: Java, Node.js, Ruby, .NET or Scala
+* Agile software development expert
+* Experience with continuous integration tools (e.g. Jenkins) Hands on familiarity with CloudFormation Experience with configuration management platforms (e.g. Chef, Puppet, Salt, or Ansible)
+* Practical application development experience on Linux and Windows\-based systems
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",,https://in.indeed.com/cmp/Amazon-Web-Services-05cb4ad1,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/744e8603d216350c9c1d21837f2ed7a6,https://aws.amazon.com/careers/why-aws/,"Seattle, WA",Decline to state,more than $10B (USD),"Amazon Web Services (AWS) offers the world’s most comprehensive and broadly adopted cloud platform, with over 200 powerful services that enable our customers and our people to make more of an impact. ",,,,,,
+in-226df4d2c21bce1b,indeed,https://in.indeed.com/viewjob?jk=226df4d2c21bce1b,https://www.amazon.jobs/jobs/3088347/sr-application-architect-professional-services?cmpid=DA_INAD200785B,"Sr. Application Architect, Professional Services",Amazon Web Services,"KA, IN",2025-09-19,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Are you an experienced cloud architect/developer who can assist our customers in design and development of cloud native applications and/or re\-engineering applications that can fully leverage the AWS Cloud? Do you like to work on a variety of game changing projects, at the forefront of application development and cloud technology adoption? This role is open for Mumbai/Pune/Bangalore/ Hyderabad.
+  
+
+In order for applications to be cloud optimized they need to be well\-architected enabling them to reap the benefits of elasticity, horizontal scalability, automation and high availability. On the AWS platform services such as Amazon EC2, Auto Scaling, Elastic Load Balancing, AWS Elastic Beanstalk, Amazon Elastic Container Services to name just a few, provide opportunities to design and build cloud ready applications.  
+
+  
+
+AWS ProServe India LLP is looking for highly talented hands on technical architects to help accelerate our growing Professional Services business in India. This is an opportunity to join Amazon’s world class technical teams, working with some of the brightest engineers while also developing your skills and furthering your career within one of the most innovative and progressive technology companies.  
+
+  
+
+Professional Services engage in a wide variety of projects for internal customers and partners, providing collective experience from across the AWS customer base and are obsessed about success for the internal customers. Our team collaborates across the entire AWS organization to bring access to product and service teams, to get the right solution delivered and drive feature innovation based upon customer needs.  
+
+  
+
+Amazon aims to be the most customer centric company on earth. Amazon Web Services (AWS) provides a highly reliable, scalable, low\-cost infrastructure platform in the cloud that powers critical applications for hundreds of thousands of businesses in 190 countries around the world.  
+
+  
+
+Key job responsibilities  
+
+We are looking for hands on application architects/developers who are passionate about:  
+
+* Previous experiences as Software / Solution Architect, Lead Architect or similar role
+* Experience in architecting, designing and developing applications that leverage AWS services
+* Experience in designing scalable, highly available applications using containers, serverless technologies and event\-driven architectures
+* Prior consulting experience working directly with customers and partners.
+* Acting as a trusted advisor to customers on industry trends, emerging technologies and assist customer in infrastructure and application development
+* Providing technical guidance and troubleshooting support throughout project delivery
+* Expert level proficiency in at least one programming language (Typescript/ NodeJS/AngularJS/ReactJS/ Java/C\#/GOLang)
+* Familiarity with AWS Storage, SQL and No SQL databases with awareness of protocols such as gRPC, Web\-sockets and graphql
+* Knowledge of cloud architecture design patterns, Event driven, Micro\-services architecture
+* Preferred experience in optimize cloud systems for scalability, security, and performance
+* Experience in agile software development
+* Advising and implementing AWS best practices
+
+  
+
+About the team  
+
+Diverse Experiences  
+
+AWS values diverse experiences. Even if you do not meet all of the qualifications and skills listed in the job description, we encourage candidates to apply. If your career is just starting, hasn’t followed a traditional path, or includes alternative experiences, don’t let it stop you from applying.  
+
+  
+
+Why AWS?  
+
+Amazon Web Services (AWS) is the world’s most comprehensive and broadly adopted cloud platform. We pioneered cloud computing and never stopped innovating — that’s why customers from the most successful startups to Global 500 companies trust our robust suite of products and services to power their businesses.  
+
+  
+
+Inclusive Team Culture  
+
+Here at AWS, it’s in our nature to learn and be curious. Our employee\-led affinity groups foster a culture of inclusion that empower us to be proud of our differences. Ongoing events and learning experiences, including our Conversations on Race and Ethnicity (CORE) and AmazeCon (gender diversity) conferences, inspire us to never stop embracing our uniqueness.  
+
+  
+
+Mentorship \& Career Growth  
+
+We’re continuously raising our performance bar as we strive to become Earth’s Best Employer. That’s why you’ll find endless knowledge\-sharing, mentorship and other career\-advancing resources here to help you develop into a better\-rounded professional.  
+
+  
+
+Work/Life Balance  
+
+We value work\-life harmony. Achieving success at work should never come at the expense of sacrifices at home, which is why we strive for flexibility as part of our working culture. When we feel supported in the workplace and at home, there’s nothing we can’t achieve in the cloud.**BASIC QUALIFICATIONS**
+------------------------
+
+* Bachelor's degree
+* Experience in cloud based solution (AWS or equivalent), system, network and operating system
+* Technical degree or equivalent experience; Computer Science or Engineering background preferred; Masters Degree desired.
+* 15\+ years of an application programming and/or hands\-on technical application architecture experience
+* 15\+ years of experience as a technical specialist in Customer\-facing roles.
+* Ability to travel to client locations as needed (25\-40%)
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* AWS Professional level certification
+* Extensive experience architecting, designing and programming applications in an AWS Cloud environment
+* Experience with designing and building application using AWS services such as EC2, AWS Elastic Beanstalk, AWS OpsWorks o Experience architecting highly available systems that utilize load balancing, horizontal scalability and high availability
+* Hands on programing skills in any of the following: Java, Node.js, Ruby, .NET or Scala
+* Agile software development expert
+* Experience with continuous integration tools (e.g. Jenkins) Hands on familiarity with CloudFormation Experience with configuration management platforms (e.g. Chef, Puppet, Salt, or Ansible)
+* Practical application development experience on Linux and Windows\-based systems
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",,https://in.indeed.com/cmp/Amazon-Web-Services-05cb4ad1,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/744e8603d216350c9c1d21837f2ed7a6,https://aws.amazon.com/careers/why-aws/,"Seattle, WA",Decline to state,more than $10B (USD),"Amazon Web Services (AWS) offers the world’s most comprehensive and broadly adopted cloud platform, with over 200 powerful services that enable our customers and our people to make more of an impact. ",,,,,,
+in-a195962150ae812f,indeed,https://in.indeed.com/viewjob?jk=a195962150ae812f,https://www.amazon.jobs/jobs/3088347/sr-application-architect-professional-services?cmpid=DA_INAD200785B,"Sr. Application Architect, Professional Services",Amazon Web Services,"MH, IN",2025-09-19,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Are you an experienced cloud architect/developer who can assist our customers in design and development of cloud native applications and/or re\-engineering applications that can fully leverage the AWS Cloud? Do you like to work on a variety of game changing projects, at the forefront of application development and cloud technology adoption? This role is open for Mumbai/Pune/Bangalore/ Hyderabad.
+  
+
+In order for applications to be cloud optimized they need to be well\-architected enabling them to reap the benefits of elasticity, horizontal scalability, automation and high availability. On the AWS platform services such as Amazon EC2, Auto Scaling, Elastic Load Balancing, AWS Elastic Beanstalk, Amazon Elastic Container Services to name just a few, provide opportunities to design and build cloud ready applications.  
+
+  
+
+AWS ProServe India LLP is looking for highly talented hands on technical architects to help accelerate our growing Professional Services business in India. This is an opportunity to join Amazon’s world class technical teams, working with some of the brightest engineers while also developing your skills and furthering your career within one of the most innovative and progressive technology companies.  
+
+  
+
+Professional Services engage in a wide variety of projects for internal customers and partners, providing collective experience from across the AWS customer base and are obsessed about success for the internal customers. Our team collaborates across the entire AWS organization to bring access to product and service teams, to get the right solution delivered and drive feature innovation based upon customer needs.  
+
+  
+
+Amazon aims to be the most customer centric company on earth. Amazon Web Services (AWS) provides a highly reliable, scalable, low\-cost infrastructure platform in the cloud that powers critical applications for hundreds of thousands of businesses in 190 countries around the world.  
+
+  
+
+Key job responsibilities  
+
+We are looking for hands on application architects/developers who are passionate about:  
+
+* Previous experiences as Software / Solution Architect, Lead Architect or similar role
+* Experience in architecting, designing and developing applications that leverage AWS services
+* Experience in designing scalable, highly available applications using containers, serverless technologies and event\-driven architectures
+* Prior consulting experience working directly with customers and partners.
+* Acting as a trusted advisor to customers on industry trends, emerging technologies and assist customer in infrastructure and application development
+* Providing technical guidance and troubleshooting support throughout project delivery
+* Expert level proficiency in at least one programming language (Typescript/ NodeJS/AngularJS/ReactJS/ Java/C\#/GOLang)
+* Familiarity with AWS Storage, SQL and No SQL databases with awareness of protocols such as gRPC, Web\-sockets and graphql
+* Knowledge of cloud architecture design patterns, Event driven, Micro\-services architecture
+* Preferred experience in optimize cloud systems for scalability, security, and performance
+* Experience in agile software development
+* Advising and implementing AWS best practices
+
+  
+
+About the team  
+
+Diverse Experiences  
+
+AWS values diverse experiences. Even if you do not meet all of the qualifications and skills listed in the job description, we encourage candidates to apply. If your career is just starting, hasn’t followed a traditional path, or includes alternative experiences, don’t let it stop you from applying.  
+
+  
+
+Why AWS?  
+
+Amazon Web Services (AWS) is the world’s most comprehensive and broadly adopted cloud platform. We pioneered cloud computing and never stopped innovating — that’s why customers from the most successful startups to Global 500 companies trust our robust suite of products and services to power their businesses.  
+
+  
+
+Inclusive Team Culture  
+
+Here at AWS, it’s in our nature to learn and be curious. Our employee\-led affinity groups foster a culture of inclusion that empower us to be proud of our differences. Ongoing events and learning experiences, including our Conversations on Race and Ethnicity (CORE) and AmazeCon (gender diversity) conferences, inspire us to never stop embracing our uniqueness.  
+
+  
+
+Mentorship \& Career Growth  
+
+We’re continuously raising our performance bar as we strive to become Earth’s Best Employer. That’s why you’ll find endless knowledge\-sharing, mentorship and other career\-advancing resources here to help you develop into a better\-rounded professional.  
+
+  
+
+Work/Life Balance  
+
+We value work\-life harmony. Achieving success at work should never come at the expense of sacrifices at home, which is why we strive for flexibility as part of our working culture. When we feel supported in the workplace and at home, there’s nothing we can’t achieve in the cloud.**BASIC QUALIFICATIONS**
+------------------------
+
+* Bachelor's degree
+* Experience in cloud based solution (AWS or equivalent), system, network and operating system
+* Technical degree or equivalent experience; Computer Science or Engineering background preferred; Masters Degree desired.
+* 15\+ years of an application programming and/or hands\-on technical application architecture experience
+* 15\+ years of experience as a technical specialist in Customer\-facing roles.
+* Ability to travel to client locations as needed (25\-40%)
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* AWS Professional level certification
+* Extensive experience architecting, designing and programming applications in an AWS Cloud environment
+* Experience with designing and building application using AWS services such as EC2, AWS Elastic Beanstalk, AWS OpsWorks o Experience architecting highly available systems that utilize load balancing, horizontal scalability and high availability
+* Hands on programing skills in any of the following: Java, Node.js, Ruby, .NET or Scala
+* Agile software development expert
+* Experience with continuous integration tools (e.g. Jenkins) Hands on familiarity with CloudFormation Experience with configuration management platforms (e.g. Chef, Puppet, Salt, or Ansible)
+* Practical application development experience on Linux and Windows\-based systems
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",,https://in.indeed.com/cmp/Amazon-Web-Services-05cb4ad1,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/744e8603d216350c9c1d21837f2ed7a6,https://aws.amazon.com/careers/why-aws/,"Seattle, WA",Decline to state,more than $10B (USD),"Amazon Web Services (AWS) offers the world’s most comprehensive and broadly adopted cloud platform, with over 200 powerful services that enable our customers and our people to make more of an impact. ",,,,,,
+in-4c55c84e0ff7de16,indeed,https://in.indeed.com/viewjob?jk=4c55c84e0ff7de16,https://www.amazon.jobs/jobs/3078183/senior-software-development-engineer-kindle-ereader?cmpid=DA_INAD200785B,"Senior Software Development Engineer, Kindle E-Reader",Amazon.com,"KA, IN",2025-08-28,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Amazon Kindle is a revolutionary reading device and one of the most innovative devices at Amazon.
+  
+
+Our Organization is looking for an inventive and technically skilled Software Development Engineer to join our diverse team at the forefront of delighting millions of readers around the world. We build the next generation reading experience. Our team works backwards from customers by understanding their needs to design and implement solutions that deliver an immersive reading experience across a wide variety of devices, genres, and formats.  
+
+  
+
+We are looking for full\-stack Software Development Engineers who enjoys building high quality software that touches millions of customers. Those who seek a challenge, are eager to learn, and want to make a impact on global customers should apply.  
+
+  
+
+Key job responsibilities  
+
+As a Senior Software Development Engineer, you will own adding capabilities as we unlock more features on Kindle E\-reader family. Our goal is to make it fast, easy and low\-cost for our internal application developers to build features and release them on our E\-reader stack.  
+
+You will tackle challenging, novel situations every day and given the size of this initiative, you’ll have the opportunity to work with multiple technical teams across Amazon.  
+
+We will need to tackle problems that span a variety of domains: software, hardware, networks and distributed systems as well as automation.  
+
+You design and develop the critical components in E\-reader that make the product a performant, secure and power optimized device.  
+
+Along the way you’ll learn a ton, have fun and make a positive impact on millions of people.  
+
+* You are an expert in C/C\+\+ as well as comfortable working in client and service side stack.
+* Collaborate with experienced Amazonians to design, and bring innovative components in E\-reader
+* Architect and design a secure software that protects customer data stored on the devices.
+* Identify what it means to keep the software stack up\-to\-date keeping an eye on advancements both in hardware as well as software.
+
+  
+
+A day in the life  
+
+  
+
+In this role, you will be actively engaged in developing our E\-reader software that are based on C/C\+\+. You will be contacted by many Amazonian as they deploy their software on E\-reader. You will also be the lead engineer for your team in guiding them both on design and best practices.  
+
+  
+
+Ship and review C\+\+, ReactNative or Java for reading features on Kindle E\-Reader, Kindle Apps on iOS/Android.
+  
+
+Collaborate with peers, product owners, UX designers and partner tech teams on architecture and design of reading features.
+  
+
+Adapt the customer experience for the next generation of Kindle E\-Reader devices focusing on operational excellence, monitoring the team's code deployment pipelines and dashboards
+  
+
+Root cause issues and propose solutions  
+
+Train new team members on how E\-Reader and Kindle Application software is constructed, how it operates, how secure it is, and how it fits into the bigger picture.  
+
+  
+
+About the team  
+
+We own the design, architecture, and implementation of a surface to enable reading innovation across file formats and operating systems. Our software supports Kindle customers on all major mobile surfaces and Kindle devices. Our engineers enjoy working as a team and welcome the opportunity to lead whenever possible.**BASIC QUALIFICATIONS**
+------------------------
+
+* 5\+ years of non\-internship professional software development experience
+* 5\+ years of programming with at least one software programming language experience
+* 5\+ years of leading design or architecture (design patterns, reliability and scaling) of new and existing systems experience
+* Experience as a mentor, tech lead or leading an engineering team
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* 5\+ years of full software development life cycle, including coding standards, code reviews, source control management, build processes, testing, and operations experience
+* Bachelor's degree in computer science or equivalent
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,
+in-56dd46b3a2921e77,indeed,https://in.indeed.com/viewjob?jk=56dd46b3a2921e77,https://www.amazon.jobs/jobs/3078183/senior-software-development-engineer-kindle-ereader?cmpid=DA_INAD200785B,"Senior Software Development Engineer, Kindle E-Reader",Amazon.com,"TN, IN",2025-08-28,fulltime,,,,,,False,,,,,"**DESCRIPTION**
+---------------
+
+
+Amazon Kindle is a revolutionary reading device and one of the most innovative devices at Amazon.
+  
+
+Our Organization is looking for an inventive and technically skilled Software Development Engineer to join our diverse team at the forefront of delighting millions of readers around the world. We build the next generation reading experience. Our team works backwards from customers by understanding their needs to design and implement solutions that deliver an immersive reading experience across a wide variety of devices, genres, and formats.  
+
+  
+
+We are looking for full\-stack Software Development Engineers who enjoys building high quality software that touches millions of customers. Those who seek a challenge, are eager to learn, and want to make a impact on global customers should apply.  
+
+  
+
+Key job responsibilities  
+
+As a Senior Software Development Engineer, you will own adding capabilities as we unlock more features on Kindle E\-reader family. Our goal is to make it fast, easy and low\-cost for our internal application developers to build features and release them on our E\-reader stack.  
+
+You will tackle challenging, novel situations every day and given the size of this initiative, you’ll have the opportunity to work with multiple technical teams across Amazon.  
+
+We will need to tackle problems that span a variety of domains: software, hardware, networks and distributed systems as well as automation.  
+
+You design and develop the critical components in E\-reader that make the product a performant, secure and power optimized device.  
+
+Along the way you’ll learn a ton, have fun and make a positive impact on millions of people.  
+
+* You are an expert in C/C\+\+ as well as comfortable working in client and service side stack.
+* Collaborate with experienced Amazonians to design, and bring innovative components in E\-reader
+* Architect and design a secure software that protects customer data stored on the devices.
+* Identify what it means to keep the software stack up\-to\-date keeping an eye on advancements both in hardware as well as software.
+
+  
+
+A day in the life  
+
+  
+
+In this role, you will be actively engaged in developing our E\-reader software that are based on C/C\+\+. You will be contacted by many Amazonian as they deploy their software on E\-reader. You will also be the lead engineer for your team in guiding them both on design and best practices.  
+
+  
+
+Ship and review C\+\+, ReactNative or Java for reading features on Kindle E\-Reader, Kindle Apps on iOS/Android.
+  
+
+Collaborate with peers, product owners, UX designers and partner tech teams on architecture and design of reading features.
+  
+
+Adapt the customer experience for the next generation of Kindle E\-Reader devices focusing on operational excellence, monitoring the team's code deployment pipelines and dashboards
+  
+
+Root cause issues and propose solutions  
+
+Train new team members on how E\-Reader and Kindle Application software is constructed, how it operates, how secure it is, and how it fits into the bigger picture.  
+
+  
+
+About the team  
+
+We own the design, architecture, and implementation of a surface to enable reading innovation across file formats and operating systems. Our software supports Kindle customers on all major mobile surfaces and Kindle devices. Our engineers enjoy working as a team and welcome the opportunity to lead whenever possible.**BASIC QUALIFICATIONS**
+------------------------
+
+* 5\+ years of non\-internship professional software development experience
+* 5\+ years of programming with at least one software programming language experience
+* 5\+ years of leading design or architecture (design patterns, reliability and scaling) of new and existing systems experience
+* Experience as a mentor, tech lead or leading an engineering team
+
+**PREFERRED QUALIFICATIONS**
+----------------------------
+
+* 5\+ years of full software development life cycle, including coding standards, code reviews, source control management, build processes, testing, and operations experience
+* Bachelor's degree in computer science or equivalent
+
+  
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how\-we\-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.",Internet And Software,https://in.indeed.com/cmp/Amazon.com,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/3e9d43f5c277de169808abdcaf49ba2c,https://www.amazon.jobs,"440 Terry Ave N, Seattle, WA, United States, Washington","10,000+",more than $10B (USD),Our mission is to be Earth's most customer-centric company.,,,,,,

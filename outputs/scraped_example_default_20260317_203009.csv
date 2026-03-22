@@ -1,0 +1,625 @@
+id,site,job_url,job_url_direct,title,company,location,date_posted,job_type,salary_source,interval,min_amount,max_amount,currency,is_remote,job_level,job_function,listing_type,emails,description,company_industry,company_url,company_logo,company_url_direct,company_addresses,company_num_employees,company_revenue,company_description,skills,experience_range,company_rating,company_reviews_count,vacancy_count,work_from_home_type
+in-fff63b98433317eb,indeed,https://in.indeed.com/viewjob?jk=fff63b98433317eb,https://careers.epam.com/en/vacancy/bltahvoyp6ivmlauxl8_en?city=Chennai&state=Tamil%20Nadu&country=India&utm_source=indeed&utm_medium=xml-job-feed&utm_campaign=ta,Senior AIOps Solution Architect,EPAM Systems,"TN, IN",2026-03-17,,,,,,,False,,,,,"*EPAM is a leading global provider of digital platform engineering and development services. We are committed to having a positive impact on our customers, our employees, and our communities. We embrace a dynamic and inclusive culture. Here you will collaborate with multi\-national teams, contribute to a myriad of innovative projects that deliver the most creative and cutting\-edge solutions, and have an opportunity to continuously learn and grow. No matter where you are located, you will join a dedicated, creative, and diverse community that will help you discover your fullest potential.*
+
+
+We are seeking a highly experienced **Senior AIOps Solution Architect** with exceptional expertise in Gen\-AI\-enabled Cloud Engineering, Observability, Operational Intelligence, and AI\-driven automation. The ideal candidate will bring 10\+ years of enterprise\-level architecture experience, with a focus on building innovative Gen\-AI\-enabled platforms, data\-driven automation frameworks, and enterprise\-grade AIOps solutions to advance operational efficiency.
+
+**Responsibilities**
+
+* Design and deliver scalable Gen\-AI\-powered AIOps solutions for large enterprise platforms to improve MTTR, achieve automated incident resolution, and drive operational excellence
+* Architect and implement Gen\-AI \& LLM Engineering solutions using tools such as Amazon Bedrock, Azure OpenAI, Vertex AI, Anthropic, and LangChain
+* Develop and optimize MLOps pipelines and model deployment workflows leveraging SageMaker, Azure ML, clustering, topic modeling, and anomaly detection techniques
+* Implement RAG, Vector DBs, and advanced semantic search across platforms using PGVector, Elasticsearch, and Bedrock Knowledge Sources
+* Create and automate solutions for Cloud Platforms and Infrastructure with AWS, Azure, GCP, Terraform, CloudFormation, and Helm, alongside Python and Shell Scripting
+* Lead Kubernetes\-based container orchestration and DevSecOps initiatives, including CI/CD pipelines, Istio, and KEDA deployment strategies
+* Design and integrate serverless and cloud\-native architectures using API Gateway, Lambda, Step Functions, DynamoDB, S3, and Kinesis
+* Implement end\-to\-end Observability solutions using DataDog, OpenTelemetry, Dynatrace, New Relic, Splunk, Moogsoft, and BigPanda
+* Ensure seamless ITSM and ServiceNow integration for AI\-driven operations and automation
+* Work with ITSM tools like ServiceNow, Jira Service Management, and Manage Engine to streamline incident management workflows
+* Provide thought leadership in AIOps, automation, and AI\-powered operational intelligence to leadership and engineering teams
+
+**Requirements**
+
+* 19\+ years of overall IT experience
+* 10\+ years of professional experience in Enterprise Cloud, Infrastructure Engineering, SRE, Automation, and Architecture roles
+* Proven track record of delivering Gen\-AI\-powered AIOps solutions in production environments, driving efficiencies like MTTR improvement and operational automation
+* Expertise in Gen\-AI and LLM Engineering tools such as Amazon Bedrock, Azure OpenAI, Vertex AI, Anthropic, LangChain, and Bedrock Agents
+* Proficiency in RAG, Vector Databases, and semantic search solutions like PGVector, Elasticsearch, and Bedrock Knowledge Sources
+* Background in MLOps, model development, and machine learning techniques using SageMaker, Azure ML, clustering, topic modeling, and anomaly detection
+* Skills in cloud engineering and automation technologies, including AWS, Azure, GCP, Terraform, CloudFormation, Helm, Python, and Shell Scripting
+* Capability to design and operate Kubernetes\-based infrastructure, CI/CD pipelines, security automation, Istio, and KEDA
+* Familiarity with serverless computing and cloud\-native tools like API Gateway, Lambda, Step Functions, DynamoDB, S3, and Kinesis
+* Knowledge of Observability platforms such as DataDog, OpenTelemetry, Dynatrace, New Relic, Splunk, Moogsoft, and BigPanda
+* Understanding of ITSM platforms, including ServiceNow, Jira Service Management, and Manage Engine
+* Showcase of AI and Machine Learning expertise in areas like anomaly detection, GenAI implementation, and agentic AI solutions
+* Ability to communicate effectively in both written and spoken English (B2 level or higher)
+
+**Nice to have**
+
+* Experience leading AIOps/Cloud Practices or platform engineering organizations
+* Certifications in AWS ML, Cloud Architecture, or AI Leadership
+
+**We offer**
+
+* Opportunity to work on technical challenges that may impact across geographies
+* Vast opportunities for self\-development: online university, knowledge sharing opportunities globally, learning opportunities through external certifications
+* Opportunity to share your ideas on international platforms
+* Sponsored Tech Talks \& Hackathons
+* Unlimited access to LinkedIn learning solutions
+* Possibility to relocate to any EPAM office for short and long\-term projects
+* Focused individual development
+* Benefit package:
+	+ Health benefits
+	+ Retirement benefits
+	+ Paid time off
+	+ Flexible benefits
+* Forums to explore beyond work passion (CSR, photography, painting, sports, etc.)",,https://in.indeed.com/cmp/Epam-Systems,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/89e1cba2407c644a211fdfb77316efc3,http://www.epam.com,"Newtown, PA","10,000+",$1B to $5B (USD),"EPAM Systems, Inc. (EPAM) is a global leader in AI transformation engineering and integrated consulting. ",,,,,,
+in-382488931203c1c5,indeed,https://in.indeed.com/viewjob?jk=382488931203c1c5,https://careers.epam.com/en/vacancy/bltahvoyp6ivmlauxl8_en?city=Hyderabad&state=Telangana&country=India&utm_source=indeed&utm_medium=xml-job-feed&utm_campaign=ta,Senior AIOps Solution Architect,EPAM Systems,"TS, IN",2026-03-17,,,,,,,False,,,,,"*EPAM is a leading global provider of digital platform engineering and development services. We are committed to having a positive impact on our customers, our employees, and our communities. We embrace a dynamic and inclusive culture. Here you will collaborate with multi\-national teams, contribute to a myriad of innovative projects that deliver the most creative and cutting\-edge solutions, and have an opportunity to continuously learn and grow. No matter where you are located, you will join a dedicated, creative, and diverse community that will help you discover your fullest potential.*
+
+
+We are seeking a highly experienced **Senior AIOps Solution Architect** with exceptional expertise in Gen\-AI\-enabled Cloud Engineering, Observability, Operational Intelligence, and AI\-driven automation. The ideal candidate will bring 10\+ years of enterprise\-level architecture experience, with a focus on building innovative Gen\-AI\-enabled platforms, data\-driven automation frameworks, and enterprise\-grade AIOps solutions to advance operational efficiency.
+
+**Responsibilities**
+
+* Design and deliver scalable Gen\-AI\-powered AIOps solutions for large enterprise platforms to improve MTTR, achieve automated incident resolution, and drive operational excellence
+* Architect and implement Gen\-AI \& LLM Engineering solutions using tools such as Amazon Bedrock, Azure OpenAI, Vertex AI, Anthropic, and LangChain
+* Develop and optimize MLOps pipelines and model deployment workflows leveraging SageMaker, Azure ML, clustering, topic modeling, and anomaly detection techniques
+* Implement RAG, Vector DBs, and advanced semantic search across platforms using PGVector, Elasticsearch, and Bedrock Knowledge Sources
+* Create and automate solutions for Cloud Platforms and Infrastructure with AWS, Azure, GCP, Terraform, CloudFormation, and Helm, alongside Python and Shell Scripting
+* Lead Kubernetes\-based container orchestration and DevSecOps initiatives, including CI/CD pipelines, Istio, and KEDA deployment strategies
+* Design and integrate serverless and cloud\-native architectures using API Gateway, Lambda, Step Functions, DynamoDB, S3, and Kinesis
+* Implement end\-to\-end Observability solutions using DataDog, OpenTelemetry, Dynatrace, New Relic, Splunk, Moogsoft, and BigPanda
+* Ensure seamless ITSM and ServiceNow integration for AI\-driven operations and automation
+* Work with ITSM tools like ServiceNow, Jira Service Management, and Manage Engine to streamline incident management workflows
+* Provide thought leadership in AIOps, automation, and AI\-powered operational intelligence to leadership and engineering teams
+
+**Requirements**
+
+* 19\+ years of overall IT experience
+* 10\+ years of professional experience in Enterprise Cloud, Infrastructure Engineering, SRE, Automation, and Architecture roles
+* Proven track record of delivering Gen\-AI\-powered AIOps solutions in production environments, driving efficiencies like MTTR improvement and operational automation
+* Expertise in Gen\-AI and LLM Engineering tools such as Amazon Bedrock, Azure OpenAI, Vertex AI, Anthropic, LangChain, and Bedrock Agents
+* Proficiency in RAG, Vector Databases, and semantic search solutions like PGVector, Elasticsearch, and Bedrock Knowledge Sources
+* Background in MLOps, model development, and machine learning techniques using SageMaker, Azure ML, clustering, topic modeling, and anomaly detection
+* Skills in cloud engineering and automation technologies, including AWS, Azure, GCP, Terraform, CloudFormation, Helm, Python, and Shell Scripting
+* Capability to design and operate Kubernetes\-based infrastructure, CI/CD pipelines, security automation, Istio, and KEDA
+* Familiarity with serverless computing and cloud\-native tools like API Gateway, Lambda, Step Functions, DynamoDB, S3, and Kinesis
+* Knowledge of Observability platforms such as DataDog, OpenTelemetry, Dynatrace, New Relic, Splunk, Moogsoft, and BigPanda
+* Understanding of ITSM platforms, including ServiceNow, Jira Service Management, and Manage Engine
+* Showcase of AI and Machine Learning expertise in areas like anomaly detection, GenAI implementation, and agentic AI solutions
+* Ability to communicate effectively in both written and spoken English (B2 level or higher)
+
+**Nice to have**
+
+* Experience leading AIOps/Cloud Practices or platform engineering organizations
+* Certifications in AWS ML, Cloud Architecture, or AI Leadership
+
+**We offer**
+
+* Opportunity to work on technical challenges that may impact across geographies
+* Vast opportunities for self\-development: online university, knowledge sharing opportunities globally, learning opportunities through external certifications
+* Opportunity to share your ideas on international platforms
+* Sponsored Tech Talks \& Hackathons
+* Unlimited access to LinkedIn learning solutions
+* Possibility to relocate to any EPAM office for short and long\-term projects
+* Focused individual development
+* Benefit package:
+	+ Health benefits
+	+ Retirement benefits
+	+ Paid time off
+	+ Flexible benefits
+* Forums to explore beyond work passion (CSR, photography, painting, sports, etc.)",,https://in.indeed.com/cmp/Epam-Systems,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/89e1cba2407c644a211fdfb77316efc3,http://www.epam.com,"Newtown, PA","10,000+",$1B to $5B (USD),"EPAM Systems, Inc. (EPAM) is a global leader in AI transformation engineering and integrated consulting. ",,,,,,
+in-730ab38451f2c5a0,indeed,https://in.indeed.com/viewjob?jk=730ab38451f2c5a0,https://careers.epam.com/en/vacancy/bltahvoyp6ivmlauxl8_en?city=Pune&state=Maharashtra&country=India&utm_source=indeed&utm_medium=xml-job-feed&utm_campaign=ta,Senior AIOps Solution Architect,EPAM Systems,"MH, IN",2026-03-17,,,,,,,False,,,,,"*EPAM is a leading global provider of digital platform engineering and development services. We are committed to having a positive impact on our customers, our employees, and our communities. We embrace a dynamic and inclusive culture. Here you will collaborate with multi\-national teams, contribute to a myriad of innovative projects that deliver the most creative and cutting\-edge solutions, and have an opportunity to continuously learn and grow. No matter where you are located, you will join a dedicated, creative, and diverse community that will help you discover your fullest potential.*
+
+
+We are seeking a highly experienced **Senior AIOps Solution Architect** with exceptional expertise in Gen\-AI\-enabled Cloud Engineering, Observability, Operational Intelligence, and AI\-driven automation. The ideal candidate will bring 10\+ years of enterprise\-level architecture experience, with a focus on building innovative Gen\-AI\-enabled platforms, data\-driven automation frameworks, and enterprise\-grade AIOps solutions to advance operational efficiency.
+
+**Responsibilities**
+
+* Design and deliver scalable Gen\-AI\-powered AIOps solutions for large enterprise platforms to improve MTTR, achieve automated incident resolution, and drive operational excellence
+* Architect and implement Gen\-AI \& LLM Engineering solutions using tools such as Amazon Bedrock, Azure OpenAI, Vertex AI, Anthropic, and LangChain
+* Develop and optimize MLOps pipelines and model deployment workflows leveraging SageMaker, Azure ML, clustering, topic modeling, and anomaly detection techniques
+* Implement RAG, Vector DBs, and advanced semantic search across platforms using PGVector, Elasticsearch, and Bedrock Knowledge Sources
+* Create and automate solutions for Cloud Platforms and Infrastructure with AWS, Azure, GCP, Terraform, CloudFormation, and Helm, alongside Python and Shell Scripting
+* Lead Kubernetes\-based container orchestration and DevSecOps initiatives, including CI/CD pipelines, Istio, and KEDA deployment strategies
+* Design and integrate serverless and cloud\-native architectures using API Gateway, Lambda, Step Functions, DynamoDB, S3, and Kinesis
+* Implement end\-to\-end Observability solutions using DataDog, OpenTelemetry, Dynatrace, New Relic, Splunk, Moogsoft, and BigPanda
+* Ensure seamless ITSM and ServiceNow integration for AI\-driven operations and automation
+* Work with ITSM tools like ServiceNow, Jira Service Management, and Manage Engine to streamline incident management workflows
+* Provide thought leadership in AIOps, automation, and AI\-powered operational intelligence to leadership and engineering teams
+
+**Requirements**
+
+* 19\+ years of overall IT experience
+* 10\+ years of professional experience in Enterprise Cloud, Infrastructure Engineering, SRE, Automation, and Architecture roles
+* Proven track record of delivering Gen\-AI\-powered AIOps solutions in production environments, driving efficiencies like MTTR improvement and operational automation
+* Expertise in Gen\-AI and LLM Engineering tools such as Amazon Bedrock, Azure OpenAI, Vertex AI, Anthropic, LangChain, and Bedrock Agents
+* Proficiency in RAG, Vector Databases, and semantic search solutions like PGVector, Elasticsearch, and Bedrock Knowledge Sources
+* Background in MLOps, model development, and machine learning techniques using SageMaker, Azure ML, clustering, topic modeling, and anomaly detection
+* Skills in cloud engineering and automation technologies, including AWS, Azure, GCP, Terraform, CloudFormation, Helm, Python, and Shell Scripting
+* Capability to design and operate Kubernetes\-based infrastructure, CI/CD pipelines, security automation, Istio, and KEDA
+* Familiarity with serverless computing and cloud\-native tools like API Gateway, Lambda, Step Functions, DynamoDB, S3, and Kinesis
+* Knowledge of Observability platforms such as DataDog, OpenTelemetry, Dynatrace, New Relic, Splunk, Moogsoft, and BigPanda
+* Understanding of ITSM platforms, including ServiceNow, Jira Service Management, and Manage Engine
+* Showcase of AI and Machine Learning expertise in areas like anomaly detection, GenAI implementation, and agentic AI solutions
+* Ability to communicate effectively in both written and spoken English (B2 level or higher)
+
+**Nice to have**
+
+* Experience leading AIOps/Cloud Practices or platform engineering organizations
+* Certifications in AWS ML, Cloud Architecture, or AI Leadership
+
+**We offer**
+
+* Opportunity to work on technical challenges that may impact across geographies
+* Vast opportunities for self\-development: online university, knowledge sharing opportunities globally, learning opportunities through external certifications
+* Opportunity to share your ideas on international platforms
+* Sponsored Tech Talks \& Hackathons
+* Unlimited access to LinkedIn learning solutions
+* Possibility to relocate to any EPAM office for short and long\-term projects
+* Focused individual development
+* Benefit package:
+	+ Health benefits
+	+ Retirement benefits
+	+ Paid time off
+	+ Flexible benefits
+* Forums to explore beyond work passion (CSR, photography, painting, sports, etc.)",,https://in.indeed.com/cmp/Epam-Systems,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/89e1cba2407c644a211fdfb77316efc3,http://www.epam.com,"Newtown, PA","10,000+",$1B to $5B (USD),"EPAM Systems, Inc. (EPAM) is a global leader in AI transformation engineering and integrated consulting. ",,,,,,
+in-819d0738d45680b6,indeed,https://in.indeed.com/viewjob?jk=819d0738d45680b6,https://careers.epam.com/en/vacancy/bltahvoyp6ivmlauxl8_en?city=Bangalore&state=Karnataka&country=India&utm_source=indeed&utm_medium=xml-job-feed&utm_campaign=ta,Senior AIOps Solution Architect,EPAM Systems,"KA, IN",2026-03-17,,,,,,,False,,,,,"*EPAM is a leading global provider of digital platform engineering and development services. We are committed to having a positive impact on our customers, our employees, and our communities. We embrace a dynamic and inclusive culture. Here you will collaborate with multi\-national teams, contribute to a myriad of innovative projects that deliver the most creative and cutting\-edge solutions, and have an opportunity to continuously learn and grow. No matter where you are located, you will join a dedicated, creative, and diverse community that will help you discover your fullest potential.*
+
+
+We are seeking a highly experienced **Senior AIOps Solution Architect** with exceptional expertise in Gen\-AI\-enabled Cloud Engineering, Observability, Operational Intelligence, and AI\-driven automation. The ideal candidate will bring 10\+ years of enterprise\-level architecture experience, with a focus on building innovative Gen\-AI\-enabled platforms, data\-driven automation frameworks, and enterprise\-grade AIOps solutions to advance operational efficiency.
+
+**Responsibilities**
+
+* Design and deliver scalable Gen\-AI\-powered AIOps solutions for large enterprise platforms to improve MTTR, achieve automated incident resolution, and drive operational excellence
+* Architect and implement Gen\-AI \& LLM Engineering solutions using tools such as Amazon Bedrock, Azure OpenAI, Vertex AI, Anthropic, and LangChain
+* Develop and optimize MLOps pipelines and model deployment workflows leveraging SageMaker, Azure ML, clustering, topic modeling, and anomaly detection techniques
+* Implement RAG, Vector DBs, and advanced semantic search across platforms using PGVector, Elasticsearch, and Bedrock Knowledge Sources
+* Create and automate solutions for Cloud Platforms and Infrastructure with AWS, Azure, GCP, Terraform, CloudFormation, and Helm, alongside Python and Shell Scripting
+* Lead Kubernetes\-based container orchestration and DevSecOps initiatives, including CI/CD pipelines, Istio, and KEDA deployment strategies
+* Design and integrate serverless and cloud\-native architectures using API Gateway, Lambda, Step Functions, DynamoDB, S3, and Kinesis
+* Implement end\-to\-end Observability solutions using DataDog, OpenTelemetry, Dynatrace, New Relic, Splunk, Moogsoft, and BigPanda
+* Ensure seamless ITSM and ServiceNow integration for AI\-driven operations and automation
+* Work with ITSM tools like ServiceNow, Jira Service Management, and Manage Engine to streamline incident management workflows
+* Provide thought leadership in AIOps, automation, and AI\-powered operational intelligence to leadership and engineering teams
+
+**Requirements**
+
+* 19\+ years of overall IT experience
+* 10\+ years of professional experience in Enterprise Cloud, Infrastructure Engineering, SRE, Automation, and Architecture roles
+* Proven track record of delivering Gen\-AI\-powered AIOps solutions in production environments, driving efficiencies like MTTR improvement and operational automation
+* Expertise in Gen\-AI and LLM Engineering tools such as Amazon Bedrock, Azure OpenAI, Vertex AI, Anthropic, LangChain, and Bedrock Agents
+* Proficiency in RAG, Vector Databases, and semantic search solutions like PGVector, Elasticsearch, and Bedrock Knowledge Sources
+* Background in MLOps, model development, and machine learning techniques using SageMaker, Azure ML, clustering, topic modeling, and anomaly detection
+* Skills in cloud engineering and automation technologies, including AWS, Azure, GCP, Terraform, CloudFormation, Helm, Python, and Shell Scripting
+* Capability to design and operate Kubernetes\-based infrastructure, CI/CD pipelines, security automation, Istio, and KEDA
+* Familiarity with serverless computing and cloud\-native tools like API Gateway, Lambda, Step Functions, DynamoDB, S3, and Kinesis
+* Knowledge of Observability platforms such as DataDog, OpenTelemetry, Dynatrace, New Relic, Splunk, Moogsoft, and BigPanda
+* Understanding of ITSM platforms, including ServiceNow, Jira Service Management, and Manage Engine
+* Showcase of AI and Machine Learning expertise in areas like anomaly detection, GenAI implementation, and agentic AI solutions
+* Ability to communicate effectively in both written and spoken English (B2 level or higher)
+
+**Nice to have**
+
+* Experience leading AIOps/Cloud Practices or platform engineering organizations
+* Certifications in AWS ML, Cloud Architecture, or AI Leadership
+
+**We offer**
+
+* Opportunity to work on technical challenges that may impact across geographies
+* Vast opportunities for self\-development: online university, knowledge sharing opportunities globally, learning opportunities through external certifications
+* Opportunity to share your ideas on international platforms
+* Sponsored Tech Talks \& Hackathons
+* Unlimited access to LinkedIn learning solutions
+* Possibility to relocate to any EPAM office for short and long\-term projects
+* Focused individual development
+* Benefit package:
+	+ Health benefits
+	+ Retirement benefits
+	+ Paid time off
+	+ Flexible benefits
+* Forums to explore beyond work passion (CSR, photography, painting, sports, etc.)",,https://in.indeed.com/cmp/Epam-Systems,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/89e1cba2407c644a211fdfb77316efc3,http://www.epam.com,"Newtown, PA","10,000+",$1B to $5B (USD),"EPAM Systems, Inc. (EPAM) is a global leader in AI transformation engineering and integrated consulting. ",,,,,,
+in-1a4fc9ad28149b27,indeed,https://in.indeed.com/viewjob?jk=1a4fc9ad28149b27,https://www.movate.com/jobs/ai-architect-3/,AI Architect,Movate,"KA, IN",2026-03-17,fulltime,,,,,,False,,,,,"**Job Title:** AI Architect
+  
+**Location:** Bangalore, India (Full\-Time, On\-site/Hybrid)
+  
+**Job type:** Full\-time
+  
+**Experience:** 18\+ Years
+  
+**Domain:** IT Services \& Consulting / Captive Technology Centers
+  
+  
+
+Job Summary
+  
+  
+
+We are seeking a seasoned Principal AI Architect with 18\+ years of experience to join our team in Bangalore.
+  
+You will be responsible for defining the enterprise AI strategy, designing scalable, production\-grade Artificial Intelligence and Generative AI solutions.
+  
+You will serve as the technical authority, influencing C\-suite stakeholders, mentoring high\-performing teams, and ensuring our AI investments drive tangible business value.
+  
+  
+
+Key Responsibilities
+  
+  
+
+**Strategic Vision:** Architect and build comprehensive AI infrastructures and hardware solutions, ensuring alignment with overall business goals.
+  
+**GenAI \& LLM Architecture:** Design and deploy Generative AI applications, including RAG (Retrieval\-Augmented Generation) systems, Vector Databases, and Agentic AI workflows.
+  
+**Solution Architecture:** Create end\-to\-end AI pipelines, including feature stores, model training, deployment, monitoring, and retraining workflows (MLOps/LLMOps).
+  
+**Technical Leadership:** Act as a subject matter expert (SME) to guide cross\-functional teams in adopting best practices in AI, Machine Learning, and Deep Learning.
+  
+**Cloud \& Integration:** Lead integration of AI models with existing legacy enterprise systems using cloud\-native services (AWS/Azure/GCP).
+  
+**Governance \& Ethics:** Ensure compliance with data security, privacy, and responsible AI practices (handling bias, model safety).
+  
+**Stakeholder Management:** Influence senior executives and client stakeholders on AI roadmap adoption, ROI analysis, and vendor evaluation.
+  
+  
+
+Required Qualifications \& Technical Skills
+  
+  
+
+**Experience:** 18\+ years in software engineering, with at least 5\-8 years specifically in AI/ML solution architecture.
+  
+**Generative AI:** Expert\-level understanding of LLMs (GPT, Llama, Mistral), Prompt Engineering, and Vector Stores (Pinecone, FAISS, Weaviate).
+  
+**Programming:** Mastery of Python and its AI/ML ecosystem (TensorFlow, PyTorch, Scikit\-learn).
+  
+**Architecture:** Deep knowledge of Microservices, APIs, and containerization (Docker, Kubernetes).
+  
+**Cloud:** Proficiency in Azure AI, AWS Bedrock, or Vertex AI.
+  
+**Domain Expertise:** Prior experience in Banking/Financial Services (FS), Healthcare, or Retail is highly preferred.
+  
+**Education:** Bachelor’s or Master’s degree in Computer Science, Data Science, or related quantitative field.
+  
+Exceptional communication and presentation skills, capable of explaining complex AI concepts to non\-technical audiences.
+  
+Proven capability to mentor senior engineers and lead cross\-team initiatives.
+  
+Strategic thinking with a strong focus on ROI and business impact.
+  
+  
+
+Why Join Us
+  
+  
+
+Work on cutting\-edge Agentic AI and GenAI initiatives.
+  
+Shape the AI strategy for global enterprise clients.
+  
+High\-visibility role with direct access to executive leadership.
+  
+Follow Us On LinkedIn To Know About Our Latest Job Openings!
+  
+Submit the form below to apply
+  
+  
+
+Name(Required)
+  
+Email(Required)
+  
+Phone(Required)
+  
+Do you have 18\+ years in software engineering, with at least 5\-8 years specifically in AI/ML solution architecture?(Required)
+  
+Yes
+  
+No
+  
+Total experience in Artificial Intelligence?(Required)
+  
+Total experience in providing AI proposals /requests(Required)
+  
+Do you have experience in providing technical AI Architecture?(Required)
+  
+Yes
+  
+No
+  
+Current location(Required)
+  
+Are you willing to work onsite?(Required)
+  
+Yes
+  
+No
+  
+Do you have expert\-level understanding of LLMs (GPT, Llama, Mistral), Prompt Engineering?(Required)
+  
+Yes
+  
+No
+  
+Attach Resume(Required)
+  
+**Accepted file types:** pdf, docx, doc, Max. file size: 10 MB.",,https://in.indeed.com/cmp/Movate-1,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/7031930d9ac2c9c5bd71f87972bf8f46,https://www.movate.com,"Movate Inc. Corporate Address – 5600 Tennyson Parkway Suite 255 , Plano TX – 75024","10,000+",$100M to $500M (USD),Movate is a human-centered technology services company redefining customer engagements through technology-led service delivery to drive superior business outcomes.,,,,,,
+in-20d3dc77eb4fdd10,indeed,https://in.indeed.com/viewjob?jk=20d3dc77eb4fdd10,https://genpact.taleo.net/careersection/sgy_external_career_section/jobdetail.ftl?job=ITO095648&tz=GMT-05%3A00&tzname=America%2FChicago,Consultant – Azure AI Engineer,Genpact,"KA, IN",2026-03-16,fulltime,,,,,,False,,,,,"Ready to build the future with AI?  
+
+At Genpact, we don’t just keep up with technology—we set the pace. AI and digital innovation are redefining industries, and we’re leading the charge. Genpact’s AI Gigafactory, our industry\-first accelerator, is an example of how we’re scaling advanced technology solutions to help global enterprises work smarter, grow faster, and transform at scale. From large\-scale models to agentic AI, our breakthrough solutions tackle companies’ most complex challenges.  
+
+If you thrive in a fast\-moving, innovation\-driven environment, love building and deploying cutting\-edge AI solutions, and want to push the boundaries of what’s possible, this is your moment.  
+
+Genpact (NYSE: G) is an advanced technology services and solutions company that delivers lasting value for leading enterprises globally. Through our deep business knowledge, operational excellence, and cutting\-edge solutions – we help companies across industries get ahead and stay ahead. Powered by curiosity, courage, and innovation, our teams implement data, technology, and AI to create tomorrow, today. Get to know us at genpact.com and on LinkedIn, X, YouTube, and Facebook.
+Inviting Applications for the role of Consultant – Azure AI Engineer  
+
+In this role, We are seeking a highly skilled and passionate Azure AI Engineer to join our dynamic Cora Sequence team. In this role, you will be instrumental in designing, developing, deploying, and managing AI/ML solutions on the Microsoft Azure platform. You will work closely with data scientists, researchers, and product managers to translate complex analytical models into production\-ready, scalable applications. Your expertise in Azure AI services, MLOps, and data engineering will be crucial in delivering high\-impact AI capabilities.
+Responsibilities  
+
+* Design \& Development: Architect and develop end\-to\-end AI/ML solutions using Azure AI services (e.g., Azure Machine Learning, Azure Cognitive Services, Azure Databricks, Azure Synapse Analytics).
+* Model Deployment \& Management: Implement robust MLOps practices for continuous integration, continuous delivery (CI/CD), monitoring, and retraining of machine learning models in Azure.
+* Data Pipelining: Build and optimize scalable data pipelines for ingesting, transforming, and preparing large datasets for AI model training and inference.
+* Performance Optimization: Optimize AI models and their serving infrastructure for performance, cost\-efficiency, and scalability.
+* Collaboration: Work collaboratively with data scientists to operationalize models, provide feedback on model design for production readiness, and ensure seamless integration with existing systems.
+* Troubleshooting \& Support: Diagnose and resolve issues related to AI/ML deployments, data pipelines, and Azure infrastructure.
+* Security \& Compliance: Ensure AI solutions adhere to best practices for data security, privacy, and compliance within the Azure ecosystem.
+* Documentation: Create comprehensive documentation for AI solution architectures, deployment procedures, and operational guidelines.
+* Stay Current: Keep abreast of the latest advancements in Azure AI services, machine learning technologies, and MLOps trends.
+
+
+Qualifications we seek in you!  
+
+Minimum Qualifications  
+
+* Bachelor's or master’s degree in computer science, Engineering, Data Science, or a related quantitative field.
+* Relevant years of experience in developing and deploying AI/ML solutions, with a strong focus on Microsoft Azure.
+* Proficiency in Python and experience with relevant AI/ML libraries (e.g., scikit\-learn, TensorFlow, PyTorch, Keras).
+* Demonstrated experience with Azure Machine Learning, including MLOps concepts, model registration, deployment (AKS, ACI), and monitoring.
+* Hands\-on experience with Azure data services such as Azure Data Lake Storage, Azure Data Factory, Azure Databricks, or Azure Synapse Analytics.
+* Solid understanding of software engineering principles, including version control (Git), testing, and code review.
+* Experience with containerization technologies (Docker, Kubernetes).
+* Strong problem\-solving skills and the ability to work independently and as part of a team.
+* Excellent communication and interpersonal skills.
+
+
+Preferred Qualifications/ Skills  
+
+* Azure certifications (e.g., Azure AI Engineer Associate, Azure Data Scientist Associate).
+* Experience with Azure Cognitive Services (e.g., Language, Vision, Speech) or Azure Bot Service.
+* Familiarity with streaming data processing frameworks (e.g., Apache Kafka, Azure Event Hubs, Azure Stream Analytics).
+* Experience with CI/CD pipelines (e.g., Azure DevOps, GitHub Actions).
+* Understanding of distributed computing concepts and big data technologies.
+* Prior experience with sequential data processing, time\-series analysis, or natural language processing (NLP).
+
+Why join Genpact?  
+
+* Lead AI\-first transformation – Build and scale AI solutions that redefine industries
+* Make an impact – Drive change for global enterprises and solve business challenges that matter
+* Accelerate your career—Gain hands\-on experience, world\-class training, mentorship, and AI certifications to advance your skills
+* Grow with the best – Learn from top engineers, data scientists, and AI experts in a dynamic, fast\-moving workplace
+* Committed to ethical AI – Work in an environment where governance, transparency, and security are at the core of everything we build
+* Thrive in a values\-driven culture – Our courage, curiosity, and incisiveness \- built on a foundation of integrity and inclusion \- allow your ideas to fuel progress
+
+
+Come join the 140,000\+ coders, tech shapers, and growth makers at Genpact and take your career in the only direction that matters: Up.  
+
+Let’s build tomorrow together.  
+
+  
+
+Genpact is an Equal Opportunity Employer and considers applicants for all positions without regard to race, color, religion or belief, sex, age, national origin, citizenship status, marital status, military/veteran status, genetic information, sexual orientation, gender identity, physical or mental disability or any other characteristic protected by applicable laws. Genpact is committed to creating a dynamic work environment that values respect and integrity, customer focus, and innovation.  
+
+Furthermore, please do note that Genpact does not charge fees to process job applications and applicants are not required to pay to participate in our hiring process in any other way. Examples of such scams include purchasing a 'starter kit,' paying to apply, or purchasing equipment or training.  
+
+JobConsultant
+
+
+Primary LocationIndia\-Bangalore
+
+
+ScheduleFull\-time
+
+
+Education LevelBachelor's / Graduation / Equivalent
+
+
+Job PostingMar 16, 2026, 6:00:43 AM
+
+
+Unposting DateSep 12, 2026, 11:00:43 AM
+
+
+Master Skills ListDigital
+
+
+Job CategoryFull Time",,https://in.indeed.com/cmp/Genpact,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/505bd58a0a332271212ac1b411dd3cd0,https://www.genpact.com,"New York, NY","10,000+",$1B to $5B (USD),"Genpact (NYSE: G) is a global professional services firm that makes business transformation real, driving digital-led innovation and digitally-enabled intelligent operations for our clients.",,,,,,
+in-8e66e598834b55ce,indeed,https://in.indeed.com/viewjob?jk=8e66e598834b55ce,https://www.movate.com/jobs/angular-web-developer/,Angular Web Developer,Movate,"TN, IN",2026-03-16,,,,,,,False,,,,,"**Work Location:** Chennai
+  
+**Experience:** 5\-8 years
+  
+**Education Qualification:** Any Graduate
+  
+**No of Openings :** 5
+  
+  
+
+**Roles and Responsibilities:**  
+
+Adhere to estimates for completing the features/user stories.
+  
+Develop unit testing of code components.
+  
+Write well designed, testable, scalable and efficient code by following software development best practices.
+  
+Collaborate and communicate effectively with other stockholders.
+  
+Participate in the Agile / SCRUM development process as an individual contributor, sizing work items and completing sprint tasks
+  
+Integrate data from various back\-end services.
+  
+Create technical documentation for reference and reporting
+  
+  
+
+**Required Skills \& Desired Skills:**  
+
+A strong level of proficiency in python programming.
+  
+Practical knowledge and working experience on Statistics and Operation Research methods.
+  
+Practical knowledge and working experience in tools and frameworks like Flask,PySpark,Pytorch,tensorflow, keras, Databricks, OpenCV, Pillow/PIL, streamlit, d3js, dashplotly, neo4j.
+  
+Hands on experience in Analytics/AI\-ML AWS services like Sagemaker, Canvas, Bedrock.
+  
+Good understanding of how to apply predictive and machine learning techniques like regression models, XGBoost, random forest, GBM, Neural Nets, SVM etc.
+  
+Proficient with NLP techniques like RNN, LSTM and Attention based models and effectively handle readily available stanford, IBM, Azure, Open AI NLP models.
+  
+Good understanding of SQL from a perspective of how to write efficient queries for pulling the data from database.
+  
+Hands on experience on any version control tool (github, bitbucket).
+  
+Experience of deploying ML models into production environment experience (MLOps) in any one of the cloud platforms like Azure and AWS.
+  
+Follow Us On LinkedIn To Know About Our Latest Job Openings!
+  
+Submit the form below to apply
+  
+  
+
+Name(Required)
+  
+Email(Required)
+  
+Phone(Required)
+  
+Do you have hands\-on Angular Web development experience?(Required)
+  
+Yes
+  
+No
+  
+How many years of experience do you have in UI JavaScript?(Required)
+  
+0\-2 years
+  
+2\-4 years
+  
+more than 5 years
+  
+Are you flexible working from the office?(Required)
+  
+Yes
+  
+No
+  
+Are you available for a face\-to\-face interview on 19th Oct in Chennai/BLR office?(Required)
+  
+Yes
+  
+No
+  
+Can you join us within 15\-30 days?(Required)
+  
+Yes
+  
+No
+  
+Current location(Required)
+  
+Attach Resume(Required)
+  
+**Accepted file types:** pdf, docx, doc, Max. file size: 10 MB.",,https://in.indeed.com/cmp/Movate-1,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/7031930d9ac2c9c5bd71f87972bf8f46,https://www.movate.com,"Movate Inc. Corporate Address – 5600 Tennyson Parkway Suite 255 , Plano TX – 75024","10,000+",$100M to $500M (USD),Movate is a human-centered technology services company redefining customer engagements through technology-led service delivery to drive superior business outcomes.,,,,,,
+in-11715ba686878a3e,indeed,https://in.indeed.com/viewjob?jk=11715ba686878a3e,https://www.movate.com/jobs/senior-data-scientist/,Senior Data Scientist,Movate,"TN, IN",2026-03-16,,,,,,,False,,,,,"**Work Location:** Chennai Guindy
+  
+**Experience:** 8\-12 years
+  
+**Education Qualification:** Any Graduate
+  
+**No of Openings :** 5
+  
+  
+
+**Roles and Responsibilities:**  
+
+Comprehend business issues and propose valuable business solutions.
+  
+Design Factual or AI/profound learning models to address business issues.
+  
+Design Statistical Models/ML/DL models and deploy them for production.
+  
+Formulate what information is accessible from where and how to augment it.
+  
+Develop innovative graphs for data comprehension using d3js, dashplotly and neo4j.
+  
+  
+
+**Required Skills \& Desired Skills:**  
+
+A strong level of proficiency in python programming.
+  
+Practical knowledge and working experience on Statistics and Operation Research methods.
+  
+Practical knowledge and working experience in tools and frameworks like Flask,PySpark,Pytorch,tensorflow, keras, Databricks, OpenCV, Pillow/PIL, streamlit, d3js, dashplotly, neo4j.
+  
+Hands on experience in Analytics/AI\-ML AWS services like Sagemaker, Canvas, Bedrock.
+  
+Good understanding of how to apply predictive and machine learning techniques like regression models, XGBoost, random forest, GBM, Neural Nets, SVM etc.
+  
+Proficient with NLP techniques like RNN, LSTM and Attention based models and effectively handle readily available stanford, IBM, Azure, Open AI NLP models.
+  
+Good understanding of SQL from a perspective of how to write efficient queries for pulling the data from database.
+  
+Hands on experience on any version control tool (github, bitbucket).
+  
+Experience of deploying ML models into production environment experience (MLOps) in any one of the cloud platforms like Azure and AWS.
+  
+Follow Us On LinkedIn To Know About Our Latest Job Openings!
+  
+Submit the form below to apply
+  
+  
+
+Name(Required)
+  
+Email(Required)
+  
+Phone(Required)
+  
+Do you have hands\-on Python development experience?(Required)
+  
+Yes
+  
+No
+  
+How many years of experience do you have in Data scientist role overall?(Required)
+  
+0\-2 years
+  
+2\-4 years
+  
+more than 6 years
+  
+Are you flexible working from the office?(Required)
+  
+Yes
+  
+No
+  
+Are you available for a face\-to\-face interview on 19th Oct in Chennai/BLR office?(Required)
+  
+Yes
+  
+No
+  
+Can you join us within 15\-30 days?(Required)
+  
+Yes
+  
+No
+  
+Current location(Required)
+  
+Attach Resume(Required)
+  
+**Accepted file types:** pdf, docx, doc, Max. file size: 10 MB.",,https://in.indeed.com/cmp/Movate-1,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/7031930d9ac2c9c5bd71f87972bf8f46,https://www.movate.com,"Movate Inc. Corporate Address – 5600 Tennyson Parkway Suite 255 , Plano TX – 75024","10,000+",$100M to $500M (USD),Movate is a human-centered technology services company redefining customer engagements through technology-led service delivery to drive superior business outcomes.,,,,,,

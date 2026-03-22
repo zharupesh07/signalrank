@@ -1,0 +1,4 @@
+{
+  "_error": "no_json",
+  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"ASIC Design\",\n      \"Verification\",\n      \"RTL Design\",\n      \"EDA Tools\",\n      \"Linting\",\n      \"Clock Domain Crossing (CDC)\",\n      \"Reset Domain Crossing (RDC)\",\n      \"Low Power Verification\",\n      \"Constraints Verification\",\n      \"Formal Verification\",\n      \"SystemVerilog\",\n      \"VHDL\",\n      \"Verilog\",\n      \"UPF\",\n      \"CPF\",\n      \"Simulation\",\n      \"Coverage-Driven Verification\",\n      \"Gate-Level Simulation (GLS)\",\n      \"Debug\",\n      \"Custo"
+}

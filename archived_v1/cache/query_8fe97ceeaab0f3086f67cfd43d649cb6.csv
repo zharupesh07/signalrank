@@ -1,0 +1,355 @@
+id,site,job_url,job_url_direct,title,company,location,date_posted,job_type,salary_source,interval,min_amount,max_amount,currency,is_remote,job_level,job_function,listing_type,emails,description,company_industry,company_url,company_logo,company_url_direct,company_addresses,company_num_employees,company_revenue,company_description,skills,experience_range,company_rating,company_reviews_count,vacancy_count,work_from_home_type
+in-a500eee232866522,indeed,https://in.indeed.com/viewjob?jk=a500eee232866522,https://app.whitecarrot.io/share/careers/bayzat/job/5c68273c-2dc4-4a78-b49a-3bd00aef43a9,Security Engineer (Cloud & AI Focus),bayzat,IN,2026-01-29,fulltime,,,,,,True,,,,,"**India****Full time****REMOTE****Job description****Who we are:**
+Bayzat is at the forefront of transforming workplaces through innovative solutions in HR, Payroll, Finance, and Insurance. Renowned as a leading SaaS platform for employee benefits and a key player in the Insurance sector, we are committed to our mission: empower every company to create a remarkable workplace by supercharging people processes and payments.
+
+As one of the MENA region's fastest\-growing Scale\-Ups, Bayzat is celebrated for its innovative product offerings, backed by over 300 team members from 35\+ nationalities. Recognized by Forbes as a promising UAE\-based startup and supported by leading VCs like Mubadala and Point72 Ventures, we are among the best\-funded HRTech scale\-ups in the region.
+
+At Bayzat, culture is paramount. We are a principle\-driven, merit\-based organization where authenticity, collaboration, and unpretentiousness thrive. Joining Bayzat means immersing yourself in an environment of high achievers, tackling complex challenges, and constantly striving for success. Our culture inspires continuous learning and excellence, allowing you to work with and be inspired by some of the brightest minds in the industry.
+
+Our journey to success is anchored in our commitment to innovation, empowering businesses with features designed to optimize efficiency and elevate employee experiences. Whether enhancing people processes, streamlining payments, or enabling smarter decisions, Bayzat is redefining what it means to create a truly remarkable workplace.
+
+**About the Role:**
+We are looking for a forward\-thinking Security Engineer to evolve our security posture from""gatekeeper"" to ""enabler."" You will not just find bugs; you will architect the automated guardrails that allow our developers to ship code fast and securely. As a core member of the Engineering team, you will tackle security challenges across our entire stack; from traditional Web/Mobile apps and Cloud Infrastructure (AWS) to our emerging AI\-driven features. You will play a pivotal role in defining how we secure Generative AI integrations and protect our customer data in an era of evolving threats.
+
+**Some high\-impact responsibilities you will be entrusted with:**
+
+**Application \& AI Security (AppSec)**
+* **Secure the AI Frontier**: Lead threat modeling and security reviews for new product features, specifically focusing on LLM (Large Language Model)  
+
+integrations. You will mitigate risks such as Prompt Injection, Data Poisoning, and Model Theft (adhering to the OWASP Top 10for LLMs).
+* **Shift\-Left Security**: Embed security into the SDLC. Integrate SAST, DAST, and SCA(Software Composition Analysis) tools directly into our CI/CD pipelines to catch vulnerabilities before they reach production.
+* **Vulnerability Management**: Move beyond manual reporting. Triage results from automated scans and Bug Bounty programs, and work directly with developers to implement remediation patches.
+
+**Cloud \& Infrastructure Security**
+* **Cloud\-Native Protection**: Harden our AWS environment using industry best practices (CIS Benchmarks)
+* **Infrastructure as Code (IaC) Security**: Review and secure Terraform/CloudFormation scripts to ensure infrastructure is secure by design before it is deployed.
+* **Container Security**: Implement security controls for Docker containers and Kubernetes (K8s)clusters, ensuring isolation and minimizing the attack surface.
+
+**Operations \& Culture**
+* **Automate Everything:** Use Python, Go, or Bash to write scripts that automate repetitive security tasks, alerting, and incident response workflows.
+* **Security Champions**: Mentor developers and product managers. Run internal workshops on secure coding practices (including safe use of AI coding assistants like Copilot).
+* **Incident Response**: detect, investigate, and respond to security anomalies using modern SIEM tools.
+
+
+**What you will need to have:**
+
+**Technical Skills**
+* **Experience:**3\+ years in Security Engineering, DevSecOps, or a related field.
+* **Coding:** Proficiency in at least one scripting language (Python, Go, or Ruby) to read code and write automation tools.
+* **Cloud Fluency:** Deep understanding of AWS services (IAM, VPC, Guard Duty, WAF, Inspector) and container orchestration (Kubernetes)
+* **AppSec Tooling:** Hands\-on experience with tools like Burp Suite, OWASP ZAP, Snyk, SonarQube, or similar enterprise equivalents.
+* **AI/ML Knowledge:** Familiarity with the security implications of Generative AI, RAG (Retrieval\-Augmented Generation) architectures, and API security.
+
+**Soft Skills \& Mindset**
+* **Builder Mindset**: You don't just say ""No""; you say ""Here is the secure way to do it.""
+* **Communication**: Ability to translate complex security risks (like an Insecure Direct Object Reference or a Prompt Injection) into business terms for Product Managers.
+* **Curiosity**: A demonstrated history of self\-learning (e.g., HTB, TryHackMe, or building your own labs).
+
+**Bonus Points**
+* Experience in implementing controls for compliance frameworks such as ISO 27001, SOC 2,PCI DSS, or similar frameworks.
+* Active participation in the security community (Bug Bounties, GitHub contributions, CTFs).
+* Certifications: OSCP, CISSP, AWS Security Specialty, or CKS (Certified Kubernetes SecuritySpecialist).
+* Experience securing Vector Databases (e.g., Weaviate, Pinecone, Milvus)
+
+
+**What’s in it for You**
+At Bayzat, we don’t sell beanbags or buzzwords as culture — we build an environment where high achievers thrive. You’ll work alongside some of the hungriest, most driven people you’ll ever meet, in a place that rewards performance, not politics.
+
+Here’s what you can expect:
+* **Meritocracy at its core:** Your value creation and impact define your growth, not titles or tenure.
+* **Freedom to shape your path:** We support cross\-functional moves and growth transitions when you drive value.
+* **Real feedback culture:** Feedback is coaching — empowering you to find your own answers and elevate your game.
+* **Barrier\-free collaboration:** Impact matters more than hierarchy. If you can create value, you’ll have a seat at the table — even with the CEO.
+* **Accelerated growth:** Fast\-track opportunities for top performers; no artificial limits.
+* **Flexible work setup:** Remote and hybrid options designed around performance.
+* **Inclusive culture:** Regular company\-wide all\-hands, OKR tribe meetings, and annual awards that celebrate real impact.
+
+This isn’t for everyone — but if you want to be pushed, inspired, and rewarded for what you deliver, **welcome to Bayzat.**",,https://in.indeed.com/cmp/Bayzat,,https://www.bayzat.com,Dubai,51 to 200,,,,,,,,
+in-c576e0288ce1d643,indeed,https://in.indeed.com/viewjob?jk=c576e0288ce1d643,https://www.innovect.com/careers/?gnk=job&gni=8a7885ac9a31edfc019a34d7e01c1467&gns=Indeed+Free,Sr. Forward Deployed - Palantir Foundry & AIP Engineer,Innovecture,"MH, IN",2026-01-29,,,,,,,False,,,,,"**Responsibilities**
+* Partner with Palantir FDEs and internal stakeholders to design, build, and operationalize solutions within Palantir Foundry and AIP.
+
+
+* Learn and apply Palantir’s frameworks, workflows, and ontology\-driven design principles to integrate, transform, and analyze complex datasets.
+
+
+* Develop and maintain data pipelines, models, APIs, and workflows that enable scalable and secure enterprise use cases.
+
+
+* Collaborate with business users to translate requirements into technical designs and implement end\-to\-end solutions.
+
+
+* Contribute to AI/ML use cases leveraging Palantir AIP for decision support, automation, and advanced analytics.
+
+
+* Ensure security, compliance, and data governance standards are met across implementations.
+
+
+* Document processes, share knowledge, and help build an internal Palantir practice for long\-term success.
+
+
+**Qualifications Required**
+* Bachelor’s degree in Computer Science, Engineering, Data Science, or a related field (or equivalent experience).
+
+
+* Strong foundation in at least one of the following areas:
+
+
+o Software engineering (Python, Java, TypeScript/React, or similar).
+o Data engineering (SQL, Spark, cloud data platforms).
+o Analytics / data science (statistics, ML frameworks, visualization).
+* Demonstrated ability to learn new platforms and technologies quickly and apply them in real projects.
+
+
+* Experience with cloud environments (AWS, Azure, or GCP).
+
+
+* Strong problem\-solving skills and ability to work in fast\-paced, collaborative teams.
+
+
+* Excellent communication skills to engage with both technical and non\-technical stakeholders.
+
+
+Preferred
+* Experience in enterprise data integration, APIs, or distributed systems.
+
+
+* Familiarity with DevOps practices (CI/CD, containerization, infrastructure\-as\-code).
+
+
+* Exposure to AI/ML concepts and practical application.
+
+
+* Previous work in high\-compliance industries (healthcare, financial services, government) a plus.
+
+
+**What We Offer**
+* Direct mentorship from Palantir’s Forward Deployed Engineers during project build\-out.
+
+
+* Opportunity to become a Palantir Foundry and AIP expert with skills highly in demand across industries.
+
+
+* Work on mission\-critical data and AI solutions with visibility at the highest levels of the organization.
+
+
+* Competitive compensation, benefits, and a growth pathway into senior engineering and solution architecture roles.",Consulting And Business Services,https://in.indeed.com/cmp/Innovecture-1,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/44afabb73d4080744b2bb238e008f038,http://www.innovect.com,"Draper, Utah",51 to 200,,http://www.mwcn.org/mountainwest-capital-network-releases-utah-100-fastest-growing-companies-hottest-business-climate-us,,,,,,
+in-b362a1da414a729d,indeed,https://in.indeed.com/viewjob?jk=b362a1da414a729d,https://careers.swiggy.com/#/careers?src%3Dcareers%26p%3DeyJwYWdlVHlwZSI6ImpkIiwiY3ZTb3VyY2UiOiJjYXJlZXJzIiwicmVxSWQiOjI0MzcxLCJyZXF1ZXN0ZXIiOnsiaWQiOiIiLCJjb2RlIjoiIiwibmFtZSI6IiJ9LCJwYWdlIjoiY2FyZWVycyIsImJ1ZmlsdGVyIjotMSwiY3VzdG9tRmllbGRzIjp7fX0=,machine learning Engineer III View Jobs,Swiggy,"KA, IN",2026-01-29,fulltime,,,,,,False,,,,,"**Job Profile**: Machine Learning Engineer \- III
+
+**Location**: Bangalore \| Karnataka
+
+**Years of Experience**: 6 \- 8
+
+ **Position Overview:**
+
+
+Swiggy is India's largest on\-demand platform for food, groceries, and dining. We're one of the few companies where AI meets physical\-world execution at scale: predicting demand across 5,000\+ dark stores, optimizing millions of deliveries daily, and building agents that operate in real\-time with real constraints.
+
+
+Forward Deployed AI Engineers embed with teams across Swiggy to solve their hardest problems using AI. You'll work in small pods, report into the Central AI team, and deploy to where the problems are: supply chain, category ops, marketplace, support, and beyond.
+
+
+Think of it as being the AI CTO for the domain you're embedded in.
+
+ **What qualities are we looking for?**
+
+**Production Agentic Experience**
+
+* You've built and deployed agentic AI systems in production, not just notebooks or demos
+* Advanced context engineering, evaluation frameworks, and agent harness patterns
+* Experience with skills, subagents, tool integration, and orchestration patterns
+* You understand the gap between ""it works locally"" and ""it works at scale with real latency and cost constraints""
+
+**AI\-Native Mindset**
+
+* You apply first principles thinking to re\-imagine existing workflows in an AI native way.
+* Claude Code, Cursor, or Codex is your primary environment. You ship faster with AI tools than without.
+* You think in skills, subagents, and parallel workflows
+* You can design an agent architecture, implement it, and iterate based on production feedback
+
+**Proven AI Impact**
+
+* You've shipped at least one AI system that moved a real business metric. Not incremental, transformative.
+* You can show it to us: a repo, a production deployment, metrics before/after, or a recorded demo
+* You know what it takes to get from prototype to production
+
+**Engineering Foundations**
+
+* 2\+ years shipping production systems with real traffic, real users, real constraints (exceptional freshers who are AI power users with proof of work will also be considered)
+* OR: Technical founder / early engineer at a startup with demonstrable AI impact
+* Trade\-off fluency: latency vs accuracy, cost vs reliability, autonomy vs predictability
+* Strong in Python or TypeScript, LLMs, orchestration frameworks, system design
+
+**Communication \& Influence**
+
+* You translate complex AI concepts to non\-technical ops teams
+* You can lead a discovery session, whiteboard an architecture, and get buy\-in in the same meeting
+* You write clear documentation that becomes the team's playbook
+* You're comfortable context\-switching: ops workflows in the morning, architecture reviews in the afternoon
+
+**High Ownership**
+
+* You find problems worth solving. You don't wait for specs.
+* You ship when the path isn't clear
+* You're energized by ambiguity and moving fast in complex environments
+
+ **What will you get to do here?**
+
+* Real problems at real scale: Systems that affect millions of orders, thousands of dark stores, and real P\&L
+* Direct access: No layers between you and the teams you're solving for. You see the problem, you ship the fix.
+* Shape the platform: Your field work defines what the Central AI team builds. Direct input into roadmap and architecture decisions.
+* Founder\-like ownership: You're essentially the CTO of AI for your embedded domain
+* Career leverage: FDE is the fastest path to becoming a technical leader who understands both AI and operations at scale
+* What You Get Real problems at real scale: Systems that affect millions of orders, thousands of dark stores, and real P\&L Direct access: No layers between you and the teams you're solving for. You see the problem, you ship the fix. Shape the platform: Your field work defines what the Central AI team builds. Direct input into roadmap and architecture decisions. Founder\-like ownership: You're essentially the CTO of AI for your embedded domain Career leverage: FDE is the fastest path to becoming a technical leader who understands both AI and operations at scale
+
+**Some Problems You'll Work On**
+
+* Why did availability drop 15% in a zone last week? Build the prediction system that prevents it before it happens.
+* Ops teams spend 3 days onboarding new catalog items. Can an agent do it in 20 minutes?
+* The Dineout discovery bot answers questions but doesn't learn from mistakes. Make it self\-improving.
+* Every team wants to build AI products but keeps rebuilding the same infrastructure. Create the foundation they build on.
+
+**What You'll Build**
+
+* Prediction agents for availability, inventory, and demand forecasting
+* MCP servers connecting AI to Swiggy's operational systems
+* Evaluation frameworks that prove AI impact in production
+* Self\-improving agents that learn from ops feedback loops
+* Reusable skills and subagent libraries that other teams can deploy
+
+**How You'll Operate**
+
+* 60% embedded with business teams (Instamart, Food, Dineout, Customer Support etc)
+* 40% Central AI: roadmap input, pattern codification, build platform features
+* Rotation model: \~3 month deployments per domain
+* Join their standups, map their workflows, find the highest\-leverage problems
+* Ship production systems that handle real traffic. Not decks, not demos.
+* Package what works into skills and playbooks others can use
+* Your field learnings directly shape what the Central AI platform builds next
+
+
+﻿﻿﻿﻿
+
+**Visit our tech blogs to learn more about some the challenges we deal with:**
+
+
+https://bytes.swiggy.com/the\-swiggy\-delivery\-challenge\-part\-one\-6a2abb4f82f6
+
+
+https://bytes.swiggy.com/how\-ai\-at\-swiggy\-is\-transforming\-convenience\-eae0a32055ae
+
+
+https://bytes.swiggy.com/decoding\-food\-intelligence\-at\-swiggy\-5011e21dbc86
+
+  
+
+We are an equal opportunity employer and all qualified applicants will receive consideration for employment without regard to race, colour, religion, sex, disability status, or any other characteristic protected by the law.",,https://in.indeed.com/cmp/Swiggy-6ad03018,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/78d4b50d95084e629e1312c60a77e18d,https://www.swiggy.in,Bengaluru,"10,000+",Decline to state,Our delivery personnel carry one order at a time which ensures we get reliable and fast deliveries.,,,,,,
+in-f7baaa84287d43d4,indeed,https://in.indeed.com/viewjob?jk=f7baaa84287d43d4,https://careers.swiggy.com/#/careers?src%3Dcareers%26p%3DeyJwYWdlVHlwZSI6ImpkIiwiY3ZTb3VyY2UiOiJjYXJlZXJzIiwicmVxSWQiOjI0MzczLCJyZXF1ZXN0ZXIiOnsiaWQiOiIiLCJjb2RlIjoiIiwibmFtZSI6IiJ9LCJwYWdlIjoiY2FyZWVycyIsImJ1ZmlsdGVyIjotMSwiY3VzdG9tRmllbGRzIjp7fX0=,Machine Learning Engineer III View Jobs,Swiggy,"KA, IN",2026-01-29,fulltime,,,,,,False,,,,,"**Job Profile**: Machine Learning Engineer \- III
+
+**Location**: Bangalore \| Karnataka
+
+**Years of Experience**: 6 \- 8
+
+ **Position Overview:**
+
+
+Swiggy is India's largest on\-demand platform for food, groceries, and dining. We're one of the few companies where AI meets physical\-world execution at scale: predicting demand across 5,000\+ dark stores, optimizing millions of deliveries daily, and building agents that operate in real\-time with real constraints.
+
+
+Forward Deployed AI Engineers embed with teams across Swiggy to solve their hardest problems using AI. You'll work in small pods, report into the Central AI team, and deploy to where the problems are: supply chain, category ops, marketplace, support, and beyond.
+
+
+Think of it as being the AI CTO for the domain you're embedded in.
+
+ **What qualities are we looking for?**
+
+**Production Agentic Experience**
+
+* You've built and deployed agentic AI systems in production, not just notebooks or demos
+* Advanced context engineering, evaluation frameworks, and agent harness patterns
+* Experience with skills, subagents, tool integration, and orchestration patterns
+* You understand the gap between ""it works locally"" and ""it works at scale with real latency and cost constraints""
+
+**AI\-Native Mindset**
+
+* You apply first principles thinking to re\-imagine existing workflows in an AI native way.
+* Claude Code, Cursor, or Codex is your primary environment. You ship faster with AI tools than without.
+* You think in skills, subagents, and parallel workflows
+* You can design an agent architecture, implement it, and iterate based on production feedback
+
+**Proven AI Impact**
+
+* You've shipped at least one AI system that moved a real business metric. Not incremental, transformative.
+* You can show it to us: a repo, a production deployment, metrics before/after, or a recorded demo
+* You know what it takes to get from prototype to production
+
+**Engineering Foundations**
+
+* 2\+ years shipping production systems with real traffic, real users, real constraints (exceptional freshers who are AI power users with proof of work will also be considered)
+* OR: Technical founder / early engineer at a startup with demonstrable AI impact
+* Trade\-off fluency: latency vs accuracy, cost vs reliability, autonomy vs predictability
+* Strong in Python or TypeScript, LLMs, orchestration frameworks, system design
+
+**Communication \& Influence**
+
+* You translate complex AI concepts to non\-technical ops teams
+* You can lead a discovery session, whiteboard an architecture, and get buy\-in in the same meeting
+* You write clear documentation that becomes the team's playbook
+* You're comfortable context\-switching: ops workflows in the morning, architecture reviews in the afternoon
+
+**High Ownership**
+
+* You find problems worth solving. You don't wait for specs.
+* You ship when the path isn't clear
+* You're energized by ambiguity and moving fast in complex environments
+
+ **What will you get to do here?**
+
+* Real problems at real scale: Systems that affect millions of orders, thousands of dark stores, and real P\&L
+* Direct access: No layers between you and the teams you're solving for. You see the problem, you ship the fix.
+* Shape the platform: Your field work defines what the Central AI team builds. Direct input into roadmap and architecture decisions.
+* Founder\-like ownership: You're essentially the CTO of AI for your embedded domain
+* Career leverage: FDE is the fastest path to becoming a technical leader who understands both AI and operations at scale
+* ﻿What You Get Real problems at real scale: Systems that affect millions of orders, thousands of dark stores, and real P\&L Direct access: No layers between you and the teams you're solving for. You see the problem, you ship the fix. Shape the platform: Your field work defines what the Central AI team builds. Direct input into roadmap and architecture decisions. Founder\-like ownership: You're essentially the CTO of AI for your embedded domain Career leverage: FDE is the fastest path to becoming a technical leader who understands both AI and operations at scale
+
+**Some Problems You'll Work On**
+
+* Why did availability drop 15% in a zone last week? Build the prediction system that prevents it before it happens.
+* Ops teams spend 3 days onboarding new catalog items. Can an agent do it in 20 minutes?
+* The Dineout discovery bot answers questions but doesn't learn from mistakes. Make it self\-improving.
+* Every team wants to build AI products but keeps rebuilding the same infrastructure. Create the foundation they build on.
+
+**What You'll Build**
+
+* Prediction agents for availability, inventory, and demand forecasting
+* MCP servers connecting AI to Swiggy's operational systems
+* Evaluation frameworks that prove AI impact in production
+* Self\-improving agents that learn from ops feedback loops
+* Reusable skills and subagent libraries that other teams can deploy
+
+**How You'll Operate**
+
+* 60% embedded with business teams (Instamart, Food, Dineout, Customer Support etc)
+* 40% Central AI: roadmap input, pattern codification, build platform features
+* Rotation model: \~3 month deployments per domain
+* Join their standups, map their workflows, find the highest\-leverage problems
+* Ship production systems that handle real traffic. Not decks, not demos.
+* Package what works into skills and playbooks others can use
+* Your field learnings directly shape what the Central AI platform builds next
+
+
+﻿﻿﻿﻿
+
+**Visit our tech blogs to learn more about some the challenges we deal with:**
+
+
+https://bytes.swiggy.com/the\-swiggy\-delivery\-challenge\-part\-one\-6a2abb4f82f6
+
+
+https://bytes.swiggy.com/how\-ai\-at\-swiggy\-is\-transforming\-convenience\-eae0a32055ae
+
+
+https://bytes.swiggy.com/decoding\-food\-intelligence\-at\-swiggy\-5011e21dbc86
+
+  
+
+We are an equal opportunity employer and all qualified applicants will receive consideration for employment without regard to race, colour, religion, sex, disability status, or any other characteristic protected by the law.",,https://in.indeed.com/cmp/Swiggy-6ad03018,https://d2q79iu7y748jz.cloudfront.net/s/_squarelogo/256x256/78d4b50d95084e629e1312c60a77e18d,https://www.swiggy.in,Bengaluru,"10,000+",Decline to state,Our delivery personnel carry one order at a time which ensures we get reliable and fast deliveries.,,,,,,

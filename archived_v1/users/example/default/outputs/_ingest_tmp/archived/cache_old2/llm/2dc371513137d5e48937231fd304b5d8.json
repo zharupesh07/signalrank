@@ -1,0 +1,4 @@
+{
+  "_error": "no_json",
+  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"Software Development\",\n      \"Testing\",\n      \"Quality Assurance\",\n      \"Automation\",\n      \"Selenium\",\n      \"Java\",\n      \"Framework Development\",\n      \"CI/CD\",\n      \"Jenkins\",\n      \"Root Cause Analysis\",\n      \"Defect Management\",\n      \"Test Strategy\",\n      \"Git\",\n      \"TypeScript\",\n      \"Playwright\",\n      \"Ranorex\",\n      \"C#\",\n      \"BDD / Cucumber\",\n      \"Test Complete\"\n    ],\n    [\n      \"Data Science\",\n      \"AI/ML\",\n      \"Data Engineering\""
+}

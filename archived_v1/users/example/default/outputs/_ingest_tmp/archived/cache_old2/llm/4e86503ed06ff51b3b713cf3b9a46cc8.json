@@ -1,0 +1,4 @@
+{
+  "_error": "no_json",
+  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"neural networks\",\n      \"hardware architecture\",\n      \"compiler toolchain\",\n      \"optimization techniques\",\n      \"AI kernel development\",\n      \"inference performance profiling\",\n      \"CUDA\",\n      \"DSP\",\n      \"NEON\",\n      \"Triton-lang\",\n      \"C/C++\",\n      \"Python\",\n      \"assembly language\",\n      \"problem solving\",\n      \"debugging\",\n      \"communication\"\n    ],\n    [\n      \"frontend\",\n      \"backend\",\n      \"web application development\",\n      \"Ang"
+}

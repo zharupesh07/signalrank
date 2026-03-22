@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from api.models import JobResult, Profile, Run
+from api.models import JobRaw, JobResult, Profile, Run
 from batch.ranker import score_jobs_for_user
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ async def process_run(
     async with session_factory() as db:
         try:
             await db.execute(
-                update(Run).where(Run.id == run_id).values(status="running")
+                update(Run).where(Run.id == run_id).values(status="scraping")
             )
             await db.commit()
 
@@ -37,6 +37,42 @@ async def process_run(
             resume_text = profile.resume_text if profile else ""
             distilled_text = profile.distilled_text if profile else None
             config_overrides = profile.config_overrides if profile else None
+
+            from batch.query_builder import build_queries
+            from batch.scraper import ScraperConfig, scrape, raw_job_to_dict
+
+            queries = build_queries(profile) if profile else []
+
+            async def _update_progress(**kwargs):
+                await db.execute(
+                    update(Run).where(Run.id == run_id).values(progress=kwargs)
+                )
+                await db.commit()
+
+            scrape_count = 0
+            if queries:
+                title_blocklist = (config_overrides or {}).get("title_blocklist", [])
+                config = ScraperConfig.from_env(title_blocklist=title_blocklist)
+                raw_jobs = await scrape(queries, config, on_progress=_update_progress)
+
+                if raw_jobs:
+                    from sqlalchemy.dialects.postgresql import insert as pg_insert
+                    stmt = pg_insert(JobRaw).values([
+                        raw_job_to_dict(job) for job in raw_jobs
+                    ]).on_conflict_do_nothing(index_elements=["job_url"])
+                    await db.execute(stmt)
+                    await db.commit()
+                scrape_count = len(raw_jobs)
+
+            await db.execute(
+                update(Run).where(Run.id == run_id).values(
+                    status="ranking",
+                    scrape_count=scrape_count,
+                    progress={"phase": "ranking", "phase_num": 1, "total_phases": 1,
+                              "jobs_found": scrape_count, "message": "Ranking jobs..."},
+                )
+            )
+            await db.commit()
 
             ranked_df = await score_jobs_for_user(
                 db=db,
@@ -69,17 +105,18 @@ async def process_run(
                     status="success",
                     finished_at=datetime.now(timezone.utc),
                     job_count=len(ranked_df),
+                    progress=None,
                 )
             )
             await db.commit()
-            logger.info("Run %s completed: %d results", run_id, len(ranked_df))
+            logger.info("Run %s completed: %d scraped, %d ranked", run_id, scrape_count, len(ranked_df))
 
         except Exception:
             logger.exception("Run %s failed", run_id)
             await db.execute(
                 update(Run)
                 .where(Run.id == run_id)
-                .values(status="failed", finished_at=datetime.now(timezone.utc))
+                .values(status="failed", finished_at=datetime.now(timezone.utc), progress=None)
             )
             await db.commit()
 

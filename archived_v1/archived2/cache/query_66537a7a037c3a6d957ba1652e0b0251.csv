@@ -1,0 +1,482 @@
+job_url,job_url_direct,title,company,description,location,date_posted,site,is_remote,employment_type
+https://in.linkedin.com/jobs/view/senior-mlops-engineer-at-hca-healthcare-india-4321351454,https://hcahr.darwinbox.in/ms/candidate/careers/6883919283f42?src=LinkedIn,Senior - MLOPS Engineer,HCA Healthcare - India,"JOB INFORMATION 
+
+Job Title Name:
+
+Senior - MLOPS Engineer 
+
+JOB PURPOSE
+
+Click here to enter text.
+
+The Staff MLOps Engineer plays a pivotal role in shaping our MLOps practice within ITG by building and enhancing a scalable, reliable, and cutting-edge Machine Learning Operations (MLOps) platform. This role combines deep cloud architecture expertise with advanced AI/ML knowledge to develop solutions that streamline workflows, enable seamless collaboration, and drive innovation.
+
+As a key contributor to the organization’s AI/ML strategy, you will partner with cross-functional teams, including data scientists, product managers, and cloud engineers, to align platform development with business objectives. Your work will directly support the deployment of Responsible AI solutions that prioritize transparency, fairness, and ethical practices.
+
+Knowledge, Skills, Abilities, Behaviors:
+
+Platform Development: Lead the enhancement of the AI platform to improve the developer experience for data and ML engineers. Optimize workflows by integrating state-of-the-art tools and technologies, ensuring scalability and efficiency.
+
+Cloud Infrastructure Design and Management: Architect and manage the cloud infrastructure supporting the MLOps platform, leveraging infrastructure-as-code (IaC) tools like Terraform. Optimize for scalability, security, cost-effectiveness, and high availability.
+
+Cross-Functional Collaboration and Stakeholder Management: Partner with data science, product management, engineering, and business teams to understand their requirements and ensure the MLOps platform effectively supports their needs. Effectively communicate technical concepts and strategies to both technical and non-technical audiences.
+
+AI/ML Reliability and Observability: Collaborate with the AI/ML reliability engineering team to design and implement components that ensure the platform’s operational reliability, observability, and fault tolerance.
+
+Cross-Disciplinary Knowledge: Apply knowledge from related disciplines, such as data science and health/biology sciences, to design holistic MLOps solutions that meet the unique needs of the organization.
+
+DevOps for Machine Learning Workloads: Build and maintain robust DevOps pipelines tailored for ML workflows, enabling automated model training, testing, deployment, and monitoring.
+
+Tool Development and System Reliability: Design and manage tools to enhance platform reliability, including dashboards, logging systems, and alerting frameworks, to ensure seamless operations.
+
+JOB SPECIFICATIONS 
+
+Education 
+
+Bachelor's degree Master's degree in Computer Science, Data Science, AI, or related field
+
+Years Of Experience 
+
+5+ years of experience in ML Ops, Dev Ops, or related role
+
+Knowledge, Skills, Abilities, Behaviors:
+
+Service and Quality Excellence: Ability to demonstrate an uncompromising commitment to delivering exceptional care to create an unmatched value proposition for our patients.
+
+Honor our Mission and Values: Ability to build trust and act with authenticity to cultivate a culture of integrity, inclusion, and mutual respect.
+
+Effective Decision Making: Ability to make timely, informed decisions that are in the best interest of our patients, employees, providers, community and HCA.
+
+Attain and Leverage Strategic Relationships: Ability to develop and strengthen collaborative relationships with both internal and external stakeholders to advance the care of our patients and the growth of HCA.
+
+Lead and Develop Others: Ability to lead others to accomplish organizational goals and objectives; provide meaningful coaching and mentoring to increase the capabilities of individuals and teams and drive employee engagement.
+
+Communicate with Impact: Ability to deliver information in a clear, concise, and compelling manner to effectively engage others and achieve desired results.
+
+Achieve Success through Change: Ability to identify opportunities for improvement and innovation, remove barriers and resistance, and enable desired behaviors.
+
+Drive Execution and Financial Results: Ability to commit to the success and financial wellbeing of HCA by challenging others to excel and hold themselves and others accountable for achieving results.
+
+Advanced proficiency in cloud platforms, especially Google Cloud Platform (GCP). Experience with on-premises and edge deployments is a plus.
+
+Solid understanding of AI/ML concepts, technologies, and best practices, with hands-on experience deploying ML solutions at scale.
+
+Proven ability to work closely with peer teams, data scientists, and product managers to align platform development with strategic goals.
+
+Proficiency in Python and other scripting tools for automation and platform optimization.
+
+Strong analytical and troubleshooting skills, with a track record of solving complex problems under pressure.
+
+Proven experience managing and leading cloud architecture and engineering teams.
+
+Strong background in AI/ML or data science technologies and platform development.
+
+Demonstrated expertise in leading Responsible AI initiatives, with a focus on ethical AI practices.
+
+Excellent communication, leadership, and project management skills. 
+Show more Show less","Hyderabad, Telangana, India",2026-01-24T13:11:22,linkedin,False,FULL_TIME
+https://in.linkedin.com/jobs/view/senior-mlops-engineer-at-uplers-4346867470,https://platform.uplers.com/talent/all-opportunities/HR020126142156?source=ajVkQ0s2U1RrV1ZqQ0xtZm4wRzFVQT09&src=Auto-Linkedin,Senior MLOps Engineer,Uplers,"Experience: 5.00 + years
+
+Salary: INR 5000000 / year (based on experience)
+
+Expected Notice Period: 7 Days
+
+Shift: (GMT+05:30) Asia/Kolkata (IST)
+
+Opportunity Type: Office ()
+
+Placement Type: Full Time Permanent position(Payroll and Compliance to be managed by: A cybersecurity company streamlining secure-by-design threat modeling.)
+
+(*Note: This is a requirement for one of Uplers' client - A cybersecurity company streamlining secure-by-design threat modeling.)
+
+What do you need for this opportunity?
+
+Must have skills required:
+
+IAM, Network Security, Rbac, AI/ML, DevOps, MLOps, Docker, Kubernetes, Terraform/CloudFormation
+
+A cybersecurity company streamlining secure-by-design threat modeling. is Looking for: 
+
+Senior MLOps Engineer
+
+Experience: 5+ Years
+
+Job Summary:
+
+We are seeking a highly skilled Senior MLOps Engineer with strong expertise in deploying, managing, and scaling AI/ML-driven services in production environments. The ideal candidate will have deep hands-on experience with cloud infrastructure, containerization, CI/CD pipelines, security best practices, and scalable AI system design.
+
+Key Responsibilities:
+
+Design, build, and manage end-to-end MLOps pipelines.
+Deploy and manage AI/ML services using Docker and Kubernetes.
+Automate model lifecycle management including versioning and rollback.
+Ensure scalability, reliability, and fault tolerance.
+Implement CI/CD pipelines for ML workflows.
+Monitor model performance, data drift, and system health.
+Collaborate with Data Scientists, Backend Engineers, and DevOps teams.
+Enforce security best practices across infrastructure.
+Optimize infrastructure cost and performance.
+Maintain documentation and operational runbooks.
+
+
+Required Skills & Qualifications:
+
+5+ years of experience in MLOps, DevOps, or ML Engineering.
+Strong experience with Docker, Kubernetes, and cloud platforms (AWS/Azure/GCP).
+Experience with Infrastructure as Code (Terraform/CloudFormation).
+Strong understanding of scalable distributed systems.
+
+
+Security & Scalability:
+
+Knowledge of IAM, RBAC, secrets management, and network security.
+Experience with secure ML deployments and compliance standards.
+
+
+Monitoring & Observability:
+
+Experience with Prometheus, Grafana, ELK, or cloud monitoring tools.
+Understanding of model monitoring and drift detection.
+
+
+Good to Have:
+
+Experience with GenAI/LLM deployments.
+Familiarity with MLflow, Feature Stores, and Data Pipelines.
+
+
+How to apply for this opportunity?
+
+Step 1: Click On Apply! And Register or Login on our portal.
+Step 2: Complete the Screening Form & Upload updated Resume
+Step 3: Increase your chances to get shortlisted & meet the client for the Interview!
+
+
+About Uplers:
+
+Our goal is to make hiring reliable, simple, and fast. Our role will be to help all our talents find and apply for relevant contractual onsite opportunities and progress in their career. We will support any grievances or challenges you may face during the engagement.
+
+(Note: There are many more opportunities apart from this on the portal. Depending on the assessments you clear, you can apply for them as well).
+
+So, if you are ready for a new challenge, a great work environment, and an opportunity to take your career to the next level, don't hesitate to apply today. We are waiting for you! 
+Show more Show less","Noida, Uttar Pradesh, India",2026-01-24T11:01:28,linkedin,False,FULL_TIME
+https://in.linkedin.com/jobs/view/senior-mlops-engineer-at-saint-gobain-international-it-delivery-centre-4355335917,https://jigya.co.in/jobs-apprenticeships/saint-gobain-indec/senior-mlops-engineer?Ref=LinkedIn,Senior MLOps Engineer,Saint-Gobain International IT Delivery Centre,"About the Company:
+
+Saint-Gobain group through its group company Grindwell Norton Limited has established INDEC - an International Delivery Center in Mumbai to provide IT solutions and services to the groups’ businesses Globally
+
+INDEC is currently organized into INDEC Application Development, INDEC Infrastructure Management and Cyber Security Management. While INDEC Apps specializes in Software application development and maintenance services (ADM), INDEC Infra specializes in monitoring and managing the key IT infrastructure assets of the group deployed globally across 70 countries worldwide.
+
+INDEC provides IT Services and Solutions to the Saint-Gobain group through its state-of-the-art delivery centers based at Andheri – East in Mumbai. There are approximately 1200+ associates working in INDEC currently. INDEC Apps provides software application development and maintenance services across a wide spectrum covering SAP, Java, PHP, .Net, CRM, Mobility, Digital, Artificial Intelligence (AI), and Robotic Automation. INDEC Infra on the other hand operates the following service lines: Network Coordination Center (NCC/NOC), Data Center Infrastructure Support, IT Standards, Tools Engineering and Reporting Automation. INDEC Cybersecurity provides 24/7 Security monitoring to detect & react on any suspicious activity in Saint- Gobain. It provides services on vulnerability scanning, web application firewall, endpoint protection, strong authentication, digital certificate, Win 10 MBAM and SFTS support.
+
+
+About the role :
+
+Saint-Gobain is modernizing its Data practices with more and more Artificial Intelligence algorithms and is seeking a senior MLOps Engineer to reinforce Saint-Gobain center of excellence in AI & GenAI, assisting Saint-Gobain Data Science teams worldwide in building and deploying AI applications to maximize the value brought to the Business by Artificial Intelligence applications.
+
+In this role, you will:
+
+Act as an expert, assisting Data Scientists in designing AI solutions, selecting and implementing the right technologies according to their needs
+Move AI applications from prototyping stage to production
+Extend the AI & GenAI foundations (Saint-Gobain Python libraries for AI & GenAI, CI/CD pipelines, reference AI/GenAI architecture, and global AI/Gen AI tools) which will be used by all main Data Science teams in Saint-Gobain worldwide, including local AI/GenAI factories
+Deploy and scale AI applications developed by Data Scientists to new Business units
+Ensure the automation of applications & models monitoring
+Support end-users on the use of Saint-Gobain AI & GenAI foundations
+
+
+In this role, you will report to:
+
+INDEC Data & AI manager
+
+
+In this role, you will interact with:
+
+Data Scientists from different BUs of Saint-Gobain worldwide to guide them on the best use of Saint-Gobain AI & GenAI technologies and tooling
+Local MLOps engineers in BUs assisting Data Scientists locally, to provide them expertise on AI tooling and methodology
+Business users to support their use of Saint-Gobain global AI/GenAI applications
+
+Qualifications:
+
+MS degree in Data Science
+Proven experience (5+ years) in AI Engineering in a cloud environment (Azure / AWS / GCP)
+
+Skills:
+
+Expertise in MLOps (models re-training, labelling & monitoring)
+Expertise in Python and ML models optimization.
+Expertise in Cloud AI Services, especially Azure ML
+Good knowledge in Generative AI architectures and solutions
+Good knowledge in applications industrialization (Dockers / Kubernetes)
+Good knowledge in DevOps (Git, CI/CD pipelines)
+Fluent in English and takes initiatives
+
+SELECTION PROCESS:
+Interested Candidates are mandatorily required to apply through the listing on Jigya. Only applications received through Jigya will be evaluated further.
+Shortlisted candidates may be required to appear in an Online Assessment administered by Jigya on behalf of Saint-Gobain INDEC
+Candidates selected after the screening test will be interviewed by Saint-Gobain INDEC
+Show more Show less","Mumbai City, Maharashtra, India",2026-01-23T15:25:57,linkedin,False,FULL_TIME
+https://in.linkedin.com/jobs/view/senior-mlops-engineer-at-straatix-partners-4363433246,https://airtable.com/app0U8lKNDT4KiEnD/pagKI67YRVCs8Yrrn/form?prefill_Applied+Position=recRHblB0AU2vrbkU,Senior MLOps Engineer,Straatix Partners,"🔍 Your Experience at a Glance
+We’re hiring a Senior MLOps Engineer for our client (Code Name: CORE) — a global fintech leader advancing enterprise finance and procurement automation through AI-driven, cloud-native platforms.
+In this role, you will design, build, and scale CORE’s ML infrastructure and deployment pipelines, enabling reliable, secure, and high-performance machine learning systems in production. You’ll partner with Data Scientists, AI Engineers, Platform Engineers, and Product teams to operationalize models, streamline experimentation, and ensure robust ML lifecycle management across CORE’s enterprise SaaS products.
+This role is ideal for engineers who thrive at the intersection of machine learning, cloud infrastructure, DevOps, and production reliability.
+
+🧠 About the Client (Code Name: CORE)
+CORE is a global fintech company enabling enterprises to automate and optimize procurement, finance, invoicing, and working-capital workflows through intelligent, cloud-native platforms.
+Trusted by Fortune 500 and global mid-market organizations, CORE’s solutions simplify complex financial operations, strengthen compliance, and unlock efficiency using AI-driven automation and scalable SaaS architectures.
+The CORE India GCC, established in partnership with Straatix, serves as CORE’s strategic innovation hub — driving AI engineering, platform modernization, and global delivery excellence.
+
+⚙️ Tech Environment
+ML & Data
+● Python, ML frameworks (TensorFlow / PyTorch / Scikit-learn)
+● Feature engineering & model training pipelines
+● Model versioning, experiment tracking MLOps & Platform
+● ML lifecycle orchestration
+● CI/CD for ML models
+● Model monitoring, drift detection, retraining workflows Cloud & Infrastructure
+● AWS (primary cloud)
+● Docker, Kubernetes (EKS)
+● Infrastructure-as-Code (Terraform preferred) DevOps & Observability
+● GitHub Actions / CI pipelines
+● Logging, monitoring, alerting
+● Secure, scalable production deployments
+
+🌟 Who Thrives Here
+You’ll thrive in this role if you:
+● Enjoy operationalizing ML models at scale
+● Are comfortable bridging data science and production engineering
+● Care deeply about reliability, reproducibility, and automation
+● Work well with cross-functional teams in agile environments
+● Are curious, disciplined, and proactive in improving systems
+
+🔧 Key Responsibilities
+● Design and maintain end-to-end MLOps pipelines for training, validation, deployment, and monitoring of ML models.
+● Collaborate with Data Scientists to productionize models efficiently and reliably.
+● Build and manage CI/CD workflows for ML experimentation and deployment.
+● Implement model monitoring, performance tracking, and data/model drift detection.
+● Ensure scalability, security, and reliability of ML infrastructure on AWS.
+● Manage containerized ML workloads using Docker and Kubernetes (EKS).
+● Apply Infrastructure-as-Code principles to provision and manage ML platforms.
+● Establish best practices for ML versioning, reproducibility, and governance.
+● Troubleshoot production ML issues and optimize inference performance.
+● Document ML workflows, pipelines, and operational standards.
+
+✅ Required Skills & Experience
+● Bachelor’s or Master’s degree in Computer Science, Engineering, Data Science, or related field
+● 7–10 years of experience in software engineering, DevOps, or MLOps roles
+● Strong proficiency in Python for ML and automation workflows
+● Hands-on experience with ML frameworks (TensorFlow, PyTorch, Scikit-learn)
+● Experience deploying ML models into production environments
+● Strong understanding of CI/CD pipelines, automation, and DevOps best practices
+● Experience with Docker and Kubernetes for ML workloads
+● Hands-on experience with AWS cloud services
+● Familiarity with Infrastructure-as-Code (Terraform, CloudFormation)
+● Experience with monitoring, logging, and alerting for ML systems
+● Strong problem-solving, debugging, and communication skills
+
+🌱 Nice to Have
+● Experience with feature stores, model registries, or ML platforms
+● Exposure to real-time inference or streaming ML systems
+● Experience in fintech, procurement, or enterprise SaaS environments
+● Familiarity with data privacy, model governance, and compliance
+● Contributions to open-source MLOps tools or communities
+
+💡 Why Join CORE (Code Name)
+As a Senior MLOps Engineer, you’ll play a critical role in scaling CORE’s AI capabilities — ensuring models move from experimentation to reliable, enterprise-grade production systems.
+
+Joining CORE now means:
+● Being part of the foundational AI & MLOps team in the CORE India GCC
+● Building ML platforms used across global enterprise products
+● Working with modern cloud-native, AI-first architectures
+● High ownership and visibility during CORE’s AI expansion phase
+● Accelerated growth in a fast-scaling, innovation-driven environment
+
+🧩 About the Engagement
+This position is offered through Straatix Partners under an Employer of Record (EoR) engagement for the client (Code Name: CORE).
+The CORE India GCC operates fully with CORE’s engineering standards, AI governance practices, and global delivery model, ensuring seamless collaboration across teams worldwide. Straatix provides the operational foundation, while CORE drives the AI vision, platform strategy, and product innovation.
+Show more Show less","Bengaluru, Karnataka, India",2026-01-23T12:11:35,linkedin,False,FULL_TIME
+https://in.linkedin.com/jobs/view/mantra-softech-senior-mlops-engineer-at-mantra-softech-4365398668,https://www.hirist.com/j/mantra-softech-senior-mlops-engineer-1604902?utm_source=LinkedIn&utm_medium=referral&utm_campaign=linkedin_apply&ref=linkedin,Mantra Softech - Senior MLOps Engineer,Mantra Softech,"We are seeking a Senior MLOps Engineer to lead the design and scaling of enterprise-grade ML infrastructure. You will architect end-to-end ML lifecycle automation and guide teams in building robust, production-ready ML systems. This role requires deep expertise in MLOps tools, distributed systems, and cloud-native infrastructure.
+
+Roles And Responsibilities
+
+Lead the design and implementation of scalable MLOps platforms.
+Architect end-to-end ML workflows (data ingestion - feature engineering - training - deployment -monitoring).
+Own model versioning, model registry, and CI/CD automation at scale.
+Drive adoption of best practices for reproducibility, governance, and compliance.
+Mentor junior engineers and collaborate with ML researchers and DevOps teams.
+Optimize multi-cloud and hybrid ML deployments.
+Implement advanced monitoring (drift detection, explainability, lineage tracking).
+Evaluate and integrate cutting-edge MLOps tools (Ray, Flyte, BentoML, KServe).
+
+Technical Skills Required
+
+Experience with feature stores, federated learning pipelines, and model observability platforms.
+Familiarity with compliance-driven ML (GDPR, Responsible AI, bias detection).
+Exposure to LLMOps (large language model deployment & optimization).
+Experience leading cross-functional ML platform teams.
+
+Qualification And Experience
+
+Bachelor's/Master's in Computer Science, Data Engineering, or AI/ML.
+6-10 years of experience in DevOps/MLOps with proven production ML deployment.
+Strong programming skills in Python, Go, Bash.
+Expertise in Kubernetes, Kubeflow, MLflow, Airflow, Terraform, CI/CD pipelines.
+Hands-on with cloud-native ML stacks (AWS Sagemaker, GCP Vertex AI, Azure ML, Databricks MLflow).
+Strong knowledge of distributed training, inference scaling, and model optimization.
+
+(ref:hirist.tech) 
+Show more Show less","Ahmedabad, Gujarat, India",2026-01-23T00:19:49,linkedin,False,FULL_TIME
+https://in.linkedin.com/jobs/view/senior-mlops-engineer-aws-sagemaker-airflow-at-northbay-solutions-4354203062,,Senior MLOps Engineer (AWS SageMaker & Airflow),NorthBay Solutions,"Job Title: Senior MLOps Engineer (AWS SageMaker & Airflow) 
+Experience: 6–8 Years Location: Remote (India) Employment Type: Full-time 
+About the Role 
+We are looking for an experienced MLOps Engineer to join our cloud and AI engineering team. This role is ideal for professionals with strong hands-on experience in AWS SageMaker–centric ML workflows and Apache Airflow–based orchestration, who can operationalize machine learning models at scale and ensure reliable, automated ML pipelines. 
+Key Responsibilities 
+● Design, build, and maintain end-to-end MLOps pipelines using AWS SageMaker 
+● Develop and manage Airflow DAGs for ML workflow orchestration (training, validation, deployment, retraining) 
+● Automate model training, evaluation, versioning, and deployment 
+● Implement CI/CD pipelines for ML workflows and model releases 
+● Manage model lifecycle, including experimentation, deployment, monitoring, and retraining 
+● Integrate data ingestion and feature engineering workflows with ML pipelines 
+● Monitor model performance, data drift, and pipeline reliability 
+● Collaborate closely with Data Scientists, Data Engineers, and DevOps teams 
+● Ensure security, scalability, and cost optimization across ML infrastructure 
+Required Skills & Qualifications 
+● 6–8 years of experience in MLOps, ML Engineering, or DevOps for ML 
+● Strong hands-on experience with AWS SageMaker (training jobs, endpoints, pipelines, model registry) 
+● Solid experience with Apache Airflow for workflow orchestration 
+● Proficiency in Python for ML and pipeline development 
+● Experience building and maintaining production-grade ML pipelines 
+● Hands-on experience with AWS services such as S3, IAM, EC2, ECR, CloudWatch 
+● Familiarity with CI/CD tools (GitHub Actions, Jenkins, GitLab CI, etc.) 
+● Strong understanding of Linux environments and cloud networking basics 
+● Experience with monitoring, logging, and alerting for ML systems 
+Preferred / Nice-to-Have Skills 
+● Experience with SageMaker Pipelines, Feature Store, or Model Registry 
+● Knowledge of MLflow or experiment tracking tools 
+● Exposure to Docker and Kubernetes 
+● Understanding of data drift and concept drift detection 
+● Experience with Terraform or Infrastructure as Code 
+Why Join Us 
+● Work on large-scale, real-world ML systems 
+● Fully remote role from India 
+● Collaborate with global teams on cutting-edge AI initiatives 
+● Opportunity to influence and mature MLOps practices at scale 
+Show more Show less",India,2026-01-22T00:53:52.164,linkedin,False,FULL_TIME
+https://in.linkedin.com/jobs/view/senior-mlops-engineer-ai-platform-at-solace-manpower-consultants-4365188024,https://www.hirist.com/j/senior-mlops-engineer-ai-platform-1604135?utm_source=LinkedIn&utm_medium=referral&utm_campaign=linkedin_apply&ref=linkedin,Senior MLOps Engineer - AI Platform,Solace Manpower Consultants,"Description
+
+As a Senior MLOps Engineer within the AI Platform Engineering team, you will help design, build, and scale the foundational capabilities that power AI across our enterprise.
+
+Youll work at the intersection of machine learning, software engineering, and DevOps, enabling AI delivery teams to reliably develop, deploy, and monitor models in production.
+
+You Will
+
+Design and implement robust, scalable MLOps pipelines to automate the end-to-end machine learning lifecycle from training to deployment to monitoring.
+Collaborate with data scientists, ML engineers, and platform engineers to operationalize AI models across cloud and hybrid environments, ensuring performance, traceability, and reliability.
+Build and maintain containerized training and inference environments, enabling reproducible ML workflows across projects and teams.
+Develop and optimize model CI/CD workflows using tools like GitHub Actions or Jenkins.
+Establish and monitor model observability metrics: latency, drift, data quality, and inference errors, across production pipelines.
+Support the integration of ML models into a variety of deployment targets, including internal applications, APIs, business dashboards, and hardware platforms onboard agricultural machinery.
+Collaborate closely with enterprise architecture, BI engineering, and product engineering teams to ensure seamless deployment across cloud, edge, and embedded systems.
+Serve as a technical mentor and contributor, helping define best practices around model deployment, monitoring, versioning, and rollback strategies.
+Partner closely with AI delivery and analytics teams to drive adoption of the AI platforms tools and services, incorporating their feedback into roadmap improvements.
+Continuously explore and evaluate emerging tools in the MLOps ecosystem, recommending innovative ways to increase velocity, visibility, and scalability.
+
+Must-Have
+
+Your Experience & Qualifications :
+
+8+ years of experience in software, data, or ML engineering, including 5+ years in MLOps or operationalizing AI/ML workflows
+Deep hands-on experience with Python, Spark/PySpark, SQL, and orchestration tools such as Airflow
+Proven experience with public cloud platforms, preferably GCP (Vertex AI, GKE, Cloud Run) or AWS
+Skilled in Databricks, FastAPI, and containerized environments using Docker, Kubernetes
+Deep understanding of CI/CD pipelines, version control systems (e.g., Git), and infrastructure-as-code (Terraform)
+Expertise with MLOps tools like MLflow, Kubeflow, or similar for model tracking, versioning, deployment, and monitoring
+Proficient with model monitoring frameworks (e.g., Prometheus, Grafana) and implementing model drift, performance degradation, and rollback mechanisms
+Familiarity with BI integration tools (e.g., Tableau) for exposing model outputs to business users
+Demonstrated ability to contribute to roadmap execution, and deliver outcomes
+Self-motivated, proactive, and comfortable working both independently and collaboratively across engineering, data science, and business teams
+Strong communication and stakeholder engagement skills, with a focus on impact and execution
+
+Nice-to-Have
+
+Practical experience with both structured and unstructured data pipelines supporting model training and real-time inference
+Familiarity with modern ML and deep learning frameworks, including Scikit-learn, TensorFlow, PyTorch
+Experience in utilization of foundation models (e.g., GPT, BERT, CLIP, DINO, SAM)
+Exposure to feature stores, unstructured data databases, or retrieval-augmented generation (RAG) pipelines
+Experience in agriculture, manufacturing, or supply chain domains with real-world ML applications
+
+(ref:hirist.tech) 
+Show more Show less","pune, Maharashtra, India",2026-01-22T00:20:21,linkedin,False,FULL_TIME
+https://jobs.smartrecruiters.com/BoschGroup/744000104862112-senior-mlops-engineer,,Senior MLOps Engineer,Bosch Group,"Company Description
+Bosch Global Software Technologies Private Limited is a 100% owned subsidiary of Robert Bosch GmbH, one of the world's leading global supplier of technology and services, offering end-to-end Engineering, IT and Business Solutions. With over 27,000+ associates, it’s the largest software development center of Bosch, outside Germany, indicating that it is the Technology Powerhouse of Bosch in India with a global footprint and presence in the US, Europe and the Asia Pacific region.
+Job Description
+As a Senior MLOps Engineer in the Perception team, you will play a pivotal role in building and maintaining the backbone of our L2+ ADAS stack. This senior role calls for an experienced engineer who can think critically, execute independently, and deliver results on scalable deep learning infrastructure, optimize massive data ingestion pipelines, and ensure maximum efficiency across our compute clusters.
+You will be responsible for the entire DL infrastructure lifecycle—from managing Azure storage and hybrid Kubernetes clusters to designing efficient data loaders for multimodal training. You will work at the intersection of infrastructure, data engineering, and deep learning, enabling feature teams to train complex models (single frame, temporal, and multimodal) with speed and reliability. Your ability to solve abstract infrastructure challenges and apply ""T-shaped"" expertise—going deep in areas like infrastructure, multitask deep learning among others while maintaining breadth in software design—will be key to our success.
+Responsibilities
+Deep Learning Infrastructure & Compute:
+●Manage and optimize the entire DL infrastructure, including Azure Blob Storage integration, VNET setups, and hybrid compute resources (Cloud and On-premise/Frankfurt clusters).
+●Lead performance investigations and benchmarking for next-gen hardware (e.g., comparing H200 vs. H100, Azure native vs. deployment nodes) to ensure cost and speed efficiency.
+●Maintain and scale Kubernetes clusters for training and inference workloads.
+Data Pipelines & Efficient Loading:
+●Architect and develop high-performance data loaders for complex multimodal datasets (camera, radar, temporal/non-temporal data).
+●Modernize data processing pipelines using Ray and Kubernetes to parallelize data caching, shuffling, and oversampling.
+●Leverage PyArrow and SQL to optimize data consumption and integration with data loops.
+●Implement efficient dataset update strategies (handling deltas) and ensure seamless integration of new tasks into the multimodal multi-task network.
+CI/CD, Monitoring & Quality:
+●Design and maintain robust GitHub Workflows and CI pipelines for new and existing feature teams.
+●Develop KPI dashboards using Grafana to monitor compute usage, GPU efficiency, unit test durations, and overall system health.
+●Manage dependency updates (Torch upgrades, Ubuntu updates, Hydra maintenance, Dependabots) to ensure a secure and modern stack.
+●Drive software design excellence by performing thorough code reviews (PRs) and enforcing high standards in software architecture.
+Embedded & Evaluation:
+●Establish scalable evaluation pipelines for embedded targets, specifically for QNN boards and other edge devices.
+●Collaborate with feature teams to support model compression experiments and on-target performance verification.
+Required Qualifications
+●Education: Bachelor’s degree in Computer Science, Electrical Engineering, or a related field. An advanced degree is an advantage.
+●Experience: 5+ years of industry experience in MLOps, Data Engineering, or Software Infrastructure, with a focus on Deep Learning systems.
+●Programming & Software Design: Expert-level proficiency in Python with a strong emphasis on clean software design, object-oriented programming, and architectural patterns.
+●Infrastructure & Orchestration: Deep hands-on experience with Kubernetes, Docker, and Cloud platforms (specifically Azure ML, Azure Storage/Networking).
+●Big Data & Optimization: Proficiency with high-performance data processing tools such as Ray, PyArrow, and SQL. Experience optimizing data loading bottlenecks for
+GPU training.
+●DevOps & Monitoring: Experience setting up complex CI/CD pipelines (GitHub Actions) and observability stacks (Grafana, Prometheus).
+●Soft Skills: Strong problem-solving abilities, proactiveness, and ownership of complex topics. Ability to adapt quickly to new technologies and work collaboratively in a supportive, high-performance team.
+Qualifications
+Bachelor’s degree in Computer Science, Electrical Engineering, or a related field. An advanced degree is an advantage.
+Additional Information
+Deep Learning Knowledge: While deep algorithm knowledge is not mandatory, a strong understanding of Deep Learning workflows (PyTorch, training loops, multi-task learning) is highly beneficial.
+Embedded Systems: Experience with deploying or evaluating models on embedded hardware (Qualcomm QNN, etc.) or setting up hardware-in-the-loop pipelines.
+T-Shaped Skills: Ability to specialize deeply in infrastructure while lending a hand to feature teams on diverse topics (e.g., documentation builds, visualization tools).
+
+Legal Entity: Bosch Global Software Technologies Private Limited","Bangalore, Karnataka, India",2026-01-22T09:06:32.816,smartrecruiters,False,Full-time
+https://northbay.applytojob.com/apply/Dikl7HiGuT/Senior-MLOps-Engineer-AWS-SageMaker-Airflow,,Senior MLOps Engineer (AWS SageMaker & Airflow),NorthBay Solutions,"Job Title: Senior MLOps Engineer (AWS SageMaker & Airflow) 
+Experience: 6–8 Years Location: Remote (India) Employment Type: Full-time 
+About the Role 
+We are looking for an experienced MLOps Engineer to join our cloud and AI engineering team. This role is ideal for professionals with strong hands-on experience in AWS SageMaker–centric ML workflows and Apache Airflow–based orchestration, who can operationalize machine learning models at scale and ensure reliable, automated ML pipelines. 
+Key Responsibilities 
+● Design, build, and maintain end-to-end MLOps pipelines using AWS SageMaker 
+● Develop and manage Airflow DAGs for ML workflow orchestration (training, validation, deployment, retraining) 
+● Automate model training, evaluation, versioning, and deployment 
+● Implement CI/CD pipelines for ML workflows and model releases 
+● Manage model lifecycle, including experimentation, deployment, monitoring, and retraining 
+● Integrate data ingestion and feature engineering workflows with ML pipelines 
+● Monitor model performance, data drift, and pipeline reliability 
+● Collaborate closely with Data Scientists, Data Engineers, and DevOps teams 
+● Ensure security, scalability, and cost optimization across ML infrastructure 
+Required Skills & Qualifications 
+● 6–8 years of experience in MLOps, ML Engineering, or DevOps for ML 
+● Strong hands-on experience with AWS SageMaker (training jobs, endpoints, pipelines, model registry) 
+● Solid experience with Apache Airflow for workflow orchestration 
+● Proficiency in Python for ML and pipeline development 
+● Experience building and maintaining production-grade ML pipelines 
+● Hands-on experience with AWS services such as S3, IAM, EC2, ECR, CloudWatch 
+● Familiarity with CI/CD tools (GitHub Actions, Jenkins, GitLab CI, etc.) 
+● Strong understanding of Linux environments and cloud networking basics 
+● Experience with monitoring, logging, and alerting for ML systems 
+Preferred / Nice-to-Have Skills 
+● Experience with SageMaker Pipelines, Feature Store, or Model Registry 
+● Knowledge of MLflow or experiment tracking tools 
+● Exposure to Docker and Kubernetes 
+● Understanding of data drift and concept drift detection 
+● Experience with Terraform or Infrastructure as Code 
+Why Join Us 
+● Work on large-scale, real-world ML systems 
+● Fully remote role from India 
+● Collaborate with global teams on cutting-edge AI initiatives 
+● Opportunity to influence and mature MLOps practices at scale",India,2026-01-22T00:00:00,jazzhr,True,FULL_TIME
