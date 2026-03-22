@@ -27,17 +27,17 @@ export default function Navbar() {
 
   return (
     <>
-    <nav className="fixed top-0 left-0 right-0 z-50 h-13 bg-[#080808]/95 backdrop-blur-sm border-b border-[#2a2a2e] nav-glow flex items-center px-6 gap-8">
+    <nav className="fixed top-0 left-0 right-0 z-50 h-13 bg-background/95 backdrop-blur-sm border-b border-border nav-glow flex items-center px-6 gap-8">
       {/* Logo */}
       <Link href="/dashboard" className="flex items-center gap-2 shrink-0 group">
-        <Terminal size={14} className="text-[#22c55e] group-hover:text-[#a3e635] transition-colors" />
-        <span className="text-[#22c55e] font-bold text-sm tracking-[0.2em] text-glow-dim group-hover:text-glow-green transition-all">
-          SIGNAL<span className="text-[#a3e635]">RANK</span>
+        <Terminal size={14} className="text-primary group-hover:text-[var(--terminal-green-bright)] transition-colors" />
+        <span className="text-primary font-bold text-sm tracking-[0.2em] text-glow-dim group-hover:text-glow-green transition-all">
+          SIGNAL<span className="text-[var(--terminal-green-bright)]">RANK</span>
         </span>
       </Link>
 
       {/* Separator */}
-      <div className="w-px h-4 bg-[#2a2a2e]" />
+      <div className="w-px h-4 bg-border" />
 
       {/* Nav links */}
       <div className="flex items-center gap-0.5 flex-1">
@@ -49,13 +49,13 @@ export default function Navbar() {
               href={href}
               className={`relative px-3 py-2 text-xs tracking-widest transition-all duration-150 ${
                 active
-                  ? "text-[#22c55e]"
-                  : "text-[#52525b] hover:text-[#a1a1aa]"
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {label.toUpperCase()}
               {active && (
-                <span className="absolute bottom-0 left-2 right-2 h-px bg-[#22c55e] shadow-[0_0_6px_rgba(34,197,94,0.8)]" />
+                <span className="absolute bottom-0 left-2 right-2 h-px bg-primary shadow-[0_0_6px_rgba(34,197,94,0.8)]" />
               )}
             </Link>
           );
@@ -66,23 +66,23 @@ export default function Navbar() {
       <div className="flex items-center gap-5 shrink-0">
         <button
           onClick={toggleTheme}
-          className="text-[#3f3f46] hover:text-[var(--fg)] transition-colors"
+          className="text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Toggle theme"
         >
           {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
         </button>
         <div className="hidden sm:flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] pulse-dot" />
+          <span className="w-1.5 h-1.5 rounded-full bg-primary pulse-dot" />
           <button
             onClick={() => setSettingsPanelOpen(true)}
-            className="text-[#3f3f46] text-xs truncate max-w-[160px] cursor-pointer hover:text-[var(--fg)] transition-colors"
+            className="text-muted-foreground text-xs truncate max-w-[160px] cursor-pointer hover:text-foreground transition-colors"
           >
             {email}
           </button>
         </div>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-1.5 text-xs text-[#3f3f46] hover:text-[#ef4444] transition-colors group"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors group"
         >
           <LogOut size={11} className="group-hover:rotate-12 transition-transform" />
           <span className="hidden sm:inline tracking-wider">LOGOUT</span>
