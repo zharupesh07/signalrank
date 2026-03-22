@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LogOut, Terminal } from "lucide-react";
+import { LogOut, Terminal, Sun, Moon } from "lucide-react";
+import { useTheme } from "./theme-provider";
+import SettingsPanel from "./settings-panel";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -15,6 +18,8 @@ const NAV_LINKS = [
 export default function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
+  const { theme, toggleTheme } = useTheme();
+  const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
 
   if (!session) return null;
 
@@ -58,9 +63,21 @@ export default function Navbar() {
 
       {/* Right side */}
       <div className="flex items-center gap-5 shrink-0">
+        <button
+          onClick={toggleTheme}
+          className="text-[#3f3f46] hover:text-[var(--fg)] transition-colors"
+          aria-label="Toggle theme"
+        >
+          {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
+        </button>
         <div className="hidden sm:flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] pulse-dot" />
-          <span className="text-[#3f3f46] text-xs truncate max-w-[160px]">{email}</span>
+          <button
+            onClick={() => setSettingsPanelOpen(true)}
+            className="text-[#3f3f46] text-xs truncate max-w-[160px] cursor-pointer hover:text-[var(--fg)] transition-colors"
+          >
+            {email}
+          </button>
         </div>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
@@ -71,5 +88,6 @@ export default function Navbar() {
         </button>
       </div>
     </nav>
+    <SettingsPanel isOpen={settingsPanelOpen} onClose={() => setSettingsPanelOpen(false)} />
   );
 }
