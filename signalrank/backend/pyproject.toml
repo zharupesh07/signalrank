@@ -23,6 +23,7 @@ dependencies = [
     "python-jobspy>=1.1.0",
     "beautifulsoup4>=4.12.0",
     "lxml>=5.0.0",
+    "dnspython>=2.6.0",
 ]
 
 [project.optional-dependencies]
@@ -42,3 +43,4 @@ packages = ["api"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = ["live: real network calls (deselected by default)"]
