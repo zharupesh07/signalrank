@@ -108,6 +108,7 @@ export default function TrackerPage() {
   const [runs, setRuns] = useState<{ run_id: string; status: string; job_count: number | null }[]>([]);
   const [selectedRunId, setSelectedRunId] = useState("");
   const [importing, setImporting] = useState(false);
+  const [priorityFilter, setPriorityFilter] = useState<"all" | "p1" | "p1p2">("all");
 
   const loadData = useCallback(async () => {
     if (!token) return;
@@ -210,8 +211,14 @@ export default function TrackerPage() {
     }
   }
 
+  const filteredApps = priorityFilter === "all"
+    ? applications
+    : priorityFilter === "p1"
+      ? applications.filter((a) => a.priority === "P1")
+      : applications.filter((a) => a.priority === "P1" || a.priority === "P2");
+
   const byStatus = STATUSES.reduce(
-    (acc, s) => ({ ...acc, [s]: applications.filter((a) => a.status === s) }),
+    (acc, s) => ({ ...acc, [s]: filteredApps.filter((a) => a.status === s) }),
     {} as Record<ApplicationStatus, Application[]>
   );
 
@@ -333,6 +340,23 @@ export default function TrackerPage() {
             <MiniBarChart data={pipelineData} maxVal={pipelineMax} />
           </div>
         )}
+
+        {/* Priority filter toggle */}
+        <div className="flex items-center gap-1">
+          {(["all", "p1", "p1p2"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setPriorityFilter(f)}
+              className={
+                priorityFilter === f
+                  ? "bg-[var(--accent)] text-white rounded px-3 py-1 text-sm font-medium"
+                  : "bg-[var(--bg-input)] text-[var(--fg-muted)] rounded px-3 py-1 text-sm hover:text-[var(--fg)]"
+              }
+            >
+              {f === "all" ? "All" : f === "p1" ? "P1 only" : "P1 + P2"}
+            </button>
+          ))}
+        </div>
 
         {/* Kanban grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
