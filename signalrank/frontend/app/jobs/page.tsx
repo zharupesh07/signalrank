@@ -19,9 +19,9 @@ import { ExternalLink, ChevronUp, ChevronDown, Search, X, Plus, ChevronRight, Ch
 const col = createColumnHelper<Job>();
 
 function ScoreCell({ value }: { value: number | null }) {
-  if (value == null) return <span className="text-[#71717a]">—</span>;
+  if (value == null) return <span className="text-muted-foreground">—</span>;
   const pct = value * 100;
-  const color = pct >= 80 ? "#22c55e" : pct >= 60 ? "#facc15" : "#ef4444";
+  const color = pct >= 80 ? "var(--primary)" : pct >= 60 ? "var(--terminal-yellow)" : "var(--destructive)";
   return (
     <div className="flex items-center gap-2">
       <span className="tabular-nums text-xs font-bold" style={{ color }}>
@@ -38,19 +38,19 @@ const columns = [
   col.accessor("title", {
     header: "Title",
     cell: (i) => (
-      <span className="text-[#e4e4e7] text-xs">{i.getValue()}</span>
+      <span className="text-foreground text-xs">{i.getValue()}</span>
     ),
   }),
   col.accessor("company", {
     header: "Company",
     cell: (i) => (
-      <span className="text-[#a1a1aa] text-xs">{i.getValue()}</span>
+      <span className="text-secondary-foreground text-xs">{i.getValue()}</span>
     ),
   }),
   col.accessor("location", {
     header: "Location",
     cell: (i) => (
-      <span className="text-[#71717a] text-xs">{i.getValue() ?? "—"}</span>
+      <span className="text-muted-foreground text-xs">{i.getValue() ?? "—"}</span>
     ),
   }),
   col.accessor("final_score", {
@@ -62,16 +62,16 @@ const columns = [
     cell: (i) => {
       const v = i.getValue();
       return v ? (
-        <span className="text-[11px] text-[#71717a] border border-[#3f3f46] px-1.5 py-0.5">
+        <span className="text-[11px] text-muted-foreground border border-muted-foreground/40 px-1.5 py-0.5">
           T{v}
         </span>
-      ) : <span className="text-[#71717a]">—</span>;
+      ) : <span className="text-muted-foreground">—</span>;
     },
   }),
   col.accessor("is_contract", {
     header: "Type",
     cell: (i) => i.getValue() ? (
-      <span className="text-[11px] text-[#facc15] border border-[#facc15]/30 px-1.5 py-0.5">
+      <span className="text-[11px] text-[var(--terminal-yellow)] border border-[var(--terminal-yellow)]/30 px-1.5 py-0.5">
         CONTRACT
       </span>
     ) : null,
@@ -79,7 +79,7 @@ const columns = [
   col.accessor("site", {
     header: "Source",
     cell: (i) => (
-      <span className="text-[#71717a] text-xs">{i.getValue() ?? "—"}</span>
+      <span className="text-muted-foreground text-xs">{i.getValue() ?? "—"}</span>
     ),
   }),
   col.display({
@@ -90,7 +90,7 @@ const columns = [
         href={i.row.original.job_url}
         target="_blank"
         rel="noreferrer"
-        className="text-[#71717a] hover:text-[#22c55e] transition-colors"
+        className="text-muted-foreground hover:text-primary transition-colors"
       >
         <ExternalLink size={12} />
       </a>
@@ -238,11 +238,11 @@ export default function JobsPage() {
       cell: (i) => {
         const job = i.row.original;
         return tracked.has(job.id) ? (
-          <span className="text-[11px] text-[#52525b] uppercase tracking-wider">tracked</span>
+          <span className="text-[11px] text-muted-foreground uppercase tracking-wider">tracked</span>
         ) : (
           <button
             onClick={() => trackJob(job)}
-            className="flex items-center gap-0.5 text-[11px] text-[#22c55e]/60 border border-[#22c55e]/20 px-1.5 py-0.5 hover:border-[#22c55e] hover:text-[#22c55e] transition-colors uppercase tracking-wider"
+            className="flex items-center gap-0.5 text-[11px] text-primary/60 border border-primary/20 px-1.5 py-0.5 hover:border-primary hover:text-primary transition-colors uppercase tracking-wider"
           >
             <Plus size={8} />track
           </button>
@@ -267,24 +267,24 @@ export default function JobsPage() {
           <div>
             <div className="section-label mb-1">job index</div>
             <div className="flex items-baseline gap-3">
-              <h1 className="text-xl font-bold text-[#d4d4d8]">All Jobs</h1>
-              <span className="text-[#22c55e] text-sm tabular-nums text-glow-dim">{total}</span>
+              <h1 className="text-xl font-bold text-foreground">All Jobs</h1>
+              <span className="text-primary text-sm tabular-nums text-glow-dim">{total}</span>
               {activeFilterCount > 0 && (
-                <span className="text-[11px] text-[#71717a]">of {allJobs.length}</span>
+                <span className="text-[11px] text-muted-foreground">of {allJobs.length}</span>
               )}
             </div>
           </div>
-          <div className="flex items-center border border-[#2a2a2e] bg-[#0d0d0f] focus-within:border-[#22c55e] transition-colors w-64">
-            <Search size={11} className="text-[#52525b] ml-3 shrink-0" />
+          <div className="flex items-center border border-border bg-input focus-within:border-primary transition-colors w-64">
+            <Search size={11} className="text-muted-foreground ml-3 shrink-0" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="search title, company..."
-              className="flex-1 bg-transparent px-2 py-2 text-xs text-[#e4e4e7] outline-none placeholder:text-[#52525b]"
+              className="flex-1 bg-transparent px-2 py-2 text-xs text-foreground outline-none placeholder:text-muted-foreground"
             />
             {search && (
-              <button onClick={() => setSearch("")} className="pr-2 text-[#71717a] hover:text-[#a1a1aa] transition-colors">
+              <button onClick={() => setSearch("")} className="pr-2 text-muted-foreground hover:text-secondary-foreground transition-colors">
                 <X size={11} />
               </button>
             )}
@@ -300,22 +300,22 @@ export default function JobsPage() {
             {collapsed ? (
               <button
                 onClick={toggleCollapsed}
-                className="flex flex-col items-center gap-1 w-full pt-3 text-[#52525b] hover:text-[#22c55e] transition-colors"
+                className="flex flex-col items-center gap-1 w-full pt-3 text-muted-foreground hover:text-primary transition-colors"
                 title={`Filters${activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}`}
               >
                 <SlidersHorizontal size={14} />
                 <ChevronRight size={12} />
                 {activeFilterCount > 0 && (
-                  <span className="text-[10px] font-bold text-[#22c55e] tabular-nums">{activeFilterCount}</span>
+                  <span className="text-[10px] font-bold text-primary tabular-nums">{activeFilterCount}</span>
                 )}
               </button>
             ) : (
-              <div className="border border-[#2a2a2e] bg-[#111113] p-3 space-y-4">
+              <div className="border border-border bg-card p-3 space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-[var(--fg-muted,#71717a)] uppercase tracking-wide">Filters</span>
                   <button
                     onClick={toggleCollapsed}
-                    className="text-[#52525b] hover:text-[#22c55e] transition-colors"
+                    className="text-muted-foreground hover:text-primary transition-colors"
                     title="Collapse"
                   >
                     <ChevronLeft size={13} />
@@ -325,7 +325,7 @@ export default function JobsPage() {
                 {activeFilterCount > 0 && (
                   <button
                     onClick={() => setFilters(DEFAULT_FILTERS)}
-                    className="text-xs text-[#22c55e] hover:underline"
+                    className="text-xs text-primary hover:underline"
                   >
                     Reset filters ({activeFilterCount})
                   </button>
@@ -334,7 +334,7 @@ export default function JobsPage() {
                 {/* Min Score */}
                 <div>
                   <div className="text-xs font-semibold text-[var(--fg-muted,#71717a)] uppercase tracking-wide mb-2">
-                    Min Score <span className="tabular-nums text-[#a1a1aa] normal-case font-normal">{filters.minScore}</span>
+                    Min Score <span className="tabular-nums text-secondary-foreground normal-case font-normal">{filters.minScore}</span>
                   </div>
                   <input
                     type="range"
@@ -342,11 +342,11 @@ export default function JobsPage() {
                     max={100}
                     value={filters.minScore}
                     onChange={(e) => setFilters((f) => ({ ...f, minScore: Number(e.target.value) }))}
-                    className="w-full accent-[#22c55e]"
+                    className="w-full accent-primary"
                   />
                 </div>
 
-                <hr className="border-[#2a2a2e]" />
+                <hr className="border-border" />
 
                 {/* Job Type */}
                 <div>
@@ -358,9 +358,9 @@ export default function JobsPage() {
                         onClick={() => setFilters((f) => ({ ...f, jobType: t }))}
                         className="flex-1 text-[10px] py-1 border transition-colors uppercase tracking-wide"
                         style={{
-                          background: filters.jobType === t ? "var(--accent, #22c55e)" : "transparent",
-                          borderColor: filters.jobType === t ? "var(--accent, #22c55e)" : "#3f3f46",
-                          color: filters.jobType === t ? "#fff" : "#71717a",
+                          background: filters.jobType === t ? "var(--primary)" : "transparent",
+                          borderColor: filters.jobType === t ? "var(--primary)" : "var(--muted-foreground)",
+                          color: filters.jobType === t ? "var(--primary-foreground)" : "var(--muted-foreground)",
                         }}
                       >
                         {t}
@@ -369,7 +369,7 @@ export default function JobsPage() {
                   </div>
                 </div>
 
-                <hr className="border-[#2a2a2e]" />
+                <hr className="border-border" />
 
                 {/* Company Tier */}
                 <div>
@@ -391,7 +391,7 @@ export default function JobsPage() {
                   </div>
                 </div>
 
-                <hr className="border-[#2a2a2e]" />
+                <hr className="border-border" />
 
                 {/* Date Posted */}
                 <div>
@@ -399,7 +399,7 @@ export default function JobsPage() {
                   <select
                     value={filters.dateRange}
                     onChange={(e) => setFilters((f) => ({ ...f, dateRange: e.target.value as Filters["dateRange"] }))}
-                    className="w-full bg-[#0d0d0f] border border-[#3f3f46] text-xs text-[#e4e4e7] px-2 py-1.5 outline-none focus:border-[#22c55e] transition-colors"
+                    className="w-full bg-input border border-muted-foreground/40 text-xs text-foreground px-2 py-1.5 outline-none focus:border-primary transition-colors"
                   >
                     <option value="any">Any time</option>
                     <option value="24h">Last 24h</option>
@@ -410,7 +410,7 @@ export default function JobsPage() {
 
                 {availableSites.length > 0 && (
                   <>
-                    <hr className="border-[#2a2a2e]" />
+                    <hr className="border-border" />
                     <div>
                       <div className="text-xs font-semibold text-[var(--fg-muted,#71717a)] uppercase tracking-wide mb-2">Source</div>
                       <div className="space-y-1">
@@ -435,23 +435,23 @@ export default function JobsPage() {
 
           {/* Main content */}
           <div className="flex-1 min-w-0 space-y-5">
-            <div className="border border-[#2a2a2e] overflow-hidden">
+            <div className="border border-border overflow-hidden">
               <table className="w-full text-xs border-collapse">
                 <thead>
                   {table.getHeaderGroups().map((hg) => (
-                    <tr key={hg.id} className="border-b border-[#2a2a2e] bg-[#0d0d0f]">
+                    <tr key={hg.id} className="border-b border-border bg-input">
                       {hg.headers.map((h) => (
                         <th
                           key={h.id}
                           onClick={h.column.getToggleSortingHandler()}
-                          className="px-3 py-3 text-left text-xs text-[#52525b] uppercase tracking-[0.15em] cursor-pointer select-none hover:text-[#22c55e] transition-colors"
+                          className="px-3 py-3 text-left text-xs text-muted-foreground uppercase tracking-[0.15em] cursor-pointer select-none hover:text-primary transition-colors"
                         >
                           <div className="flex items-center gap-1">
                             {flexRender(h.column.columnDef.header, h.getContext())}
                             {h.column.getIsSorted() === "asc" ? (
-                              <ChevronUp size={10} className="text-[#22c55e]" />
+                              <ChevronUp size={10} className="text-primary" />
                             ) : h.column.getIsSorted() === "desc" ? (
-                              <ChevronDown size={10} className="text-[#22c55e]" />
+                              <ChevronDown size={10} className="text-primary" />
                             ) : null}
                           </div>
                         </th>
@@ -468,7 +468,7 @@ export default function JobsPage() {
                     table.getRowModel().rows.map((row) => (
                       <tr
                         key={row.id}
-                        className="job-row border-b border-[#2a2a2e] bg-[#111113]"
+                        className="job-row border-b border-border bg-card"
                       >
                         {row.getVisibleCells().map((cell) => (
                           <td key={cell.id} className="px-3 py-2.5">
@@ -482,7 +482,7 @@ export default function JobsPage() {
               </table>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-[#71717a]">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>
                 Showing {total === 0 ? 0 : ((page - 1) * limit) + 1}–{Math.min(page * limit, total)} of {total}
               </span>
@@ -490,7 +490,7 @@ export default function JobsPage() {
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="px-3 py-1.5 border border-[#3f3f46] hover:border-[#22c55e] hover:text-[#22c55e] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 border border-muted-foreground/40 hover:border-primary hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   [&lt; prev]
                 </button>
@@ -500,7 +500,7 @@ export default function JobsPage() {
                 <button
                   onClick={() => setPage((p) => p + 1)}
                   disabled={page >= totalPages}
-                  className="px-3 py-1.5 border border-[#3f3f46] hover:border-[#22c55e] hover:text-[#22c55e] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 border border-muted-foreground/40 hover:border-primary hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   [next &gt;]
                 </button>
