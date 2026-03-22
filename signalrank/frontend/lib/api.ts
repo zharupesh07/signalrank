@@ -126,6 +126,24 @@ export const api = {
         token,
         body: JSON.stringify(data),
       }),
+    recruitersByCompany: (token: string, company: string) =>
+      request<{ id: string; name: string | null; email: string; linkedin_url: string | null }[]>(
+        `/api/applications/recruiters?company=${encodeURIComponent(company)}`,
+        { token }
+      ),
+  },
+
+  recruiters: {
+    list: (token: string, company?: string) =>
+      request<{ id: string; company: string; name: string | null; email: string | null; linkedin_url: string | null; domain: string | null }[]>(
+        `/api/recruiters${company ? `?company=${encodeURIComponent(company)}` : ""}`,
+        { token }
+      ),
+    find: (token: string, data: { company: string; domain?: string; max_results?: number }) =>
+      request<{ found: number; inserted: number; skipped: number; recruiters: { name: string | null; email: string | null; linkedin_url: string; domain: string | null; confidence: string }[] }>(
+        "/api/recruiters/find",
+        { method: "POST", token, body: JSON.stringify(data) }
+      ),
   },
 
   onboarding: {

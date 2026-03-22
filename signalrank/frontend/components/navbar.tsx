@@ -4,21 +4,24 @@ import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LogOut, Terminal, Sun, Moon } from "lucide-react";
+import { LogOut, Terminal, Sun, Moon, Code2 } from "lucide-react";
 import { useTheme } from "./theme-provider";
 import { SettingsPanel } from "./settings-panel";
+import { useDevMode } from "./dev-mode-provider";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/jobs", label: "Jobs" },
   { href: "/tracker", label: "Tracker" },
   { href: "/runs", label: "Runs" },
+  { href: "/settings", label: "Settings" },
 ];
 
 export default function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
+  const { isDevMode, handleLogoClick, openDevPanel } = useDevMode();
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
 
   if (!session) return null;
@@ -29,11 +32,14 @@ export default function Navbar() {
     <>
     <nav className="fixed top-0 left-0 right-0 z-50 h-13 bg-background/95 backdrop-blur-sm border-b border-border nav-glow flex items-center px-6 gap-8">
       {/* Logo */}
-      <Link href="/dashboard" className="flex items-center gap-2 shrink-0 group">
+      <Link href="/dashboard" onClick={handleLogoClick} className="flex items-center gap-2 shrink-0 group relative">
         <Terminal size={14} className="text-primary group-hover:text-[var(--terminal-green-bright)] transition-colors" />
         <span className="text-primary font-bold text-sm tracking-[0.2em] text-glow-dim group-hover:text-glow-green transition-all">
           SIGNAL<span className="text-[var(--terminal-green-bright)]">RANK</span>
         </span>
+        {isDevMode && (
+          <span className="absolute -top-0.5 -right-1.5 w-1.5 h-1.5 rounded-full bg-terminal-yellow pulse-dot" />
+        )}
       </Link>
 
       {/* Separator */}
@@ -64,6 +70,16 @@ export default function Navbar() {
 
       {/* Right side */}
       <div className="flex items-center gap-5 shrink-0">
+        {isDevMode && (
+          <button
+            onClick={openDevPanel}
+            className="flex items-center gap-1.5 text-xs text-terminal-yellow hover:text-terminal-green-bright transition-colors"
+            title="Open Dev Console"
+          >
+            <Code2 size={12} />
+            <span className="hidden sm:inline tracking-wider uppercase">Dev</span>
+          </button>
+        )}
         <button
           onClick={toggleTheme}
           className="text-muted-foreground hover:text-foreground transition-colors"

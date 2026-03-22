@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
-import { Clock, CheckCircle, XCircle, Loader } from "lucide-react";
+import { CheckCircle, XCircle, Play } from "lucide-react";
+import { useToast } from "@/components/toast";
 
 type RunRecord = {
   run_id: string;
   status: string;
   job_count: number | null;
+  scrape_count: number | null;
   started_at: string | null;
   finished_at: string | null;
 };
@@ -63,8 +65,10 @@ function duration(start: string | null, end: string | null) {
   if (!start || !end) return null;
   const secs = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 1000);
   if (secs < 60) return `${secs}s`;
-  const m = Math.floor(secs / 60);
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
   const s = secs % 60;
+  if (h > 0) return `${h}h ${m}m`;
   return `${m}m ${s}s`;
 }
 
@@ -72,8 +76,10 @@ export default function RunsPage() {
   const { data: session } = useSession();
   const token = (session as { accessToken?: string })?.accessToken ?? "";
 
+  const { toast } = useToast();
   const [runs, setRuns] = useState<RunRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [triggering, setTriggering] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -83,24 +89,48 @@ export default function RunsPage() {
     }).catch(() => setLoading(false));
   }, [token]);
 
+  async function triggerRun() {
+    setTriggering(true);
+    try {
+      await api.runs.trigger(token);
+      toast("Run triggered", "success");
+      const r = await api.runs.list(token);
+      setRuns(r);
+    } catch {
+      toast("Failed to trigger run", "error");
+    } finally {
+      setTriggering(false);
+    }
+  }
+
   return (
     <div className="pt-14 min-h-screen page-content">
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-5">
-        <div>
-          <div className="section-label mb-1">run history</div>
-          <div className="flex items-baseline gap-3">
-            <h1 className="text-xl font-bold text-foreground">Runs</h1>
-            {!loading && (
-              <span className="text-primary text-sm tabular-nums text-glow-dim">{runs.length}</span>
-            )}
+        <div className="flex items-end justify-between">
+          <div>
+            <div className="section-label mb-1">run history</div>
+            <div className="flex items-baseline gap-3">
+              <h1 className="text-xl font-bold text-foreground">Runs</h1>
+              {!loading && (
+                <span className="text-primary text-sm tabular-nums text-glow-dim">{runs.length}</span>
+              )}
+            </div>
           </div>
+          <button
+            onClick={triggerRun}
+            disabled={triggering}
+            className="flex items-center gap-2 text-[11px] text-primary border border-primary/40 px-3 py-1.5 hover:bg-primary/10 transition-colors uppercase tracking-wider disabled:opacity-50"
+          >
+            <Play size={10} />
+            {triggering ? "Triggering..." : "New Run"}
+          </button>
         </div>
 
         <div className="border border-border overflow-hidden">
           <table className="w-full text-xs border-collapse">
             <thead>
               <tr className="border-b border-border bg-card">
-                {["Run ID", "Status", "Jobs", "Started", "Duration"].map((h) => (
+                {["Run ID", "Status", "Scraped", "Ranked", "Started", "Duration"].map((h) => (
                   <th
                     key={h}
                     className="px-4 py-3 text-left text-xs text-muted-foreground uppercase tracking-[0.15em]"
@@ -114,16 +144,16 @@ export default function RunsPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b border-muted">
-                    {Array.from({ length: 5 }).map((_, j) => (
+                    {Array.from({ length: 6 }).map((_, j) => (
                       <td key={j} className="px-4 py-3">
-                        <div className="skeleton h-3 rounded" style={{ width: ["120px", "60px", "40px", "140px", "60px"][j] }} />
+                        <div className="skeleton h-3 rounded" style={{ width: ["120px", "60px", "40px", "40px", "140px", "60px"][j] }} />
                       </td>
                     ))}
                   </tr>
                 ))
               ) : runs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-16 text-center">
+                  <td colSpan={6} className="px-4 py-16 text-center">
                     <div className="font-mono text-muted-foreground text-xs space-y-1">
                       <div>┌─────────────────────┐</div>
                       <div>│   no runs found     │</div>
@@ -148,9 +178,10 @@ export default function RunsPage() {
                         <StatusBadge status={run.status} />
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-secondary-foreground tabular-nums">
-                          {run.job_count ?? "—"}
-                        </span>
+                        <span className="text-muted-foreground tabular-nums">{run.scrape_count ?? "—"}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-secondary-foreground tabular-nums">{run.job_count ?? "—"}</span>
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-muted-foreground tabular-nums">{formatDate(run.started_at)}</span>

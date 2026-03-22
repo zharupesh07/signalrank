@@ -124,12 +124,14 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 value={targetRoles}
                 onChange={setTargetRoles}
                 placeholder="Add role…"
+                suggestions={["Machine Learning Engineer", "ML Engineer", "Data Scientist", "AI Engineer", "MLOps Engineer", "Data Engineer", "Platform Engineer", "Backend Engineer", "Software Engineer", "Research Engineer", "Applied Scientist", "NLP Engineer", "GenAI Engineer", "LLM Engineer", "Full Stack Engineer"]}
               />
               <TagInput
                 label="Preferred locations"
                 value={preferredLocations}
                 onChange={setPreferredLocations}
                 placeholder="Add location…"
+                suggestions={["Bangalore", "Hyderabad", "Mumbai", "Pune", "Delhi NCR", "Chennai", "Remote", "India", "Gurgaon", "Noida"]}
               />
               <TagInput
                 label="Custom search queries"
@@ -185,6 +187,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 value={titleBlocklist}
                 onChange={setTitleBlocklist}
                 placeholder="Add title…"
+                suggestions={["Intern", "Trainee", "Fresher", "Junior", "Associate", "Lead", "Manager", "Director", "VP", "Head", "Chief", "Principal", "Staff", "Consultant", "Freelance", "Part-time"]}
               />
             </div>
           </section>

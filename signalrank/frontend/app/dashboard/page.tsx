@@ -36,9 +36,9 @@ function MiniBarChart({ data, maxVal, color = "var(--primary)" }: { data: { labe
 }
 
 function scoreColor(score: number) {
-  if (score >= 0.8) return "var(--primary)";
-  if (score >= 0.65) return "var(--terminal-green-bright)";
-  if (score >= 0.5) return "var(--terminal-yellow)";
+  if (score >= 0.75) return "var(--primary)";
+  if (score >= 0.60) return "var(--terminal-green-bright)";
+  if (score >= 0.45) return "var(--terminal-yellow)";
   return "var(--chart-4)";
 }
 
@@ -298,7 +298,7 @@ export default function DashboardPage() {
 
                   <div className="flex items-center gap-2 shrink-0">
                     {job.company_tier && (
-                      <span className="text-[11px] text-muted-foreground border border-border px-1.5 py-0.5 leading-none">T{job.company_tier}</span>
+                      <span className="text-[11px] text-muted-foreground border border-border px-1.5 py-0.5 leading-none">{job.company_tier.replace("tier_", "").toUpperCase()}</span>
                     )}
                     {job.is_contract && (
                       <span className="text-[11px] text-[var(--terminal-yellow)] border border-[var(--terminal-yellow)]/20 px-1.5 py-0.5 leading-none">CONTRACT</span>
