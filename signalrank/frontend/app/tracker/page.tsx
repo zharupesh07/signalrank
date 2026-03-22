@@ -32,27 +32,27 @@ const STATUSES: ApplicationStatus[] = [
 const PRIORITIES = ["P1", "P2", "P3"] as const;
 
 const STATUS_STYLE: Record<ApplicationStatus, { dot: string; label: string; border: string; bar: string }> = {
-  interested:   { dot: "bg-[#71717a]",  label: "text-[#a1a1aa]", border: "border-[#3f3f46]",      bar: "#71717a" },
-  applied:      { dot: "bg-[#22c55e]",  label: "text-[#22c55e]", border: "border-[#22c55e]/40",   bar: "#22c55e" },
-  phone_screen: { dot: "bg-[#a3e635]",  label: "text-[#a3e635]", border: "border-[#a3e635]/40",   bar: "#a3e635" },
-  interview:    { dot: "bg-[#22c55e]",  label: "text-[#22c55e]", border: "border-[#22c55e]/60",   bar: "#22c55e" },
-  offer:        { dot: "bg-[#facc15]",  label: "text-[#facc15]", border: "border-[#facc15]/40",   bar: "#facc15" },
-  rejected:     { dot: "bg-[#ef4444]",  label: "text-[#ef4444]", border: "border-[#ef4444]/30",   bar: "#ef4444" },
-  archived:     { dot: "bg-[#52525b]",  label: "text-[#52525b]", border: "border-[#3f3f46]",      bar: "#52525b" },
+  interested:   { dot: "bg-muted-foreground",  label: "text-secondary-foreground", border: "border-border",                      bar: "var(--muted-foreground)" },
+  applied:      { dot: "bg-primary",           label: "text-primary",              border: "border-primary/40",                  bar: "var(--primary)" },
+  phone_screen: { dot: "bg-[var(--terminal-green-bright)]", label: "text-[var(--terminal-green-bright)]", border: "border-[var(--terminal-green-bright)]/40", bar: "var(--terminal-green-bright)" },
+  interview:    { dot: "bg-primary",           label: "text-primary",              border: "border-primary/60",                  bar: "var(--primary)" },
+  offer:        { dot: "bg-[var(--terminal-yellow)]", label: "text-[var(--terminal-yellow)]", border: "border-[var(--terminal-yellow)]/40", bar: "var(--terminal-yellow)" },
+  rejected:     { dot: "bg-destructive",       label: "text-destructive",          border: "border-destructive/30",              bar: "var(--destructive)" },
+  archived:     { dot: "bg-muted-foreground",  label: "text-muted-foreground",     border: "border-border",                      bar: "var(--muted-foreground)" },
 };
 
 const PRIORITY_STYLE: Record<string, { bg: string; text: string }> = {
-  P1: { bg: "bg-[#ef4444]/15", text: "text-[#ef4444]" },
-  P2: { bg: "bg-[#facc15]/15", text: "text-[#facc15]" },
-  P3: { bg: "bg-[#71717a]/15", text: "text-[#71717a]" },
+  P1: { bg: "bg-destructive/15", text: "text-destructive" },
+  P2: { bg: "bg-[var(--terminal-yellow)]/15", text: "text-[var(--terminal-yellow)]" },
+  P3: { bg: "bg-muted-foreground/15", text: "text-muted-foreground" },
 };
 
 function scoreColor(score: number) {
   const pct = score * 100;
-  if (pct >= 80) return "#22c55e";
-  if (pct >= 65) return "#a3e635";
-  if (pct >= 50) return "#facc15";
-  return "#f97316";
+  if (pct >= 80) return "var(--primary)";
+  if (pct >= 65) return "var(--terminal-green-bright)";
+  if (pct >= 50) return "var(--terminal-yellow)";
+  return "var(--chart-4)";
 }
 
 function gmailComposeUrl(to: string, subject: string, body: string) {
@@ -77,14 +77,14 @@ function MiniBarChart({ data, maxVal }: { data: { label: string; count: number; 
     <div className="space-y-1">
       {data.map(({ label, count, color }) => (
         <div key={label} className="flex items-center gap-2">
-          <span className="text-[11px] text-[#71717a] w-20 shrink-0 truncate">{label}</span>
-          <div className="flex-1 h-1.5 bg-[#1a1a1e] relative overflow-hidden">
+          <span className="text-[11px] text-muted-foreground w-20 shrink-0 truncate">{label}</span>
+          <div className="flex-1 h-1.5 bg-muted relative overflow-hidden">
             <div
               className="h-full transition-all duration-500"
               style={{ width: `${maxVal > 0 ? (count / maxVal) * 100 : 0}%`, background: color }}
             />
           </div>
-          <span className="text-[11px] text-[#71717a] tabular-nums w-5 text-right">{count}</span>
+          <span className="text-[11px] text-muted-foreground tabular-nums w-5 text-right">{count}</span>
         </div>
       ))}
     </div>
@@ -241,13 +241,13 @@ export default function TrackerPage() {
           <div>
             <div className="section-label mb-1">application tracker</div>
             <div className="flex items-baseline gap-3">
-              <h1 className="text-xl font-bold text-[#d4d4d8]">Tracker</h1>
-              <span className="text-[#22c55e] text-sm tabular-nums text-glow-dim">{applications.length} total</span>
+              <h1 className="text-xl font-bold text-foreground">Tracker</h1>
+              <span className="text-primary text-sm tabular-nums text-glow-dim">{applications.length} total</span>
             </div>
           </div>
           <button
             onClick={() => setShowImport(!showImport)}
-            className="flex items-center gap-2 px-3 py-2 text-[11px] border border-[#22c55e]/40 text-[#22c55e] hover:bg-[#22c55e]/10 transition-colors uppercase tracking-wider"
+            className="flex items-center gap-2 px-3 py-2 text-[11px] border border-primary/40 text-primary hover:bg-primary/10 transition-colors uppercase tracking-wider"
           >
             <Download size={11} />
             Import from Run
@@ -256,14 +256,14 @@ export default function TrackerPage() {
 
         {/* Import dropdown */}
         {showImport && (
-          <div className="border border-[#2a2a2e] bg-[#0d0d0f] p-4 space-y-3">
+          <div className="border border-border bg-muted p-4 space-y-3">
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="text-[11px] text-[#71717a] uppercase tracking-wider block mb-1">Run</label>
+                <label className="text-[11px] text-muted-foreground uppercase tracking-wider block mb-1">Run</label>
                 <select
                   value={selectedRunId}
                   onChange={(e) => setSelectedRunId(e.target.value)}
-                  className="w-full text-xs bg-[#0a0a0a] border border-[#3f3f46] text-[#a1a1aa] px-2 py-1.5 focus:border-[#22c55e] focus:outline-none"
+                  className="w-full text-xs bg-background border border-border text-secondary-foreground px-2 py-1.5 focus:border-primary focus:outline-none"
                 >
                   <option value="">Select run...</option>
                   {runs.filter((r) => r.status === "success").map((r) => (
@@ -274,7 +274,7 @@ export default function TrackerPage() {
                 </select>
               </div>
               <div>
-                <label className="text-[11px] text-[#71717a] uppercase tracking-wider block mb-1">
+                <label className="text-[11px] text-muted-foreground uppercase tracking-wider block mb-1">
                   Min Score: {Math.round(importMinScore * 100)}%
                 </label>
                 <input
@@ -284,7 +284,7 @@ export default function TrackerPage() {
                   step={0.05}
                   value={importMinScore}
                   onChange={(e) => setImportMinScore(Number(e.target.value))}
-                  className="w-full accent-[#22c55e]"
+                  className="w-full accent-primary"
                 />
               </div>
               <div>
@@ -298,14 +298,14 @@ export default function TrackerPage() {
                   step={5}
                   value={importLimit}
                   onChange={(e) => setImportLimit(Number(e.target.value))}
-                  className="w-full accent-[#22c55e]"
+                  className="w-full accent-primary"
                 />
               </div>
             </div>
             <button
               onClick={handleImport}
               disabled={!selectedRunId || importing}
-              className="text-[11px] text-[#22c55e] border border-[#22c55e]/30 px-3 py-1.5 hover:bg-[#22c55e]/10 transition-colors uppercase tracking-wider disabled:opacity-30"
+              className="text-[11px] text-primary border border-primary/30 px-3 py-1.5 hover:bg-primary/10 transition-colors uppercase tracking-wider disabled:opacity-30"
             >
               {importing ? "Importing..." : "Import"}
             </button>
@@ -314,17 +314,17 @@ export default function TrackerPage() {
 
         {/* KPI Summary Bar */}
         {stats && (
-          <div className="grid grid-cols-6 gap-px border border-[#2a2a2e] bg-[#2a2a2e] overflow-hidden">
+          <div className="grid grid-cols-6 gap-px border border-border bg-border overflow-hidden">
             {[
-              { label: "Total", value: stats.total, color: "#d4d4d8" },
-              { label: "P1", value: stats.by_priority.P1 ?? 0, color: "#ef4444" },
-              { label: "P2", value: stats.by_priority.P2 ?? 0, color: "#facc15" },
-              { label: "Offers", value: stats.offers_count, color: "#22c55e" },
-              { label: "Best Offer", value: stats.best_offer_lpa ? `${stats.best_offer_lpa}L` : "--", color: "#facc15" },
-              { label: "Gap", value: stats.target_lpa && stats.best_offer_lpa ? `${Math.round(stats.target_lpa - stats.best_offer_lpa)}L` : "--", color: stats.target_lpa && stats.best_offer_lpa && stats.best_offer_lpa >= stats.target_lpa ? "#22c55e" : "#ef4444" },
+              { label: "Total", value: stats.total, color: "var(--foreground)" },
+              { label: "P1", value: stats.by_priority.P1 ?? 0, color: "var(--destructive)" },
+              { label: "P2", value: stats.by_priority.P2 ?? 0, color: "var(--terminal-yellow)" },
+              { label: "Offers", value: stats.offers_count, color: "var(--primary)" },
+              { label: "Best Offer", value: stats.best_offer_lpa ? `${stats.best_offer_lpa}L` : "--", color: "var(--terminal-yellow)" },
+              { label: "Gap", value: stats.target_lpa && stats.best_offer_lpa ? `${Math.round(stats.target_lpa - stats.best_offer_lpa)}L` : "--", color: stats.target_lpa && stats.best_offer_lpa && stats.best_offer_lpa >= stats.target_lpa ? "var(--primary)" : "var(--destructive)" },
             ].map((kpi) => (
-              <div key={kpi.label} className="bg-[#0d0d0f] px-4 py-3 text-center">
-                <div className="text-[11px] text-[#71717a] uppercase tracking-wider">{kpi.label}</div>
+              <div key={kpi.label} className="bg-card px-4 py-3 text-center">
+                <div className="text-[11px] text-muted-foreground uppercase tracking-wider">{kpi.label}</div>
                 <div className="text-lg font-bold tabular-nums mt-0.5" style={{ color: kpi.color }}>
                   {kpi.value}
                 </div>
@@ -335,8 +335,8 @@ export default function TrackerPage() {
 
         {/* Pipeline bar chart */}
         {pipelineData.length > 0 && (
-          <div className="border border-[#2a2a2e] bg-[#0d0d0f] p-4">
-            <div className="text-[11px] text-[#71717a] uppercase tracking-wider mb-3">Pipeline</div>
+          <div className="border border-border bg-card p-4">
+            <div className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">Pipeline</div>
             <MiniBarChart data={pipelineData} maxVal={pipelineMax} />
           </div>
         )}
@@ -365,38 +365,38 @@ export default function TrackerPage() {
             const apps = byStatus[status];
             return (
               <div key={status} className="space-y-2">
-                <div className="flex items-center gap-2 pb-1 border-b border-[#3f3f46]">
+                <div className="flex items-center gap-2 pb-1 border-b border-border">
                   <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${style.dot}`} />
                   <span className={`text-xs uppercase tracking-wider ${style.label}`}>
                     {status.replace("_", " ")}
                   </span>
-                  <span className="text-xs text-[#71717a] ml-auto tabular-nums">
+                  <span className="text-xs text-muted-foreground ml-auto tabular-nums">
                     {apps.length}
                   </span>
                 </div>
 
                 {apps.length === 0 ? (
-                  <div className="border border-dashed border-[#1e1e21] p-4 text-center">
-                    <span className="text-xs text-[#52525b]">empty</span>
+                  <div className="border border-dashed border-border p-4 text-center">
+                    <span className="text-xs text-muted-foreground">empty</span>
                   </div>
                 ) : (
                   apps.map((app) => (
                     <div
                       key={app.id}
-                      className={`border card-hover bg-[#111113] p-3 space-y-2 ${style.border}`}
+                      className={`border card-hover bg-card p-3 space-y-2 ${style.border}`}
                     >
                       {/* Title + company + priority */}
                       <div className="flex items-start gap-1.5">
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm text-[#e4e4e7] truncate">{app.title}</div>
-                          <div className="text-xs text-[#a1a1aa] truncate">{app.company}</div>
+                          <div className="text-sm text-foreground truncate">{app.title}</div>
+                          <div className="text-xs text-secondary-foreground truncate">{app.company}</div>
                         </div>
                         <button
                           onClick={() => cyclePriority(app.id, app.priority)}
                           className={`shrink-0 text-[11px] px-1.5 py-0.5 leading-none font-bold uppercase tracking-wider ${
                             app.priority && PRIORITY_STYLE[app.priority]
                               ? `${PRIORITY_STYLE[app.priority].bg} ${PRIORITY_STYLE[app.priority].text}`
-                              : "text-[#3f3f46] hover:text-[#71717a]"
+                              : "text-border hover:text-muted-foreground"
                           }`}
                           title="Click to cycle priority"
                         >
@@ -409,21 +409,21 @@ export default function TrackerPage() {
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {app.company_tier && (
                             <span className={`text-[10px] px-1.5 py-0.5 font-bold uppercase tracking-wider border ${
-                              app.company_tier === "S" ? "text-[#facc15] border-[#facc15]/30 bg-[#facc15]/10" :
-                              app.company_tier === "A" ? "text-[#22c55e] border-[#22c55e]/30 bg-[#22c55e]/10" :
-                              app.company_tier === "B" ? "text-[#a3e635] border-[#a3e635]/30 bg-[#a3e635]/10" :
-                              "text-[#71717a] border-[#3f3f46] bg-[#71717a]/10"
+                              app.company_tier === "S" ? "text-[var(--terminal-yellow)] border-[var(--terminal-yellow)]/30 bg-[var(--terminal-yellow)]/10" :
+                              app.company_tier === "A" ? "text-primary border-primary/30 bg-primary/10" :
+                              app.company_tier === "B" ? "text-[var(--terminal-green-bright)] border-[var(--terminal-green-bright)]/30 bg-[var(--terminal-green-bright)]/10" :
+                              "text-muted-foreground border-border bg-muted-foreground/10"
                             }`}>
                               {app.company_tier}
                             </span>
                           )}
                           {app.is_contract && (
-                            <span className="text-[10px] px-1.5 py-0.5 font-bold uppercase tracking-wider text-[#f97316] border border-[#f97316]/30 bg-[#f97316]/10">
+                            <span className="text-[10px] px-1.5 py-0.5 font-bold uppercase tracking-wider text-[var(--chart-4)] border border-[var(--chart-4)]/30 bg-[var(--chart-4)]/10">
                               contract
                             </span>
                           )}
                           {app.location && (
-                            <span className="text-[10px] text-[#71717a] truncate">{app.location}</span>
+                            <span className="text-[10px] text-muted-foreground truncate">{app.location}</span>
                           )}
                         </div>
                       )}
@@ -434,7 +434,7 @@ export default function TrackerPage() {
                           <span className="text-[11px] font-bold tabular-nums" style={{ color: scoreColor(app.system_score) }}>
                             {Math.round(app.system_score * 100)}%
                           </span>
-                          <div className="flex-1 h-1 bg-[#1a1a1e] overflow-hidden">
+                          <div className="flex-1 h-1 bg-muted overflow-hidden">
                             <div
                               className="h-full"
                               style={{
@@ -444,7 +444,7 @@ export default function TrackerPage() {
                             />
                           </div>
                           {app.resume_match_pct != null && (
-                            <span className="text-[11px] text-[#71717a] tabular-nums">
+                            <span className="text-[11px] text-muted-foreground tabular-nums">
                               {Math.round(app.resume_match_pct * 100)}% match
                             </span>
                           )}
@@ -455,7 +455,7 @@ export default function TrackerPage() {
                       <select
                         value={app.status}
                         onChange={(e) => updateStatus(app.id, e.target.value as ApplicationStatus)}
-                        className="w-full text-xs bg-[#0a0a0a] border border-[#3f3f46] text-[#a1a1aa] px-1.5 py-1 focus:border-[#22c55e] focus:outline-none"
+                        className="w-full text-xs bg-background border border-border text-secondary-foreground px-1.5 py-1 focus:border-primary focus:outline-none"
                       >
                         {STATUSES.map((s) => (
                           <option key={s} value={s}>{s.replace("_", " ")}</option>
@@ -465,12 +465,12 @@ export default function TrackerPage() {
                       {/* Interview date */}
                       {(app.status === "interview" || app.status === "phone_screen" || app.interview_date) && (
                         <div className="flex items-center gap-1.5">
-                          <Calendar size={11} className="text-[#71717a] shrink-0" />
+                          <Calendar size={11} className="text-muted-foreground shrink-0" />
                           <input
                             type="date"
                             value={app.interview_date ? app.interview_date.slice(0, 10) : ""}
                             onChange={(e) => updateField(app.id, "interview_date", e.target.value || null)}
-                            className="flex-1 text-xs bg-transparent border border-[#2a2a2e] text-[#a1a1aa] px-1.5 py-0.5 focus:border-[#22c55e] focus:outline-none"
+                            className="flex-1 text-xs bg-transparent border border-border text-secondary-foreground px-1.5 py-0.5 focus:border-primary focus:outline-none"
                           />
                         </div>
                       )}
@@ -478,28 +478,28 @@ export default function TrackerPage() {
                       {/* Offer LPA */}
                       {(app.status === "offer" || app.offer_lpa != null) && (
                         <div className="flex items-center gap-1.5">
-                          <DollarSign size={11} className="text-[#facc15] shrink-0" />
+                          <DollarSign size={11} className="text-[var(--terminal-yellow)] shrink-0" />
                           <input
                             type="number"
                             placeholder="LPA"
                             value={app.offer_lpa ?? ""}
                             onChange={(e) => updateField(app.id, "offer_lpa", e.target.value ? Number(e.target.value) : null)}
-                            className="flex-1 text-xs bg-transparent border border-[#2a2a2e] text-[#facc15] px-1.5 py-0.5 focus:border-[#22c55e] focus:outline-none placeholder:text-[#3f3f46]"
+                            className="flex-1 text-xs bg-transparent border border-border text-[var(--terminal-yellow)] px-1.5 py-0.5 focus:border-primary focus:outline-none placeholder:text-border"
                           />
-                          <span className="text-[11px] text-[#71717a]">LPA</span>
+                          <span className="text-[11px] text-muted-foreground">LPA</span>
                         </div>
                       )}
 
                       {/* Recruiter section */}
                       {app.recruiter ? (
                         <div className="flex items-center gap-1.5 text-xs">
-                          <span className="text-[#a1a1aa] truncate">{app.recruiter.name ?? app.recruiter.email}</span>
+                          <span className="text-secondary-foreground truncate">{app.recruiter.name ?? app.recruiter.email}</span>
                           {app.recruiter.linkedin_url && (
                             <a
                               href={app.recruiter.linkedin_url}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-[#0a66c2] hover:text-[#a3e635] transition-colors shrink-0"
+                              className="text-[#0a66c2] hover:text-[var(--terminal-green-bright)] transition-colors shrink-0"
                               title="LinkedIn profile"
                             >
                               <Linkedin size={11} />
@@ -514,7 +514,7 @@ export default function TrackerPage() {
                               )}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-[#22c55e] hover:text-[#a3e635] transition-colors shrink-0"
+                              className="text-primary hover:text-[var(--terminal-green-bright)] transition-colors shrink-0"
                               title="Compose email"
                             >
                               <Mail size={11} />
@@ -528,32 +528,32 @@ export default function TrackerPage() {
                             placeholder="Name"
                             value={recruiterForm.name}
                             onChange={(e) => setRecruiterForm((f) => ({ ...f, name: e.target.value }))}
-                            className="w-full text-xs bg-transparent border border-[#2a2a2e] text-[#a1a1aa] px-1.5 py-1 focus:border-[#22c55e] focus:outline-none placeholder:text-[#52525b]"
+                            className="w-full text-xs bg-transparent border border-border text-secondary-foreground px-1.5 py-1 focus:border-primary focus:outline-none placeholder:text-muted-foreground"
                           />
                           <input
                             type="email"
                             placeholder="Email"
                             value={recruiterForm.email}
                             onChange={(e) => setRecruiterForm((f) => ({ ...f, email: e.target.value }))}
-                            className="w-full text-xs bg-transparent border border-[#2a2a2e] text-[#a1a1aa] px-1.5 py-1 focus:border-[#22c55e] focus:outline-none placeholder:text-[#52525b]"
+                            className="w-full text-xs bg-transparent border border-border text-secondary-foreground px-1.5 py-1 focus:border-primary focus:outline-none placeholder:text-muted-foreground"
                           />
                           <input
                             type="url"
                             placeholder="LinkedIn URL"
                             value={recruiterForm.linkedin_url}
                             onChange={(e) => setRecruiterForm((f) => ({ ...f, linkedin_url: e.target.value }))}
-                            className="w-full text-xs bg-transparent border border-[#2a2a2e] text-[#a1a1aa] px-1.5 py-1 focus:border-[#22c55e] focus:outline-none placeholder:text-[#52525b]"
+                            className="w-full text-xs bg-transparent border border-border text-secondary-foreground px-1.5 py-1 focus:border-primary focus:outline-none placeholder:text-muted-foreground"
                           />
                           <div className="flex gap-1.5">
                             <button
                               onClick={() => saveRecruiter(app.id)}
-                              className="text-[11px] text-[#22c55e] border border-[#22c55e]/30 px-1.5 py-0.5 hover:bg-[#22c55e]/10 transition-colors uppercase tracking-wider"
+                              className="text-[11px] text-primary border border-primary/30 px-1.5 py-0.5 hover:bg-primary/10 transition-colors uppercase tracking-wider"
                             >
                               save
                             </button>
                             <button
                               onClick={() => { setExpandedRecruiter(null); setRecruiterForm({ name: "", email: "", linkedin_url: "" }); }}
-                              className="text-[11px] text-[#71717a] hover:text-[#a1a1aa] transition-colors"
+                              className="text-[11px] text-muted-foreground hover:text-secondary-foreground transition-colors"
                             >
                               cancel
                             </button>
@@ -562,7 +562,7 @@ export default function TrackerPage() {
                       ) : (
                         <button
                           onClick={() => { setExpandedRecruiter(app.id); setRecruiterForm({ name: "", email: "", linkedin_url: "" }); }}
-                          className="flex items-center gap-1 text-[11px] text-[#52525b] hover:text-[#22c55e] transition-colors"
+                          className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
                         >
                           <Plus size={10} />
                           recruiter
@@ -572,7 +572,7 @@ export default function TrackerPage() {
                       {/* Notes toggle */}
                       <button
                         onClick={() => setExpandedNotes(expandedNotes === app.id ? null : app.id)}
-                        className="flex items-center gap-1 text-[11px] text-[#52525b] hover:text-[#a1a1aa] transition-colors"
+                        className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-secondary-foreground transition-colors"
                       >
                         {expandedNotes === app.id ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
                         <StickyNote size={10} />
@@ -584,7 +584,7 @@ export default function TrackerPage() {
                           onBlur={(e) => updateNotes(app.id, e.target.value)}
                           placeholder="Add notes..."
                           rows={3}
-                          className="w-full text-xs bg-transparent border border-[#2a2a2e] text-[#a1a1aa] px-1.5 py-1 focus:border-[#22c55e] focus:outline-none resize-none placeholder:text-[#52525b]"
+                          className="w-full text-xs bg-transparent border border-border text-secondary-foreground px-1.5 py-1 focus:border-primary focus:outline-none resize-none placeholder:text-muted-foreground"
                         />
                       )}
 
@@ -593,7 +593,7 @@ export default function TrackerPage() {
                         {app.status === "interested" && (
                           <button
                             onClick={() => applyToJob(app)}
-                            className="flex items-center gap-1 text-[11px] text-[#22c55e] border border-[#22c55e]/30 px-1.5 py-0.5 hover:bg-[#22c55e]/10 transition-colors uppercase tracking-wider"
+                            className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 px-1.5 py-0.5 hover:bg-primary/10 transition-colors uppercase tracking-wider"
                           >
                             apply
                             <ExternalLink size={9} />
@@ -604,7 +604,7 @@ export default function TrackerPage() {
                             href={app.job_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-[#52525b] hover:text-[#22c55e] transition-colors"
+                            className="text-muted-foreground hover:text-primary transition-colors"
                           >
                             <ExternalLink size={11} />
                           </a>
@@ -613,8 +613,8 @@ export default function TrackerPage() {
                           onClick={() => deleteApp(app.id)}
                           className={`flex items-center gap-1 text-xs ml-auto transition-colors ${
                             confirmDelete === app.id
-                              ? "text-[#ef4444]"
-                              : "text-[#71717a] hover:text-[#ef4444]"
+                              ? "text-destructive"
+                              : "text-muted-foreground hover:text-destructive"
                           }`}
                         >
                           <Trash2 size={11} />

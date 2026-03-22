@@ -75,31 +75,31 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
   const isLive = run.status === "pending" || run.status === "running";
 
   return (
-    <div className="border border-[#3f3f46] bg-[#18181b] p-4 space-y-3">
+    <div className="border border-border bg-card p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {run.status === "done" && (
-            <span className="w-2 h-2 rounded-full bg-[#22c55e] inline-block" />
+            <span className="w-2 h-2 rounded-full bg-primary inline-block" />
           )}
           {run.status === "failed" && (
-            <span className="w-2 h-2 rounded-full bg-[#ef4444] inline-block" />
+            <span className="w-2 h-2 rounded-full bg-destructive inline-block" />
           )}
           {run.status === "pending" && (
-            <span className="w-2 h-2 rounded-full bg-[#facc15] pulse-dot inline-block" />
+            <span className="w-2 h-2 rounded-full bg-[var(--terminal-yellow)] pulse-dot inline-block" />
           )}
           {run.status === "running" && (
-            <span className="w-2 h-2 rounded-full bg-[#22c55e] pulse-dot-fast inline-block" />
+            <span className="w-2 h-2 rounded-full bg-primary pulse-dot-fast inline-block" />
           )}
-          <span className="text-xs text-[#71717a] uppercase tracking-wider">
+          <span className="text-xs text-muted-foreground uppercase tracking-wider">
             {run.status === "pending" && "Queued..."}
             {run.status === "running" && "Scoring jobs..."}
             {run.status === "done" && "Complete"}
             {run.status === "failed" && "Failed"}
           </span>
         </div>
-        <div className="flex items-center gap-3 text-xs text-[#52525b]">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
           {run.job_count != null && (
-            <span className="text-[#22c55e]">{run.job_count} jobs</span>
+            <span className="text-primary">{run.job_count} jobs</span>
           )}
           {isLive && run.started_at && (
             <span key={tick}>{elapsed(run.started_at)}</span>
@@ -114,7 +114,7 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
 
       <div className="score-bar w-full">
         {isLive ? (
-          <div className="progress-indeterminate h-0.5 bg-gradient-to-r from-transparent via-[#22c55e] to-transparent" />
+          <div className="progress-indeterminate h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent" />
         ) : (
           <div
             className="score-bar-fill"
@@ -123,7 +123,7 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
         )}
       </div>
 
-      <div className="flex items-center gap-4 text-[10px] text-[#52525b]">
+      <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
         <span>RUN {run.id?.slice(0, 8).toUpperCase() ?? "--------"}</span>
         {run.started_at && (
           <span>{new Date(run.started_at).toLocaleTimeString()}</span>

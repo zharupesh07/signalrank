@@ -23,15 +23,15 @@ export function useToast() {
 }
 
 const BORDER_COLOR: Record<ToastType, string> = {
-  success: "border-l-[#22c55e]",
-  error: "border-l-[#ef4444]",
-  info: "border-l-[#52525b]",
+  success: "border-l-primary",
+  error: "border-l-destructive",
+  info: "border-l-muted-foreground",
 };
 
 const DOT_COLOR: Record<ToastType, string> = {
-  success: "bg-[#22c55e]",
-  error: "bg-[#ef4444]",
-  info: "bg-[#71717a]",
+  success: "bg-primary",
+  error: "bg-destructive",
+  info: "bg-muted-foreground",
 };
 
 const PREFIX: Record<ToastType, string> = {
@@ -69,7 +69,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           <div
             key={t.id}
             className={`
-              flex items-start gap-3 bg-[#18181b] border border-[#3f3f46] border-l-2
+              flex items-start gap-3 bg-card border border-border border-l-2
               ${BORDER_COLOR[t.type]}
               px-3 py-2.5 text-xs font-mono
               ${t.exiting ? "toast-exit" : "toast-enter"}
@@ -77,12 +77,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           >
             <div className={`w-1.5 h-1.5 rounded-full mt-0.5 shrink-0 ${DOT_COLOR[t.type]}`} />
             <div className="flex-1 min-w-0">
-              <span className="text-[#52525b] mr-1.5">{PREFIX[t.type]}</span>
-              <span className="text-[#a1a1aa] break-words">{t.message}</span>
+              <span className="text-muted-foreground mr-1.5">{PREFIX[t.type]}</span>
+              <span className="text-secondary-foreground break-words">{t.message}</span>
             </div>
             <button
               onClick={() => dismiss(t.id)}
-              className="text-[#52525b] hover:text-[#a1a1aa] shrink-0"
+              className="text-muted-foreground hover:text-secondary-foreground shrink-0"
             >
               <X size={10} />
             </button>

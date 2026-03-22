@@ -16,7 +16,7 @@ type RunRecord = {
 function StatusBadge({ status }: { status: string }) {
   if (status === "success" || status === "done") {
     return (
-      <div className="flex items-center gap-1.5 text-[#22c55e]">
+      <div className="flex items-center gap-1.5 text-primary">
         <CheckCircle size={11} />
         <span className="text-xs uppercase tracking-wider">done</span>
       </div>
@@ -24,7 +24,7 @@ function StatusBadge({ status }: { status: string }) {
   }
   if (status === "failed" || status === "error") {
     return (
-      <div className="flex items-center gap-1.5 text-[#ef4444]">
+      <div className="flex items-center gap-1.5 text-destructive">
         <XCircle size={11} />
         <span className="text-xs uppercase tracking-wider">failed</span>
       </div>
@@ -32,14 +32,14 @@ function StatusBadge({ status }: { status: string }) {
   }
   if (status === "running") {
     return (
-      <div className="flex items-center gap-1.5 text-[#22c55e]">
+      <div className="flex items-center gap-1.5 text-primary">
         <span className="pulse-dot-fast" />
         <span className="text-xs uppercase tracking-wider">running</span>
       </div>
     );
   }
   return (
-    <div className="flex items-center gap-1.5 text-[#facc15]">
+    <div className="flex items-center gap-1.5 text-[var(--terminal-yellow)]">
       <span className="pulse-dot" />
       <span className="text-xs uppercase tracking-wider">pending</span>
     </div>
@@ -89,21 +89,21 @@ export default function RunsPage() {
         <div>
           <div className="section-label mb-1">run history</div>
           <div className="flex items-baseline gap-3">
-            <h1 className="text-xl font-bold text-[#d4d4d8]">Runs</h1>
+            <h1 className="text-xl font-bold text-foreground">Runs</h1>
             {!loading && (
-              <span className="text-[#22c55e] text-sm tabular-nums text-glow-dim">{runs.length}</span>
+              <span className="text-primary text-sm tabular-nums text-glow-dim">{runs.length}</span>
             )}
           </div>
         </div>
 
-        <div className="border border-[#2a2a2e] overflow-hidden">
+        <div className="border border-border overflow-hidden">
           <table className="w-full text-xs border-collapse">
             <thead>
-              <tr className="border-b border-[#2a2a2e] bg-[#0d0d0f]">
+              <tr className="border-b border-border bg-card">
                 {["Run ID", "Status", "Jobs", "Started", "Duration"].map((h) => (
                   <th
                     key={h}
-                    className="px-4 py-3 text-left text-xs text-[#52525b] uppercase tracking-[0.15em]"
+                    className="px-4 py-3 text-left text-xs text-muted-foreground uppercase tracking-[0.15em]"
                   >
                     {h}
                   </th>
@@ -113,7 +113,7 @@ export default function RunsPage() {
             <tbody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-b border-[#1a1a1e]">
+                  <tr key={i} className="border-b border-muted">
                     {Array.from({ length: 5 }).map((_, j) => (
                       <td key={j} className="px-4 py-3">
                         <div className="skeleton h-3 rounded" style={{ width: ["120px", "60px", "40px", "140px", "60px"][j] }} />
@@ -124,11 +124,11 @@ export default function RunsPage() {
               ) : runs.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-16 text-center">
-                    <div className="font-mono text-[#52525b] text-xs space-y-1">
+                    <div className="font-mono text-muted-foreground text-xs space-y-1">
                       <div>┌─────────────────────┐</div>
                       <div>│   no runs found     │</div>
                       <div>└─────────────────────┘</div>
-                      <div className="mt-2 text-[#71717a]">trigger a run from the dashboard</div>
+                      <div className="mt-2 text-muted-foreground">trigger a run from the dashboard</div>
                     </div>
                   </td>
                 </tr>
@@ -138,25 +138,25 @@ export default function RunsPage() {
                   return (
                     <tr
                       key={run.run_id}
-                      className="job-row border-b border-[#1a1a1e] bg-[#111113] animate-in"
+                      className="job-row border-b border-muted bg-card animate-in"
                       style={{ animationDelay: `${idx * 30}ms` }}
                     >
                       <td className="px-4 py-3">
-                        <span className="font-mono text-[#71717a] text-xs">{run.run_id.slice(0, 8)}…</span>
+                        <span className="font-mono text-muted-foreground text-xs">{run.run_id.slice(0, 8)}…</span>
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={run.status} />
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-[#a1a1aa] tabular-nums">
+                        <span className="text-secondary-foreground tabular-nums">
                           {run.job_count ?? "—"}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-[#71717a] tabular-nums">{formatDate(run.started_at)}</span>
+                        <span className="text-muted-foreground tabular-nums">{formatDate(run.started_at)}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-[#71717a] tabular-nums">{dur ?? "—"}</span>
+                        <span className="text-muted-foreground tabular-nums">{dur ?? "—"}</span>
                       </td>
                     </tr>
                   );
