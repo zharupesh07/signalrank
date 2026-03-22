@@ -282,6 +282,24 @@ async def import_from_run(
     return {"created": created, "skipped": skipped}
 
 
+@router.get("/recruiters")
+async def list_recruiters_by_company(
+    company: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Recruiter)
+        .where(Recruiter.company == company, Recruiter.email.isnot(None))
+        .order_by(Recruiter.name)
+    )
+    recs = result.scalars().all()
+    return [
+        {"id": r.id, "name": r.name, "email": r.email, "linkedin_url": r.linkedin_url}
+        for r in recs
+    ]
+
+
 @router.get("/stats")
 async def application_stats(
     current_user: User = Depends(get_current_user),

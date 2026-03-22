@@ -28,11 +28,24 @@ class ProfileUpdate(BaseModel):
 @router.get("/profile")
 async def get_profile(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
-    profile = result.scalar_one_or_none()
-    p = profile
+    p = result.scalar_one_or_none()
     return {
         "user_id": current_user.id,
         "email": current_user.email,
+        "profile": {
+            "resume_text": p.resume_text if p else None,
+            "distilled_text": p.distilled_text if p else None,
+            "min_salary": p.min_salary if p else None,
+            "role_intent": p.role_intent if p else None,
+            "min_yoe": p.min_yoe if p else None,
+            "max_yoe": p.max_yoe if p else None,
+            "target_lpa": p.target_lpa if p else None,
+            "target_roles": p.target_roles if p else None,
+            "preferred_locations": p.preferred_locations if p else None,
+            "custom_search_queries": p.custom_search_queries if p else None,
+            "config_overrides": p.config_overrides if p else None,
+            "onboarding_complete": p.onboarding_complete if p else False,
+        },
         "role_intent": p.role_intent if p else None,
         "min_salary": p.min_salary if p else None,
         "min_yoe": p.min_yoe if p else None,

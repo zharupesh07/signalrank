@@ -4,13 +4,17 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import select, update
 
 from api.config import settings
 from api.database import AsyncSessionLocal
-from api.routes import applications, auth, jobs, onboarding, profile, resume, runs
-from batch.worker import worker_loop
+from api.models import Run
+from api.routes import applications, auth, jobs, onboarding, profile, recruiters, resume, runs
+from batch.worker import get_queue, worker_loop
 
 logging.basicConfig(level=logging.INFO)
+
+logger = logging.getLogger(__name__)
 
 _worker_task: asyncio.Task | None = None
 
@@ -19,6 +23,23 @@ _worker_task: asyncio.Task | None = None
 async def lifespan(app: FastAPI):
     global _worker_task
     _worker_task = asyncio.create_task(worker_loop(AsyncSessionLocal))
+
+    # Re-queue any runs that were left stuck (pending/scraping) from a prior restart
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(Run).where(Run.status.in_(["pending", "scraping"]))
+        )
+        stuck = result.scalars().all()
+        if stuck:
+            logger.info("Recovering %d stuck run(s) from prior restart", len(stuck))
+            queue = get_queue()
+            for run in stuck:
+                await db.execute(
+                    update(Run).where(Run.id == run.id).values(status="pending")
+                )
+                await queue.put((str(run.id), str(run.user_id)))
+            await db.commit()
+
     yield
     if _worker_task:
         _worker_task.cancel()
@@ -45,6 +66,7 @@ app.include_router(jobs.router)
 app.include_router(applications.router)
 app.include_router(onboarding.router)
 app.include_router(resume.router)
+app.include_router(recruiters.router)
 
 
 @app.get("/health")
