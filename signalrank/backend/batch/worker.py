@@ -57,10 +57,15 @@ async def process_run(
 
                 if raw_jobs:
                     from sqlalchemy.dialects.postgresql import insert as pg_insert
-                    stmt = pg_insert(JobRaw).values([
-                        raw_job_to_dict(job) for job in raw_jobs
-                    ]).on_conflict_do_nothing(index_elements=["job_url"])
-                    await db.execute(stmt)
+                    # Batch inserts to stay under PostgreSQL's 65535 bind-param limit
+                    # 8 columns per row → max ~8000 rows per batch
+                    batch_size = 2000
+                    for i in range(0, len(raw_jobs), batch_size):
+                        batch = raw_jobs[i:i + batch_size]
+                        stmt = pg_insert(JobRaw).values([
+                            raw_job_to_dict(job) for job in batch
+                        ]).on_conflict_do_nothing(index_elements=["job_url"])
+                        await db.execute(stmt)
                     await db.commit()
                 scrape_count = len(raw_jobs)
 

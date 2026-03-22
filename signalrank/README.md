@@ -31,7 +31,7 @@ flowchart TD
         RANKER["Ranker\nbatch/ranker.py"]
 
         subgraph Sources["Scraping Sources"]
-            S1["JobSpy\n(LinkedIn — sequential)"]
+            S1["JobSpy\n(Indeed + LinkedIn)"]
             S2["RapidAPI JSearch"]
             S3["Free APIs\n(Remotive, Himalayas, Jobicy)"]
             S4["Google Jobs"]
@@ -105,7 +105,7 @@ flowchart TD
 | **Resume Tailoring** | LLM-powered resume tailoring per job via OpenRouter |
 | **Onboarding** | Guided flow to distil resume → profile → preferences |
 | **Dev Panel** | Hidden 5-click debug overlay: tweak roles, locations, scoring weights, trigger runs |
-| **Multi-source Scraping** | LinkedIn (JobSpy), RapidAPI JSearch, Remotive, Himalayas, Jobicy, Google Jobs |
+| **Multi-source Scraping** | Indeed + LinkedIn (JobSpy), RapidAPI JSearch, Remotive, Himalayas, Jobicy, Google Jobs |
 
 ---
 
@@ -255,7 +255,8 @@ sequenceDiagram
     participant UI as Frontend
     participant API as FastAPI
     participant Q as Worker Queue
-    participant JS as JobSpy (LinkedIn)
+    participant IN as JobSpy (Indeed)
+    participant LI as JobSpy (LinkedIn)
     participant PA as Parallel Sources
     participant R as Ranker
     participant DB as PostgreSQL
@@ -266,8 +267,13 @@ sequenceDiagram
     API-->>UI: { run_id, status: "pending" }
 
     Q->>DB: UPDATE run status=scraping
-    Q->>JS: search(queries[:10], sequential)
-    JS-->>DB: INSERT jobs_raw (on conflict ignore)
+    Q->>IN: search(queries, sequential, 30-day lookback)
+    IN-->>DB: INSERT jobs_raw (batched, on conflict ignore)
+
+    opt LINKEDIN_MAX_QUERIES > 0
+        Q->>LI: search(queries[:N], sequential, 7-day lookback)
+        LI-->>DB: INSERT jobs_raw
+    end
 
     Q->>PA: search(queries, parallel)
     Note over PA: rapidapi + free_apis + google_jobs run concurrently
@@ -292,6 +298,7 @@ sequenceDiagram
 | `NEXTAUTH_SECRET` | Yes | Random 32+ char string |
 | `OPENROUTER_API_KEY` | Yes | For resume parsing and tailoring |
 | `RAPIDAPI_KEY` | No | JSearch API for additional job sources |
-| `SCRAPER_MAX_RESULTS` | No | Results per query (default: 50) |
-| `SCRAPER_HOURS_OLD` | No | Job recency window in hours (default: 720) |
+| `SCRAPER_MAX_RESULTS` | No | Results per query (default: 1000) |
+| `SCRAPER_HOURS_OLD` | No | Job recency window in hours (default: 720 = 30 days) |
 | `SCRAPER_DEFAULT_COUNTRY` | No | Default country for searches (default: India) |
+| `LINKEDIN_MAX_QUERIES` | No | LinkedIn queries to run (default: 0 = disabled, slow ~80s/query) |

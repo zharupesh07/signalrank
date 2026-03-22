@@ -10,24 +10,26 @@ from batch.scraper import RawJob, ScraperConfig
 logger = logging.getLogger(__name__)
 
 
-def _scrape_sync(term: str, location: str, country: str, config: ScraperConfig) -> list[RawJob]:
+def _scrape_sync(term: str, location: str, country: str, config: ScraperConfig, site: str = "indeed") -> list[RawJob]:
     try:
         from jobspy import scrape_jobs
     except ImportError:
         logger.warning("python-jobspy not installed, skipping")
         return []
 
+    hours_old = min(config.hours_old, 168) if site == "linkedin" else config.hours_old
+
     try:
         df = scrape_jobs(
-            site_name=["indeed"],
+            site_name=[site],
             search_term=term,
             location=location,
             results_wanted=config.max_results_per_query,
-            hours_old=config.hours_old,
+            hours_old=hours_old,
             country_indeed=country,
         )
     except Exception:
-        logger.exception("JobSpy scrape failed for %s / %s", term, location)
+        logger.exception("JobSpy scrape failed for %s / %s / %s", site, term, location)
         return []
 
     jobs = []
@@ -68,18 +70,20 @@ def _scrape_sync(term: str, location: str, country: str, config: ScraperConfig) 
     return jobs
 
 
-async def search(queries: list[SearchQuery], config: ScraperConfig) -> list[RawJob]:
+async def search(queries: list[SearchQuery], config: ScraperConfig, site: str = "indeed") -> list[RawJob]:
+    timeout = 120 if site == "linkedin" else 30
     all_jobs: list[RawJob] = []
     for query in queries:
         try:
             result = await asyncio.wait_for(
-                asyncio.to_thread(_scrape_sync, query.term, query.location, query.country, config),
-                timeout=120,
+                asyncio.to_thread(_scrape_sync, query.term, query.location, query.country, config, site),
+                timeout=timeout,
             )
             all_jobs.extend(result)
+            logger.info("JobSpy %s %s/%s: %d jobs", site, query.term, query.location, len(result))
         except asyncio.TimeoutError:
-            logger.warning("JobSpy timeout for %s / %s", query.term, query.location)
+            logger.warning("JobSpy %s timeout for %s / %s", site, query.term, query.location)
         except Exception:
-            logger.exception("JobSpy failed for %s / %s", query.term, query.location)
+            logger.exception("JobSpy %s failed for %s / %s", site, query.term, query.location)
         await asyncio.sleep(config.jobspy_delay)
     return all_jobs
