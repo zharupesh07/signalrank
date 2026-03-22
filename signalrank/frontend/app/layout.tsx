@@ -3,6 +3,7 @@ import { JetBrains_Mono } from "next/font/google";
 import NextAuthSessionProvider from "@/components/session-provider";
 import Navbar from "@/components/navbar";
 import { ToastProvider } from "@/components/toast";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -16,22 +17,17 @@ export const metadata: Metadata = {
   description: "Deterministic job ranking engine",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="en"
-      className={`${jetbrainsMono.variable} dark h-full`}
-    >
+    <html lang="en" className={`${jetbrainsMono.variable} h-full`}>
       <body className="min-h-full flex flex-col antialiased">
         <NextAuthSessionProvider>
-          <ToastProvider>
-            <Navbar />
-            {children}
-          </ToastProvider>
+          <ThemeProvider>
+            <ToastProvider>
+              <Navbar />
+              {children}
+            </ToastProvider>
+          </ThemeProvider>
         </NextAuthSessionProvider>
       </body>
     </html>
