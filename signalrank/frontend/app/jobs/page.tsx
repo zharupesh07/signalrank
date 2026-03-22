@@ -14,14 +14,30 @@ import { api } from "@/lib/api";
 import type { Job } from "@/types";
 import { useToast } from "@/components/toast";
 import { TableRowSkeleton } from "@/components/skeleton";
-import { ExternalLink, ChevronUp, ChevronDown, Search, X, Plus, ChevronRight, ChevronLeft, SlidersHorizontal } from "lucide-react";
+import { ExternalLink, ChevronUp, ChevronDown, Search, X, Plus, ChevronRight, ChevronLeft, SlidersHorizontal, XCircle } from "lucide-react";
 
 const col = createColumnHelper<Job>();
+
+function scoreColor(pct: number): string {
+  if (pct >= 75) return "var(--primary)";
+  if (pct >= 60) return "var(--terminal-green-bright)";
+  if (pct >= 45) return "var(--terminal-yellow)";
+  return "var(--destructive)";
+}
+
+const TIER_COLORS: Record<string, string> = {
+  tier_ss: "var(--primary)",
+  tier_s:  "var(--terminal-green-bright)",
+  tier_a:  "#4ade80",
+  tier_b:  "var(--terminal-yellow)",
+  tier_c:  "#f97316",
+  tier_d:  "var(--muted-foreground)",
+};
 
 function ScoreCell({ value }: { value: number | null }) {
   if (value == null) return <span className="text-muted-foreground">—</span>;
   const pct = value * 100;
-  const color = pct >= 80 ? "var(--primary)" : pct >= 60 ? "var(--terminal-yellow)" : "var(--destructive)";
+  const color = scoreColor(pct);
   return (
     <div className="flex items-center gap-2">
       <span className="tabular-nums text-xs font-bold" style={{ color }}>
@@ -37,15 +53,33 @@ function ScoreCell({ value }: { value: number | null }) {
 const columns = [
   col.accessor("title", {
     header: "Title",
-    cell: (i) => (
-      <span className="text-foreground text-xs">{i.getValue()}</span>
-    ),
+    cell: (i) => {
+      const url = i.row.original.job_url;
+      return url ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="text-foreground text-xs hover:text-primary hover:underline transition-colors"
+        >
+          {i.getValue()}
+        </a>
+      ) : (
+        <span className="text-foreground text-xs">{i.getValue()}</span>
+      );
+    },
   }),
   col.accessor("company", {
     header: "Company",
-    cell: (i) => (
-      <span className="text-secondary-foreground text-xs">{i.getValue()}</span>
-    ),
+    cell: (i) => {
+      const v = i.getValue();
+      return v ? (
+        <span className="text-secondary-foreground text-xs">{v}</span>
+      ) : (
+        <span className="text-muted-foreground text-xs italic">Unknown</span>
+      );
+    },
   }),
   col.accessor("location", {
     header: "Location",
@@ -61,9 +95,14 @@ const columns = [
     header: "Tier",
     cell: (i) => {
       const v = i.getValue();
-      return v ? (
-        <span className="text-[11px] text-muted-foreground border border-muted-foreground/40 px-1.5 py-0.5">
-          T{v}
+      const label = v ? v.replace("tier_", "").toUpperCase() : null;
+      const color = v ? TIER_COLORS[v] ?? "var(--muted-foreground)" : null;
+      return label && color ? (
+        <span
+          className="text-[11px] px-1.5 py-0.5 border"
+          style={{ color, borderColor: `${color}60` }}
+        >
+          {label}
         </span>
       ) : <span className="text-muted-foreground">—</span>;
     },
@@ -82,6 +121,18 @@ const columns = [
       <span className="text-muted-foreground text-xs">{i.getValue() ?? "—"}</span>
     ),
   }),
+  col.accessor("date_posted", {
+    header: "Age",
+    cell: (i) => {
+      const v = i.getValue();
+      if (!v) return <span className="text-muted-foreground text-xs">—</span>;
+      const days = Math.floor((Date.now() - new Date(v).getTime()) / 86400000);
+      if (days === 0) return <span className="text-xs text-[var(--terminal-green-bright)]">today</span>;
+      if (days < 7) return <span className="text-xs text-[var(--terminal-green-bright)]">{days}d</span>;
+      if (days < 30) return <span className="text-xs text-[var(--terminal-yellow)]">{Math.floor(days / 7)}w</span>;
+      return <span className="text-xs text-muted-foreground">{Math.floor(days / 30)}mo</span>;
+    },
+  }),
   col.display({
     id: "link",
     header: "",
@@ -98,7 +149,15 @@ const columns = [
   }),
 ];
 
-const TIERS = ["S", "A", "B", "C", "D", ""];
+const TIERS = [
+  { value: "tier_ss", label: "Tier SS" },
+  { value: "tier_s", label: "Tier S" },
+  { value: "tier_a", label: "Tier A" },
+  { value: "tier_b", label: "Tier B" },
+  { value: "tier_c", label: "Tier C" },
+  { value: "tier_d", label: "Tier D" },
+  { value: "", label: "Unknown" },
+];
 
 interface Filters {
   minScore: number;
@@ -161,6 +220,7 @@ export default function JobsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [tracked, setTracked] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("signalrank-sidebar-collapsed") === "true";
@@ -182,7 +242,7 @@ export default function JobsPage() {
   useEffect(() => {
     if (!token) return;
     setLoading(true);
-    api.jobs.list(token, 1, 200, "").then((r) => {
+    api.jobs.list(token, 1, 500, "").then((r) => {
       setAllJobs(r.jobs);
       setLoading(false);
     });
@@ -376,15 +436,15 @@ export default function JobsPage() {
                   <div className="text-xs font-semibold text-[var(--fg-muted,#71717a)] uppercase tracking-wide mb-2">Tier</div>
                   <div className="space-y-1">
                     {TIERS.map((tier) => (
-                      <label key={tier || "unknown"} className="flex items-center gap-2 cursor-pointer">
+                      <label key={tier.value || "unknown"} className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={filters.tiers.includes(tier)}
-                          onChange={() => setFilters((f) => ({ ...f, tiers: toggleItem(f.tiers, tier) }))}
+                          checked={filters.tiers.includes(tier.value)}
+                          onChange={() => setFilters((f) => ({ ...f, tiers: toggleItem(f.tiers, tier.value) }))}
                           className="accent-[#22c55e] w-3 h-3"
                         />
                         <span className="text-sm text-[var(--fg,#e4e4e7)]">
-                          {tier === "" ? "Unknown" : `Tier ${tier}`}
+                          {tier.label}
                         </span>
                       </label>
                     ))}
@@ -433,8 +493,9 @@ export default function JobsPage() {
             )}
           </aside>
 
-          {/* Main content */}
-          <div className="flex-1 min-w-0 space-y-5">
+          {/* Main content + detail panel */}
+          <div className="flex-1 min-w-0 flex gap-4">
+          <div className={`space-y-5 ${selectedJob ? "flex-1 min-w-0" : "w-full"}`}>
             <div className="border border-border overflow-hidden">
               <table className="w-full text-xs border-collapse">
                 <thead>
@@ -462,21 +523,26 @@ export default function JobsPage() {
                 <tbody>
                   {loading ? (
                     Array.from({ length: 10 }).map((_, i) => (
-                      <TableRowSkeleton key={i} cols={9} />
+                      <TableRowSkeleton key={i} cols={10} />
                     ))
                   ) : (
-                    table.getRowModel().rows.map((row) => (
-                      <tr
-                        key={row.id}
-                        className="job-row border-b border-border bg-card"
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <td key={cell.id} className="px-3 py-2.5">
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </td>
-                        ))}
-                      </tr>
-                    ))
+                    table.getRowModel().rows.map((row) => {
+                      const isSelected = selectedJob?.id === row.original.id;
+                      return (
+                        <tr
+                          key={row.id}
+                          onClick={() => setSelectedJob(isSelected ? null : row.original)}
+                          className="job-row border-b border-border bg-card cursor-pointer"
+                          style={isSelected ? { background: "var(--primary)/5", borderLeft: "2px solid var(--primary)" } : {}}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <td key={cell.id} className="px-3 py-2.5">
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -506,6 +572,97 @@ export default function JobsPage() {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Detail panel */}
+          {selectedJob && (
+            <div className="w-80 shrink-0 sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto border border-border bg-card space-y-4 p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="text-xs font-bold text-foreground leading-snug">{selectedJob.title}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{selectedJob.company}</div>
+                </div>
+                <button onClick={() => setSelectedJob(null)} className="text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-0.5">
+                  <XCircle size={14} />
+                </button>
+              </div>
+
+              {/* Score breakdown */}
+              <div className="space-y-2">
+                {[
+                  { label: "Overall", value: selectedJob.final_score },
+                  { label: "Resume match", value: selectedJob.semantic_score },
+                  { label: "Skills", value: selectedJob.skills_score },
+                  { label: "Company", value: selectedJob.company_score },
+                ].map(({ label, value }) => {
+                  if (value == null) return null;
+                  const pct = value * 100;
+                  const color = scoreColor(pct);
+                  return (
+                    <div key={label} className="flex items-center gap-2">
+                      <span className="text-[10px] text-muted-foreground w-24 shrink-0">{label}</span>
+                      <div className="flex-1 h-1 bg-muted overflow-hidden">
+                        <div className="h-full" style={{ width: `${pct}%`, background: color }} />
+                      </div>
+                      <span className="text-[10px] tabular-nums w-7 text-right" style={{ color }}>{pct.toFixed(0)}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                {selectedJob.company_tier && (
+                  <span
+                    className="text-[10px] px-1.5 py-0.5 border"
+                    style={{
+                      color: TIER_COLORS[selectedJob.company_tier] ?? "var(--muted-foreground)",
+                      borderColor: `${TIER_COLORS[selectedJob.company_tier] ?? "var(--muted-foreground)"}60`,
+                    }}
+                  >
+                    {selectedJob.company_tier.replace("tier_", "").toUpperCase()}
+                  </span>
+                )}
+                {selectedJob.is_contract && (
+                  <span className="text-[10px] text-[var(--terminal-yellow)] border border-[var(--terminal-yellow)]/30 px-1.5 py-0.5">CONTRACT</span>
+                )}
+                <span className="text-[10px] text-muted-foreground">{selectedJob.location ?? "—"}</span>
+                <span className="text-[10px] text-muted-foreground">{selectedJob.site}</span>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                {selectedJob.job_url && (
+                  <a
+                    href={selectedJob.job_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-1 text-[11px] text-muted-foreground border border-border px-2 py-1 hover:text-primary hover:border-primary/40 transition-colors"
+                  >
+                    Open <ExternalLink size={9} />
+                  </a>
+                )}
+                {tracked.has(selectedJob.id) ? (
+                  <span className="text-[11px] text-muted-foreground uppercase tracking-wider">tracked</span>
+                ) : (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); trackJob(selectedJob); }}
+                    className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 px-2 py-1 hover:bg-primary/10 transition-colors uppercase tracking-wider"
+                  >
+                    <Plus size={8} />track
+                  </button>
+                )}
+              </div>
+
+              {selectedJob.description && (
+                <div className="pt-1 border-t border-border">
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Description</div>
+                  <p className="text-[11px] text-secondary-foreground leading-relaxed whitespace-pre-wrap">
+                    {selectedJob.description.slice(0, 2000)}{selectedJob.description.length > 2000 ? "…" : ""}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
           </div>
         </div>
       </div>

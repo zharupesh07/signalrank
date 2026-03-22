@@ -53,6 +53,16 @@
   --color-terminal-red: var(--terminal-red);
 }
 
+@keyframes mail-glow {
+  0%, 100% { filter: drop-shadow(0 0 3px var(--primary)) drop-shadow(0 0 6px var(--primary)); opacity: 1; }
+  50% { filter: drop-shadow(0 0 8px var(--primary)) drop-shadow(0 0 16px var(--primary)); opacity: 0.75; }
+}
+
+.mail-glow {
+  color: var(--primary);
+  animation: mail-glow 1.8s ease-in-out infinite;
+}
+
 :root {
   --background: #080808;
   --foreground: #d4d4d8;

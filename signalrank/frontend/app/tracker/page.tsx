@@ -55,21 +55,43 @@ function scoreColor(score: number) {
   return "var(--chart-4)";
 }
 
+const MY_SIGNATURE = `
+--
+Example Candidate | Senior AI Platform Engineer
+🔗 LinkedIn: https://linkedin.com/in/example-candidate
+🐙 GitHub: https://github.com/examplecandidate
+🌐 Portfolio: https://examplecandidate.github.io
+📞 +91 7020901969`;
+
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
 function gmailComposeUrl(to: string, subject: string, body: string) {
   return `https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
+function mailtoUrl(to: string, subject: string, body: string) {
+  return `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 function emailTemplate(app: Application, recruiterName: string) {
-  return {
-    subject: `Re: ${app.title} at ${app.company}`,
-    body: `Hi ${recruiterName},
+  const firstName = recruiterName.split(" ")[0] || recruiterName;
+  const jobLine = app.job_url ? `\nJob posting: ${app.job_url}\n` : "";
+  const subject = `Referral / Application – ${app.title} at ${app.company}`;
+  const body = `Hi ${firstName},
 
-I came across the ${app.title} role at ${app.company} and wanted to reach out directly. I have experience in the relevant domain and believe I'd be a strong fit.
+I hope this finds you well. I came across the ${app.title} role at ${app.company} and wanted to reach out directly — I believe it's a strong match for my background.
+${jobLine}
+A quick snapshot:
+• 7 years building AI/ML platforms, MLOps pipelines, and agentic systems at scale
+• Currently: Senior AI Platform Engineer at Fractal Analytics (GenAI, LLMOps, CI/CD)
+• Built an "Agentic Factory" standardising 300+ AI agents for a Fortune 5 US Telecom
+• Deep experience in GCP, LangGraph, FastAPI, IaC, and internal developer platforms
 
-I've applied via the portal and would love to connect. Happy to share more about my background.
+I've applied via the portal and would love to connect for a quick chat if you think there's a fit.${MY_SIGNATURE}`;
 
-Best regards`,
-  };
+  return { subject, body };
 }
 
 function MiniBarChart({ data, maxVal }: { data: { label: string; count: number; color: string }[]; maxVal: number }) {
@@ -109,6 +131,8 @@ export default function TrackerPage() {
   const [selectedRunId, setSelectedRunId] = useState("");
   const [importing, setImporting] = useState(false);
   const [priorityFilter, setPriorityFilter] = useState<"all" | "p1" | "p1p2">("all");
+  const [expandedColumns, setExpandedColumns] = useState<Set<string>>(new Set());
+  const COLUMN_LIMIT = 10;
 
   const loadData = useCallback(async () => {
     if (!token) return;
@@ -157,6 +181,10 @@ export default function TrackerPage() {
 
   async function saveRecruiter(appId: string) {
     if (!recruiterForm.name && !recruiterForm.email) return;
+    if (recruiterForm.email && !isValidEmail(recruiterForm.email)) {
+      toast("Invalid email address", "error");
+      return;
+    }
     const res = await api.applications.patchRecruiter(token, appId, {
       recruiter_name: recruiterForm.name || undefined,
       recruiter_email: recruiterForm.email || undefined,
@@ -177,6 +205,16 @@ export default function TrackerPage() {
   async function applyToJob(app: Application) {
     if (app.job_url) window.open(app.job_url, "_blank");
     await updateStatus(app.id, "applied");
+  }
+
+  async function mailAllRecruiters(app: Application) {
+    if (!app.company) return;
+    const recs = await api.applications.recruitersByCompany(token, app.company);
+    const emails = recs.filter((r: { email: string }) => isValidEmail(r.email)).map((r: { email: string }) => r.email);
+    if (!emails.length) { toast("No emails found for this company", "info"); return; }
+    const to = emails.join(",");
+    const { subject, body } = emailTemplate(app, recs[0]?.name ?? "Recruiter");
+    window.open(gmailComposeUrl(to, subject, body), "_blank");
   }
 
   async function deleteApp(id: string) {
@@ -363,6 +401,9 @@ export default function TrackerPage() {
           {visibleStatuses.map((status) => {
             const style = STATUS_STYLE[status];
             const apps = byStatus[status];
+            const isExpanded = expandedColumns.has(status);
+            const visibleApps = isExpanded ? apps : apps.slice(0, COLUMN_LIMIT);
+            const hiddenCount = apps.length - COLUMN_LIMIT;
             return (
               <div key={status} className="space-y-2">
                 <div className="flex items-center gap-2 pb-1 border-b border-border">
@@ -376,11 +417,11 @@ export default function TrackerPage() {
                 </div>
 
                 {apps.length === 0 ? (
-                  <div className="border border-dashed border-border p-4 text-center">
-                    <span className="text-xs text-muted-foreground">empty</span>
+                  <div className="border border-dashed border-border/40 p-3 text-center opacity-40">
+                    <span className="text-[10px] text-muted-foreground">—</span>
                   </div>
                 ) : (
-                  apps.map((app) => (
+                  visibleApps.map((app) => (
                     <div
                       key={app.id}
                       className={`border card-hover bg-card p-3 space-y-2 ${style.border}`}
@@ -403,6 +444,14 @@ export default function TrackerPage() {
                           {app.priority ?? "--"}
                         </button>
                       </div>
+
+                      {/* Days old */}
+                      {app.applied_at && (() => {
+                        const days = Math.floor((Date.now() - new Date(app.applied_at).getTime()) / 86400000);
+                        const label = days === 0 ? "today" : days < 7 ? `${days}d ago` : days < 30 ? `${Math.floor(days / 7)}w ago` : `${Math.floor(days / 30)}mo ago`;
+                        const color = days < 7 ? "var(--terminal-green-bright)" : days < 21 ? "var(--terminal-yellow)" : "var(--muted-foreground)";
+                        return <span className="text-[10px]" style={{ color }}>applied {label}</span>;
+                      })()}
 
                       {/* Tier + Type + Location */}
                       {(app.company_tier || app.is_contract || app.location) && (
@@ -505,20 +554,23 @@ export default function TrackerPage() {
                               <Linkedin size={11} />
                             </a>
                           )}
-                          {app.recruiter.email && (
+                          {app.recruiter.email && isValidEmail(app.recruiter.email) && (
                             <a
                               href={gmailComposeUrl(
                                 app.recruiter.email,
-                                emailTemplate(app, app.recruiter.name ?? "").subject,
-                                emailTemplate(app, app.recruiter.name ?? "").body,
+                                emailTemplate(app, app.recruiter.name ?? "Recruiter").subject,
+                                emailTemplate(app, app.recruiter.name ?? "Recruiter").body,
                               )}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-primary hover:text-[var(--terminal-green-bright)] transition-colors shrink-0"
-                              title="Compose email"
+                              className="mail-glow shrink-0"
+                              title={`Email ${app.recruiter.email} via Gmail`}
                             >
-                              <Mail size={11} />
+                              <Mail size={15} />
                             </a>
+                          )}
+                          {app.recruiter.email && !isValidEmail(app.recruiter.email) && (
+                            <span className="text-[10px] text-destructive" title="Invalid email address">⚠</span>
                           )}
                         </div>
                       ) : expandedRecruiter === app.id ? (
@@ -530,13 +582,22 @@ export default function TrackerPage() {
                             onChange={(e) => setRecruiterForm((f) => ({ ...f, name: e.target.value }))}
                             className="w-full text-xs bg-transparent border border-border text-secondary-foreground px-1.5 py-1 focus:border-primary focus:outline-none placeholder:text-muted-foreground"
                           />
-                          <input
-                            type="email"
-                            placeholder="Email"
-                            value={recruiterForm.email}
-                            onChange={(e) => setRecruiterForm((f) => ({ ...f, email: e.target.value }))}
-                            className="w-full text-xs bg-transparent border border-border text-secondary-foreground px-1.5 py-1 focus:border-primary focus:outline-none placeholder:text-muted-foreground"
-                          />
+                          <div className="relative">
+                            <input
+                              type="email"
+                              placeholder="Email"
+                              value={recruiterForm.email}
+                              onChange={(e) => setRecruiterForm((f) => ({ ...f, email: e.target.value }))}
+                              className={`w-full text-xs bg-transparent border text-secondary-foreground px-1.5 py-1 focus:outline-none placeholder:text-muted-foreground ${
+                                recruiterForm.email && !isValidEmail(recruiterForm.email)
+                                  ? "border-destructive focus:border-destructive"
+                                  : "border-border focus:border-primary"
+                              }`}
+                            />
+                            {recruiterForm.email && !isValidEmail(recruiterForm.email) && (
+                              <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-destructive">invalid</span>
+                            )}
+                          </div>
                           <input
                             type="url"
                             placeholder="LinkedIn URL"
@@ -599,6 +660,15 @@ export default function TrackerPage() {
                             <ExternalLink size={9} />
                           </button>
                         )}
+                        {app.status !== "applied" && app.status !== "phone_screen" && app.status !== "interview" && app.status !== "offer" && app.status !== "rejected" && app.status !== "archived" && (
+                          <button
+                            onClick={() => updateStatus(app.id, "applied")}
+                            className="flex items-center gap-1 text-[11px] text-muted-foreground border border-border px-1.5 py-0.5 hover:text-primary hover:border-primary/30 transition-colors uppercase tracking-wider"
+                            title="Move to applied"
+                          >
+                            → applied
+                          </button>
+                        )}
                         {app.job_url && app.status !== "interested" && (
                           <a
                             href={app.job_url}
@@ -609,6 +679,13 @@ export default function TrackerPage() {
                             <ExternalLink size={11} />
                           </a>
                         )}
+                        <button
+                          onClick={() => mailAllRecruiters(app)}
+                          className="mail-glow transition-colors"
+                          title={`Mail all recruiters at ${app.company}`}
+                        >
+                          <Mail size={15} />
+                        </button>
                         <button
                           onClick={() => deleteApp(app.id)}
                           className={`flex items-center gap-1 text-xs ml-auto transition-colors ${
@@ -623,6 +700,18 @@ export default function TrackerPage() {
                       </div>
                     </div>
                   ))
+                )}
+                {apps.length > COLUMN_LIMIT && (
+                  <button
+                    onClick={() => setExpandedColumns((prev) => {
+                      const next = new Set(prev);
+                      if (isExpanded) next.delete(status); else next.add(status);
+                      return next;
+                    })}
+                    className="w-full text-[10px] text-muted-foreground hover:text-primary transition-colors py-1.5 border border-dashed border-border/50 hover:border-primary/30 uppercase tracking-wider"
+                  >
+                    {isExpanded ? `show less` : `+${hiddenCount} more`}
+                  </button>
                 )}
               </div>
             );
