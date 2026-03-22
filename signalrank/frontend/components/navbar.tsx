@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { LogOut, Terminal, Sun, Moon } from "lucide-react";
 import { useTheme } from "./theme-provider";
-import SettingsPanel from "./settings-panel";
+import { SettingsPanel } from "./settings-panel";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -26,6 +26,7 @@ export default function Navbar() {
   const email = (session.user as { email?: string })?.email ?? "";
 
   return (
+    <>
     <nav className="fixed top-0 left-0 right-0 z-50 h-13 bg-[#080808]/95 backdrop-blur-sm border-b border-[#2a2a2e] nav-glow flex items-center px-6 gap-8">
       {/* Logo */}
       <Link href="/dashboard" className="flex items-center gap-2 shrink-0 group">
@@ -89,5 +90,6 @@ export default function Navbar() {
       </div>
     </nav>
     <SettingsPanel isOpen={settingsPanelOpen} onClose={() => setSettingsPanelOpen(false)} />
+    </>
   );
 }
