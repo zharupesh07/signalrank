@@ -167,7 +167,7 @@ class RecruiterRefreshTask(Base):
     __tablename__ = "recruiter_refresh_tasks"
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="pending")
     progress_json: Mapped[dict | None] = mapped_column(JSONB)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
