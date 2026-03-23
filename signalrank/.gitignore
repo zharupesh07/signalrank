@@ -17,7 +17,7 @@ node_modules/
 .vercel/
 
 # IDE
-.DS_Store
+**/.DS_Store
 .idea/
 .vscode/
 
