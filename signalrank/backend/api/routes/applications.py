@@ -12,7 +12,7 @@ from api.models import Application, JobRaw, JobResult, Profile, Recruiter, User
 
 router = APIRouter(prefix="/api/applications", tags=["applications"])
 
-VALID_STATUSES = {"interested", "applied", "phone_screen", "interview", "offer", "rejected", "archived"}
+VALID_STATUSES = {"interested", "applied", "messaged_recruiter", "phone_screen", "interview", "offer", "rejected", "archived"}
 
 
 VALID_PRIORITIES = {"P1", "P2", "P3"}
@@ -274,6 +274,8 @@ async def import_from_run(
             system_score=job_result.final_score,
             resume_match_pct=job_result.semantic_score,
         )
+        if app.status == "applied" and app.applied_at is None:
+            app.applied_at = datetime.now(timezone.utc)
         db.add(app)
         tracked_ids.add(job_raw.id)
         created += 1
