@@ -33,8 +33,11 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
     completedRef.current = false;
   }, [initialRun.id]);
 
+  const isLiveStatus = (s: string) =>
+    s === "pending" || s === "running" || s === "scraping" || s === "ranking";
+
   useEffect(() => {
-    if (run.status === "pending" || run.status === "running") {
+    if (isLiveStatus(run.status)) {
       intervalRef.current = setInterval(() => setTick((t) => t + 1), 1000);
     }
     return () => {
@@ -44,7 +47,7 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
 
   useEffect(() => {
     if (!token || !run.id) return;
-    if (run.status !== "pending" && run.status !== "running") return;
+    if (!isLiveStatus(run.status)) return;
     if (completedRef.current) return;
 
     pollRef.current = setInterval(async () => {
@@ -72,62 +75,98 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
     };
   }, [token, run.id, run.status, onComplete, toast]);
 
-  const isLive = run.status === "pending" || run.status === "running";
+  const isLive = isLiveStatus(run.status);
+  const p = run.progress;
+
+  const PHASES = [
+    { key: "jobspy_indeed",   label: "Indeed" },
+    { key: "jobspy_linkedin", label: "LinkedIn" },
+    { key: "parallel",        label: "Other sources" },
+    { key: "ranking",         label: "Ranking" },
+  ];
+
+  const activePhaseKey = p?.phase ?? (run.status === "ranking" ? "ranking" : null);
+  const activeIdx = PHASES.findIndex((ph) => ph.key === activePhaseKey);
+
+  const barPct =
+    run.status === "done"   ? 100 :
+    run.status === "failed" ? 0 :
+    p ? Math.round(((p.phase_num - 1) / (p.total_phases + 1)) * 100) :
+    null;
+
+  const statusLabel =
+    run.status === "pending"  ? "Queued..." :
+    run.status === "done"     ? "Complete" :
+    run.status === "failed"   ? "Failed" :
+    p?.message                ? p.message :
+    run.status === "scraping" ? "Scraping..." :
+    run.status === "ranking"  ? "Ranking jobs..." :
+    "Running...";
+
+  const jobsFound = p?.jobs_found ?? run.scrape_count ?? run.job_count;
 
   return (
     <div className="border border-border bg-card p-4 space-y-3">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {run.status === "done" && (
-            <span className="w-2 h-2 rounded-full bg-primary inline-block" />
-          )}
-          {run.status === "failed" && (
-            <span className="w-2 h-2 rounded-full bg-destructive inline-block" />
-          )}
-          {run.status === "pending" && (
-            <span className="w-2 h-2 rounded-full bg-[var(--terminal-yellow)] pulse-dot inline-block" />
-          )}
-          {run.status === "running" && (
-            <span className="w-2 h-2 rounded-full bg-primary pulse-dot-fast inline-block" />
-          )}
-          <span className="text-xs text-muted-foreground uppercase tracking-wider">
-            {run.status === "pending" && "Queued..."}
-            {run.status === "running" && "Scoring jobs..."}
-            {run.status === "done" && "Complete"}
-            {run.status === "failed" && "Failed"}
-          </span>
+          {run.status === "done"    && <span className="w-2 h-2 rounded-full bg-primary inline-block" />}
+          {run.status === "failed"  && <span className="w-2 h-2 rounded-full bg-destructive inline-block" />}
+          {run.status === "pending" && <span className="w-2 h-2 rounded-full bg-[var(--terminal-yellow)] pulse-dot inline-block" />}
+          {isLive && run.status !== "pending" && <span className="w-2 h-2 rounded-full bg-primary pulse-dot-fast inline-block" />}
+          <span className="text-xs text-muted-foreground uppercase tracking-wider">{statusLabel}</span>
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          {run.job_count != null && (
-            <span className="text-primary">{run.job_count} jobs</span>
+          {jobsFound != null && (
+            <span className="text-primary tabular-nums">{jobsFound.toLocaleString()} jobs</span>
           )}
-          {isLive && run.started_at && (
-            <span key={tick}>{elapsed(run.started_at)}</span>
-          )}
-          {!isLive && run.finished_at && run.started_at && (
-            <span>
-              {elapsed(run.started_at)} total
-            </span>
-          )}
+          {isLive && run.started_at && <span key={tick}>{elapsed(run.started_at)}</span>}
+          {!isLive && run.finished_at && run.started_at && <span>{elapsed(run.started_at)} total</span>}
         </div>
       </div>
 
+      {/* Progress bar */}
       <div className="score-bar w-full">
-        {isLive ? (
+        {isLive && barPct === null ? (
           <div className="progress-indeterminate h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent" />
         ) : (
           <div
-            className="score-bar-fill"
-            style={{ width: run.status === "done" ? "100%" : "0%" }}
+            className="score-bar-fill transition-all duration-700"
+            style={{ width: `${barPct ?? (run.status === "done" ? 100 : 0)}%` }}
           />
         )}
       </div>
 
+      {/* Phase steps — visible while running */}
+      {isLive && (
+        <div className="flex items-center text-[10px] flex-wrap gap-y-1">
+          {PHASES.map((ph, i) => {
+            const isDone   = activeIdx > i;
+            const isActive = activeIdx === i;
+            return (
+              <div key={ph.key} className="flex items-center">
+                <span className={
+                  isDone   ? "text-primary" :
+                  isActive ? "text-foreground" :
+                             "text-muted-foreground/40"
+                }>
+                  {isActive && <span className="mr-0.5 text-primary animate-pulse">▶</span>}
+                  {isDone   && <span className="mr-0.5">✓</span>}
+                  {ph.label}
+                </span>
+                {i < PHASES.length - 1 && (
+                  <span className="mx-1.5 text-border">›</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Footer */}
       <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
         <span>RUN {run.id?.slice(0, 8).toUpperCase() ?? "--------"}</span>
-        {run.started_at && (
-          <span>{new Date(run.started_at).toLocaleTimeString()}</span>
-        )}
+        {run.started_at && <span>{new Date(run.started_at).toLocaleTimeString()}</span>}
       </div>
     </div>
   );
