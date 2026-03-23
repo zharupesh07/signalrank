@@ -219,10 +219,12 @@ export default function JobsPage() {
   const [tracked, setTracked] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("signalrank-sidebar-collapsed") === "true";
-  });
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("signalrank-sidebar-collapsed");
+    if (saved === "true") setCollapsed(true);
+  }, []);
   const limit = 50;
 
   useEffect(() => {
@@ -318,6 +320,7 @@ export default function JobsPage() {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
+
 
   return (
     <div className="pt-14 min-h-screen page-content">
@@ -501,33 +504,38 @@ export default function JobsPage() {
           <div className="flex-1 min-w-0 flex gap-4">
           <div className={`space-y-5 ${selectedJob ? "flex-1 min-w-0" : "w-full"}`}>
             <div className="border border-border overflow-x-auto">
-              <table className="w-full text-xs border-collapse min-w-[900px]" style={{ tableLayout: "fixed" }}>
+              <table className="jobs-table w-full text-xs border-collapse min-w-[900px]">
                 <colgroup>
-                  {table.getAllLeafColumns().map((col) => (
-                    <col key={col.id} style={{ width: col.getSize() }} />
-                  ))}
+                  <col style={{ width: 260 }} />
+                  <col style={{ width: 160 }} />
+                  <col style={{ width: 90 }} />
+                  <col style={{ width: 100 }} />
+                  <col style={{ width: 60 }} />
+                  <col style={{ width: 80 }} />
+                  <col style={{ width: 70 }} />
+                  <col style={{ width: 50 }} />
+                  <col style={{ width: 32 }} />
+                  <col style={{ width: 80 }} />
                 </colgroup>
                 <thead>
-                  {table.getHeaderGroups().map((hg) => (
-                    <tr key={hg.id} className="border-b border-border bg-input">
-                      {hg.headers.map((h) => (
-                        <th
-                          key={h.id}
-                          onClick={h.column.getToggleSortingHandler()}
-                          className="px-3 py-3 text-left text-xs text-muted-foreground uppercase tracking-[0.15em] cursor-pointer select-none hover:text-primary transition-colors overflow-hidden"
-                        >
-                          <div className="flex items-center gap-1">
-                            {flexRender(h.column.columnDef.header, h.getContext())}
-                            {h.column.getIsSorted() === "asc" ? (
-                              <ChevronUp size={10} className="text-primary" />
-                            ) : h.column.getIsSorted() === "desc" ? (
-                              <ChevronDown size={10} className="text-primary" />
-                            ) : null}
-                          </div>
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
+                  <tr className="border-b border-border bg-input">
+                    {table.getHeaderGroups()[0].headers.map((h) => (
+                      <th
+                        key={h.id}
+                        onClick={h.column.getToggleSortingHandler()}
+                        className="px-3 py-3 text-left text-xs text-muted-foreground uppercase tracking-[0.15em] cursor-pointer select-none hover:text-primary transition-colors overflow-hidden"
+                      >
+                        <div className="flex items-center gap-1">
+                          {flexRender(h.column.columnDef.header, h.getContext())}
+                          {h.column.getIsSorted() === "asc" ? (
+                            <ChevronUp size={10} className="text-primary" />
+                          ) : h.column.getIsSorted() === "desc" ? (
+                            <ChevronDown size={10} className="text-primary" />
+                          ) : null}
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
                 </thead>
                 <tbody>
                   {loading ? (
@@ -536,13 +544,14 @@ export default function JobsPage() {
                     ))
                   ) : (
                     table.getRowModel().rows.map((row) => {
-                      const isSelected = selectedJob?.id === row.original.id;
+                      const job = row.original;
+                      const isSelected = selectedJob?.id === job.id;
                       return (
                         <tr
                           key={row.id}
-                          onClick={() => setSelectedJob(isSelected ? null : row.original)}
-                          className="job-row border-b border-border bg-card cursor-pointer"
-                          style={isSelected ? { background: "var(--primary)/5", borderLeft: "2px solid var(--primary)" } : {}}
+                          onClick={() => setSelectedJob(isSelected ? null : job)}
+                          className="job-row-item border-b border-border bg-card"
+                          style={isSelected ? { boxShadow: "inset 2px 0 0 var(--primary)", background: "color-mix(in srgb, var(--primary) 5%, transparent)" } : {}}
                         >
                           {row.getVisibleCells().map((cell) => (
                             <td key={cell.id} className="px-3 py-2.5 overflow-hidden">

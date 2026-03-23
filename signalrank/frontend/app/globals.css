@@ -390,23 +390,18 @@
 @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .spin-slow { animation: spin-slow 1.5s linear infinite; }
 
+/* Jobs table */
+.jobs-table { table-layout: fixed; }
+
 /* Row hover highlight */
-.job-row {
-  position: relative;
-  transition: background 0.12s ease;
-  cursor: default;
+.job-row-item {
+  transition: background 0.12s ease, box-shadow 0.12s ease;
+  cursor: pointer;
 }
-.job-row::before {
-  content: "";
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 2px;
-  background: linear-gradient(180deg, var(--primary), var(--terminal-green-bright));
-  opacity: 0;
-  transition: opacity 0.12s ease;
+.job-row-item:hover {
+  background: color-mix(in srgb, var(--primary) 4%, transparent);
+  box-shadow: inset 2px 0 0 var(--primary);
 }
-.job-row:hover::before { opacity: 1; }
-.job-row:hover { background: color-mix(in srgb, var(--primary) 4%, transparent); }
 
 /* Navbar glow line */
 .nav-glow {
