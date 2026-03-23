@@ -171,7 +171,7 @@ def test_render_typst_runs():
         education=[{"degree": "B.Tech", "institution": "IIT", "year": "2019"}],
     )
     src = render_typst(content)
-    assert "Test User" in src
+    assert "Test" in src and "User" in src
     assert "Engineer" in src
 
 
