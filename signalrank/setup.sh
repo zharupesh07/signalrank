@@ -116,6 +116,13 @@ else
   info "Skipping dependency install (--skip-deps)."
 fi
 
+# ── Pre-migration backup ──────────────────────────────────────────────────────
+
+if [[ $NO_DOCKER -eq 0 ]] && docker ps --format '{{.Names}}' | grep -q "^${PG_CONTAINER}$"; then
+  info "Taking pre-migration backup..."
+  bash "$SCRIPT_DIR/backup.sh" || warn "Backup failed — continuing anyway."
+fi
+
 # ── Alembic migrations ────────────────────────────────────────────────────────
 
 info "Running database migrations..."
