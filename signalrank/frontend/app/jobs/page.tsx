@@ -53,6 +53,7 @@ function ScoreCell({ value }: { value: number | null }) {
 const columns = [
   col.accessor("title", {
     header: "Title",
+    size: 260,
     cell: (i) => {
       const url = i.row.original.job_url;
       return url ? (
@@ -61,21 +62,22 @@ const columns = [
           target="_blank"
           rel="noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="text-foreground text-xs hover:text-primary hover:underline transition-colors"
+          className="text-foreground text-xs hover:text-primary hover:underline transition-colors line-clamp-2"
         >
           {i.getValue()}
         </a>
       ) : (
-        <span className="text-foreground text-xs">{i.getValue()}</span>
+        <span className="text-foreground text-xs line-clamp-2">{i.getValue()}</span>
       );
     },
   }),
   col.accessor("company", {
     header: "Company",
+    size: 160,
     cell: (i) => {
       const v = i.getValue();
       return v ? (
-        <span className="text-secondary-foreground text-xs">{v}</span>
+        <span className="text-secondary-foreground text-xs line-clamp-2">{v}</span>
       ) : (
         <span className="text-muted-foreground text-xs italic">Unknown</span>
       );
@@ -83,16 +85,19 @@ const columns = [
   }),
   col.accessor("location", {
     header: "Location",
+    size: 90,
     cell: (i) => (
       <span className="text-muted-foreground text-xs">{i.getValue() ?? "—"}</span>
     ),
   }),
   col.accessor("final_score", {
     header: "Score",
+    size: 100,
     cell: (i) => <ScoreCell value={i.getValue()} />,
   }),
   col.accessor("company_tier", {
     header: "Tier",
+    size: 60,
     cell: (i) => {
       const v = i.getValue();
       const label = v ? v.replace("tier_", "").toUpperCase() : null;
@@ -109,6 +114,7 @@ const columns = [
   }),
   col.accessor("is_contract", {
     header: "Type",
+    size: 80,
     cell: (i) => i.getValue() ? (
       <span className="text-[11px] text-[var(--terminal-yellow)] border border-[var(--terminal-yellow)]/30 px-1.5 py-0.5">
         CONTRACT
@@ -117,12 +123,14 @@ const columns = [
   }),
   col.accessor("site", {
     header: "Source",
+    size: 70,
     cell: (i) => (
       <span className="text-muted-foreground text-xs">{i.getValue() ?? "—"}</span>
     ),
   }),
   col.accessor("date_posted", {
     header: "Age",
+    size: 50,
     cell: (i) => {
       const v = i.getValue();
       if (!v) return <span className="text-muted-foreground text-xs">—</span>;
@@ -136,6 +144,7 @@ const columns = [
   col.display({
     id: "link",
     header: "",
+    size: 32,
     cell: (i) => (
       <a
         href={i.row.original.job_url}
@@ -295,6 +304,7 @@ export default function JobsPage() {
     col.display({
       id: "track",
       header: "",
+      size: 80,
       cell: (i) => {
         const job = i.row.original;
         return tracked.has(job.id) ? (
@@ -505,6 +515,7 @@ export default function JobsPage() {
                         <th
                           key={h.id}
                           onClick={h.column.getToggleSortingHandler()}
+                          style={{ width: h.getSize(), minWidth: h.getSize() }}
                           className="px-3 py-3 text-left text-xs text-muted-foreground uppercase tracking-[0.15em] cursor-pointer select-none hover:text-primary transition-colors"
                         >
                           <div className="flex items-center gap-1">
@@ -536,7 +547,7 @@ export default function JobsPage() {
                           style={isSelected ? { background: "var(--primary)/5", borderLeft: "2px solid var(--primary)" } : {}}
                         >
                           {row.getVisibleCells().map((cell) => (
-                            <td key={cell.id} className="px-3 py-2.5">
+                            <td key={cell.id} style={{ width: cell.column.getSize(), minWidth: cell.column.getSize() }} className="px-3 py-2.5">
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </td>
                           ))}
