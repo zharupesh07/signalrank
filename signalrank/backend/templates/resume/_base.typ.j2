@@ -1,0 +1,138 @@
+// Awesome-CV-inspired Typst layout
+// Variables set by including template: accent, bar_color_old
+#set page(paper: "a4", margin: (x: 1.2cm, top: 0.7cm, bottom: 0.8cm))
+#set text(font: "Roboto", size: 9pt, lang: "en")
+#set par(leading: 0.45em, justify: false)
+#set list(indent: 0.4em, body-indent: 0.5em, spacing: 0.35em)
+
+#let accent_clr = rgb("{{ accent }}")
+#let bar_old_clr = rgb("{{ bar_color_old }}")
+#let gray   = rgb("#666666")
+#let light  = rgb("#999999")
+#let link_clr = accent_clr
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+#let section(title) = {
+  v(4pt)
+  grid(columns: (auto, 1fr), gutter: 6pt,
+    text(size: 8.5pt, weight: "bold", fill: accent_clr, tracking: 0.8pt)[#upper(title)],
+    align(horizon, line(length: 100%,
+      stroke: gradient.linear(accent_clr, rgb("#eeeeee"))))
+  )
+  v(2pt)
+}
+
+#let cv_entry(bar_clr, role, company, loc, dates, tech, bullets) = {
+  grid(columns: (3pt, 1fr), gutter: 5pt,
+    rect(width: 2.5pt, height: 100%, fill: bar_clr, radius: 1pt),
+    [
+      #grid(columns: (1fr, auto),
+        text(weight: "bold", size: 9.5pt)[#role],
+        text(fill: light, size: 8pt)[#dates]
+      )
+      #text(size: 8.5pt, fill: link_clr, style: "italic")[#company]
+      #if loc != "" [ #text(size: 8pt, fill: light)[ · #loc] ]
+      #if tech != "" [
+        #v(0.5pt)
+        #text(size: 7.5pt, fill: light)[#underline[Tech]: #tech]
+      ]
+      #for b in bullets [
+        - #text(size: 8.5pt)[#b]
+      ]
+    ]
+  )
+  v(4pt)
+}
+
+#let compact_entry(role, company, dates) = {
+  text(size: 8.5pt)[
+    #text(weight: "bold")[#role] #sym.dash.en
+    #text(fill: link_clr, style: "italic")[#company]
+    #h(1fr)
+    #text(fill: light, size: 8pt)[#dates]
+  ]
+  v(1pt)
+}
+
+// ── HEADER ───────────────────────────────────────────────────────────────────
+#align(center)[
+  #text(size: 22pt)[
+    #text(weight: "light")[{{ name.split()[0] if name else "" }}]
+    #h(4pt)
+    #text(weight: "bold")[{{ name.split()[1:] | join(" ") if name else "" }}]
+  ]
+  #v(1pt)
+  #text(size: 9pt, fill: gray)[{{ position | typst_escape }}]
+  #v(2pt)
+  #text(size: 8pt, fill: light)[
+    {% if email %}{{ email | typst_escape }}{% endif %}{% if phone %} #h(4pt)#sym.bar.v#h(4pt) {{ phone }}{% endif %}{% if linkedin %} #h(4pt)#sym.bar.v#h(4pt) #link("https://linkedin.com/in/{{ linkedin }}")[{{ linkedin }}]{% endif %}{% if github %} #h(4pt)#sym.bar.v#h(4pt) #link("https://github.com/{{ github }}")[{{ github }}]{% endif %}{% if homepage %} #h(4pt)#sym.bar.v#h(4pt) #link("https://{{ homepage }}")[{{ homepage }}]{% endif %}
+  ]
+  #v(1pt)
+  #line(length: 100%, stroke: 0.4pt + accent_clr)
+]
+
+{% if summary %}
+#section("Summary")
+#text(size: 8.5pt, fill: gray)[{{ summary | typst_escape }}]
+{% endif %}
+
+{% if experiences %}
+#section("Work Experience")
+{% for exp in experiences %}
+{% set bar_clr = "accent_clr" if loop.index0 == 0 else "bar_old_clr" %}
+{% set bullets_list = exp.bullets | default([]) %}
+{% if bullets_list | length > 0 %}
+#cv_entry(
+  {{ bar_clr }},
+  "{{ (exp.title | default('')) | replace('"', "'") | typst_escape }}",
+  "{{ (exp.company | default('')) | replace('"', "'") | typst_escape }}",
+  "{{ (exp.location | default('')) | replace('"', "'") | typst_escape }}",
+  "{{ (exp.dates | default('')) | replace('"', "'") }}",
+  "{{ (exp.tech | default('')) | replace('"', "'") | typst_escape }}",
+  ({% for b in bullets_list %}"{{ b | replace('"', "'") | replace('#', '\\#') | typst_bold }}",{% endfor %})
+)
+{% else %}
+#compact_entry(
+  "{{ (exp.title | default('')) | replace('"', "'") | typst_escape }}",
+  "{{ (exp.company | default('')) | replace('"', "'") | typst_escape }}",
+  "{{ (exp.dates | default('')) | replace('"', "'") }}"
+)
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if skills %}
+#section("Technical Skills")
+{% if skills is iterable and skills | first is mapping %}
+#grid(columns: (1fr, 1fr), row-gutter: 3pt,
+{% for cat in skills %}
+  [#text(weight: "bold", size: 8.5pt)[{{ cat.category }}:] #text(size: 8.5pt, fill: gray)[{{ cat['items'] | join(", ") | typst_escape }}]]{% if not loop.last %},{% endif %}
+{% endfor %}
+)
+{% else %}
+#text(size: 8.5pt, fill: gray)[{{ skills | join(", ") | typst_escape }}]
+{% endif %}
+{% endif %}
+
+{% if projects %}
+#section("Open Source & Projects")
+{% for p in projects %}
+#text(size: 8.5pt)[{% if p.url | default('') %}#link("{{ p.url }}")[*{{ p.name | replace('"', "'") | typst_escape }}*]{% else %}*{{ p.name | replace('"', "'") | typst_escape }}*{% endif %}{% if p.description | default('') %} · {{ p.description | replace('"', "'") | typst_escape }}{% endif %}] \
+{% endfor %}
+{% endif %}
+
+{% if certifications %}
+#section("Certifications")
+#text(size: 8.5pt, fill: gray)[{{ certifications | join("  ·  ") | typst_escape }}]
+{% endif %}
+
+{% if education %}
+#section("Education")
+{% for edu in education %}
+#grid(columns: (1fr, auto),
+  [*{{ edu.degree | replace('"', "'") | typst_escape }}* #sym.dash.en #text(fill: gray)[{{ edu.institution | replace('"', "'") | typst_escape }}]],
+  [#text(fill: light, size: 8pt)[{{ edu.year | default('') }}]]
+)
+{% endfor %}
+{% endif %}
