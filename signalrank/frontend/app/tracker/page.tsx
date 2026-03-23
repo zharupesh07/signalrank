@@ -17,11 +17,17 @@ import {
   Download,
   Calendar,
   DollarSign,
+  Search,
+  Copy,
+  FileText,
+  Loader2,
+  Sparkles,
 } from "lucide-react";
 
 const STATUSES: ApplicationStatus[] = [
   "interested",
   "applied",
+  "messaged_recruiter",
   "phone_screen",
   "interview",
   "offer",
@@ -34,6 +40,7 @@ const PRIORITIES = ["P1", "P2", "P3"] as const;
 const STATUS_STYLE: Record<ApplicationStatus, { dot: string; label: string; border: string; bar: string }> = {
   interested:   { dot: "bg-muted-foreground",  label: "text-secondary-foreground", border: "border-border",                      bar: "var(--muted-foreground)" },
   applied:      { dot: "bg-primary",           label: "text-primary",              border: "border-primary/40",                  bar: "var(--primary)" },
+  messaged_recruiter: { dot: "bg-[var(--terminal-cyan)]", label: "text-[var(--terminal-cyan)]", border: "border-[var(--terminal-cyan)]/40", bar: "var(--terminal-cyan, #22d3ee)" },
   phone_screen: { dot: "bg-[var(--terminal-green-bright)]", label: "text-[var(--terminal-green-bright)]", border: "border-[var(--terminal-green-bright)]/40", bar: "var(--terminal-green-bright)" },
   interview:    { dot: "bg-primary",           label: "text-primary",              border: "border-primary/60",                  bar: "var(--primary)" },
   offer:        { dot: "bg-[var(--terminal-yellow)]", label: "text-[var(--terminal-yellow)]", border: "border-[var(--terminal-yellow)]/40", bar: "var(--terminal-yellow)" },
@@ -57,11 +64,9 @@ function scoreColor(score: number) {
 
 const MY_SIGNATURE = `
 --
-Example Candidate | Senior AI Platform Engineer
-🔗 LinkedIn: https://linkedin.com/in/example-candidate
-🐙 GitHub: https://github.com/examplecandidate
-🌐 Portfolio: https://examplecandidate.github.io
-📞 +91 7020901969`;
+Example Candidate
+Senior AI Platform Engineer, Fractal Analytics
+linkedin.com/in/example-candidate`;
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -75,21 +80,24 @@ function mailtoUrl(to: string, subject: string, body: string) {
   return `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
+function linkedinRecruiterSearchUrl(company: string) {
+  const query = `site:linkedin.com/in "${company}" "technical recruiter" OR "talent acquisition" OR "hiring manager"`;
+  return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+}
+
 function emailTemplate(app: Application, recruiterName: string) {
   const firstName = recruiterName.split(" ")[0] || recruiterName;
-  const jobLine = app.job_url ? `\nJob posting: ${app.job_url}\n` : "";
-  const subject = `Referral / Application – ${app.title} at ${app.company}`;
+  const subject = `${app.title} — built 400+ AI agents at scale (applied)`;
+  const jobLink = app.job_url ? `I applied for the ${app.title} role (${app.job_url}) and ` : `I applied for the ${app.title} role and `;
   const body = `Hi ${firstName},
 
-I hope this finds you well. I came across the ${app.title} role at ${app.company} and wanted to reach out directly — I believe it's a strong match for my background.
-${jobLine}
-A quick snapshot:
-• 7 years building AI/ML platforms, MLOps pipelines, and agentic systems at scale
-• Currently: Senior AI Platform Engineer at Fractal Analytics (GenAI, LLMOps, CI/CD)
-• Built an "Agentic Factory" standardising 300+ AI agents for a Fortune 5 US Telecom
-• Deep experience in GCP, LangGraph, FastAPI, IaC, and internal developer platforms
+${jobLink}wanted to share quick context that might not come through on a resume:
 
-I've applied via the portal and would love to connect for a quick chat if you think there's a fit.${MY_SIGNATURE}`;
+At Fractal Analytics, I built an "Agentic Factory" that standardised 400+ AI agents for a Fortune 5 US Telecom — the platform handles the full lifecycle from CI/CD to production deployment on GCP, supporting 16,000+ deployments with 90-second onboarding.
+
+That experience maps directly to what ${app.company} is building. Happy to jump on a 15-min call if you think there's a fit.
+
+Best,${MY_SIGNATURE}`;
 
   return { subject, body };
 }
@@ -132,6 +140,9 @@ export default function TrackerPage() {
   const [importing, setImporting] = useState(false);
   const [priorityFilter, setPriorityFilter] = useState<"all" | "p1" | "p1p2">("all");
   const [expandedColumns, setExpandedColumns] = useState<Set<string>>(new Set());
+  const [tailoring, setTailoring] = useState<Set<string>>(new Set());
+  const [generatedEmails, setGeneratedEmails] = useState<Map<string, { subject: string; body: string }>>(new Map());
+  const [expandedEmail, setExpandedEmail] = useState<string | null>(null);
   const COLUMN_LIMIT = 10;
 
   const loadData = useCallback(async () => {
@@ -228,6 +239,35 @@ export default function TrackerPage() {
     setApplications((apps) => apps.filter((a) => a.id !== id));
     if (app) toast(`Removed: ${app.title}`, "info");
     setConfirmDelete(null);
+  }
+
+  async function tailorAndEmail(app: Application) {
+    if (!app.job_id) {
+      toast("No job linked — cannot tailor resume", "error");
+      return;
+    }
+    setTailoring((prev) => new Set(prev).add(app.id));
+    try {
+      await api.resume.tailor(token, { job_id: app.job_id });
+      await api.resume.download(token, app.job_id);
+      toast(`Resume tailored and downloaded for ${app.title}`, "success");
+
+      const recs = app.company ? await api.applications.recruitersByCompany(token, app.company) : [];
+      const recruiterName = recs[0]?.name || app.recruiter?.name || "Hiring Manager";
+      const email = await api.resume.email(token, { job_id: app.job_id, recruiter_name: recruiterName });
+      if (email.body) {
+        setGeneratedEmails((prev) => new Map(prev).set(app.id, email));
+        setExpandedEmail(app.id);
+        const emails = recs.filter((r: { email: string }) => isValidEmail(r.email)).map((r: { email: string }) => r.email);
+        const to = emails.length ? emails[0] : (app.recruiter?.email && isValidEmail(app.recruiter.email) ? app.recruiter.email : "");
+        window.open(gmailComposeUrl(to, email.subject, email.body + MY_SIGNATURE), "_blank");
+        toast("Cold email generated", "success");
+      }
+    } catch (e) {
+      toast(`Tailor failed: ${e instanceof Error ? e.message : "unknown error"}`, "error");
+    } finally {
+      setTailoring((prev) => { const n = new Set(prev); n.delete(app.id); return n; });
+    }
   }
 
   async function handleImport() {
@@ -421,10 +461,14 @@ export default function TrackerPage() {
                     <span className="text-[10px] text-muted-foreground">—</span>
                   </div>
                 ) : (
-                  visibleApps.map((app) => (
+                  visibleApps.map((app) => {
+                    const appliedDaysAgo = app.applied_at ? Math.floor((Date.now() - new Date(app.applied_at).getTime()) / 86400000) : null;
+                    const needsFollowUp = app.status === "applied" && appliedDaysAgo != null && appliedDaysAgo >= 5;
+                    return (
                     <div
                       key={app.id}
-                      className={`border card-hover bg-card p-3 space-y-2 ${style.border}`}
+                      className={`border card-hover bg-card p-3 space-y-2 ${needsFollowUp ? "border-[var(--terminal-yellow)]/50" : style.border}`}
+                      style={needsFollowUp ? { boxShadow: "0 0 8px color-mix(in srgb, var(--terminal-yellow) 15%, transparent)" } : {}}
                     >
                       {/* Title + company + priority */}
                       <div className="flex items-start gap-1.5">
@@ -445,12 +489,21 @@ export default function TrackerPage() {
                         </button>
                       </div>
 
-                      {/* Days old */}
+                      {/* Days old + follow-up nudge */}
                       {app.applied_at && (() => {
                         const days = Math.floor((Date.now() - new Date(app.applied_at).getTime()) / 86400000);
                         const label = days === 0 ? "today" : days < 7 ? `${days}d ago` : days < 30 ? `${Math.floor(days / 7)}w ago` : `${Math.floor(days / 30)}mo ago`;
                         const color = days < 7 ? "var(--terminal-green-bright)" : days < 21 ? "var(--terminal-yellow)" : "var(--muted-foreground)";
-                        return <span className="text-[10px]" style={{ color }}>applied {label}</span>;
+                        return (
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px]" style={{ color }}>applied {label}</span>
+                            {needsFollowUp && (
+                              <span className="text-[10px] text-[var(--terminal-yellow)] font-bold uppercase tracking-wider animate-pulse">
+                                follow up
+                              </span>
+                            )}
+                          </div>
+                        );
                       })()}
 
                       {/* Tier + Type + Location */}
@@ -572,6 +625,15 @@ export default function TrackerPage() {
                           {app.recruiter.email && !isValidEmail(app.recruiter.email) && (
                             <span className="text-[10px] text-destructive" title="Invalid email address">⚠</span>
                           )}
+                          <a
+                            href={linkedinRecruiterSearchUrl(app.company)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-muted-foreground hover:text-[#0a66c2] transition-colors shrink-0"
+                            title={`Find more recruiters at ${app.company}`}
+                          >
+                            <Search size={9} />
+                          </a>
                         </div>
                       ) : expandedRecruiter === app.id ? (
                         <div className="space-y-1.5">
@@ -621,13 +683,25 @@ export default function TrackerPage() {
                           </div>
                         </div>
                       ) : (
-                        <button
-                          onClick={() => { setExpandedRecruiter(app.id); setRecruiterForm({ name: "", email: "", linkedin_url: "" }); }}
-                          className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          <Plus size={10} />
-                          recruiter
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => { setExpandedRecruiter(app.id); setRecruiterForm({ name: "", email: "", linkedin_url: "" }); }}
+                            className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            <Plus size={10} />
+                            recruiter
+                          </button>
+                          <a
+                            href={linkedinRecruiterSearchUrl(app.company)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-1 text-[11px] text-[#0a66c2] hover:text-primary transition-colors"
+                            title={`Search LinkedIn for recruiters at ${app.company}`}
+                          >
+                            <Search size={9} />
+                            <Linkedin size={9} />
+                          </a>
+                        </div>
                       )}
 
                       {/* Notes toggle */}
@@ -687,6 +761,28 @@ export default function TrackerPage() {
                           <Mail size={15} />
                         </button>
                         <button
+                          onClick={() => {
+                            const { subject, body } = emailTemplate(app, app.recruiter?.name ?? "Recruiter");
+                            navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`);
+                            toast("Email copied to clipboard", "success");
+                          }}
+                          className="text-muted-foreground hover:text-primary transition-colors"
+                          title="Copy email to clipboard"
+                        >
+                          <Copy size={11} />
+                        </button>
+                        {app.job_id && (
+                          <button
+                            onClick={() => tailorAndEmail(app)}
+                            disabled={tailoring.has(app.id)}
+                            className="flex items-center gap-1 text-[11px] text-[var(--terminal-green-bright)] border border-[var(--terminal-green-bright)]/30 px-1.5 py-0.5 hover:bg-[var(--terminal-green-bright)]/10 transition-colors uppercase tracking-wider disabled:opacity-50"
+                            title="Tailor resume + generate cold email"
+                          >
+                            {tailoring.has(app.id) ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                            tailor
+                          </button>
+                        )}
+                        <button
                           onClick={() => deleteApp(app.id)}
                           className={`flex items-center gap-1 text-xs ml-auto transition-colors ${
                             confirmDelete === app.id
@@ -698,8 +794,49 @@ export default function TrackerPage() {
                           {confirmDelete === app.id ? "confirm?" : ""}
                         </button>
                       </div>
+
+                      {/* Generated email preview */}
+                      {generatedEmails.has(app.id) && (
+                        <div className="mt-1">
+                          <button
+                            onClick={() => setExpandedEmail(expandedEmail === app.id ? null : app.id)}
+                            className="flex items-center gap-1 text-[10px] text-[var(--terminal-green-bright)] uppercase tracking-wider"
+                          >
+                            <ChevronRight size={10} className={`transition-transform ${expandedEmail === app.id ? "rotate-90" : ""}`} />
+                            generated email
+                          </button>
+                          {expandedEmail === app.id && (() => {
+                            const email = generatedEmails.get(app.id)!;
+                            const recruiterEmail = app.recruiter?.email;
+                            return (
+                              <div className="mt-1.5 border border-[var(--terminal-green-bright)]/20 bg-[var(--terminal-green-bright)]/5 p-2 space-y-1.5">
+                                <div className="text-[11px] font-medium text-secondary-foreground">{email.subject}</div>
+                                <pre className="text-[10px] text-muted-foreground whitespace-pre-wrap leading-relaxed">{email.body}</pre>
+                                <div className="flex gap-2 pt-1">
+                                  <button
+                                    onClick={() => { navigator.clipboard.writeText(`Subject: ${email.subject}\n\n${email.body}`); toast("Copied", "success"); }}
+                                    className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary border border-border px-1.5 py-0.5 uppercase tracking-wider"
+                                  >
+                                    <Copy size={9} /> copy
+                                  </button>
+                                  {recruiterEmail && isValidEmail(recruiterEmail) && (
+                                    <a
+                                      href={gmailComposeUrl(recruiterEmail, email.subject, email.body + MY_SIGNATURE)}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="flex items-center gap-1 text-[10px] text-primary border border-primary/30 px-1.5 py-0.5 hover:bg-primary/10 uppercase tracking-wider"
+                                    >
+                                      <Mail size={9} /> gmail
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
                     </div>
-                  ))
+                    );})
                 )}
                 {apps.length > COLUMN_LIMIT && (
                   <button

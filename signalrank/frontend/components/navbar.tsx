@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/jobs", label: "Jobs" },
   { href: "/tracker", label: "Tracker" },
+  { href: "/analytics", label: "Analytics" },
   { href: "/runs", label: "Runs" },
   { href: "/settings", label: "Settings" },
 ];

@@ -144,10 +144,20 @@ export default function DashboardPage() {
     toast("Added to tracker", "success");
   }
 
-  function handleRunComplete(completed: Run) {
+  async function handleRunComplete(completed: Run) {
     setRun(completed);
     loadJobs();
     loadAnalytics();
+    if (completed.id && completed.status === "done") {
+      try {
+        const res = await api.applications.importFromRun(token, { run_id: completed.id, min_score: 0.70, limit: 20 });
+        if (res.created > 0) {
+          toast(`Auto-imported ${res.created} top matches to tracker`, "success");
+        }
+      } catch {
+        // silent — auto-import is best-effort
+      }
+    }
   }
 
   const topScore = jobs.length > 0 ? Math.max(...jobs.map((j) => j.final_score ?? 0)) : null;
@@ -182,7 +192,7 @@ export default function DashboardPage() {
             <><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /></>
           ) : (
             <>
-              <StatCard label="Jobs Ranked" value={run?.job_count ?? jobs.length} sub="in latest run" icon={Layers} accent />
+              <StatCard label="Jobs Scraped" value={run?.scrape_count ?? analytics?.total ?? 0} sub="in latest run" icon={Layers} accent />
               <StatCard
                 label="Top Score"
                 value={topScore != null ? `${Math.round(topScore * 100)}%` : "—"}

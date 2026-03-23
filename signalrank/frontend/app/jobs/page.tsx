@@ -443,7 +443,7 @@ export default function JobsPage() {
                           onChange={() => setFilters((f) => ({ ...f, tiers: toggleItem(f.tiers, tier.value) }))}
                           className="accent-[#22c55e] w-3 h-3"
                         />
-                        <span className="text-sm text-[var(--fg,#e4e4e7)]">
+                        <span className="text-sm text-foreground">
                           {tier.label}
                         </span>
                       </label>
@@ -482,7 +482,7 @@ export default function JobsPage() {
                               onChange={() => setFilters((f) => ({ ...f, sites: toggleItem(f.sites, site) }))}
                               className="accent-[#22c55e] w-3 h-3"
                             />
-                            <span className="text-sm text-[var(--fg,#e4e4e7)]">{site}</span>
+                            <span className="text-sm text-foreground">{site}</span>
                           </label>
                         ))}
                       </div>
@@ -496,8 +496,8 @@ export default function JobsPage() {
           {/* Main content + detail panel */}
           <div className="flex-1 min-w-0 flex gap-4">
           <div className={`space-y-5 ${selectedJob ? "flex-1 min-w-0" : "w-full"}`}>
-            <div className="border border-border overflow-hidden">
-              <table className="w-full text-xs border-collapse">
+            <div className="border border-border overflow-x-auto">
+              <table className="w-full text-xs border-collapse min-w-[900px]">
                 <thead>
                   {table.getHeaderGroups().map((hg) => (
                     <tr key={hg.id} className="border-b border-border bg-input">

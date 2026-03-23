@@ -1,81 +1,86 @@
 // One-page awesome-cv-style resume — Typst
-#set page(paper: "a4", margin: (x: 1.3cm, y: 0.7cm))
-#set text(font: "Charter", size: 10pt, lang: "en")
-#set par(leading: 0.55em, justify: false)
+#set page(paper: "a4", margin: (x: 1.2cm, top: 0.3cm, bottom: 0.3cm))
+#set text(font: "Charter", size: 9pt, lang: "en")
+#set par(leading: 0.3em, justify: false)
+#set list(indent: 0.3em, body-indent: 0.4em, spacing: 0.3em)
 
-#let accent = rgb("#00838f")
-#let gray   = rgb("#5d5d5d")
+#let accent = rgb("#00695c")
+#let gray   = rgb("#555555")
+#let light  = rgb("#888888")
 
 #let section(title) = {
-  v(5pt)
-  text(size: 10.5pt, weight: "bold", fill: accent)[#upper(title)]
   v(1pt)
-  line(length: 100%, stroke: 0.6pt + accent)
-  v(3pt)
+  text(size: 9pt, weight: "bold", fill: accent)[#upper(title)]
+  v(0.2pt)
+  line(length: 100%, stroke: 0.4pt + accent)
+  v(0.3pt)
 }
 
 #let entry(tech: "", role, company_loc, dates, bullets) = {
   grid(columns: (1fr, auto),
-    [#text(weight: "bold")[#role] — #text(fill: gray)[#company_loc]],
-    [#text(fill: gray, size: 9pt)[#dates]]
+    [#text(weight: "bold", size: 9pt)[#role] #sym.dash.en #text(fill: gray)[#company_loc]],
+    [#text(fill: light, size: 8pt)[#dates]]
   )
   if tech != "" [
-    #text(size: 8.5pt, fill: gray)[Tech: #tech]
+    #text(size: 7.5pt, fill: light)[#tech]
   ]
   for b in bullets [
-    - #b
+    - #text(size: 8.5pt)[#b]
   ]
-  v(3pt)
+  v(0.5pt)
 }
 
 // ===== HEADER =====
 #align(center)[
-  #text(size: 20pt, weight: "bold")[{{ name }}]
-  #v(2pt)
-  #text(fill: gray)[{{ position }}]
-  #v(3pt)
-  #text(size: 9pt, fill: gray)[
-    {% if email %}{{ email | typst_escape }}{% endif %}{% if phone %} | {{ phone }}{% endif %}{% if linkedin %} | linkedin.com/in/{{ linkedin }}{% endif %}{% if github %} | github.com/{{ github }}{% endif %}{% if homepage %} | {{ homepage }}{% endif %}
+  #text(size: 16pt, weight: "bold", fill: accent)[{{ name }}]
+  #v(-1pt)
+  #text(size: 8.5pt, fill: gray)[{{ position }}]
+  #v(0pt)
+  #text(size: 8pt, fill: light)[
+    {% if email %}✉ {{ email | typst_escape }}{% endif %}{% if phone %} #sym.bar.v {{ phone }}{% endif %}{% if linkedin %} #sym.bar.v #link("https://linkedin.com/in/{{ linkedin }}")[in/{{ linkedin }}]{% endif %}{% if github %} #sym.bar.v #link("https://github.com/{{ github }}")[{{ github }}]{% endif %}{% if homepage %} #sym.bar.v #link("https://{{ homepage }}")[{{ homepage }}]{% endif %}
   ]
 ]
 
 {% if summary %}
 #section("Summary")
-#text(fill: gray)[{{ summary }}]
+#text(size: 8.5pt, fill: gray)[{{ summary }}]
 {% endif %}
 
 {% if experiences %}
 #section("Work Experience")
 {% for exp in experiences %}
 #entry(
-  tech: "{{ exp.get('tech', '') | replace('"', "'") }}",
-  "{{ exp.title | replace('"', "'") }}",
-  "{{ exp.company | replace('"', "'") }}{% if exp.get('location') %}, {{ exp.location }}{% endif %}",
-  "{{ exp.dates }}",
-  ({% for b in exp.bullets %}"{{ b | replace('"', "'") }}",{% endfor %})
+  tech: "{{ (exp.tech | default('', true)) | replace('"', "'") }}",
+  "{{ (exp.title | default('')) | replace('"', "'") }}",
+  "{{ (exp.company | default('')) | replace('"', "'") }}{% if exp.location | default('') %}, {{ exp.location }}{% endif %}",
+  "{{ exp.dates | default('') }}",
+  ({% for b in exp.bullets %}"{{ b | replace('"', "'") | replace('#', '\\#') }}",{% endfor %})
 )
 {% endfor %}
 {% endif %}
 
 {% if skills %}
 #section("Technical Skills")
-#text(fill: gray)[{{ skills | join(", ") }}]
+{% if skills is mapping or (skills is iterable and skills | first is mapping and skills | first is not string) %}
+{% for cat in skills %}
+#text(weight: "bold", size: 8.5pt)[{{ cat.category }}:] #text(size: 8.5pt, fill: gray)[{{ cat['items'] | join(", ") }}] \
+{% endfor %}
+{% else %}
+#text(size: 8.5pt, fill: gray)[{{ skills | join(", ") }}]
+{% endif %}
 {% endif %}
 
 {% if projects %}
-#section("Open Source & Projects")
-{% for p in projects %}
-- *{{ p.name | replace('"', "'") }}*{% if p.get('description') %} — #text(fill: gray)[{{ p.description | replace('"', "'") }}]{% endif %}
-
-{% endfor %}
+#section("Projects")
+#text(size: 8.5pt)[{% for p in projects %}{% if p.url | default('') %}#link("{{ p.url }}")[*{{ p.name | replace('"', "'") }}*]{% else %}*{{ p.name | replace('"', "'") }}*{% endif %}{% if not loop.last %} #sym.bar.v {% endif %}{% endfor %}]
 {% endif %}
 
 {% if education %}
 #section("Education")
 {% for edu in education %}
 #grid(columns: (1fr, auto),
-  [*{{ edu.degree | replace('"', "'") }}* — #text(fill: gray)[{{ edu.institution | replace('"', "'") }}]],
-  [#text(fill: gray, size: 9pt)[{{ edu.get('year', '') }}]]
+  [*{{ edu.degree | replace('"', "'") }}* #sym.dash.en #text(fill: gray)[{{ edu.institution | replace('"', "'") }}]],
+  [#text(fill: light, size: 8pt)[{{ edu.year | default('') }}]]
 )
 {% endfor %}
 {% endif %}

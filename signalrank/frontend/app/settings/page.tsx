@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import type { Profile } from "@/types";
 import { useToast } from "@/components/toast";
 import { TagInput } from "@/components/tag-input";
-import { Search, RefreshCw, User, Target, MapPin, Briefcase, Code } from "lucide-react";
+import { Search, RefreshCw, User, Target, Briefcase, Shield, Save, CheckCircle } from "lucide-react";
 
 const ROLE_SUGGESTIONS = [
   "ML Engineer", "Senior ML Engineer", "Staff ML Engineer",
@@ -48,8 +48,8 @@ export default function SettingsPage() {
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-  // Editable fields
   const [targetRoles, setTargetRoles] = useState<string[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
   const [customQueries, setCustomQueries] = useState<string[]>([]);
@@ -57,7 +57,6 @@ export default function SettingsPage() {
   const [minYoe, setMinYoe] = useState("");
   const [maxYoe, setMaxYoe] = useState("");
 
-  // Recruiter finder
   const [findCompany, setFindCompany] = useState("");
   const [findDomain, setFindDomain] = useState("");
   const [finding, setFinding] = useState(false);
@@ -90,6 +89,7 @@ export default function SettingsPage() {
 
   async function save() {
     setSaving(true);
+    setSaved(false);
     try {
       await api.profile.patch(token, {
         target_roles: targetRoles,
@@ -100,6 +100,8 @@ export default function SettingsPage() {
         max_yoe: maxYoe ? Number(maxYoe) : null,
       });
       toast("Settings saved", "success");
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
     } catch {
       toast("Save failed", "error");
     } finally {
@@ -133,76 +135,77 @@ export default function SettingsPage() {
       )
     : allRecruiters;
 
-  const uniqueCompanies = [...new Set(allRecruiters.map((r) => r.company).filter(Boolean))].sort();
-
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
-        <h1 className="text-lg font-mono font-semibold text-primary uppercase tracking-widest">
-          Settings
-        </h1>
+    <div className="pt-14 min-h-screen page-content">
+      <div className="max-w-3xl mx-auto px-6 py-8 space-y-7">
 
-        {/* Profile section */}
-        <section className="border border-border p-5 space-y-5">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider font-mono">
-            <User size={12} />
-            Profile
+        {/* Header */}
+        <div className="space-y-1">
+          <div className="section-label">settings</div>
+          <h1 className="text-xl font-bold text-foreground tracking-tight">Configuration</h1>
+        </div>
+
+        {/* Profile */}
+        <div className="stat-card card-hover border border-border bg-card p-5 space-y-5">
+          <div className="flex items-center gap-2">
+            <User size={13} className="text-primary" />
+            <span className="text-[11px] text-muted-foreground uppercase tracking-[0.15em]">Profile</span>
           </div>
 
           {profile && (
-            <div className="text-xs text-secondary-foreground font-mono space-y-1">
-              <div>{profile.email}</div>
-              <div className="text-muted-foreground">
-                {profile.onboarding_complete ? "Onboarding complete" : "Onboarding incomplete"}
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 border border-primary/30 bg-primary/5 flex items-center justify-center shrink-0">
+                <span className="text-primary text-sm font-bold">{profile.email[0].toUpperCase()}</span>
+              </div>
+              <div>
+                <div className="text-xs text-foreground font-medium">{profile.email}</div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  {profile.onboarding_complete ? (
+                    <>
+                      <CheckCircle size={9} className="text-primary" />
+                      <span className="text-[10px] text-primary">Onboarding complete</span>
+                    </>
+                  ) : (
+                    <>
+                      <Shield size={9} className="text-terminal-yellow" />
+                      <span className="text-[10px] text-terminal-yellow">Onboarding incomplete</span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           )}
 
           <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="block text-[11px] text-muted-foreground uppercase tracking-wider mb-1">
-                Target LPA
-              </label>
-              <input
-                type="number"
-                value={targetLpa}
-                onChange={(e) => setTargetLpa(e.target.value)}
-                placeholder="60"
-                className="w-full text-xs bg-transparent border border-border text-foreground px-2 py-1.5 focus:border-primary focus:outline-none placeholder:text-border"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] text-muted-foreground uppercase tracking-wider mb-1">
-                Min YOE
-              </label>
-              <input
-                type="number"
-                value={minYoe}
-                onChange={(e) => setMinYoe(e.target.value)}
-                placeholder="5"
-                className="w-full text-xs bg-transparent border border-border text-foreground px-2 py-1.5 focus:border-primary focus:outline-none placeholder:text-border"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] text-muted-foreground uppercase tracking-wider mb-1">
-                Max YOE
-              </label>
-              <input
-                type="number"
-                value={maxYoe}
-                onChange={(e) => setMaxYoe(e.target.value)}
-                placeholder="12"
-                className="w-full text-xs bg-transparent border border-border text-foreground px-2 py-1.5 focus:border-primary focus:outline-none placeholder:text-border"
-              />
-            </div>
+            {[
+              { label: "Target LPA", value: targetLpa, set: setTargetLpa, placeholder: "60", suffix: "L" },
+              { label: "Min YOE", value: minYoe, set: setMinYoe, placeholder: "3", suffix: "yr" },
+              { label: "Max YOE", value: maxYoe, set: setMaxYoe, placeholder: "12", suffix: "yr" },
+            ].map(({ label, value, set, placeholder, suffix }) => (
+              <div key={label}>
+                <label className="block text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">
+                  {label}
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={value}
+                    onChange={(e) => set(e.target.value)}
+                    placeholder={placeholder}
+                    className="w-full text-xs bg-input border border-border text-foreground px-3 py-2 focus:border-primary focus:outline-none placeholder:text-muted-foreground/40 transition-colors"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">{suffix}</span>
+                </div>
+              </div>
+            ))}
           </div>
-        </section>
+        </div>
 
-        {/* Search preferences */}
-        <section className="border border-border p-5 space-y-5">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider font-mono">
-            <Target size={12} />
-            Search Preferences
+        {/* Search Preferences */}
+        <div className="stat-card card-hover border border-border bg-card p-5 space-y-5">
+          <div className="flex items-center gap-2">
+            <Target size={13} className="text-primary" />
+            <span className="text-[11px] text-muted-foreground uppercase tracking-[0.15em]">Search Preferences</span>
           </div>
 
           <TagInput
@@ -227,121 +230,154 @@ export default function SettingsPage() {
             onChange={setCustomQueries}
             placeholder="e.g. 'LLM platform engineer Bangalore'"
           />
-        </section>
+        </div>
 
+        {/* Save button */}
         <div className="flex justify-end">
           <button
             onClick={save}
             disabled={saving}
-            className="text-[11px] text-primary border border-primary/30 px-4 py-1.5 hover:bg-primary/10 transition-colors uppercase tracking-wider disabled:opacity-50"
+            className="flex items-center gap-2 text-[11px] border px-5 py-2 uppercase tracking-wider transition-all duration-150 disabled:opacity-50"
+            style={{
+              background: saved ? "var(--primary)" : "transparent",
+              borderColor: saved ? "var(--primary)" : "color-mix(in srgb, var(--primary) 40%, transparent)",
+              color: saved ? "var(--primary-foreground)" : "var(--primary)",
+            }}
           >
-            {saving ? "Saving..." : "Save Changes"}
+            {saving ? (
+              <>
+                <RefreshCw size={10} className="animate-spin" />
+                Saving...
+              </>
+            ) : saved ? (
+              <>
+                <CheckCircle size={10} />
+                Saved
+              </>
+            ) : (
+              <>
+                <Save size={10} />
+                Save Changes
+              </>
+            )}
           </button>
         </div>
 
         {/* Recruiter Finder */}
-        <section className="border border-border p-5 space-y-5">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider font-mono">
-            <Search size={12} />
-            Recruiter Finder
-          </div>
-
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Searches DuckDuckGo + OpenRouter web for LinkedIn recruiter profiles at a company.
-            Found profiles are saved to your recruiter database and appear as mail targets in the tracker.
-          </p>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] text-muted-foreground uppercase tracking-wider mb-1">
-                Company
-              </label>
-              <input
-                type="text"
-                value={findCompany}
-                onChange={(e) => setFindCompany(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && findRecruiters()}
-                placeholder="e.g. Adobe"
-                className="w-full text-xs bg-transparent border border-border text-foreground px-2 py-1.5 focus:border-primary focus:outline-none placeholder:text-border"
-              />
+        <div>
+          <div className="section-label mb-3">recruiter tools</div>
+          <div className="stat-card card-hover border border-border bg-card p-5 space-y-5">
+            <div className="flex items-center gap-2">
+              <Search size={13} className="text-primary" />
+              <span className="text-[11px] text-muted-foreground uppercase tracking-[0.15em]">Recruiter Finder</span>
             </div>
-            <div>
-              <label className="block text-[11px] text-muted-foreground uppercase tracking-wider mb-1">
-                Domain (optional)
-              </label>
-              <input
-                type="text"
-                value={findDomain}
-                onChange={(e) => setFindDomain(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && findRecruiters()}
-                placeholder="e.g. adobe.com"
-                className="w-full text-xs bg-transparent border border-border text-foreground px-2 py-1.5 focus:border-primary focus:outline-none placeholder:text-border"
-              />
-            </div>
-          </div>
 
-          <button
-            onClick={findRecruiters}
-            disabled={finding || !findCompany.trim()}
-            className="flex items-center gap-2 text-[11px] text-primary border border-primary/30 px-3 py-1.5 hover:bg-primary/10 transition-colors uppercase tracking-wider disabled:opacity-50"
-          >
-            {finding ? (
-              <>
-                <RefreshCw size={10} className="animate-spin" />
-                Searching...
-              </>
-            ) : (
-              <>
-                <Search size={10} />
-                Find Recruiters
-              </>
-            )}
-          </button>
+            <p className="text-[11px] text-muted-foreground leading-relaxed border-l-2 border-primary/20 pl-3">
+              Searches DuckDuckGo + OpenRouter web for LinkedIn recruiter profiles at a company.
+              Found profiles are saved and appear as mail targets in the tracker.
+            </p>
 
-          {foundRecruiters.length > 0 && (
-            <div className="space-y-1.5">
-              <div className="text-[11px] text-muted-foreground uppercase tracking-wider">
-                Found {foundRecruiters.length} result(s)
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">
+                  Company
+                </label>
+                <input
+                  type="text"
+                  value={findCompany}
+                  onChange={(e) => setFindCompany(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && findRecruiters()}
+                  placeholder="e.g. Adobe"
+                  className="w-full text-xs bg-input border border-border text-foreground px-3 py-2 focus:border-primary focus:outline-none placeholder:text-muted-foreground/40 transition-colors"
+                />
               </div>
-              {foundRecruiters.map((r, i) => (
-                <div key={i} className="flex items-center gap-3 text-xs py-1.5 border-b border-border/50 last:border-0">
-                  <span className="text-secondary-foreground font-mono w-40 truncate">{r.name ?? "—"}</span>
-                  <span className="text-muted-foreground truncate flex-1">{r.email ?? "no email"}</span>
-                  {r.linkedin_url && (
-                    <a href={r.linkedin_url} target="_blank" rel="noreferrer" className="text-[#0a66c2] hover:text-primary transition-colors text-[10px] shrink-0">
-                      LinkedIn
-                    </a>
-                  )}
-                </div>
-              ))}
+              <div>
+                <label className="block text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">
+                  Domain (optional)
+                </label>
+                <input
+                  type="text"
+                  value={findDomain}
+                  onChange={(e) => setFindDomain(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && findRecruiters()}
+                  placeholder="e.g. adobe.com"
+                  className="w-full text-xs bg-input border border-border text-foreground px-3 py-2 focus:border-primary focus:outline-none placeholder:text-muted-foreground/40 transition-colors"
+                />
+              </div>
             </div>
-          )}
-        </section>
 
-        {/* Recruiter database */}
-        <section className="border border-border p-5 space-y-4">
+            <button
+              onClick={findRecruiters}
+              disabled={finding || !findCompany.trim()}
+              className="flex items-center gap-2 text-[11px] text-primary border border-primary/30 px-4 py-2 hover:bg-primary/10 transition-colors uppercase tracking-wider disabled:opacity-50"
+            >
+              {finding ? (
+                <>
+                  <RefreshCw size={10} className="animate-spin" />
+                  Searching...
+                </>
+              ) : (
+                <>
+                  <Search size={10} />
+                  Find Recruiters
+                </>
+              )}
+            </button>
+
+            {foundRecruiters.length > 0 && (
+              <div className="space-y-1.5 border-t border-border pt-4">
+                <div className="text-[11px] text-primary uppercase tracking-wider">
+                  Found {foundRecruiters.length} result(s)
+                </div>
+                {foundRecruiters.map((r, i) => (
+                  <div key={i} className="flex items-center gap-3 text-xs py-2 border-b border-border/30 last:border-0 hover:bg-primary/5 transition-colors px-2 -mx-2">
+                    <span className="text-foreground w-40 truncate">{r.name ?? "—"}</span>
+                    <span className="text-muted-foreground truncate flex-1">{r.email ?? "no email"}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 border border-primary/20 text-primary/70">{r.confidence}</span>
+                    {r.linkedin_url && (
+                      <a href={r.linkedin_url} target="_blank" rel="noreferrer" className="text-[#0a66c2] hover:text-primary transition-colors text-[10px] shrink-0">
+                        LinkedIn ↗
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recruiter Database */}
+        <div className="stat-card card-hover border border-border bg-card p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider font-mono">
-              <Briefcase size={12} />
-              Recruiter Database ({allRecruiters.length})
+            <div className="flex items-center gap-2">
+              <Briefcase size={13} className="text-primary" />
+              <span className="text-[11px] text-muted-foreground uppercase tracking-[0.15em]">
+                Recruiter Database
+              </span>
+              <span className="text-[10px] text-primary tabular-nums">{allRecruiters.length}</span>
             </div>
-            <input
-              type="text"
-              value={recruiterCompanyFilter}
-              onChange={(e) => setRecruiterCompanyFilter(e.target.value)}
-              placeholder="Filter by company..."
-              className="text-[11px] bg-transparent border border-border text-foreground px-2 py-1 focus:border-primary focus:outline-none placeholder:text-border w-40"
-            />
+            <div className="relative">
+              <Search size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                value={recruiterCompanyFilter}
+                onChange={(e) => setRecruiterCompanyFilter(e.target.value)}
+                placeholder="Filter company..."
+                className="text-[11px] bg-input border border-border text-foreground pl-6 pr-2 py-1.5 focus:border-primary focus:outline-none placeholder:text-muted-foreground/40 w-44 transition-colors"
+              />
+            </div>
           </div>
 
           {filteredRecruiters.length === 0 ? (
-            <div className="text-[11px] text-muted-foreground py-2">No recruiters found.</div>
+            <div className="text-[11px] text-muted-foreground py-4 text-center">
+              {allRecruiters.length === 0 ? "No recruiters found. Use the finder above to discover recruiters." : "No matches for filter."}
+            </div>
           ) : (
             <div className="space-y-0.5 max-h-72 overflow-y-auto">
               {filteredRecruiters.map((r) => (
-                <div key={r.id} className="flex items-center gap-3 text-[11px] py-1.5 border-b border-border/30 last:border-0">
-                  <span className="text-muted-foreground w-28 shrink-0 truncate font-mono">{r.company}</span>
-                  <span className="text-secondary-foreground w-32 shrink-0 truncate">{r.name ?? "—"}</span>
+                <div key={r.id} className="flex items-center gap-3 text-[11px] py-2 border-b border-border/20 last:border-0 hover:bg-primary/5 transition-colors px-1 -mx-1">
+                  <span className="text-primary/70 w-28 shrink-0 truncate font-medium">{r.company}</span>
+                  <span className="text-foreground w-32 shrink-0 truncate">{r.name ?? "—"}</span>
                   <span className="text-muted-foreground truncate flex-1">{r.email ?? "—"}</span>
                   {r.linkedin_url && (
                     <a href={r.linkedin_url} target="_blank" rel="noreferrer" className="text-[#0a66c2] hover:text-primary transition-colors shrink-0">
@@ -352,7 +388,7 @@ export default function SettingsPage() {
               ))}
             </div>
           )}
-        </section>
+        </div>
       </div>
     </div>
   );

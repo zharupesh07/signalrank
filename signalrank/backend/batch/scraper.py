@@ -39,7 +39,7 @@ def raw_job_to_dict(job: RawJob) -> dict:
 @dataclass
 class ScraperConfig:
     rapidapi_key: str | None = None
-    max_results_per_query: int = 1000
+    max_results_per_query: int = 3000
     hours_old: int = 720
     jobspy_delay: float = 1.0
     google_delay: float = 2.0
@@ -51,7 +51,7 @@ class ScraperConfig:
     def from_env(cls, title_blocklist: list[str] | None = None) -> ScraperConfig:
         return cls(
             rapidapi_key=os.environ.get("RAPIDAPI_KEY"),
-            max_results_per_query=int(os.environ.get("SCRAPER_MAX_RESULTS", "1000")),
+            max_results_per_query=int(os.environ.get("SCRAPER_MAX_RESULTS", "3000")),
             hours_old=int(os.environ.get("SCRAPER_HOURS_OLD", "720")),
             linkedin_max_queries=int(os.environ.get("LINKEDIN_MAX_QUERIES", "0")),
             title_blocklist=title_blocklist or [],

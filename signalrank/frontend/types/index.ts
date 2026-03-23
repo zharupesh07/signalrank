@@ -49,6 +49,7 @@ export interface JobsResponse {
 export type ApplicationStatus =
   | "interested"
   | "applied"
+  | "messaged_recruiter"
   | "phone_screen"
   | "interview"
   | "offer"

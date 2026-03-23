@@ -1,4 +1,170 @@
+import io
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
+
+from llm.resume_tailor import (
+    TailoredContent,
+    _trim_longest_experience,
+    check_page_count,
+    load_resume_yaml,
+    render_typst,
+    resume_yaml_to_text,
+    tailor_and_compile,
+)
+
+SAMPLE_RESUME_DATA = {
+    "name": "Test User",
+    "email": "test@example.com",
+    "phone": "+1 555 0000",
+    "location": "Remote",
+    "linkedin": "linkedin.com/in/testuser",
+    "github": "github.com/testuser",
+    "homepage": "",
+    "position": "Senior ML Engineer",
+    "summary": "ML engineer with 5 years experience.",
+    "skills": [
+        {"category": "ML", "items": ["PyTorch", "TensorFlow"]},
+        {"category": "Cloud", "items": ["AWS", "GCP"]},
+    ],
+    "experiences": [
+        {
+            "title": "ML Engineer",
+            "company": "Acme Corp",
+            "location": "NYC",
+            "dates": "2021-2024",
+            "tech": "Python, PyTorch",
+            "bullets": [
+                "Built training pipeline handling 1M+ samples/day",
+                "Reduced model latency by 40%",
+                "Led team of 3 engineers",
+            ],
+        }
+    ],
+    "projects": [{"name": "MyProject", "url": "github.com/tp", "description": "A cool project"}],
+    "education": [{"degree": "B.Tech CS", "institution": "IIT", "year": "2019"}],
+}
+
+
+def test_resume_yaml_to_text():
+    text = resume_yaml_to_text(SAMPLE_RESUME_DATA)
+    assert "Test User" in text
+    assert "ML Engineer" in text
+    assert "Built training pipeline" in text
+    assert "PyTorch" in text
+
+
+def test_resume_yaml_to_text_loads_from_file(tmp_path):
+    import yaml
+
+    p = tmp_path / "resume.yaml"
+    p.write_text(yaml.dump(SAMPLE_RESUME_DATA), encoding="utf-8")
+    data = load_resume_yaml(p)
+    assert data["name"] == "Test User"
+
+
+def test_trim_longest_experience():
+    content = TailoredContent(
+        experiences=[
+            {"bullets": ["a", "b", "c", "d"]},
+            {"bullets": ["x", "y"]},
+        ]
+    )
+    result = _trim_longest_experience(content)
+    assert result is True
+    assert len(content.experiences[0]["bullets"]) == 3
+
+
+def test_trim_longest_experience_stops_at_2():
+    content = TailoredContent(
+        experiences=[{"bullets": ["a", "b"]}]
+    )
+    result = _trim_longest_experience(content)
+    assert result is False
+
+
+def test_check_page_count_single_page():
+    try:
+        import pypdf
+
+        writer = pypdf.PdfWriter()
+        writer.add_blank_page(612, 792)
+        buf = io.BytesIO()
+        writer.write(buf)
+        pdf_bytes = buf.getvalue()
+        assert check_page_count(pdf_bytes) == 1
+    except ImportError:
+        pytest.skip("pypdf not installed")
+
+
+def test_render_typst_runs():
+    content = TailoredContent(
+        name="Test User",
+        email="t@t.com",
+        position="Engineer",
+        summary="Summary here.",
+        skills=[{"category": "ML", "items": ["Python"]}],
+        experiences=[
+            {
+                "title": "Engineer",
+                "company": "Acme",
+                "location": "NYC",
+                "dates": "2021-2024",
+                "tech": "Python",
+                "bullets": ["Did stuff"],
+            }
+        ],
+        projects=[],
+        education=[{"degree": "B.Tech", "institution": "IIT", "year": "2019"}],
+    )
+    src = render_typst(content)
+    assert "Test User" in src
+    assert "Engineer" in src
+
+
+@pytest.mark.asyncio
+async def test_tailor_and_compile_one_page():
+    mock_content = {
+        "name": "Test User",
+        "email": "t@t.com",
+        "phone": "",
+        "location": "",
+        "homepage": "",
+        "linkedin": "",
+        "github": "",
+        "position": "ML Engineer",
+        "summary": "Summary.",
+        "skills": [{"category": "ML", "items": ["Python"]}],
+        "experiences": [
+            {
+                "title": "Engineer",
+                "company": "Acme",
+                "location": "NYC",
+                "dates": "2021-2024",
+                "tech": "Python",
+                "bullets": ["Built things"],
+            }
+        ],
+        "projects": [],
+        "education": [{"degree": "B.Tech", "institution": "IIT", "year": "2019"}],
+    }
+
+    mock_llm = MagicMock()
+    mock_llm.llm_json = AsyncMock(return_value=mock_content)
+
+    with patch("llm.resume_tailor.compile_pdf") as mock_compile, \
+         patch("llm.resume_tailor.check_page_count", return_value=1):
+        mock_compile.return_value = b"%PDF-1.4 fake"
+        content, pdf = await tailor_and_compile(
+            resume_data=SAMPLE_RESUME_DATA,
+            job_title="ML Engineer",
+            job_description="We need a great ML engineer.",
+            llm=mock_llm,
+        )
+
+    assert content.name == "Test User"
+    assert pdf == b"%PDF-1.4 fake"
 
 
 @pytest.fixture

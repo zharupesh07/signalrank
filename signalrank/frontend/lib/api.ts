@@ -146,6 +146,36 @@ export const api = {
       ),
   },
 
+  resume: {
+    tailor: (token: string, data: { job_id: string; template?: string }) =>
+      request<{ status: string; job_id: string; template: string; content: Record<string, unknown>; pdf_available: boolean }>(
+        "/api/resume/tailor",
+        { method: "POST", token, body: JSON.stringify(data) }
+      ),
+    download: async (token: string, jobId: string) => {
+      const res = await fetch(`${BASE_URL}/api/resume/tailor/${jobId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const disposition = res.headers.get("content-disposition") || "";
+      const match = disposition.match(/filename="(.+?)"/);
+      a.download = match ? match[1] : `resume_${jobId.slice(0, 8)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    },
+    email: (token: string, data: { job_id: string; recruiter_name: string }) =>
+      request<{ subject: string; body: string }>(
+        "/api/resume/email",
+        { method: "POST", token, body: JSON.stringify(data) }
+      ),
+  },
+
   onboarding: {
     status: (token: string) =>
       request<OnboardingStatus>("/api/onboarding/status", { token }),

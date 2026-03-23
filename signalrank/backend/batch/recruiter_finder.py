@@ -18,6 +18,7 @@ import os
 import re
 
 import httpx
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ _LI_URL_RE = re.compile(
     re.IGNORECASE,
 )
 _VALID_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9\-]{0,100}$")
+_CACHE_TTL_DAYS = 3
 
 from llm.openrouter import FALLBACK_MODELS
 
@@ -195,7 +197,7 @@ async def _llm_enrich(
 async def find_recruiters(
     company: str,
     max_results: int = 10,
-    db: "AsyncSession | None" = None,
+    db: AsyncSession | None = None,
 ) -> list[dict]:
     """
     Find India-based recruiters at *company*.
@@ -211,7 +213,6 @@ async def find_recruiters(
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
 
     from datetime import datetime, timedelta, timezone
-    _CACHE_TTL_DAYS = 3
 
     raw_candidates: list[dict] = []
     cache_hit = False
