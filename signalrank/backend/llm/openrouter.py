@@ -2,17 +2,36 @@ import asyncio
 import json
 import logging
 import random
+import time as _time
 
 import httpx
 
 logger = logging.getLogger(__name__)
 
+_healthy_models: list[str] | None = None
+_healthy_models_at: float = 0.0
+_probe_lock: asyncio.Lock | None = None
+_PROBE_TTL = 3600  # 1 hour
+
+
+def _get_probe_lock() -> asyncio.Lock:
+    global _probe_lock
+    if _probe_lock is None:
+        _probe_lock = asyncio.Lock()
+    return _probe_lock
+
 FALLBACK_MODELS = [
-    "openrouter/free",
-    "openai/gpt-oss-120b:free",
-    "meta-llama/llama-3.3-70b-instruct:free",
+    "arcee-ai/trinity-large-preview:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "stepfun/step-3.5-flash:free",
+    "z-ai/glm-4.5-air:free",
+    "nvidia/nemotron-nano-9b-v2:free",
     "google/gemma-3-27b-it:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
     "mistralai/mistral-small-3.1-24b-instruct:free",
+    "qwen/qwen3-coder:free",
+    "nousresearch/hermes-3-llama-3.1-405b:free",
+    "openrouter/free",
 ]
 
 BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -45,6 +64,51 @@ class OpenRouterClient:
         self.api_key = api_key
         self.models = models or FALLBACK_MODELS
         self._http = httpx.AsyncClient(timeout=timeout)
+
+    async def probe_models(self) -> list[str]:
+        """Probe all models concurrently; cache and return healthy ones."""
+        global _healthy_models, _healthy_models_at
+
+        async def _try(model: str) -> str | None:
+            try:
+                resp = await self._http.post(
+                    BASE_URL,
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "HTTP-Referer": "https://signalrank.app",
+                        "X-Title": "SignalRank",
+                    },
+                    json={
+                        "model": model,
+                        "messages": [{"role": "user", "content": "Say hi"}],
+                        "max_tokens": 5,
+                        "temperature": 0.0,
+                    },
+                    timeout=10.0,
+                )
+                resp.raise_for_status()
+                return model
+            except Exception:
+                return None
+
+        results = await asyncio.gather(*[_try(m) for m in self.models])
+        healthy = [m for m in results if m is not None]
+        _healthy_models = healthy
+        _healthy_models_at = _time.monotonic()
+        logger.info("Probe found %d/%d healthy models: %s", len(healthy), len(self.models), healthy)
+        return healthy
+
+    async def _ensure_healthy(self) -> list[str]:
+        """Return cached healthy models, re-probing if cache expired. Uses lock to prevent thundering herd."""
+        global _healthy_models, _healthy_models_at
+        if _healthy_models is not None and (_time.monotonic() - _healthy_models_at) < _PROBE_TTL:
+            return _healthy_models
+
+        lock = _get_probe_lock()
+        async with lock:
+            if _healthy_models is not None and (_time.monotonic() - _healthy_models_at) < _PROBE_TTL:
+                return _healthy_models
+            return await self.probe_models()
 
     async def _call(
         self,
@@ -111,8 +175,11 @@ class OpenRouterClient:
         else:
             messages = [{"role": "user", "content": prompt or ""}]
 
+        healthy = await self._ensure_healthy()
+        models_to_try = healthy if healthy else self.models
+
         last_error = None
-        for model in self.models:
+        for model in models_to_try:
             raw = await self._call(model, messages, max_tokens, temperature)
             if raw is None:
                 last_error = f"{model} returned nothing"
@@ -141,7 +208,10 @@ class OpenRouterClient:
             {"role": "user", "content": user_message},
         ]
 
-        for model in self.models:
+        healthy = await self._ensure_healthy()
+        models_to_try = healthy if healthy else self.models
+
+        for model in models_to_try:
             raw = await self._call(model, messages, max_tokens, temperature)
             if raw is not None:
                 logger.info("llm_text success via %s", model)
