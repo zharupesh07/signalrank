@@ -182,8 +182,31 @@ signalrank/
 ### Prerequisites
 - Python 3.11+
 - Node.js 20+
-- PostgreSQL 15+ with pgvector extension
+- Docker (for PostgreSQL + pgvector)
 - [uv](https://github.com/astral-sh/uv)
+
+### Database (PostgreSQL + pgvector)
+
+```bash
+# Start PostgreSQL 16 with pgvector extension
+docker run -d \
+  --name signalrank-pg \
+  -e POSTGRES_DB=signalrank \
+  -e POSTGRES_PASSWORD=postgres \
+  -p 5432:5432 \
+  pgvector/pgvector:pg16
+
+# Verify it's running
+docker ps | grep signalrank-pg
+```
+
+The `pgvector/pgvector:pg16` image bundles the `vector` extension — no manual `CREATE EXTENSION` needed; Alembic migrations handle it.
+
+To stop/start later:
+```bash
+docker stop signalrank-pg
+docker start signalrank-pg
+```
 
 ### Backend
 
@@ -196,6 +219,7 @@ uv sync
 # Set environment variables
 cp .env.example .env
 # Edit .env: DATABASE_URL, NEXTAUTH_SECRET, OPENROUTER_API_KEY, RAPIDAPI_KEY (optional)
+# DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/signalrank
 
 # Run migrations
 uv run alembic upgrade head
