@@ -8,17 +8,16 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-_healthy_models: list[str] | None = None
-_healthy_models_at: float = 0.0
-_probe_lock: asyncio.Lock | None = None
+_probe_cache: dict[tuple, list[str]] = {}
+_probe_cache_at: dict[tuple, float] = {}
+_probe_locks: dict[tuple, asyncio.Lock] = {}
 _PROBE_TTL = 3600  # 1 hour
 
 
-def _get_probe_lock() -> asyncio.Lock:
-    global _probe_lock
-    if _probe_lock is None:
-        _probe_lock = asyncio.Lock()
-    return _probe_lock
+def _get_probe_lock(key: tuple) -> asyncio.Lock:
+    if key not in _probe_locks:
+        _probe_locks[key] = asyncio.Lock()
+    return _probe_locks[key]
 
 FALLBACK_MODELS = [
     "arcee-ai/trinity-large-preview:free",
@@ -67,7 +66,7 @@ class OpenRouterClient:
 
     async def probe_models(self) -> list[str]:
         """Probe all models concurrently; cache and return healthy ones."""
-        global _healthy_models, _healthy_models_at
+        key = tuple(self.models)
 
         async def _try(model: str) -> str | None:
             try:
@@ -93,21 +92,24 @@ class OpenRouterClient:
 
         results = await asyncio.gather(*[_try(m) for m in self.models])
         healthy = [m for m in results if m is not None]
-        _healthy_models = healthy
-        _healthy_models_at = _time.monotonic()
-        logger.info("Probe found %d/%d healthy models: %s", len(healthy), len(self.models), healthy)
+        _probe_cache[key] = healthy
+        _probe_cache_at[key] = _time.monotonic()
+        if not healthy:
+            logger.warning("Probe: all %d models failed, will use full list as fallback", len(self.models))
+        else:
+            logger.info("Probe found %d/%d healthy models: %s", len(healthy), len(self.models), healthy)
         return healthy
 
     async def _ensure_healthy(self) -> list[str]:
         """Return cached healthy models, re-probing if cache expired. Uses lock to prevent thundering herd."""
-        global _healthy_models, _healthy_models_at
-        if _healthy_models is not None and (_time.monotonic() - _healthy_models_at) < _PROBE_TTL:
-            return _healthy_models
+        key = tuple(self.models)
+        if key in _probe_cache and (_time.monotonic() - _probe_cache_at.get(key, 0)) < _PROBE_TTL:
+            return _probe_cache[key]
 
-        lock = _get_probe_lock()
+        lock = _get_probe_lock(key)
         async with lock:
-            if _healthy_models is not None and (_time.monotonic() - _healthy_models_at) < _PROBE_TTL:
-                return _healthy_models
+            if key in _probe_cache and (_time.monotonic() - _probe_cache_at.get(key, 0)) < _PROBE_TTL:
+                return _probe_cache[key]
             return await self.probe_models()
 
     async def _call(

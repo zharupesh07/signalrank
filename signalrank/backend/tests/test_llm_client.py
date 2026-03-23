@@ -103,13 +103,13 @@ async def test_client_text_returns_empty_on_failure():
 def _reset_probe_cache():
     """Reset module-level probe cache before each test to prevent state leaks."""
     import llm.openrouter as mod
-    mod._healthy_models = None
-    mod._healthy_models_at = 0.0
-    mod._probe_lock = None
+    mod._probe_cache.clear()
+    mod._probe_cache_at.clear()
+    mod._probe_locks.clear()
     yield
-    mod._healthy_models = None
-    mod._healthy_models_at = 0.0
-    mod._probe_lock = None
+    mod._probe_cache.clear()
+    mod._probe_cache_at.clear()
+    mod._probe_locks.clear()
 
 
 @pytest.mark.asyncio
@@ -135,7 +135,7 @@ async def test_probe_models_caches_healthy():
     assert "model-a" in healthy
     assert "model-b" not in healthy
     assert "model-c" in healthy
-    assert mod._healthy_models == healthy
+    assert mod._probe_cache[tuple(client.models)] == healthy
 
 
 @pytest.mark.asyncio
