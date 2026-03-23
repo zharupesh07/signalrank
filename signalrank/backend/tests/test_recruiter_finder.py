@@ -1,7 +1,7 @@
 """Tests for batch.recruiter_finder — no network calls."""
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -200,6 +200,23 @@ async def test_find_recruiters_uses_ddg_cache():
 
     assert not ddg_called, "DDG should not be called when cache is fresh"
     assert len(results) >= 1
+
+
+@pytest.mark.asyncio
+async def test_refresh_all_skips_duplicate_run():
+    """If a refresh is already running, return existing task ID."""
+    mock_session = AsyncMock()
+    existing_task = MagicMock()
+    existing_task.id = "existing-task-id"
+    existing_task.status = "in_progress"
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = existing_task
+    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    from api.routes.recruiters import _get_or_create_refresh_task
+    task_id, is_new = await _get_or_create_refresh_task(mock_session, "user-1")
+    assert task_id == "existing-task-id"
+    assert is_new is False
 
 
 def test_valid_slug_regex():
