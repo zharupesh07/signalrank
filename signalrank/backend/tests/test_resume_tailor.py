@@ -1,4 +1,5 @@
 import io
+import re
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -6,7 +7,8 @@ import pytest
 
 from llm.resume_tailor import (
     TailoredContent,
-    _trim_longest_experience,
+    _fit_to_one_page,
+    _typst_bold,
     check_page_count,
     load_resume_yaml,
     render_typst,
@@ -64,23 +66,46 @@ def test_resume_yaml_to_text_loads_from_file(tmp_path):
     assert data["name"] == "Test User"
 
 
-def test_trim_longest_experience():
+def test_typst_bold_converts_markdown():
+    assert _typst_bold("**Platform Architecture:** Built stuff") == "*Platform Architecture:* Built stuff"
+
+def test_typst_bold_no_markers():
+    assert _typst_bold("plain text") == "plain text"
+
+def test_typst_bold_multiple():
+    assert _typst_bold("**A:** x and **B:** y") == "*A:* x and *B:* y"
+
+def test_fit_to_one_page_trims_summary():
     content = TailoredContent(
+        summary="Sentence one. Sentence two. Sentence three. Sentence four.",
+        experiences=[{"title": "X", "company": "Y", "dates": "2024", "bullets": ["a", "b", "c"]}],
+    )
+    _fit_to_one_page(content, current_pages=2)
+    sentences = [s.strip() for s in content.summary.split(".") if s.strip()]
+    assert len(sentences) <= 2
+
+def test_certifications_field_default_empty():
+    c = TailoredContent()
+    assert c.certifications == []
+
+def test_fit_to_one_page_trims_bullets():
+    content = TailoredContent(
+        summary="Short.",
         experiences=[
-            {"bullets": ["a", "b", "c", "d"]},
-            {"bullets": ["x", "y"]},
-        ]
+            {"title": "New", "company": "A", "dates": "2024", "bullets": ["a", "b", "c", "d"]},
+            {"title": "Old", "company": "B", "dates": "2020", "bullets": ["x", "y", "z", "w"]},
+        ],
     )
-    result = _trim_longest_experience(content)
+    result = _fit_to_one_page(content, current_pages=2)
     assert result is True
-    assert len(content.experiences[0]["bullets"]) == 3
+    assert len(content.experiences[1]["bullets"]) == 3
 
-
-def test_trim_longest_experience_stops_at_2():
+def test_fit_to_one_page_stops_at_floor():
     content = TailoredContent(
-        experiences=[{"bullets": ["a", "b"]}]
+        summary="Short.",
+        experiences=[{"title": "X", "company": "Y", "dates": "2024", "bullets": ["a", "b"]}],
     )
-    result = _trim_longest_experience(content)
+    result = _fit_to_one_page(content, current_pages=2)
     assert result is False
 
 

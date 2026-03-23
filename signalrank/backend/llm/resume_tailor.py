@@ -1,4 +1,5 @@
 import logging
+import re
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
@@ -10,6 +11,12 @@ from jinja2 import Environment, FileSystemLoader
 from llm.openrouter import OpenRouterClient
 
 logger = logging.getLogger(__name__)
+
+
+def _typst_bold(s: str) -> str:
+    """Convert Markdown **text** to Typst *text* (single asterisk = bold in Typst)."""
+    return re.sub(r"\*\*(.+?)\*\*", r"*\1*", str(s))
+
 
 TEMPLATES_DIR = Path(__file__).parent.parent / "templates" / "resume"
 
@@ -28,7 +35,8 @@ Rules:
   skills (list of {category, items[]}),
   experiences (list of {title, company, location, dates, tech, bullets[]}),
   projects (list of {name, url, description}),
-  education (list of {degree, institution, year})
+  education (list of {degree, institution, year}),
+  certifications (list[str], copy from resume as-is)
 """
 
 
@@ -47,6 +55,7 @@ class TailoredContent:
     experiences: list[dict] = field(default_factory=list)
     projects: list[dict] = field(default_factory=list)
     education: list[dict] = field(default_factory=list)
+    certifications: list[str] = field(default_factory=list)
 
 
 def _parse_content(raw: dict) -> TailoredContent:
@@ -64,6 +73,7 @@ def _parse_content(raw: dict) -> TailoredContent:
         experiences=raw.get("experiences", []),
         projects=raw.get("projects", []),
         education=raw.get("education", []),
+        certifications=raw.get("certifications", []),
     )
 
 
@@ -131,6 +141,25 @@ def check_page_count(pdf_bytes: bytes) -> int:
         return max(count, 1)
 
 
+def _fit_to_one_page(content: TailoredContent, current_pages: int = 2) -> bool:
+    """Trim content to fit one page. Returns True if any trimming was done."""
+    sentences = [s.strip() for s in content.summary.split(".") if s.strip()]
+    if len(sentences) > 2:
+        content.summary = ". ".join(sentences[:2]) + "."
+        return True
+    oldest = None
+    max_bullets = 0
+    for exp in content.experiences:
+        bullets = exp.get("bullets", [])
+        if len(bullets) > max_bullets:
+            max_bullets = len(bullets)
+            oldest = exp
+    if oldest and max_bullets > 2:
+        oldest["bullets"] = oldest["bullets"][:-1]
+        return True
+    return False
+
+
 def _trim_longest_experience(content: TailoredContent) -> bool:
     longest = None
     max_bullets = 0
@@ -148,6 +177,7 @@ def _trim_longest_experience(content: TailoredContent) -> bool:
 def render_typst(content: TailoredContent, template: str = "classic") -> str:
     env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)), autoescape=False)
     env.filters["typst_escape"] = lambda s: str(s).replace("@", r"\@")
+    env.filters["typst_bold"] = _typst_bold
     tmpl = env.get_template(f"{template}.typ.j2")
     return tmpl.render(**vars(content))
 
@@ -192,6 +222,8 @@ async def tailor_and_compile(
         content.projects = resume_data.get("projects", [])
     if not content.summary:
         content.summary = resume_data.get("summary", "")
+    if not content.certifications:
+        content.certifications = resume_data.get("certifications", [])
 
     typst_src = render_typst(content, template)
     pdf = compile_pdf(typst_src)
