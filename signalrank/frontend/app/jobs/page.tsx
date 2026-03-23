@@ -351,6 +351,7 @@ export default function JobsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="search title, company..."
+              suppressHydrationWarning
               className="flex-1 bg-transparent px-2 py-2 text-xs text-foreground outline-none placeholder:text-muted-foreground"
             />
             {search && (
@@ -412,6 +413,7 @@ export default function JobsPage() {
                     max={100}
                     value={filters.minScore}
                     onChange={(e) => setFilters((f) => ({ ...f, minScore: Number(e.target.value) }))}
+                    suppressHydrationWarning
                     className="w-full accent-primary"
                   />
                 </div>
@@ -451,6 +453,7 @@ export default function JobsPage() {
                           type="checkbox"
                           checked={filters.tiers.includes(tier.value)}
                           onChange={() => setFilters((f) => ({ ...f, tiers: toggleItem(f.tiers, tier.value) }))}
+                          suppressHydrationWarning
                           className="accent-[#22c55e] w-3 h-3"
                         />
                         <span className="text-sm text-foreground">
@@ -469,6 +472,7 @@ export default function JobsPage() {
                   <select
                     value={filters.dateRange}
                     onChange={(e) => setFilters((f) => ({ ...f, dateRange: e.target.value as Filters["dateRange"] }))}
+                    suppressHydrationWarning
                     className="w-full bg-input border border-muted-foreground/40 text-xs text-foreground px-2 py-1.5 outline-none focus:border-primary transition-colors"
                   >
                     <option value="any">Any time</option>
@@ -490,6 +494,7 @@ export default function JobsPage() {
                               type="checkbox"
                               checked={filters.sites.includes(site)}
                               onChange={() => setFilters((f) => ({ ...f, sites: toggleItem(f.sites, site) }))}
+                              suppressHydrationWarning
                               className="accent-[#22c55e] w-3 h-3"
                             />
                             <span className="text-sm text-foreground">{site}</span>
@@ -516,6 +521,7 @@ export default function JobsPage() {
                           key={h.id}
                           onClick={h.column.getToggleSortingHandler()}
                           style={{ width: h.getSize(), minWidth: h.getSize() }}
+                          suppressHydrationWarning
                           className="px-3 py-3 text-left text-xs text-muted-foreground uppercase tracking-[0.15em] cursor-pointer select-none hover:text-primary transition-colors"
                         >
                           <div className="flex items-center gap-1">
@@ -547,7 +553,7 @@ export default function JobsPage() {
                           style={isSelected ? { background: "var(--primary)/5", borderLeft: "2px solid var(--primary)" } : {}}
                         >
                           {row.getVisibleCells().map((cell) => (
-                            <td key={cell.id} style={{ width: cell.column.getSize(), minWidth: cell.column.getSize() }} className="px-3 py-2.5">
+                            <td key={cell.id} style={{ width: cell.column.getSize(), minWidth: cell.column.getSize() }} suppressHydrationWarning className="px-3 py-2.5">
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </td>
                           ))}
