@@ -54,22 +54,11 @@ const columns = [
   col.accessor("title", {
     header: "Title",
     size: 260,
-    cell: (i) => {
-      const url = i.row.original.job_url;
-      return url ? (
-        <a
-          href={url}
-          target="_blank"
-          rel="noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="text-foreground text-xs hover:text-primary hover:underline transition-colors line-clamp-2"
-        >
-          {i.getValue()}
-        </a>
-      ) : (
-        <span className="text-foreground text-xs line-clamp-2">{i.getValue()}</span>
-      );
-    },
+    cell: (i) => (
+      <span className="text-secondary-foreground text-xs font-medium leading-snug block">
+        {i.getValue() ?? "—"}
+      </span>
+    ),
   }),
   col.accessor("company", {
     header: "Company",
@@ -512,7 +501,12 @@ export default function JobsPage() {
           <div className="flex-1 min-w-0 flex gap-4">
           <div className={`space-y-5 ${selectedJob ? "flex-1 min-w-0" : "w-full"}`}>
             <div className="border border-border overflow-x-auto">
-              <table className="w-full text-xs border-collapse min-w-[900px]">
+              <table className="w-full text-xs border-collapse min-w-[900px]" style={{ tableLayout: "fixed" }}>
+                <colgroup>
+                  {table.getAllLeafColumns().map((col) => (
+                    <col key={col.id} style={{ width: col.getSize() }} />
+                  ))}
+                </colgroup>
                 <thead>
                   {table.getHeaderGroups().map((hg) => (
                     <tr key={hg.id} className="border-b border-border bg-input">
@@ -520,9 +514,7 @@ export default function JobsPage() {
                         <th
                           key={h.id}
                           onClick={h.column.getToggleSortingHandler()}
-                          style={{ width: h.getSize(), minWidth: h.getSize() }}
-                          suppressHydrationWarning
-                          className="px-3 py-3 text-left text-xs text-muted-foreground uppercase tracking-[0.15em] cursor-pointer select-none hover:text-primary transition-colors"
+                          className="px-3 py-3 text-left text-xs text-muted-foreground uppercase tracking-[0.15em] cursor-pointer select-none hover:text-primary transition-colors overflow-hidden"
                         >
                           <div className="flex items-center gap-1">
                             {flexRender(h.column.columnDef.header, h.getContext())}
@@ -553,7 +545,7 @@ export default function JobsPage() {
                           style={isSelected ? { background: "var(--primary)/5", borderLeft: "2px solid var(--primary)" } : {}}
                         >
                           {row.getVisibleCells().map((cell) => (
-                            <td key={cell.id} style={{ width: cell.column.getSize(), minWidth: cell.column.getSize() }} suppressHydrationWarning className="px-3 py-2.5">
+                            <td key={cell.id} className="px-3 py-2.5 overflow-hidden">
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </td>
                           ))}
