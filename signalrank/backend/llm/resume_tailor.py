@@ -142,35 +142,32 @@ def check_page_count(pdf_bytes: bytes) -> int:
 
 
 def _fit_to_one_page(content: TailoredContent, current_pages: int = 2) -> bool:
-    """Trim content to fit one page. Returns True if any trimming was done."""
+    """Trim content to fit one page. Returns True if any trimming was done.
+
+    Priority (least destructive first):
+    1. Truncate summary to 2 sentences if > 3
+    2. Trim bullets from oldest non-intern role (reversed list = oldest first)
+    3. Trim bullets from newest role only as last resort (floor: 3 bullets)
+    """
+    if current_pages <= 1:
+        return False
+
+    # Step 1: trim summary
     sentences = [s.strip() for s in content.summary.split(".") if s.strip()]
-    if len(sentences) > 2:
+    if len(sentences) > 3:
         content.summary = ". ".join(sentences[:2]) + "."
         return True
-    oldest = None
-    max_bullets = 0
-    for exp in content.experiences:
-        bullets = exp.get("bullets", [])
-        if len(bullets) > max_bullets:
-            max_bullets = len(bullets)
-            oldest = exp
-    if oldest and max_bullets > 2:
-        oldest["bullets"] = oldest["bullets"][:-1]
-        return True
-    return False
 
-
-def _trim_longest_experience(content: TailoredContent) -> bool:
-    longest = None
-    max_bullets = 0
-    for exp in content.experiences:
+    # Step 2: trim oldest non-intern role first (reversed = oldest first)
+    non_intern = [e for e in reversed(content.experiences) if e.get("bullets")]
+    for exp in non_intern:
         bullets = exp.get("bullets", [])
-        if len(bullets) > max_bullets:
-            max_bullets = len(bullets)
-            longest = exp
-    if longest and max_bullets > 2:
-        longest["bullets"] = longest["bullets"][:-1]
-        return True
+        is_newest = content.experiences.index(exp) == 0
+        floor = 3 if is_newest else 2
+        if len(bullets) > floor:
+            exp["bullets"] = bullets[:-1]
+            return True
+
     return False
 
 
@@ -228,12 +225,14 @@ async def tailor_and_compile(
     typst_src = render_typst(content, template)
     pdf = compile_pdf(typst_src)
 
-    for _ in range(2):
+    for _ in range(5):
         if check_page_count(pdf) <= max_pages:
             break
-        if not _trim_longest_experience(content):
+        if not _fit_to_one_page(content, current_pages=check_page_count(pdf)):
             break
         typst_src = render_typst(content, template)
         pdf = compile_pdf(typst_src)
+    else:
+        logger.warning("_fit_to_one_page exhausted 5 iterations, returning best-effort PDF")
 
     return content, pdf

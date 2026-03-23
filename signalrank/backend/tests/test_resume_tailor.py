@@ -109,6 +109,33 @@ def test_fit_to_one_page_stops_at_floor():
     assert result is False
 
 
+def test_fit_to_one_page_trims_oldest_role_first():
+    """Oldest role (last in list) should lose bullets before newer roles."""
+    content = TailoredContent(
+        summary="Short summary.",
+        experiences=[
+            {"title": "New Role", "company": "A", "dates": "2024", "bullets": ["a", "b", "c", "d", "e"]},
+            {"title": "Old Role", "company": "B", "dates": "2020", "bullets": ["x", "y", "z", "w"]},
+        ],
+    )
+    trimmed = _fit_to_one_page(content, current_pages=2)
+    assert trimmed is True
+    assert len(content.experiences[1]["bullets"]) == 3
+    assert len(content.experiences[0]["bullets"]) == 5  # untouched
+
+
+def test_fit_to_one_page_protects_newest_role():
+    """Newest role (index 0) must keep at least 3 bullets."""
+    content = TailoredContent(
+        summary="Short.",
+        experiences=[
+            {"title": "New", "company": "A", "dates": "2024", "bullets": ["a", "b", "c"]},
+        ],
+    )
+    trimmed = _fit_to_one_page(content, current_pages=2)
+    assert len(content.experiences[0]["bullets"]) == 3  # floor respected
+
+
 def test_check_page_count_single_page():
     try:
         import pypdf
