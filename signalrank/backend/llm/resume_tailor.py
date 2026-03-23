@@ -19,6 +19,7 @@ def _typst_bold(s: str) -> str:
 
 
 TEMPLATES_DIR = Path(__file__).parent.parent / "templates" / "resume"
+FONTS_DIR = Path(__file__).parent.parent / "data" / "fonts"
 
 SYSTEM_PROMPT = """You are a resume optimization expert.
 Given a candidate's resume and a job description, rewrite the resume to maximize relevance to this specific role.
@@ -184,11 +185,11 @@ def compile_pdf(typst_source: str) -> bytes:
         src = Path(tmpdir) / "resume.typ"
         out = Path(tmpdir) / "resume.pdf"
         src.write_text(typst_source, encoding="utf-8")
-        result = subprocess.run(
-            ["typst", "compile", str(src), str(out)],
-            capture_output=True,
-            timeout=30,
-        )
+        cmd = ["typst", "compile"]
+        if FONTS_DIR.exists():
+            cmd += ["--font-path", str(FONTS_DIR)]
+        cmd += [str(src), str(out)]
+        result = subprocess.run(cmd, capture_output=True, timeout=30)
         if result.returncode != 0:
             raise RuntimeError(f"typst compile failed: {result.stderr.decode()}")
         return out.read_bytes()

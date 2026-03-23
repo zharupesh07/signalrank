@@ -219,6 +219,28 @@ async def test_tailor_and_compile_one_page():
     assert pdf == b"%PDF-1.4 fake"
 
 
+def test_compile_pdf_passes_font_path():
+    """compile_pdf must pass --font-path to typst compile when fonts dir exists."""
+    from llm.resume_tailor import FONTS_DIR
+
+    captured = {}
+
+    def fake_run(cmd, **kwargs):
+        captured["cmd"] = cmd
+        m = MagicMock()
+        m.returncode = 0
+        return m
+
+    with patch("llm.resume_tailor.subprocess.run", side_effect=fake_run), \
+         patch("pathlib.Path.read_bytes", return_value=b"%PDF-1.4"):
+        from llm.resume_tailor import compile_pdf
+        compile_pdf("#set page() Hello")
+
+    assert "--font-path" in captured["cmd"]
+    font_path_idx = captured["cmd"].index("--font-path")
+    assert str(FONTS_DIR) in captured["cmd"][font_path_idx + 1]
+
+
 @pytest.fixture
 async def auth_token(client):
     await client.post("/api/auth/register", json={"email": "tailor@test.com", "password": "pass"})
