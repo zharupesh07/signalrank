@@ -167,3 +167,48 @@ async def test_find_recruiters_india_scope_in_query():
         await find_recruiters("Snowflake", max_results=5)
 
     assert all("India" in q for q in captured_queries)
+
+
+@pytest.mark.asyncio
+async def test_find_recruiters_uses_ddg_cache():
+    """When fresh cache exists, DDG is not called."""
+    from datetime import datetime, timezone, timedelta
+    from unittest.mock import MagicMock
+
+    cache_row = MagicMock()
+    cache_row.raw_candidates = [
+        {"slug": "alice-jones-99aa", "snippet": "Alice Jones - Recruiter at Adobe India"},
+    ]
+    cache_row.searched_at = datetime.now(timezone.utc) - timedelta(days=1)
+
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = cache_row
+    mock_session = AsyncMock()
+    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    ddg_called = False
+
+    def spy_ddg(query, retries=3):
+        nonlocal ddg_called
+        ddg_called = True
+        return "<html></html>"
+
+    with patch("batch.recruiter_finder._ddg_search_sync", side_effect=spy_ddg), \
+         patch("batch.recruiter_finder._llm_enrich", new_callable=AsyncMock, return_value=_LLM_RESPONSE), \
+         patch.dict("os.environ", {"OPENROUTER_API_KEY": "sk-test"}):
+        results = await find_recruiters("Adobe", max_results=5, db=mock_session)
+
+    assert not ddg_called, "DDG should not be called when cache is fresh"
+    assert len(results) >= 1
+
+
+def test_valid_slug_regex():
+    """URL format validation rejects bad slugs."""
+    from batch.recruiter_finder import _VALID_SLUG_RE
+    assert _VALID_SLUG_RE.match("john-doe-123abc")
+    assert _VALID_SLUG_RE.match("alice")
+    assert not _VALID_SLUG_RE.match("")
+    assert not _VALID_SLUG_RE.match("-invalid")
+    assert not _VALID_SLUG_RE.match("a" * 200)
+    assert not _VALID_SLUG_RE.match("has spaces")
+    assert not _VALID_SLUG_RE.match("UPPERCASE")

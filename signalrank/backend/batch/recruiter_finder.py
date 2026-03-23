@@ -34,13 +34,9 @@ _LI_URL_RE = re.compile(
     r"https?://(?:www\.|[a-z]{2}\.)?linkedin\.com/in/([a-z0-9\-]+)",
     re.IGNORECASE,
 )
-# Free models that return reliable JSON — tried in order
-_FREE_MODELS = [
-    "openrouter/free",
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "google/gemma-3-27b-it:free",
-    "mistralai/mistral-small-3.1-24b-instruct:free",
-]
+_VALID_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9\-]{0,100}$")
+
+from llm.openrouter import FALLBACK_MODELS
 
 
 # ---------------------------------------------------------------------------
@@ -101,9 +97,16 @@ def _parse_ddg_html(html: str) -> list[dict]:
 # Network (injectable for tests)
 # ---------------------------------------------------------------------------
 
-def _ddg_search_sync(query: str) -> str:
+def _ddg_search_sync(query: str, retries: int = 3) -> str:
+    import time
     with httpx.Client(headers=_HEADERS, follow_redirects=True, timeout=15) as client:
-        resp = client.post(_DDG_URL, data={"q": query, "b": "", "kl": "in-en"})
+        client.get(_DDG_URL)
+        time.sleep(1)
+        for attempt in range(retries):
+            resp = client.post(_DDG_URL, data={"q": query, "b": "", "kl": "in-en"})
+            if resp.status_code == 200 and "result" in resp.text:
+                return resp.text
+            time.sleep(2 * (attempt + 1))
         resp.raise_for_status()
         return resp.text
 
@@ -127,15 +130,22 @@ async def _llm_enrich(
     system = (
         "You are a data extraction assistant. "
         "Given a list of LinkedIn profile slugs and their page title snippets, "
-        "identify which profiles belong to recruiters or talent acquisition professionals "
-        f"at {company} in India. "
+        "identify which profiles CURRENTLY work as recruiters or talent acquisition professionals "
+        f"at {company}. "
+        "IMPORTANT: Exclude anyone who is a FORMER/EX employee of the company. "
+        "LinkedIn snippets often say 'Company' even for people who left. "
+        "Look for clues like 'ex-', 'former', 'previously at', or past tense. "
+        "If the snippet says something like 'Recruiter at OtherCompany' with no mention of "
+        f"currently being at {company}, exclude them. "
+        "Only include people whose snippet clearly indicates they are CURRENTLY at the company. "
+        "When in doubt, exclude. "
         "For each recruiter, extract their full name from the snippet (not the slug). "
         "Return ONLY a JSON array — no markdown, no explanation. "
-        'Each item: {"slug": "...", "name": "Full Name", "title": "Job Title", "is_recruiter": true}'
+        'Each item: {"slug": "...", "name": "Full Name", "title": "Current Job Title", "is_recruiter": true}'
     )
-    user = f"Candidates:\n{items_json}\n\nReturn only recruiter profiles as a JSON array."
+    user = f"Candidates:\n{items_json}\n\nReturn only profiles of people CURRENTLY working as recruiters at {company}. Exclude former employees."
 
-    for model in _FREE_MODELS:
+    for model in FALLBACK_MODELS:
         try:
             async with httpx.AsyncClient(timeout=40) as client:
                 resp = await client.post(
@@ -185,6 +195,7 @@ async def _llm_enrich(
 async def find_recruiters(
     company: str,
     max_results: int = 10,
+    db: "AsyncSession | None" = None,
 ) -> list[dict]:
     """
     Find India-based recruiters at *company*.
@@ -199,36 +210,63 @@ async def find_recruiters(
     """
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
 
-    # Step 1 — DDG search (India-scoped, two queries)
-    ddg_queries = [
-        f'site:linkedin.com/in "{company}" recruiter India',
-        f'site:linkedin.com/in "{company}" "talent acquisition" India',
-    ]
+    from datetime import datetime, timedelta, timezone
+    _CACHE_TTL_DAYS = 3
 
-    seen_slugs: set[str] = set()
     raw_candidates: list[dict] = []
+    cache_hit = False
 
-    for q in ddg_queries:
-        if len(raw_candidates) >= max_results * 2:
-            break
-        try:
-            html = await asyncio.wait_for(
-                asyncio.to_thread(_ddg_search_sync, q),
-                timeout=20,
-            )
-        except (asyncio.TimeoutError, httpx.HTTPError) as exc:
-            logger.warning("DDG search failed for %r: %s", q, exc)
-            await asyncio.sleep(1)
-            continue
+    if db is not None:
+        from sqlalchemy import select
+        from api.models import RecruiterSearch
+        cutoff = datetime.now(timezone.utc) - timedelta(days=_CACHE_TTL_DAYS)
+        result = await db.execute(
+            select(RecruiterSearch)
+            .where(RecruiterSearch.company == company, RecruiterSearch.searched_at >= cutoff)
+            .order_by(RecruiterSearch.searched_at.desc())
+            .limit(1)
+        )
+        cached = result.scalar_one_or_none()
+        if cached and cached.raw_candidates:
+            raw_candidates = list(cached.raw_candidates)
+            cache_hit = True
+            logger.info("DDG cache hit for %s (%d candidates)", company, len(raw_candidates))
 
-        for r in _parse_ddg_html(html):
-            if r["slug"] not in seen_slugs:
-                seen_slugs.add(r["slug"])
-                raw_candidates.append(r)
+    if not cache_hit:
+        # Step 1 — DDG search (India-scoped, two queries)
+        ddg_queries = [
+            f'site:linkedin.com/in "{company}" recruiter India',
+            f'site:linkedin.com/in "{company}" "talent acquisition" India',
+        ]
 
-        await asyncio.sleep(1.5)
+        seen_slugs: set[str] = set()
 
-    logger.info("DDG found %d raw candidates for %s", len(raw_candidates), company)
+        for q in ddg_queries:
+            if len(raw_candidates) >= max_results * 2:
+                break
+            try:
+                html = await asyncio.wait_for(
+                    asyncio.to_thread(_ddg_search_sync, q),
+                    timeout=20,
+                )
+            except (asyncio.TimeoutError, httpx.HTTPError) as exc:
+                logger.warning("DDG search failed for %r: %s", q, exc)
+                await asyncio.sleep(1)
+                continue
+
+            for r in _parse_ddg_html(html):
+                if r["slug"] not in seen_slugs:
+                    seen_slugs.add(r["slug"])
+                    raw_candidates.append(r)
+
+            await asyncio.sleep(1.5)
+
+        logger.info("DDG found %d raw candidates for %s", len(raw_candidates), company)
+
+        if db is not None and raw_candidates:
+            from api.models import RecruiterSearch
+            db.add(RecruiterSearch(company=company, raw_candidates=raw_candidates))
+            await db.flush()
 
     # Step 2 — LLM enrichment or keyword fallback
     if api_key and raw_candidates:
@@ -263,10 +301,13 @@ async def find_recruiters(
     # Step 3 — Build output (no email guessing)
     results = []
     for c in confirmed[:max_results]:
+        slug = c.get("slug", "")
+        if not slug or not _VALID_SLUG_RE.match(slug):
+            continue
         name = c.get("name") or ""
         results.append({
             "name": name or None,
-            "linkedin_url": f"https://www.linkedin.com/in/{c['slug']}",
+            "linkedin_url": f"https://www.linkedin.com/in/{slug}",
             "source": c["source"],
             "confidence": c["confidence"],
         })

@@ -32,6 +32,7 @@ async def find_and_save_recruiters(
     found = await find_recruiters(
         company=body.company.strip(),
         max_results=body.max_results,
+        db=db,
     )
 
     inserted = 0
