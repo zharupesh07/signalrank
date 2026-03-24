@@ -10,7 +10,7 @@ from api.config import settings
 from api.database import AsyncSessionLocal
 from api.deps_llm import get_llm_client
 from api.models import Run
-from api.routes import applications, auth, jobs, onboarding, profile, recruiters, resume, runs
+from api.routes import applications, auth, ingest, jobs, onboarding, profile, recruiters, resume, runs
 from batch.resume_worker import boot_scan, recover_stuck_generation_tasks, resume_worker_loop
 from batch.worker import get_queue, worker_loop
 
@@ -105,6 +105,7 @@ app.include_router(applications.router)
 app.include_router(onboarding.router)
 app.include_router(resume.router)
 app.include_router(recruiters.router)
+app.include_router(ingest.router)
 
 
 @app.get("/health")
