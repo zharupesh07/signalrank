@@ -8,7 +8,6 @@ import { useToast } from "@/components/toast";
 import {
   Trash2,
   Mail,
-  ExternalLink,
   Plus,
   ChevronDown,
   ChevronRight,
@@ -258,7 +257,10 @@ export default function TrackerPage() {
       if (email.body) {
         const recEmails = recs.filter((r: { email: string }) => isValidEmail(r.email)).map((r: { email: string }) => r.email);
         const to = recEmails.length ? recEmails[0] : (app.recruiter?.email && isValidEmail(app.recruiter.email) ? app.recruiter.email : "");
-        setGmailLinks((prev) => new Map(prev).set(app.id, gmailComposeUrl(to, email.subject, email.body + MY_SIGNATURE)));
+        // Only show Gmail button if we have a real recipient
+        if (to) {
+          setGmailLinks((prev) => new Map(prev).set(app.id, gmailComposeUrl(to, email.subject, email.body + MY_SIGNATURE)));
+        }
       }
 
       await updateStatus(app.id, "applied");
@@ -268,7 +270,7 @@ export default function TrackerPage() {
       } else if (dlResult === "error") {
         toast("Resume download failed", "error");
       } else {
-        toast(email.body ? `Applied — Cmd+click the Gmail link to open in background` : `Applied to ${app.title}`, "success");
+        toast(`Applied to ${app.title}`, "success");
       }
     } catch (e) {
       toast(`Failed: ${e instanceof Error ? e.message : "unknown error"}`, "error");
@@ -480,7 +482,11 @@ export default function TrackerPage() {
                       {/* Title + company + priority */}
                       <div className="flex items-start gap-1.5">
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm text-foreground truncate">{app.title}</div>
+                          {app.job_url ? (
+                            <a href={app.job_url} target="_blank" rel="noreferrer" className="text-sm text-foreground truncate hover:text-primary transition-colors block">{app.title}</a>
+                          ) : (
+                            <div className="text-sm text-foreground truncate">{app.title}</div>
+                          )}
                           <div className="text-xs text-secondary-foreground truncate">{app.company}</div>
                         </div>
                         <button
@@ -740,16 +746,6 @@ export default function TrackerPage() {
                           >
                             → applied
                           </button>
-                        )}
-                        {app.job_url && app.status !== "interested" && (
-                          <a
-                            href={app.job_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-muted-foreground hover:text-primary transition-colors"
-                          >
-                            <ExternalLink size={11} />
-                          </a>
                         )}
                         <button
                           onClick={() => mailAllRecruiters(app)}
