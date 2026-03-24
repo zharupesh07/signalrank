@@ -25,10 +25,11 @@ flowchart TD
         ONBOARD["Onboarding\n/api/onboarding"]
     end
 
-    subgraph Worker["Background Worker (asyncio)"]
+    subgraph Worker["Background Workers (asyncio)"]
         QUEUE["In-memory Queue"]
         SCRAPER["Scraper\nbatch/scraper.py"]
         RANKER["Ranker\nbatch/ranker.py"]
+        RESWORKER["Resume Worker\nbatch/resume_worker.py"]
 
         subgraph Sources["Scraping Sources"]
             S1["JobSpy\n(Indeed + LinkedIn)"]
@@ -59,6 +60,7 @@ flowchart TD
         T3[("job_results\nruns")]
         T4[("applications\nrecruiters")]
         T5[("embeddings\nllm_cache")]
+        T6[("generation_queue\ntailored_resumes")]
     end
 
     UI -->|"JWT auth"| AUTH
@@ -75,6 +77,7 @@ flowchart TD
     RUNS --> QUEUE
     TRACKER --> T4
     RESUME --> L3
+    RESUME --> T6
     ONBOARD --> L2
 
     QUEUE --> SCRAPER
@@ -89,6 +92,10 @@ flowchart TD
     SC1 --> T5
     RANKER --> T3
 
+    T4 --> RESWORKER
+    RESWORKER --> L3
+    RESWORKER --> T6
+
     L1 --> T1
     L2 --> T1
 ```
@@ -102,7 +109,10 @@ flowchart TD
 | **Smart Ranking** | Additive 0-100 score: semantic similarity, skills, company tier, seniority, recency, location |
 | **Company Tiers** | SS / S / A / B / C / D taxonomy across 80+ companies — score bonus for dream companies |
 | **Job Tracker** | Track applications, add recruiter contacts, generate cold-email drafts |
-| **Resume Tailoring** | LLM-powered resume tailoring per job via OpenRouter |
+| **Resume Tailoring** | LLM-powered resume tailoring per job; Typst PDF with Awesome-CV-inspired layout |
+| **Background Resume Generation** | On boot and on track: resumes auto-generated for all tracked jobs; cached in DB |
+| **Template Switching** | Switch PDF template (classic/modern/minimal) without LLM re-call — re-renders from cache |
+| **Jobs Page Pagination** | Page-size picker (50 / 100 / 200 / All); fetches up to 5000 jobs |
 | **Onboarding** | Guided flow to distil resume → profile → preferences |
 | **Dev Panel** | Hidden 5-click debug overlay: tweak roles, locations, scoring weights, trigger runs |
 | **Multi-source Scraping** | Indeed + LinkedIn (JobSpy), RapidAPI JSearch, Remotive, Himalayas, Jobicy, Google Jobs |
@@ -146,7 +156,8 @@ signalrank/
 │   │   ├── models.py          # SQLAlchemy ORM models
 │   │   └── routes/            # auth, jobs, profile, runs, tracker, resume
 │   ├── batch/
-│   │   ├── worker.py          # Async job queue processor
+│   │   ├── worker.py          # Async job queue processor (scrape + rank)
+│   │   ├── resume_worker.py   # Background resume generation worker
 │   │   ├── scraper.py         # Orchestrates all scraping sources
 │   │   ├── ranker.py          # Scores all jobs for a user
 │   │   ├── query_builder.py   # Builds search queries from profile
@@ -159,7 +170,11 @@ signalrank/
 │   ├── llm/
 │   │   ├── openrouter.py      # LLM client + retry
 │   │   ├── resume_parser.py   # Extract structured profile from resume
-│   │   └── resume_tailor.py   # Tailor resume to job description
+│   │   └── resume_tailor.py   # Tailor + compile resume to PDF (Typst)
+│   ├── templates/resume/      # Jinja2+Typst resume templates (classic, modern, minimal)
+│   └── data/
+│       ├── fonts/             # Roboto + FontAwesome for PDF rendering
+│       └── resume_example.yaml   # Base resume YAML
 │   └── config/
 │       └── base.yaml          # Scoring weights, tier lists, blocklists
 └── frontend/
@@ -201,6 +216,11 @@ docker ps | grep signalrank-pg
 ```
 
 The `pgvector/pgvector:pg16` image bundles the `vector` extension — no manual `CREATE EXTENSION` needed; Alembic migrations handle it.
+
+For running tests, also create the test database:
+```bash
+docker exec signalrank-pg psql -U postgres -c "CREATE DATABASE signalrank_test;"
+```
 
 To stop/start later:
 ```bash
@@ -311,6 +331,29 @@ sequenceDiagram
     UI->>API: GET /api/jobs?run_id=latest
     API-->>UI: ranked job list (score, tier, title, company)
 ```
+
+---
+
+## Resume Generation
+
+Resumes are generated using [Typst](https://typst.app/) compiled from Jinja2 templates.
+
+**Install Typst** (required for PDF compilation):
+```bash
+# macOS
+brew install typst
+
+# or download from https://github.com/typst/typst/releases
+```
+
+**How it works:**
+- On server startup, a boot scan enqueues resume generation for all tracked jobs that lack a cached resume
+- When a user tracks a new job, generation is enqueued immediately (non-blocking)
+- The `resume_worker` processes up to 3 jobs concurrently, saving results to `tailored_resumes`
+- `GET /api/resume/tailor/{job_id}?template=classic` returns the PDF; `?template=modern` re-renders from cache (no LLM call)
+- If resume not yet generated: returns `HTTP 202 {"status": "pending", "job_id": "..."}`
+
+**Template switching** is free — content is generated once via LLM and cached as JSON; switching templates only re-runs the Typst compiler.
 
 ---
 
