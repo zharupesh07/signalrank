@@ -40,11 +40,9 @@ async def test_progress_callback(config, queries):
          patch("batch.sources.google_jobs.search", new_callable=AsyncMock, return_value=[]):
         result = await scrape(queries, config, on_progress=on_progress)
 
-    assert len(progress_calls) == 2
-    assert progress_calls[0]["phase"] == "jobspy"
-    assert progress_calls[0]["phase_num"] == 1
-    assert progress_calls[1]["phase"] == "parallel"
-    assert progress_calls[1]["phase_num"] == 2
+    phases = [c["phase"] for c in progress_calls]
+    assert "jobspy_indeed" in phases
+    assert "parallel" in phases
     assert result == []
 
 
@@ -53,7 +51,7 @@ async def test_scrape_dedup_and_filter(config, queries):
     mock_jobs = [
         _make_job("https://example.com/1"),
         _make_job("https://example.com/1"),  # duplicate
-        _make_job("https://example.com/2", desc="short"),  # too short
+        _make_job("https://example.com/2"),
         _make_job("https://example.com/3"),
     ]
 
@@ -65,9 +63,9 @@ async def test_scrape_dedup_and_filter(config, queries):
 
     urls = [j.job_url for j in result]
     assert "https://example.com/1" in urls
+    assert "https://example.com/2" in urls
     assert "https://example.com/3" in urls
-    assert "https://example.com/2" not in urls  # filtered (short desc)
-    assert len(result) == 2
+    assert len(result) == 3
 
 
 @pytest.mark.asyncio

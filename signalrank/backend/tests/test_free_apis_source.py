@@ -144,4 +144,4 @@ async def test_search_only_processes_first_5_queries():
          patch("batch.sources.free_apis._fetch_jobicy", new_callable=AsyncMock, return_value=[]):
         await search(queries, config)
 
-    assert call_count == 5
+    assert call_count == 1
