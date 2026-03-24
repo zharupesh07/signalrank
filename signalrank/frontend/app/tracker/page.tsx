@@ -257,9 +257,15 @@ export default function TrackerPage() {
         setExpandedEmail(app.id);
         const emails = recs.filter((r: { email: string }) => isValidEmail(r.email)).map((r: { email: string }) => r.email);
         const to = emails.length ? emails[0] : (app.recruiter?.email && isValidEmail(app.recruiter.email) ? app.recruiter.email : "");
-        window.open(gmailComposeUrl(to, email.subject, email.body + MY_SIGNATURE), "_blank");
+        const tab = window.open(gmailComposeUrl(to, email.subject, email.body + MY_SIGNATURE), "_blank", "noopener,noreferrer");
+        tab?.blur();
+        window.focus();
       }
-      if (app.job_url) window.open(app.job_url, "_blank");
+      if (app.job_url) {
+        const tab = window.open(app.job_url, "_blank", "noopener,noreferrer");
+        tab?.blur();
+        window.focus();
+      }
 
       // Mark as applied
       await updateStatus(app.id, "applied");
