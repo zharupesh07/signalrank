@@ -1,7 +1,7 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import Response
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -113,6 +113,7 @@ async def tailor(
 @router.get("/tailor/{job_id}")
 async def download_tailored(
     job_id: str,
+    template: str = Query("classic"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -124,10 +125,10 @@ async def download_tailored(
     )
     tailored = res.scalar_one_or_none()
     if not tailored:
-        raise HTTPException(status_code=404, detail="No tailored resume for this job")
+        return JSONResponse(status_code=202, content={"status": "pending", "job_id": str(job_id)})
 
     content = TailoredContent(**tailored.content_json)
-    typst_src = render_typst(content, tailored.template or "classic")
+    typst_src = render_typst(content, template)
     pdf_bytes = compile_pdf(typst_src)
 
     company = ""
