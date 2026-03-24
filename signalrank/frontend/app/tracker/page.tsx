@@ -263,14 +263,12 @@ export default function TrackerPage() {
         }
       }
 
-      await updateStatus(app.id, "applied");
-
       if (dlResult === "pending") {
         toast("Resume generating — PDF will be available in ~2 min, click Apply again", "info");
       } else if (dlResult === "error") {
         toast("Resume download failed", "error");
       } else {
-        toast(`Applied to ${app.title}`, "success");
+        toast(`Resume downloaded${email.body ? " + email ready" : ""}`, "success");
       }
     } catch (e) {
       toast(`Failed: ${e instanceof Error ? e.message : "unknown error"}`, "error");
