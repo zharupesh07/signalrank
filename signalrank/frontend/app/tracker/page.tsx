@@ -62,10 +62,11 @@ function scoreColor(score: number) {
 }
 
 const MY_SIGNATURE = `
+
 --
 Example Candidate
-Senior AI Platform Engineer, Fractal Analytics
-linkedin.com/in/example-candidate`;
+Senior ML Platform Engineer
+linkedin.com/in/example-candidate | github.com/examplecandidate | examplecandidate.github.io`;
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
