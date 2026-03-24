@@ -132,7 +132,13 @@ async def resume_worker_loop(
 ) -> None:
     """Poll generation_queue for pending tasks, process up to CONCURRENCY at a time."""
     logger.info("Resume worker started")
+
+    async def _run_task(t):
+        async with session_factory() as task_db:
+            await process_generation_task(t, task_db, llm)
+
     while True:
+        tasks: list = []
         try:
             async with session_factory() as db:
                 result = await db.execute(
@@ -152,10 +158,6 @@ async def resume_worker_loop(
                             .values(status="running")
                         )
                     await db.commit()
-
-            async def _run_task(t):
-                async with session_factory() as task_db:
-                    await process_generation_task(t, task_db, llm)
 
             if tasks:
                 await asyncio.gather(
