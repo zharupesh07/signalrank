@@ -8,6 +8,7 @@ import { useToast } from "@/components/toast";
 import RunProgress from "@/components/run-progress";
 import { JobCardSkeleton, StatCardSkeleton } from "@/components/skeleton";
 import { RefreshCw, ExternalLink, TrendingUp, Layers, Clock, BarChart2, Plus } from "lucide-react";
+import AddJobModal from "@/components/add-job-modal";
 
 type Analytics = {
   score_distribution: { range: string; count: number }[];
@@ -95,6 +96,7 @@ export default function DashboardPage() {
   const [triggering, setTriggering] = useState(false);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [tracked, setTracked] = useState<Set<string>>(new Set());
+  const [addJobOpen, setAddJobOpen] = useState(false);
 
   const loadJobs = useCallback(async () => {
     if (!token) return;
@@ -167,6 +169,7 @@ export default function DashboardPage() {
   const isRunActive = run?.status === "pending" || run?.status === "running";
 
   return (
+    <>
     <div className="pt-14 min-h-screen page-content">
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-7">
 
@@ -176,14 +179,23 @@ export default function DashboardPage() {
             <div className="section-label">dashboard</div>
             <h1 className="text-xl font-bold text-foreground tracking-tight">Top Matches</h1>
           </div>
-          <button
-            onClick={triggerRun}
-            disabled={triggering || isRunActive}
-            className="flex items-center gap-2 px-4 py-2.5 text-xs border border-primary/50 text-primary hover:bg-primary hover:text-background hover:border-primary transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-widest font-bold"
-          >
-            <RefreshCw size={11} className={triggering || isRunActive ? "spin-slow" : ""} />
-            {triggering ? "Queuing..." : isRunActive ? "Running..." : "Refresh Jobs"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setAddJobOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded hover:opacity-90"
+            >
+              <Plus size={14} />
+              Add Job
+            </button>
+            <button
+              onClick={triggerRun}
+              disabled={triggering || isRunActive}
+              className="flex items-center gap-2 px-4 py-2.5 text-xs border border-primary/50 text-primary hover:bg-primary hover:text-background hover:border-primary transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-widest font-bold"
+            >
+              <RefreshCw size={11} className={triggering || isRunActive ? "spin-slow" : ""} />
+              {triggering ? "Queuing..." : isRunActive ? "Running..." : "Refresh Jobs"}
+            </button>
+          </div>
         </div>
 
         {/* Stat cards */}
@@ -339,5 +351,11 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+    <AddJobModal
+      open={addJobOpen}
+      onClose={() => setAddJobOpen(false)}
+      onAdded={() => { /* dashboard refreshes on next navigation */ }}
+    />
+    </>
   );
 }

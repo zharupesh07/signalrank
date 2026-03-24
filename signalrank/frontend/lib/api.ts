@@ -196,4 +196,40 @@ export const api = {
         body: JSON.stringify({ question_id, answer }),
       }),
   },
+
+  ingest: {
+    extract: (token: string, payload: { url?: string; text?: string }) =>
+      request<{
+        title: string;
+        company: string;
+        location: string;
+        job_url: string;
+        date_posted: string | null;
+        description: string;
+      }>("/api/jobs/ingest", {
+        method: "POST",
+        token,
+        body: JSON.stringify(payload),
+      }),
+
+    confirm: (
+      token: string,
+      payload: {
+        title: string;
+        company: string;
+        location: string;
+        job_url: string;
+        date_posted: string | null;
+        description: string;
+      }
+    ) =>
+      request<
+        | { application_id: string; priority: string }
+        | { error: string; application_id?: string }
+      >("/api/jobs/ingest/confirm", {
+        method: "POST",
+        token,
+        body: JSON.stringify(payload),
+      }),
+  },
 };

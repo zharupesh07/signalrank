@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
 import type { Application, ApplicationStatus, TrackerStats, Run } from "@/types";
 import { useToast } from "@/components/toast";
+import AddJobModal from "@/components/add-job-modal";
 import {
   Trash2,
   Mail,
@@ -138,6 +139,7 @@ export default function TrackerPage() {
   const [runs, setRuns] = useState<{ run_id: string; status: string; job_count: number | null }[]>([]);
   const [selectedRunId, setSelectedRunId] = useState("");
   const [importing, setImporting] = useState(false);
+  const [addJobOpen, setAddJobOpen] = useState(false);
   const [priorityFilter, setPriorityFilter] = useState<"all" | "p1" | "p1p2">("all");
   const [expandedColumns, setExpandedColumns] = useState<Set<string>>(new Set());
   const [tailoring, setTailoring] = useState<Set<string>>(new Set());
@@ -320,6 +322,7 @@ export default function TrackerPage() {
   const pipelineMax = Math.max(...pipelineData.map((d) => d.count), 1);
 
   return (
+    <>
     <div className="pt-14 min-h-screen page-content">
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
         {/* Header */}
@@ -331,6 +334,14 @@ export default function TrackerPage() {
               <span className="text-primary text-sm tabular-nums text-glow-dim">{applications.length} total</span>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setAddJobOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded hover:opacity-90"
+            >
+              <Plus size={14} />
+              Add Job
+            </button>
           <button
             onClick={() => setShowImport(!showImport)}
             className="flex items-center gap-2 px-3 py-2 text-[11px] border border-primary/40 text-primary hover:bg-primary/10 transition-colors uppercase tracking-wider"
@@ -338,6 +349,7 @@ export default function TrackerPage() {
             <Download size={11} />
             Import from Run
           </button>
+          </div>
         </div>
 
         {/* Import dropdown */}
@@ -821,5 +833,11 @@ export default function TrackerPage() {
         </div>
       </div>
     </div>
+    <AddJobModal
+      open={addJobOpen}
+      onClose={() => setAddJobOpen(false)}
+      onAdded={loadData}
+    />
+    </>
   );
 }
