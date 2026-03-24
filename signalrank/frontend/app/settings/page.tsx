@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
 import type { Profile } from "@/types";
@@ -57,6 +57,9 @@ export default function SettingsPage() {
   const [minYoe, setMinYoe] = useState("");
   const [maxYoe, setMaxYoe] = useState("");
 
+  const loaded = useRef(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [findCompany, setFindCompany] = useState("");
   const [findDomain, setFindDomain] = useState("");
   const [finding, setFinding] = useState(false);
@@ -74,6 +77,7 @@ export default function SettingsPage() {
     setTargetLpa(p.target_lpa != null ? String(p.target_lpa) : "");
     setMinYoe(p.min_yoe != null ? String(p.min_yoe) : "");
     setMaxYoe(p.max_yoe != null ? String(p.max_yoe) : "");
+    loaded.current = true;
   }, [token]);
 
   const loadRecruiters = useCallback(async () => {
@@ -86,6 +90,12 @@ export default function SettingsPage() {
     load();
     loadRecruiters();
   }, [load, loadRecruiters]);
+
+  useEffect(() => {
+    if (!loaded.current) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(save, 1000);
+  }, [targetRoles, locations, customQueries, targetLpa, minYoe, maxYoe]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function save() {
     setSaving(true);
@@ -233,7 +243,8 @@ export default function SettingsPage() {
         </div>
 
         {/* Save button */}
-        <div className="flex justify-end">
+        <div className="flex items-center justify-end gap-3">
+          <span className="text-[10px] text-muted-foreground">autosaves after changes</span>
           <button
             onClick={save}
             disabled={saving}
@@ -257,7 +268,7 @@ export default function SettingsPage() {
             ) : (
               <>
                 <Save size={10} />
-                Save Changes
+                Save
               </>
             )}
           </button>
