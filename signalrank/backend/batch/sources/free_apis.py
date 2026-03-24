@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime
 
@@ -116,4 +117,5 @@ async def search(queries: list[SearchQuery], config: ScraperConfig) -> list[RawJ
                     all_jobs.extend(results)
                 except Exception:
                     logger.exception("Free API fetcher failed")
+                await asyncio.sleep(1.0)  # avoid hammering free APIs back-to-back
     return all_jobs

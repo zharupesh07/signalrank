@@ -334,6 +334,36 @@ sequenceDiagram
 
 ---
 
+## Rate Limiting & Retry
+
+### LLM (OpenRouter)
+
+The `OpenRouterClient` applies three layers of protection:
+
+| Layer | Detail |
+|---|---|
+| **Concurrency cap** | Module-level `asyncio.Semaphore(2)` — max 2 LLM calls in-flight at once |
+| **Per-model retries** | `MAX_RETRIES_PER_MODEL = 3`; 429s sleep using `Retry-After` header or exponential backoff `min(2^(n+2), 60) + jitter(0.5–3.0s)` |
+| **Model fallback** | Healthy models are probed on startup (TTL 1h); unhealthy models are skipped automatically |
+
+### Resume Worker
+
+| Setting | Value | Rationale |
+|---|---|---|
+| `CONCURRENCY` | 1 | One generation task at a time — LLM semaphore is the real throttle |
+| `MAX_TASK_RETRIES` | 3 | Tasks that fail retry with exponential backoff via `next_retry_at` |
+| `POLL_INTERVAL` | 5s | Queue poll interval |
+
+Failed tasks are re-enqueued with `status=pending` and a `next_retry_at` timestamp using `min(2^(retry+1), 120) + jitter(0–10s)`. After `MAX_TASK_RETRIES` they are marked `failed`.
+
+### Scraping
+
+- **JobSpy / LinkedIn**: sequential to avoid rate limiting; `LINKEDIN_MAX_QUERIES=0` by default
+- **Free APIs** (Remotive, Himalayas, Jobicy): small delay between calls per query to avoid hammering the same source
+- **RapidAPI / Google Jobs**: handled independently; configure `RAPIDAPI_KEY` for JSearch
+
+---
+
 ## Resume Generation
 
 Resumes are generated using [Typst](https://typst.app/) compiled from Jinja2 templates.

@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import random
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -12,7 +14,9 @@ from llm.resume_tailor import compile_pdf, render_typst, tailor_resume
 
 logger = logging.getLogger(__name__)
 
-CONCURRENCY = 3
+CONCURRENCY = 1        # 1 task at a time — LLM semaphore handles the real throttle
+MAX_TASK_RETRIES = 3   # retry failed tasks up to this many times
+POLL_INTERVAL = 5      # seconds between queue polls
 
 
 async def process_generation_task(
@@ -119,10 +123,23 @@ async def process_generation_task(
         logger.info("Generated email for user=%s job=%s", task.user_id, task.job_id)
     except Exception as e:
         logger.warning("Generation failed for job=%s: %s", task.job_id, e)
+        new_retry_count = (task.retry_count or 0) + 1
+        if new_retry_count >= MAX_TASK_RETRIES:
+            new_status = "failed"
+            next_retry_at = None
+        else:
+            new_status = "pending"
+            backoff = min(2 ** (new_retry_count + 1), 120) + random.uniform(0, 10)
+            next_retry_at = datetime.now(timezone.utc) + timedelta(seconds=backoff)
         await db.execute(
             update(GenerationQueue)
             .where(GenerationQueue.id == task.id)
-            .values(status="failed", error=str(e))
+            .values(
+                status=new_status,
+                error=str(e),
+                retry_count=new_retry_count,
+                next_retry_at=next_retry_at,
+            )
         )
         await db.commit()
 
@@ -206,9 +223,13 @@ async def resume_worker_loop(
         tasks: list = []
         try:
             async with session_factory() as db:
+                now = datetime.now(timezone.utc)
                 result = await db.execute(
                     select(GenerationQueue)
-                    .where(GenerationQueue.status == "pending")
+                    .where(
+                        GenerationQueue.status == "pending",
+                        (GenerationQueue.next_retry_at.is_(None)) | (GenerationQueue.next_retry_at <= now),
+                    )
                     .order_by(GenerationQueue.created_at)
                     .limit(CONCURRENCY)
                     .with_for_update(skip_locked=True)
