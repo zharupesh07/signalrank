@@ -1,6 +1,8 @@
 """Job ingest — two-step: extract (no DB) then confirm (DB writes)."""
+import ipaddress
 import logging
 import re
+import socket
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -70,6 +72,23 @@ def _compute_priority(date_posted: datetime | None, company_tier: str | None) ->
     return "P2"
 
 
+def _validate_url(url: str) -> None:
+    """Raise HTTPException if URL is unsafe (SSRF protection)."""
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise HTTPException(status_code=422, detail="URL must use http or https")
+    hostname = parsed.hostname
+    if not hostname:
+        raise HTTPException(status_code=422, detail="Invalid URL")
+    try:
+        addr = ipaddress.ip_address(socket.gethostbyname(hostname))
+        if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+            raise HTTPException(status_code=422, detail="URL not allowed")
+    except socket.gaierror:
+        raise HTTPException(status_code=422, detail="Could not resolve host")
+
+
 def _strip_html(html: str) -> str:
     text = re.sub(r"<[^>]+>", " ", html)
     text = re.sub(r"\s+", " ", text)
@@ -112,6 +131,7 @@ async def ingest_extract(
     is_url = bool(body.url)
 
     if body.url:
+        _validate_url(body.url)
         try:
             async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
                 resp = await client.get(body.url, headers={"User-Agent": "Mozilla/5.0"})

@@ -4,7 +4,8 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime, timezone, timedelta
 
-from api.routes.ingest import _parse_ingest_response, _compute_priority
+from api.routes.ingest import _parse_ingest_response, _compute_priority, _validate_url
+from fastapi import HTTPException
 
 LLM_RESPONSE = """TITLE: Senior ML Engineer
 COMPANY: Acme Corp
@@ -55,3 +56,22 @@ def test_priority_no_date_defaults_p1():
 
 def test_priority_no_date_with_b_tier():
     assert _compute_priority(None, "B") == "P1"
+
+
+def test_validate_url_accepts_https():
+    _validate_url("https://example.com/jobs/123")
+
+
+def test_validate_url_rejects_non_http():
+    with pytest.raises(HTTPException):
+        _validate_url("ftp://example.com")
+
+
+def test_validate_url_rejects_localhost():
+    with pytest.raises(HTTPException):
+        _validate_url("http://localhost:8000/internal")
+
+
+def test_validate_url_rejects_loopback_ip():
+    with pytest.raises(HTTPException):
+        _validate_url("http://127.0.0.1/secret")
