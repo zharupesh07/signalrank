@@ -8,20 +8,18 @@ logger = logging.getLogger(__name__)
 SYSTEM_PROMPT = """You write concise cold outreach emails from a job candidate to a recruiter or hiring manager.
 
 Rules:
-- Address the recruiter by first name on the first line: "Hi {FirstName},"
-- Second paragraph: state you applied for the specific role; if a job URL is provided, hyperlink the role title with it like: [Role Title](url)
-- Third paragraph: ONE compelling achievement — 1-2 concrete, quantified results from the resume that directly map to the JD. Be specific, no fluff.
-- Fourth paragraph: soft close — do NOT ask for a call. Instead: "Happy to connect if useful — and if you're not the right person, would really appreciate a forward to whoever is hiring for this."
-- Last line: "Best," (signature is appended separately)
-- Body MUST be under 110 words — brevity is respect for their time
+- DO NOT write greeting, signature, or subject — those are added automatically
+- Write only the 2-3 paragraph body:
+  - Paragraph 1: state you applied for the specific role; if a job URL is provided, hyperlink the role title with it like: [Role Title](url)
+  - Paragraph 2: ONE compelling achievement — 1-2 concrete, quantified results from the resume that directly map to the JD. Specific, no fluff.
+  - Paragraph 3: soft close — do NOT ask for a call. Write: "Happy to connect if useful — and if you're not the right person, would really appreciate a forward to whoever is hiring for this."
+- Body MUST be under 90 words — brevity is respect for their time
 - No filler ("I hope this finds you well", "I'm excited", "strong match", "perfect fit")
 - Professional but direct tone
 - Use \n\n between paragraphs
-- Do NOT include the subject line in the body
-- Do NOT include a signature block — appended separately
 
 Return JSON with exactly these keys:
-  subject (str) — format: "{Role title} — {one sharp differentiator} (applied)"
+  differentiator (str) — 3-6 words that make this candidate stand out for THIS role (e.g. "built 400+ agents at scale"). No punctuation.
   body (str) — email body only, \n\n between paragraphs. Do NOT repeat subject here.
 """
 
@@ -54,18 +52,26 @@ async def generate_email(
         f"JOB DESCRIPTION:\n{jd[:2000]}"
     )
 
+    first_name = recruiter_name.split()[0] if recruiter_name and recruiter_name != "Hiring Manager" else "there"
+    greeting = f"Hi {first_name},"
+    fallback_subject = f"{role} — application follow-up (applied)"
+
     try:
-        raw = await llm.llm_json(system=SYSTEM_PROMPT, user=user_msg, max_tokens=512)
+        raw = await llm.llm_json(system=SYSTEM_PROMPT, user=user_msg, max_tokens=400)
+        body_text = raw.get("body", "")
+        differentiator = raw.get("differentiator", "")
+        subject = f"{role} — {differentiator} (applied)" if differentiator else fallback_subject
+        full_body = f"{greeting}\n\n{body_text}" if body_text else ""
         return GeneratedEmail(
-            subject=raw.get("subject", f"{role} at {company} (applied)"),
-            body=raw.get("body", ""),
+            subject=subject,
+            body=full_body,
             recruiter_name=recruiter_name,
             company=company,
         )
     except Exception as e:
         logger.warning("Email generation failed: %s", e)
         return GeneratedEmail(
-            subject=f"{role} at {company} (applied)",
+            subject=fallback_subject,
             body="",
             recruiter_name=recruiter_name,
             company=company,
