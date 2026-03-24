@@ -1,12 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { LogOut, Terminal, Sun, Moon, Code2 } from "lucide-react";
 import { useTheme } from "./theme-provider";
-import { SettingsPanel } from "./settings-panel";
 import { useDevMode } from "./dev-mode-provider";
 
 const NAV_LINKS = [
@@ -23,14 +21,12 @@ export default function Navbar() {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const { isDevMode, handleLogoClick, openDevPanel } = useDevMode();
-  const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
 
   if (!session) return null;
 
   const email = (session.user as { email?: string })?.email ?? "";
 
   return (
-    <>
     <nav className="fixed top-0 left-0 right-0 z-50 h-13 bg-background/95 backdrop-blur-sm border-b border-border nav-glow flex items-center px-6 gap-8">
       {/* Logo */}
       <Link href="/dashboard" onClick={handleLogoClick} className="flex items-center gap-2 shrink-0 group relative">
@@ -90,12 +86,12 @@ export default function Navbar() {
         </button>
         <div className="hidden sm:flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-primary pulse-dot" />
-          <button
-            onClick={() => setSettingsPanelOpen(true)}
-            className="text-muted-foreground text-xs truncate max-w-[160px] cursor-pointer hover:text-foreground transition-colors"
+          <Link
+            href="/settings"
+            className="text-muted-foreground text-xs truncate max-w-[160px] hover:text-foreground transition-colors"
           >
             {email}
-          </button>
+          </Link>
         </div>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
@@ -106,7 +102,5 @@ export default function Navbar() {
         </button>
       </div>
     </nav>
-    <SettingsPanel isOpen={settingsPanelOpen} onClose={() => setSettingsPanelOpen(false)} />
-    </>
   );
 }
