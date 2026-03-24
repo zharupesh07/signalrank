@@ -244,32 +244,38 @@ export default function TrackerPage() {
       toast("No job linked", "error");
       return;
     }
+    // Open blank tab synchronously (inside click handler = user gesture).
+    // Browser allows this. We navigate it after async work — tab stays in background.
+    const gmailTab = window.open("about:blank", "_blank");
     setTailoring((prev) => new Set(prev).add(app.id));
     try {
       const recs = app.company ? await api.applications.recruitersByCompany(token, app.company) : [];
       const recruiterName = recs[0]?.name || app.recruiter?.name || "Hiring Manager";
 
-      // Fetch email + PDF in parallel
       const [email, dlResult] = await Promise.all([
         api.resume.email(token, { job_id: app.job_id, recruiter_name: recruiterName }),
         api.resume.download(token, app.job_id).catch(() => "error" as const),
       ]);
 
-      // Copy email to clipboard
-      if (email.body) {
-        await navigator.clipboard.writeText(`Subject: ${email.subject}\n\n${email.body}${MY_SIGNATURE}`).catch(() => {});
+      if (email.body && gmailTab) {
+        const recEmails = recs.filter((r: { email: string }) => isValidEmail(r.email)).map((r: { email: string }) => r.email);
+        const to = recEmails.length ? recEmails[0] : (app.recruiter?.email && isValidEmail(app.recruiter.email) ? app.recruiter.email : "");
+        gmailTab.location.href = gmailComposeUrl(to, email.subject, email.body + MY_SIGNATURE);
+      } else {
+        gmailTab?.close();
       }
 
       await updateStatus(app.id, "applied");
 
       if (dlResult === "pending") {
-        toast(email.body ? "Email copied — resume still generating (~2 min)" : "Resume generating, email not ready yet", "info");
+        toast("Resume still generating (~2 min) — click Apply again to download PDF", "info");
       } else if (dlResult === "error") {
-        toast(email.body ? "Email copied — resume download failed" : "Apply failed", "error");
+        toast("Resume download failed", "error");
       } else {
-        toast(email.body ? `Applied to ${app.title} — resume downloaded + email copied` : `Applied to ${app.title} — resume downloaded`, "success");
+        toast(`Applied to ${app.title}`, "success");
       }
     } catch (e) {
+      gmailTab?.close();
       toast(`Failed: ${e instanceof Error ? e.message : "unknown error"}`, "error");
     } finally {
       setTailoring((prev) => { const n = new Set(prev); n.delete(app.id); return n; });
