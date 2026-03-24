@@ -8,8 +8,10 @@ from sqlalchemy import select, update
 
 from api.config import settings
 from api.database import AsyncSessionLocal
+from api.deps_llm import get_llm_client
 from api.models import Run
 from api.routes import applications, auth, jobs, onboarding, profile, recruiters, resume, runs
+from batch.resume_worker import boot_scan, resume_worker_loop
 from batch.worker import get_queue, worker_loop
 
 logging.basicConfig(level=logging.INFO)
@@ -17,12 +19,22 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 _worker_task: asyncio.Task | None = None
+_resume_worker_task: asyncio.Task | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _worker_task
+    global _worker_task, _resume_worker_task
     _worker_task = asyncio.create_task(worker_loop(AsyncSessionLocal))
+
+    llm = get_llm_client()
+    _resume_worker_task = asyncio.create_task(resume_worker_loop(AsyncSessionLocal, llm))
+
+    try:
+        async with AsyncSessionLocal() as db:
+            await boot_scan(db)
+    except Exception:
+        logger.warning("Boot scan failed", exc_info=True)
 
     # Re-queue any runs that were left stuck (pending/scraping) from a prior restart
     async with AsyncSessionLocal() as db:
@@ -41,12 +53,13 @@ async def lifespan(app: FastAPI):
             await db.commit()
 
     yield
-    if _worker_task:
-        _worker_task.cancel()
-        try:
-            await _worker_task
-        except asyncio.CancelledError:
-            pass
+    for t in (_worker_task, _resume_worker_task):
+        if t:
+            t.cancel()
+            try:
+                await t
+            except asyncio.CancelledError:
+                pass
 
 
 app = FastAPI(title="SignalRank API", version="0.1.0", lifespan=lifespan)

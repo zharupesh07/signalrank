@@ -100,3 +100,39 @@ async def test_process_generation_task_skips_if_resume_exists():
 
     mock_tailor.assert_not_called()
     db.add.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_boot_scan_enqueues_ungenerated_tracked_jobs():
+    """Boot scan inserts generation_queue rows for tracked jobs lacking TailoredResume."""
+    from batch.resume_worker import boot_scan
+    from unittest.mock import patch as mock_patch
+
+    db = AsyncMock(spec=AsyncSession)
+    mock_result = MagicMock()
+    mock_result.all.return_value = [
+        MagicMock(user_id="user-1", job_id="job-1"),
+        MagicMock(user_id="user-1", job_id="job-2"),
+    ]
+    db.execute = AsyncMock(side_effect=[mock_result, MagicMock()])
+    db.commit = AsyncMock()
+
+    await boot_scan(db)
+
+    db.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_boot_scan_no_op_when_all_have_resumes():
+    """Boot scan does nothing when all tracked jobs already have resumes."""
+    from batch.resume_worker import boot_scan
+
+    db = AsyncMock(spec=AsyncSession)
+    mock_result = MagicMock()
+    mock_result.all.return_value = []
+    db.execute = AsyncMock(return_value=mock_result)
+    db.commit = AsyncMock()
+
+    await boot_scan(db)
+
+    db.commit.assert_not_called()
