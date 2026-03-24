@@ -143,6 +143,7 @@ export default function TrackerPage() {
   const [tailoring, setTailoring] = useState<Set<string>>(new Set());
   const [generatedEmails, setGeneratedEmails] = useState<Map<string, { subject: string; body: string }>>(new Map());
   const [expandedEmail, setExpandedEmail] = useState<string | null>(null);
+  const [applyLinks, setApplyLinks] = useState<Map<string, { gmailUrl: string; jobUrl: string | null; resumePending: boolean }>>(new Map());
   const COLUMN_LIMIT = 10;
 
   const loadData = useCallback(async () => {
@@ -252,32 +253,31 @@ export default function TrackerPage() {
       const recruiterName = recs[0]?.name || app.recruiter?.name || "Hiring Manager";
       const email = await api.resume.email(token, { job_id: app.job_id, recruiter_name: recruiterName });
 
+      const recEmails = recs.filter((r: { email: string }) => isValidEmail(r.email)).map((r: { email: string }) => r.email);
+      const to = recEmails.length ? recEmails[0] : (app.recruiter?.email && isValidEmail(app.recruiter.email) ? app.recruiter.email : "");
+
+      let gmailUrl = "";
       if (email.body) {
         setGeneratedEmails((prev) => new Map(prev).set(app.id, email));
         setExpandedEmail(app.id);
-        const emails = recs.filter((r: { email: string }) => isValidEmail(r.email)).map((r: { email: string }) => r.email);
-        const to = emails.length ? emails[0] : (app.recruiter?.email && isValidEmail(app.recruiter.email) ? app.recruiter.email : "");
-        const tab = window.open(gmailComposeUrl(to, email.subject, email.body + MY_SIGNATURE), "_blank", "noopener,noreferrer");
-        tab?.blur();
-        window.focus();
+        gmailUrl = gmailComposeUrl(to, email.subject, email.body + MY_SIGNATURE);
       }
-      if (app.job_url) {
-        const tab = window.open(app.job_url, "_blank", "noopener,noreferrer");
-        tab?.blur();
-        window.focus();
-      }
+
+      // Store links for user to open manually — browsers block background tabs
+      setApplyLinks((prev) => new Map(prev).set(app.id, { gmailUrl, jobUrl: app.job_url ?? null, resumePending: false }));
 
       // Mark as applied
       await updateStatus(app.id, "applied");
 
-      // PDF download — show clear message if still generating
+      // PDF download — fire in background, update pending state if not ready
       const dlResult = await api.resume.download(token, app.job_id).catch(() => "error" as const);
       if (dlResult === "pending") {
-        toast("Resume still generating — check back in ~2 min and click Apply again to download", "info");
+        setApplyLinks((prev) => new Map(prev).set(app.id, { gmailUrl, jobUrl: app.job_url ?? null, resumePending: true }));
+        toast("Resume still generating — links ready below, PDF will be available in ~2 min", "info");
       } else if (dlResult === "error") {
         toast("Resume download failed", "error");
       } else {
-        toast(`Applied to ${app.title}`, "success");
+        toast(`Applied to ${app.title} — links ready below`, "success");
       }
     } catch (e) {
       toast(`Failed: ${e instanceof Error ? e.message : "unknown error"}`, "error");
@@ -801,6 +801,36 @@ export default function TrackerPage() {
                           {confirmDelete === app.id ? "confirm?" : ""}
                         </button>
                       </div>
+
+                      {/* Apply links — shown after Apply is clicked, user opens manually */}
+                      {applyLinks.has(app.id) && (() => {
+                        const links = applyLinks.get(app.id)!;
+                        return (
+                          <div className="flex items-center gap-3 pt-1 text-[10px] font-mono text-muted-foreground">
+                            <span className="text-[var(--terminal-green-bright)]/70">ready →</span>
+                            {links.gmailUrl && (
+                              <a href={links.gmailUrl} target="_blank" rel="noreferrer" className="hover:text-primary underline underline-offset-2">
+                                open gmail
+                              </a>
+                            )}
+                            {links.jobUrl && (
+                              <a href={links.jobUrl} target="_blank" rel="noreferrer" className="hover:text-primary underline underline-offset-2">
+                                open job
+                              </a>
+                            )}
+                            {links.resumePending ? (
+                              <span className="text-yellow-500/70">pdf generating…</span>
+                            ) : (
+                              <button
+                                onClick={() => api.resume.download(token, app.job_id!).catch(() => toast("Download failed", "error"))}
+                                className="hover:text-primary underline underline-offset-2"
+                              >
+                                download pdf
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {/* Generated email preview */}
                       {generatedEmails.has(app.id) && (
