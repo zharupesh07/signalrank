@@ -220,12 +220,12 @@ export default function JobsPage() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [collapsed, setCollapsed] = useState(false);
+  const [pageSize, setPageSize] = useState<number | "all">(50);
 
   useEffect(() => {
     const saved = localStorage.getItem("signalrank-sidebar-collapsed");
     if (saved === "true") setCollapsed(true);
   }, []);
-  const limit = 50;
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
@@ -242,7 +242,7 @@ export default function JobsPage() {
   useEffect(() => {
     if (!token) return;
     setLoading(true);
-    api.jobs.list(token, 1, 500, "").then((r) => {
+    api.jobs.list(token, 1, 5000, "").then((r) => {
       setAllJobs(r.jobs);
       setLoading(false);
     });
@@ -251,6 +251,8 @@ export default function JobsPage() {
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch, filters]);
+
+  useEffect(() => { setPage(1); }, [pageSize]);
 
   function toggleCollapsed() {
     setCollapsed((prev) => {
@@ -282,12 +284,13 @@ export default function JobsPage() {
   const filteredJobs = useMemo(() => filterJobs(searchFiltered, filters), [searchFiltered, filters]);
 
   const pageJobs = useMemo(() => {
-    const start = (page - 1) * limit;
-    return filteredJobs.slice(start, start + limit);
-  }, [filteredJobs, page]);
+    if (pageSize === "all") return filteredJobs;
+    const start = (page - 1) * pageSize;
+    return filteredJobs.slice(start, start + pageSize);
+  }, [filteredJobs, page, pageSize]);
 
   const total = filteredJobs.length;
-  const totalPages = Math.ceil(total / limit) || 1;
+  const totalPages = pageSize === "all" ? 1 : Math.ceil(total / pageSize) || 1;
   const activeFilterCount = countActiveFilters(filters);
 
   const allColumns = useMemo(() => [
@@ -302,7 +305,7 @@ export default function JobsPage() {
           <span className="text-[11px] text-muted-foreground uppercase tracking-wider">tracked</span>
         ) : (
           <button
-            onClick={() => trackJob(job)}
+            onClick={(e) => { e.stopPropagation(); trackJob(job); }}
             className="flex items-center gap-0.5 text-[11px] text-primary/60 border border-primary/20 px-1.5 py-0.5 hover:border-primary hover:text-primary transition-colors uppercase tracking-wider"
           >
             <Plus size={8} />track
@@ -568,26 +571,43 @@ export default function JobsPage() {
 
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>
-                Showing {total === 0 ? 0 : ((page - 1) * limit) + 1}–{Math.min(page * limit, total)} of {total}
+                {pageSize === "all"
+                  ? `Showing all ${total}`
+                  : `Showing ${total === 0 ? 0 : ((page - 1) * pageSize) + 1}–${Math.min(page * pageSize, total)} of ${total}`}
               </span>
-              <div className="flex items-center gap-2 font-mono">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="px-3 py-1.5 border border-muted-foreground/40 hover:border-primary hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  [&lt; prev]
-                </button>
-                <span className="px-2">
-                  {page} / {totalPages}
-                </span>
-                <button
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= totalPages}
-                  className="px-3 py-1.5 border border-muted-foreground/40 hover:border-primary hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  [next &gt;]
-                </button>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 font-mono">
+                  {([50, 100, 200, "all"] as const).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setPageSize(s)}
+                      className={`px-2 py-1 border transition-colors ${pageSize === s ? "border-primary text-primary font-semibold" : "border-muted-foreground/40 hover:border-primary hover:text-primary"}`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                {pageSize !== "all" && (
+                  <div className="flex items-center gap-2 font-mono">
+                    <button
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="px-3 py-1.5 border border-muted-foreground/40 hover:border-primary hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      [&lt; prev]
+                    </button>
+                    <span className="px-2">
+                      {page} / {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setPage((p) => p + 1)}
+                      disabled={page >= totalPages}
+                      className="px-3 py-1.5 border border-muted-foreground/40 hover:border-primary hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      [next &gt;]
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
