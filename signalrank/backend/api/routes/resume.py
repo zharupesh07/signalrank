@@ -10,6 +10,7 @@ from api.database import get_db
 from api.deps import get_current_user
 from api.deps_llm import get_llm_client
 from api.models import JobRaw, Profile, TailoredResume, User
+from batch.resume_worker import force_regenerate_all
 from llm.openrouter import OpenRouterClient
 from llm.email_generator import generate_email
 from llm.resume_tailor import TailoredContent, compile_pdf, render_typst, tailor_resume
@@ -193,6 +194,15 @@ async def generate_cold_email(
     )
 
     return {"subject": email.subject, "body": email.body}
+
+
+@router.post("/regenerate-all")
+async def regenerate_all_resumes(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    count = await force_regenerate_all(db, current_user.id)
+    return {"enqueued": count}
 
 
 @router.get("/templates")

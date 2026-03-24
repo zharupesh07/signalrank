@@ -155,6 +155,42 @@ async def boot_scan(db: AsyncSession) -> None:
     logger.info("Boot scan: enqueued %d resume generation tasks", len(rows))
 
 
+async def force_regenerate_all(db: AsyncSession, user_id: str) -> int:
+    """Delete all cached resumes+emails for a user and re-enqueue generation for all tracked jobs."""
+    tracked = await db.execute(
+        select(Application.job_id).where(
+            Application.user_id == user_id,
+            Application.job_id.isnot(None),
+        )
+    )
+    job_ids = [r.job_id for r in tracked.all()]
+    if not job_ids:
+        return 0
+
+    await db.execute(
+        update(TailoredResume)
+        .where(TailoredResume.user_id == user_id, TailoredResume.job_id.in_(job_ids))
+        .values(content_json=None, pdf_bytes=None, email_subject=None, email_body=None)
+    )
+    await db.execute(
+        update(GenerationQueue)
+        .where(GenerationQueue.user_id == user_id, GenerationQueue.job_id.in_(job_ids))
+        .values(status="pending", error=None)
+    )
+    # Enqueue any that don't have a queue row yet
+    await db.execute(
+        insert(GenerationQueue)
+        .values([{"user_id": user_id, "job_id": jid} for jid in job_ids])
+        .on_conflict_do_update(
+            constraint="uq_generation_queue_user_job",
+            set_={"status": "pending", "error": None},
+        )
+    )
+    await db.commit()
+    logger.info("Force regenerate: reset %d jobs for user=%s", len(job_ids), user_id)
+    return len(job_ids)
+
+
 async def resume_worker_loop(
     session_factory: async_sessionmaker,
     llm: OpenRouterClient,

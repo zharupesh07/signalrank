@@ -9,7 +9,7 @@ SYSTEM_PROMPT = """You write concise cold outreach emails from a job candidate t
 
 Rules:
 - Address the recruiter by first name on the first line: "Hi {FirstName},"
-- Second paragraph: state you applied for the specific role (include the job link if provided)
+- Second paragraph: state you applied for the specific role; if a job URL is provided, hyperlink the role title with it like: [Role Title](url)
 - Third paragraph: lead with ONE compelling story — 1-2 concrete, quantified achievements from the resume that match the JD
 - Fourth paragraph: a specific ask — "15-min call" or "quick chat this week". Also add: "If you're not the right person, I'd appreciate it if you could forward this to whoever is hiring for this role."
 - Last line: "Best," (signature is appended separately)
