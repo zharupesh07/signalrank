@@ -50,7 +50,7 @@ api/
   models.py            # SQLAlchemy ORM models
   database.py          # Async engine + session factory
   deps.py              # Auth dependencies
-  routes/              # auth, jobs, profile, runs, tracker, resume, onboarding
+  routes/              # auth, jobs, profile, runs, tracker, resume, onboarding, ingest
 batch/
   worker.py            # Scrape + rank queue processor
   resume_worker.py     # Background resume/email generation worker
@@ -87,21 +87,25 @@ alembic/versions/      # DB migrations
 | GET | `/api/resume/tailor/{job_id}` | Download tailored PDF |
 | POST | `/api/resume/email` | Generate cold email |
 | POST | `/api/resume/regenerate-all` | Re-generate all cached resumes |
+| POST | `/api/jobs/ingest` | Extract job metadata from URL or raw text (no DB write) |
+| POST | `/api/jobs/ingest/confirm` | Save extracted job to tracker as "interested" |
 
 ## Rate Limiting & Retry
 
 ### LLM (OpenRouter)
 
-- `asyncio.Semaphore(2)` — max 2 concurrent LLM calls
+- `asyncio.Semaphore(3)` — max 3 concurrent LLM calls
 - Per-model retry: `MAX_RETRIES_PER_MODEL = 3`
 - 429 backoff: respects `Retry-After` header; fallback `min(2^(n+2), 60) + jitter(0.5–3.0s)`
 - Model health probe on startup (TTL 1h); unhealthy models auto-skipped
+- Default models: `arcee-ai/trinity-mini:free` (14s) → `arcee-ai/trinity-large-preview:free` (72s)
 
 ### Resume Worker
 
-- `CONCURRENCY = 1` — one task at a time
+- `CONCURRENCY = 3` — 3 tasks per poll cycle, semaphore-throttled
 - Failed tasks retry up to `MAX_TASK_RETRIES = 3` with exponential backoff via `next_retry_at`
 - After max retries: status → `failed`
+- Existing rows updated in-place (never duplicate INSERT)
 
 ### Scraping
 

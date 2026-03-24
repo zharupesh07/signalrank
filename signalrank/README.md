@@ -23,6 +23,7 @@ flowchart TD
         TRACKER["Tracker\n/api/applications"]
         RESUME["Resume\n/api/resume"]
         ONBOARD["Onboarding\n/api/onboarding"]
+        INGEST["Job Ingest\n/api/jobs/ingest"]
     end
 
     subgraph Worker["Background Workers (asyncio)"]
@@ -70,6 +71,7 @@ flowchart TD
     UI --> TRACKER
     UI --> RESUME
     UI --> ONBOARD
+    UI --> INGEST
 
     AUTH --> T1
     PROFILE --> T1
@@ -109,8 +111,9 @@ flowchart TD
 | **Smart Ranking** | Additive 0-100 score: semantic similarity, skills, company tier, seniority, recency, location |
 | **Company Tiers** | SS / S / A / B / C / D taxonomy across 80+ companies — score bonus for dream companies |
 | **Job Tracker** | Track applications, add recruiter contacts, generate cold-email drafts |
+| **Job Ingest** | Paste a URL or raw JD → LLM extracts title/company/location → validation card → add to tracker as "interested" with auto-priority |
 | **Resume Tailoring** | LLM-powered resume tailoring per job; Typst PDF with Awesome-CV-inspired layout |
-| **Background Resume Generation** | On boot and on track: resumes auto-generated for all tracked jobs; cached in DB |
+| **Background Resume Generation** | On boot and on track: resumes auto-generated for all tracked jobs (concurrency=3); cached in DB |
 | **Template Switching** | Switch PDF template (classic/modern/minimal) without LLM re-call — re-renders from cache |
 | **Jobs Page Pagination** | Page-size picker (50 / 100 / 200 / All); fetches up to 5000 jobs |
 | **Onboarding** | Guided flow to distil resume → profile → preferences |
@@ -154,7 +157,7 @@ signalrank/
 │   ├── api/
 │   │   ├── main.py            # FastAPI app + background worker startup
 │   │   ├── models.py          # SQLAlchemy ORM models
-│   │   └── routes/            # auth, jobs, profile, runs, tracker, resume
+│   │   └── routes/            # auth, jobs, profile, runs, tracker, resume, ingest
 │   ├── batch/
 │   │   ├── worker.py          # Async job queue processor (scrape + rank)
 │   │   ├── resume_worker.py   # Background resume generation worker
@@ -342,7 +345,7 @@ The `OpenRouterClient` applies three layers of protection:
 
 | Layer | Detail |
 |---|---|
-| **Concurrency cap** | Module-level `asyncio.Semaphore(2)` — max 2 LLM calls in-flight at once |
+| **Concurrency cap** | Module-level `asyncio.Semaphore(3)` — max 3 LLM calls in-flight at once |
 | **Per-model retries** | `MAX_RETRIES_PER_MODEL = 3`; 429s sleep using `Retry-After` header or exponential backoff `min(2^(n+2), 60) + jitter(0.5–3.0s)` |
 | **Model fallback** | Healthy models are probed on startup (TTL 1h); unhealthy models are skipped automatically |
 
@@ -350,7 +353,7 @@ The `OpenRouterClient` applies three layers of protection:
 
 | Setting | Value | Rationale |
 |---|---|---|
-| `CONCURRENCY` | 1 | One generation task at a time — LLM semaphore is the real throttle |
+| `CONCURRENCY` | 3 | Tasks per poll cycle — LLM semaphore is the real throttle |
 | `MAX_TASK_RETRIES` | 3 | Tasks that fail retry with exponential backoff via `next_retry_at` |
 | `POLL_INTERVAL` | 5s | Queue poll interval |
 
@@ -413,7 +416,7 @@ LINKEDIN_MAX_QUERIES=0            # 0 = disabled (LinkedIn scraping is slow, ~80
 openssl rand -base64 32
 ```
 
-**`OPENROUTER_API_KEY`** — required for resume parsing, onboarding distillation, and resume tailoring. Get one at [openrouter.ai/keys](https://openrouter.ai/keys). The default model is `anthropic/claude-3-haiku`.
+**`OPENROUTER_API_KEY`** — required for resume parsing, onboarding distillation, and resume tailoring. Get one at [openrouter.ai/keys](https://openrouter.ai/keys). Uses free-tier models by default (`arcee-ai/trinity-mini:free` primary, `trinity-large-preview:free` fallback).
 
 ---
 
