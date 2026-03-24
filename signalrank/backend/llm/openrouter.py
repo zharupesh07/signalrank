@@ -34,7 +34,8 @@ FALLBACK_MODELS = [
 ]
 
 BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
-MAX_RETRIES_PER_MODEL = 2
+MAX_RETRIES_PER_MODEL = 3
+_llm_semaphore = asyncio.Semaphore(2)  # max 2 concurrent LLM calls across all workers
 
 
 def _extract_json(raw: str) -> dict | None:
@@ -119,6 +120,16 @@ class OpenRouterClient:
         max_tokens: int,
         temperature: float,
     ) -> str | None:
+        async with _llm_semaphore:
+            return await self._call_inner(model, messages, max_tokens, temperature)
+
+    async def _call_inner(
+        self,
+        model: str,
+        messages: list[dict],
+        max_tokens: int,
+        temperature: float,
+    ) -> str | None:
         for attempt in range(MAX_RETRIES_PER_MODEL + 1):
             try:
                 resp = await self._http.post(
@@ -142,10 +153,12 @@ class OpenRouterClient:
 
             except httpx.HTTPStatusError as e:
                 if e.response.status_code == 429:
-                    sleep_time = min(4 ** attempt, 16) + random.uniform(0.5, 2.0)
-                    logger.warning(
-                        "Rate limited on %s, sleeping %.1fs", model, sleep_time
-                    )
+                    retry_after = e.response.headers.get("Retry-After")
+                    if retry_after:
+                        sleep_time = float(retry_after) + random.uniform(0.5, 2.0)
+                    else:
+                        sleep_time = min(2 ** (attempt + 2), 60) + random.uniform(0.5, 3.0)
+                    logger.warning("Rate limited on %s, sleeping %.1fs (attempt %d)", model, sleep_time, attempt)
                     await asyncio.sleep(sleep_time)
                     continue
                 if e.response.status_code in (401, 403):

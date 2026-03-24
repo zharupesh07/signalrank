@@ -34,7 +34,7 @@ Rules:
   position (str, one-line title/headline),
   summary (str, 2-3 sentences max),
   skills (list of {category, items[]}),
-  experiences (list of {title, company, location, dates, tech, bullets[]}),
+  experiences (list of {title, company, company_url, location, dates, tech, bullets[]}),
   projects (list of {name, url, description}),
   education (list of {degree, institution, year}),
   certifications (list[str], copy from resume as-is)
@@ -226,7 +226,7 @@ async def tailor_and_compile(
     typst_src = render_typst(content, template)
     pdf = compile_pdf(typst_src)
 
-    for _ in range(5):
+    for _ in range(20):
         if check_page_count(pdf) <= max_pages:
             break
         if not _fit_to_one_page(content, current_pages=check_page_count(pdf)):
@@ -234,6 +234,6 @@ async def tailor_and_compile(
         typst_src = render_typst(content, template)
         pdf = compile_pdf(typst_src)
     else:
-        logger.warning("_fit_to_one_page exhausted 5 iterations, returning best-effort PDF")
+        logger.warning("_fit_to_one_page exhausted 20 iterations, returning best-effort PDF")
 
     return content, pdf

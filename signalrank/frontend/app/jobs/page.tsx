@@ -575,7 +575,7 @@ export default function JobsPage() {
                   ? `Showing all ${total}`
                   : `Showing ${total === 0 ? 0 : ((page - 1) * pageSize) + 1}–${Math.min(page * pageSize, total)} of ${total}`}
               </span>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3" suppressHydrationWarning>
                 <div className="flex items-center gap-1 font-mono">
                   {([50, 100, 200, "all"] as const).map((s) => (
                     <button
