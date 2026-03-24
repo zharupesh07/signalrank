@@ -70,10 +70,10 @@ async def process_generation_task(
             tailored = existing
         elif existing and existing.content_json and not existing.pdf_bytes:
             # content already generated but PDF missing — recompile from existing JSON
-            from llm.resume_tailor import TailoredContent, render_typst, compile_pdf as _compile_pdf
+            from llm.resume_tailor import TailoredContent
             content_obj = TailoredContent(**existing.content_json)
             typst_src = render_typst(content_obj, "classic")
-            existing.pdf_bytes = _compile_pdf(typst_src)
+            existing.pdf_bytes = compile_pdf(typst_src)
             tailored = existing
         else:
             content = await tailor_resume(
