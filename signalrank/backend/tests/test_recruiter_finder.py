@@ -100,10 +100,10 @@ _LLM_RESPONSE = [
 
 @pytest.mark.asyncio
 async def test_find_recruiters_with_llm_enrichment():
+    mock_llm = MagicMock()
     with patch("batch.recruiter_finder._ddg_search_sync", return_value=_SAMPLE_HTML), \
-         patch("batch.recruiter_finder._llm_enrich", new_callable=AsyncMock, return_value=_LLM_RESPONSE), \
-         patch.dict("os.environ", {"OPENROUTER_API_KEY": "sk-test"}):
-        results = await find_recruiters("Adobe", max_results=5)
+         patch("batch.recruiter_finder._llm_enrich", new_callable=AsyncMock, return_value=_LLM_RESPONSE):
+        results = await find_recruiters("Adobe", max_results=5, llm=mock_llm)
 
     assert len(results) == 1
     assert results[0]["name"] == "Alice Jones"

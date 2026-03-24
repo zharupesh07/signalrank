@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import random
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -10,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.database import AsyncSessionLocal, get_db
 from api.deps import get_current_user
+from api.deps_llm import get_llm_client
 from api.models import Application, Recruiter, RecruiterRefreshTask, User
 from batch.recruiter_finder import find_recruiters
 
@@ -38,8 +40,9 @@ async def _get_or_create_refresh_task(db: AsyncSession, user_id: str) -> tuple[s
     return task.id, True
 
 
-async def _run_refresh(task_id: str, user_id: str, companies: list[str], session_factory):
-    """Background coroutine: refreshes recruiters for all companies."""
+async def _run_refresh(task_id: str, user_id: str, companies: list[str], session_factory, llm):
+    """Background coroutine: refreshes recruiters for all companies with retry + backoff."""
+    MAX_RETRIES = 3
     async with session_factory() as db:
         result = await db.execute(select(RecruiterRefreshTask).where(RecruiterRefreshTask.id == task_id))
         task = result.scalar_one()
@@ -49,21 +52,31 @@ async def _run_refresh(task_id: str, user_id: str, companies: list[str], session
         for i, company in enumerate(companies):
             task.progress_json = {"done": i, "total": total, "current": company}
             await db.commit()
-            try:
-                found = await find_recruiters(company=company, max_results=10, db=db)
-                for rec in found:
-                    stmt = (
-                        pg_insert(Recruiter)
-                        .values(company=company, name=rec["name"], linkedin_url=rec["linkedin_url"])
-                        .on_conflict_do_nothing()
-                    )
-                    r = await db.execute(stmt)
-                    if r.rowcount:
-                        new_found += 1
-                await db.commit()
-            except Exception as exc:
-                logger.warning("Refresh failed for %s: %s", company, exc)
-            await asyncio.sleep(3)
+
+            for attempt in range(MAX_RETRIES):
+                try:
+                    found = await find_recruiters(company=company, max_results=10, db=db, llm=llm)
+                    for rec in found:
+                        stmt = (
+                            pg_insert(Recruiter)
+                            .values(company=company, name=rec["name"], linkedin_url=rec["linkedin_url"])
+                            .on_conflict_do_nothing()
+                        )
+                        r = await db.execute(stmt)
+                        if r.rowcount:
+                            new_found += 1
+                    await db.commit()
+                    break  # success
+                except Exception as exc:
+                    backoff = min(2 ** (attempt + 2), 60) + random.uniform(0, 5)
+                    logger.warning("Refresh attempt %d/%d failed for %s: %s — retrying in %.1fs",
+                                   attempt + 1, MAX_RETRIES, company, exc, backoff)
+                    await asyncio.sleep(backoff)
+            else:
+                logger.error("Refresh exhausted retries for %s", company)
+
+            # Rate limiting: space out companies to avoid hammering DDG
+            await asyncio.sleep(5 + random.uniform(0, 3))
 
         task.status = "done"
         task.finished_at = datetime.now(timezone.utc)
@@ -94,8 +107,9 @@ async def refresh_all_recruiters(
     await db.commit()
 
     if is_new:
+        llm = get_llm_client()
         bg = asyncio.create_task(
-            _run_refresh(task_id, current_user.id, companies, AsyncSessionLocal)
+            _run_refresh(task_id, current_user.id, companies, AsyncSessionLocal, llm)
         )
         _background_tasks.add(bg)
         bg.add_done_callback(_background_tasks.discard)
@@ -125,51 +139,48 @@ async def refresh_status(
     }
 
 
-@router.post("/find", status_code=200)
+async def _run_find_one(company: str, max_results: int, session_factory, llm):
+    """Background: find recruiters for a single company and persist them."""
+    async with session_factory() as db:
+        MAX_RETRIES = 3
+        for attempt in range(MAX_RETRIES):
+            try:
+                found = await find_recruiters(company=company, max_results=max_results, db=db, llm=llm)
+                for rec in found:
+                    stmt = (
+                        pg_insert(Recruiter)
+                        .values(company=company, name=rec["name"], email=None,
+                                linkedin_url=rec["linkedin_url"], domain=None)
+                        .on_conflict_do_nothing(constraint="uq_recruiter_company_linkedin")
+                    )
+                    await db.execute(stmt)
+                await db.commit()
+                logger.info("find_one: saved %d recruiters for %s", len(found), company)
+                return
+            except Exception as exc:
+                backoff = min(2 ** (attempt + 2), 60) + random.uniform(0, 5)
+                logger.warning("find_one attempt %d/%d failed for %s: %s — retrying in %.1fs",
+                               attempt + 1, MAX_RETRIES, company, exc, backoff)
+                await asyncio.sleep(backoff)
+        logger.error("find_one exhausted retries for %s", company)
+
+
+@router.post("/find", status_code=202)
 async def find_and_save_recruiters(
     body: RecruiterFindRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ):
     if not body.company.strip():
         raise HTTPException(status_code=422, detail="company is required")
     if body.max_results < 1 or body.max_results > 25:
         raise HTTPException(status_code=422, detail="max_results must be 1-25")
 
-    found = await find_recruiters(
-        company=body.company.strip(),
-        max_results=body.max_results,
-        db=db,
-    )
+    llm = get_llm_client()
+    bg = asyncio.create_task(_run_find_one(body.company.strip(), body.max_results, AsyncSessionLocal, llm))
+    _background_tasks.add(bg)
+    bg.add_done_callback(_background_tasks.discard)
 
-    inserted = 0
-    skipped = 0
-    saved = []
-    for rec in found:
-        stmt = (
-            pg_insert(Recruiter)
-            .values(
-                company=body.company.strip(),
-                name=rec["name"],
-                email=None,
-                linkedin_url=rec["linkedin_url"],
-                domain=None,
-            )
-            .on_conflict_do_nothing(constraint="uq_recruiter_company_linkedin")
-        )
-        result = await db.execute(stmt)
-        if result.rowcount:
-            inserted += 1
-        else:
-            skipped += 1
-        saved.append({
-            "name": rec["name"],
-            "linkedin_url": rec["linkedin_url"],
-            "confidence": rec["confidence"],
-        })
-
-    await db.commit()
-    return {"found": len(found), "inserted": inserted, "skipped": skipped, "recruiters": saved}
+    return {"status": "queued", "company": body.company.strip()}
 
 
 @router.get("")

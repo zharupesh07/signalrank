@@ -15,6 +15,7 @@ import asyncio
 import json
 import logging
 import os
+import random
 import re
 
 import httpx
@@ -37,8 +38,8 @@ _LI_URL_RE = re.compile(
 )
 _VALID_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9\-]{0,100}$")
 _CACHE_TTL_DAYS = 3
-
-from llm.openrouter import FALLBACK_MODELS
+_DDG_SEMAPHORE = asyncio.Semaphore(1)  # one DDG search at a time globally
+_MAX_COMPANY_RETRIES = 3
 
 
 # ---------------------------------------------------------------------------
@@ -116,13 +117,13 @@ def _ddg_search_sync(query: str, retries: int = 3) -> str:
 async def _llm_enrich(
     company: str,
     candidates: list[dict],
-    api_key: str,
+    llm,  # OpenRouterClient — uses shared semaphore + retry
 ) -> list[dict]:
     """
-    Send raw DDG candidates to a free OpenRouter model.
+    Send raw DDG candidates to OpenRouter.
     Returns filtered+enriched list: [{slug, name, title, is_recruiter}].
     """
-    if not candidates or not api_key:
+    if not candidates or llm is None:
         return []
 
     items_json = json.dumps(
@@ -135,10 +136,6 @@ async def _llm_enrich(
         "identify which profiles CURRENTLY work as recruiters or talent acquisition professionals "
         f"at {company}. "
         "IMPORTANT: Exclude anyone who is a FORMER/EX employee of the company. "
-        "LinkedIn snippets often say 'Company' even for people who left. "
-        "Look for clues like 'ex-', 'former', 'previously at', or past tense. "
-        "If the snippet says something like 'Recruiter at OtherCompany' with no mention of "
-        f"currently being at {company}, exclude them. "
         "Only include people whose snippet clearly indicates they are CURRENTLY at the company. "
         "When in doubt, exclude. "
         "For each recruiter, extract their full name from the snippet (not the slug). "
@@ -147,47 +144,22 @@ async def _llm_enrich(
     )
     user = f"Candidates:\n{items_json}\n\nReturn only profiles of people CURRENTLY working as recruiters at {company}. Exclude former employees."
 
-    for model in FALLBACK_MODELS:
-        try:
-            async with httpx.AsyncClient(timeout=40) as client:
-                resp = await client.post(
-                    "https://openrouter.ai/api/v1/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {api_key}",
-                        "HTTP-Referer": "https://signalrank.app",
-                        "X-Title": "SignalRank",
-                    },
-                    json={
-                        "model": model,
-                        "messages": [
-                            {"role": "system", "content": system},
-                            {"role": "user", "content": user},
-                        ],
-                        "max_tokens": 1024,
-                        "temperature": 0.0,
-                    },
-                )
-                resp.raise_for_status()
-                raw = resp.json()["choices"][0]["message"]["content"] or ""
+    try:
+        raw_text = await llm.llm_text(system, user, max_tokens=1024, temperature=0.0)
+        if not raw_text:
+            return []
+        start, end = raw_text.find("["), raw_text.rfind("]")
+        if start == -1 or end == -1:
+            logger.warning("LLM enrichment returned no array for %s", company)
+            return []
+        items = json.loads(raw_text[start:end + 1])
+    except Exception as exc:
+        logger.warning("LLM enrichment exception for %s: %s", company, exc)
+        return []
 
-            # Extract JSON array
-            start, end = raw.find("["), raw.rfind("]")
-            if start == -1 or end == -1:
-                logger.warning("LLM %s returned no array", model)
-                continue
-
-            items = json.loads(raw[start : end + 1])
-            enriched = [
-                i for i in items
-                if isinstance(i, dict) and i.get("is_recruiter") is not False
-            ]
-            logger.info("LLM %s enriched %d/%d candidates", model, len(enriched), len(candidates))
-            return enriched
-
-        except Exception as exc:
-            logger.warning("LLM enrichment failed with %s: %s", model, exc)
-
-    return []
+    enriched = [i for i in items if isinstance(i, dict) and i.get("is_recruiter") is not False]
+    logger.info("LLM enriched %d/%d candidates for %s", len(enriched), len(candidates), company)
+    return enriched
 
 
 # ---------------------------------------------------------------------------
@@ -198,19 +170,18 @@ async def find_recruiters(
     company: str,
     max_results: int = 10,
     db: AsyncSession | None = None,
+    llm=None,  # OpenRouterClient — if None, falls back to keyword heuristic
 ) -> list[dict]:
     """
     Find India-based recruiters at *company*.
 
     Pipeline:
       1. DDG HTML search (India locale) → raw LinkedIn slugs + snippets
-      2. Free OpenRouter LLM validates/enriches (if OPENROUTER_API_KEY set)
+      2. OpenRouter LLM validates/enriches (if llm provided)
          — falls back to keyword heuristic otherwise
 
     Returns list of dicts: name, linkedin_url, source, confidence.
-    No emails — those must be entered manually and verified via email_verifier.
     """
-    api_key = os.environ.get("OPENROUTER_API_KEY", "")
 
     from datetime import datetime, timedelta, timezone
 
@@ -234,7 +205,7 @@ async def find_recruiters(
             logger.info("DDG cache hit for %s (%d candidates)", company, len(raw_candidates))
 
     if not cache_hit:
-        # Step 1 — DDG search (India-scoped, two queries)
+        # Step 1 — DDG search (India-scoped, two queries) — global semaphore prevents hammering
         ddg_queries = [
             f'site:linkedin.com/in "{company}" recruiter India',
             f'site:linkedin.com/in "{company}" "talent acquisition" India',
@@ -245,22 +216,28 @@ async def find_recruiters(
         for q in ddg_queries:
             if len(raw_candidates) >= max_results * 2:
                 break
-            try:
-                html = await asyncio.wait_for(
-                    asyncio.to_thread(_ddg_search_sync, q),
-                    timeout=20,
-                )
-            except (asyncio.TimeoutError, httpx.HTTPError) as exc:
-                logger.warning("DDG search failed for %r: %s", q, exc)
-                await asyncio.sleep(1)
-                continue
+            async with _DDG_SEMAPHORE:
+                for attempt in range(3):
+                    try:
+                        html = await asyncio.wait_for(
+                            asyncio.to_thread(_ddg_search_sync, q),
+                            timeout=20,
+                        )
+                        break
+                    except (asyncio.TimeoutError, httpx.HTTPError) as exc:
+                        sleep = min(4 ** attempt, 30) + random.uniform(0, 2)
+                        logger.warning("DDG attempt %d failed for %r: %s — retrying in %.1fs", attempt + 1, q, exc, sleep)
+                        await asyncio.sleep(sleep)
+                else:
+                    logger.warning("DDG exhausted retries for %r", q)
+                    continue
 
             for r in _parse_ddg_html(html):
                 if r["slug"] not in seen_slugs:
                     seen_slugs.add(r["slug"])
                     raw_candidates.append(r)
 
-            await asyncio.sleep(1.5)
+            await asyncio.sleep(2.0 + random.uniform(0, 1))  # jitter between queries
 
         logger.info("DDG found %d raw candidates for %s", len(raw_candidates), company)
 
@@ -270,8 +247,8 @@ async def find_recruiters(
             await db.flush()
 
     # Step 2 — LLM enrichment or keyword fallback
-    if api_key and raw_candidates:
-        enriched = await _llm_enrich(company, raw_candidates[:max_results * 2], api_key)
+    if llm is not None and raw_candidates:
+        enriched = await _llm_enrich(company, raw_candidates[:max_results * 2], llm)
         # Map enriched back by slug; fall back to slug-derived name if LLM omitted
         slug_to_enriched = {e["slug"]: e for e in enriched if isinstance(e, dict)}
         confirmed = [
