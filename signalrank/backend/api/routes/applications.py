@@ -1,14 +1,18 @@
+import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from api.database import get_db
 from api.deps import get_current_user
-from api.models import Application, JobRaw, JobResult, Profile, Recruiter, User
+from api.models import Application, GenerationQueue, JobRaw, JobResult, Profile, Recruiter, User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/applications", tags=["applications"])
 
@@ -134,6 +138,16 @@ async def create_application(
     db.add(app)
     await db.commit()
     await db.refresh(app)
+    if app.job_id:
+        try:
+            await db.execute(
+                pg_insert(GenerationQueue)
+                .values(user_id=current_user.id, job_id=app.job_id)
+                .on_conflict_do_nothing(constraint="uq_generation_queue_user_job")
+            )
+            await db.commit()
+        except Exception:
+            logger.warning("Failed to enqueue resume generation for job=%s", app.job_id, exc_info=True)
     return {"id": app.id, "status": app.status}
 
 
