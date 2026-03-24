@@ -359,13 +359,60 @@ brew install typst
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|---|---|---|
-| `DATABASE_URL` | Yes | `postgresql+asyncpg://user:pass@host/db` |
-| `NEXTAUTH_SECRET` | Yes | Random 32+ char string |
-| `OPENROUTER_API_KEY` | Yes | For resume parsing and tailoring |
-| `RAPIDAPI_KEY` | No | JSearch API for additional job sources |
-| `SCRAPER_MAX_RESULTS` | No | Results per query (default: 1000) |
-| `SCRAPER_HOURS_OLD` | No | Job recency window in hours (default: 720 = 30 days) |
-| `SCRAPER_DEFAULT_COUNTRY` | No | Default country for searches (default: India) |
-| `LINKEDIN_MAX_QUERIES` | No | LinkedIn queries to run (default: 0 = disabled, slow ~80s/query) |
+### Backend (`signalrank/backend/.env`)
+
+```bash
+# Required
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/signalrank
+NEXTAUTH_SECRET=<same-32-char-secret-as-frontend>
+OPENROUTER_API_KEY=sk-or-v1-...
+
+# Optional
+RAPIDAPI_KEY=                     # JSearch API key — extra job sources
+ALLOWED_ORIGINS=http://localhost:3000
+SCRAPER_MAX_RESULTS=1000          # Max results per query
+SCRAPER_HOURS_OLD=720             # Job recency window (hours). 720 = 30 days
+SCRAPER_DEFAULT_COUNTRY=India
+LINKEDIN_MAX_QUERIES=0            # 0 = disabled (LinkedIn scraping is slow, ~80s/query)
+```
+
+**`DATABASE_URL`** — connection string for the PostgreSQL instance. With the Docker setup above: `postgresql+asyncpg://postgres:postgres@localhost:5432/signalrank`.
+
+**`NEXTAUTH_SECRET`** — must be identical in both backend and frontend. Generate one with:
+```bash
+openssl rand -base64 32
+```
+
+**`OPENROUTER_API_KEY`** — required for resume parsing, onboarding distillation, and resume tailoring. Get one at [openrouter.ai/keys](https://openrouter.ai/keys). The default model is `anthropic/claude-3-haiku`.
+
+---
+
+### Frontend (`signalrank/frontend/.env.local`)
+
+```bash
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=<same-32-char-secret-as-backend>
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+**`NEXTAUTH_SECRET`** — must match the backend value exactly. Same string, both sides.
+
+**`NEXT_PUBLIC_API_URL`** — URL of the running FastAPI backend. In production, replace with your deployed backend URL.
+
+---
+
+### Variable Reference
+
+| Variable | Where | Required | Description |
+|---|---|---|---|
+| `DATABASE_URL` | backend | Yes | PostgreSQL connection string |
+| `NEXTAUTH_SECRET` | both | Yes | JWT signing secret — must match on both sides |
+| `OPENROUTER_API_KEY` | backend | Yes | LLM API key for resume + onboarding |
+| `NEXT_PUBLIC_API_URL` | frontend | Yes | Backend base URL |
+| `NEXTAUTH_URL` | frontend | Yes | Frontend base URL |
+| `RAPIDAPI_KEY` | backend | No | JSearch API for additional job sources |
+| `ALLOWED_ORIGINS` | backend | No | CORS origins (comma-separated) |
+| `SCRAPER_MAX_RESULTS` | backend | No | Results per query (default: 1000) |
+| `SCRAPER_HOURS_OLD` | backend | No | Job recency window in hours (default: 720) |
+| `SCRAPER_DEFAULT_COUNTRY` | backend | No | Default country for searches (default: India) |
+| `LINKEDIN_MAX_QUERIES` | backend | No | LinkedIn queries to run (default: 0 = disabled) |
