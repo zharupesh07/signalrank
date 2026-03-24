@@ -144,6 +144,20 @@ async def process_generation_task(
         await db.commit()
 
 
+async def recover_stuck_generation_tasks(db: AsyncSession) -> int:
+    """Reset tasks left in 'running' state from a prior crash back to 'pending'."""
+    result = await db.execute(
+        update(GenerationQueue)
+        .where(GenerationQueue.status == "running")
+        .values(status="pending", next_retry_at=None)
+        .returning(GenerationQueue.id)
+    )
+    count = len(result.fetchall())
+    if count:
+        await db.commit()
+    return count
+
+
 async def boot_scan(db: AsyncSession) -> None:
     """Enqueue generation for all tracked jobs that lack a TailoredResume. Idempotent."""
     result = await db.execute(

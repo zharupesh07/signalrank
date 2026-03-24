@@ -11,7 +11,7 @@ from api.database import AsyncSessionLocal
 from api.deps_llm import get_llm_client
 from api.models import Run
 from api.routes import applications, auth, jobs, onboarding, profile, recruiters, resume, runs
-from batch.resume_worker import boot_scan, resume_worker_loop
+from batch.resume_worker import boot_scan, recover_stuck_generation_tasks, resume_worker_loop
 from batch.worker import get_queue, worker_loop
 
 logging.basicConfig(level=logging.INFO)
@@ -22,19 +22,43 @@ _worker_task: asyncio.Task | None = None
 _resume_worker_task: asyncio.Task | None = None
 
 
+async def _resume_worker_watchdog(session_factory, llm) -> None:
+    """Run resume_worker_loop and restart it if it crashes unexpectedly."""
+    while True:
+        try:
+            await resume_worker_loop(session_factory, llm)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Resume worker crashed — restarting in 10s")
+            await asyncio.sleep(10)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _worker_task, _resume_worker_task
     _worker_task = asyncio.create_task(worker_loop(AsyncSessionLocal))
 
     llm = get_llm_client()
-    _resume_worker_task = asyncio.create_task(resume_worker_loop(AsyncSessionLocal, llm))
+
+    # Crash recovery: reset any tasks left in "running" state from a prior restart
+    try:
+        async with AsyncSessionLocal() as db:
+            recovered = await recover_stuck_generation_tasks(db)
+            if recovered:
+                logger.info("Recovered %d stuck generation task(s) from prior crash", recovered)
+    except Exception:
+        logger.warning("Generation task recovery failed", exc_info=True)
 
     try:
         async with AsyncSessionLocal() as db:
             await boot_scan(db)
     except Exception:
         logger.warning("Boot scan failed", exc_info=True)
+
+    _resume_worker_task = asyncio.create_task(
+        _resume_worker_watchdog(AsyncSessionLocal, llm)
+    )
 
     # Re-queue any runs that were left stuck (pending/scraping) from a prior restart
     async with AsyncSessionLocal() as db:
