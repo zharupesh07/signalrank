@@ -93,33 +93,40 @@ async def process_generation_task(
             }
             typst_src = render_typst(content, "classic")
             pdf = compile_pdf(typst_src)
-            tailored = TailoredResume(
-                user_id=task.user_id,
-                job_id=task.job_id,
-                content_json=content_dict,
-                template="classic",
-                pdf_bytes=pdf,
-            )
-            db.add(tailored)
-            await db.flush()
+            if existing:
+                existing.content_json = content_dict
+                existing.template = "classic"
+                existing.pdf_bytes = pdf
+                tailored = existing
+            else:
+                tailored = TailoredResume(
+                    user_id=task.user_id,
+                    job_id=task.job_id,
+                    content_json=content_dict,
+                    template="classic",
+                    pdf_bytes=pdf,
+                )
+                db.add(tailored)
+                await db.flush()
             logger.info("Generated resume for user=%s job=%s", task.user_id, task.job_id)
 
-        bullets: list[str] = []
-        if tailored.content_json:
-            for exp in tailored.content_json.get("experiences", [])[:2]:
-                bullets.extend(exp.get("bullets", [])[:3])
+        if not tailored.email_body:
+            bullets: list[str] = []
+            if tailored.content_json:
+                for exp in tailored.content_json.get("experiences", [])[:2]:
+                    bullets.extend(exp.get("bullets", [])[:3])
 
-        email = await generate_email(
-            jd=job.description or "",
-            company=job.company or "",
-            role=job.title or "",
-            recruiter_name="Hiring Manager",
-            tailored_bullets=bullets,
-            job_url=job.job_url if hasattr(job, "job_url") else None,
-            llm=llm,
-        )
-        tailored.email_subject = email.subject
-        tailored.email_body = email.body
+            email = await generate_email(
+                jd=job.description or "",
+                company=job.company or "",
+                role=job.title or "",
+                recruiter_name="Hiring Manager",
+                tailored_bullets=bullets,
+                job_url=job.job_url if hasattr(job, "job_url") else None,
+                llm=llm,
+            )
+            tailored.email_subject = email.subject
+            tailored.email_body = email.body
 
         await db.execute(
             update(GenerationQueue)
@@ -130,6 +137,7 @@ async def process_generation_task(
         logger.info("Generated email for user=%s job=%s", task.user_id, task.job_id)
     except Exception as e:
         logger.warning("Generation failed for job=%s: %s", task.job_id, e)
+        await db.rollback()
         new_retry_count = (task.retry_count or 0) + 1
         if new_retry_count >= MAX_TASK_RETRIES:
             new_status = "failed"
