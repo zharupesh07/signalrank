@@ -124,11 +124,13 @@ async def get_analytics(
     top_companies = sorted(company_counts.items(), key=lambda x: x[1], reverse=True)[:10]
     sites = sorted(site_counts.items(), key=lambda x: x[1], reverse=True)
 
+    total_jobs = await db.scalar(select(func.count(JobRaw.id)))
+
     return {
         "score_distribution": [{"range": k, "count": v} for k, v in score_buckets.items()],
         "top_companies": [{"company": c, "count": n} for c, n in top_companies],
         "sites": [{"site": s, "count": n} for s, n in sites],
-        "total": len(rows),
+        "total": total_jobs or 0,
     }
 
 

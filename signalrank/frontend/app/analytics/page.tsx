@@ -432,7 +432,7 @@ export default function AnalyticsPage() {
     const scored = applications.filter((a) => a.system_score != null);
     if (scored.length === 0) return null;
     return Math.round(
-      (scored.reduce((a, b) => a + (b.system_score ?? 0), 0) / scored.length) * 100
+      scored.reduce((a, b) => a + (b.system_score ?? 0), 0) / scored.length
     );
   }, [applications]);
 
