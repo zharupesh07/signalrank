@@ -188,6 +188,21 @@ class TailoredResume(Base):
     __table_args__ = (UniqueConstraint("user_id", "job_id", name="uq_tailored_resume_user_job"),)
 
 
+class GenerationQueue(Base):
+    __tablename__ = "generation_queue"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    job_id: Mapped[str] = mapped_column(ForeignKey("jobs_raw.id", ondelete="CASCADE"), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    error: Mapped[str | None] = mapped_column(Text)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "job_id", name="uq_generation_queue_user_job"),
+    )
+
+
 class Embedding(Base):
     __tablename__ = "embeddings"
 
