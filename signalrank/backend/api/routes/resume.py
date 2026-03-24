@@ -69,7 +69,6 @@ async def tailor(
     try:
         typst_src = render_typst(content, body.template)
         pdf_bytes = compile_pdf(typst_src)
-        pdf_b64 = None
     except Exception as e:
         logger.warning("PDF compile failed: %s", e)
         pdf_bytes = None
