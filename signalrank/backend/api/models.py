@@ -183,6 +183,8 @@ class TailoredResume(Base):
     content_json: Mapped[dict | None] = mapped_column(JSONB)
     pdf_path: Mapped[str | None] = mapped_column(String(500))
     template: Mapped[str] = mapped_column(String(50), default="classic")
+    email_subject: Mapped[str | None] = mapped_column(Text)
+    email_body: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (UniqueConstraint("user_id", "job_id", name="uq_tailored_resume_user_job"),)

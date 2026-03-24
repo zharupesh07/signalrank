@@ -163,6 +163,9 @@ async def generate_cold_email(
     )
     tailored = tailored_res.scalar_one_or_none()
 
+    if tailored and tailored.email_body:
+        return {"subject": tailored.email_subject, "body": tailored.email_body}
+
     bullets: list[str] = []
     if tailored and tailored.content_json:
         for exp in tailored.content_json.get("experiences", [])[:2]:
