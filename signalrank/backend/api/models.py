@@ -8,6 +8,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -182,6 +183,7 @@ class TailoredResume(Base):
     job_id: Mapped[str | None] = mapped_column(ForeignKey("jobs_raw.id"))
     content_json: Mapped[dict | None] = mapped_column(JSONB)
     pdf_path: Mapped[str | None] = mapped_column(String(500))
+    pdf_bytes: Mapped[bytes | None] = mapped_column(LargeBinary)
     template: Mapped[str] = mapped_column(String(50), default="classic")
     email_subject: Mapped[str | None] = mapped_column(Text)
     email_body: Mapped[str | None] = mapped_column(Text)

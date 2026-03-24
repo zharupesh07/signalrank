@@ -8,7 +8,7 @@ from sqlalchemy.dialects.postgresql import insert
 from api.models import Application, GenerationQueue, JobRaw, Profile, TailoredResume
 from llm.email_generator import generate_email
 from llm.openrouter import OpenRouterClient
-from llm.resume_tailor import tailor_resume
+from llm.resume_tailor import compile_pdf, render_typst, tailor_resume
 
 logger = logging.getLogger(__name__)
 
@@ -80,11 +80,14 @@ async def process_generation_task(
                 "experiences": content.experiences, "education": content.education,
                 "projects": content.projects, "certifications": content.certifications,
             }
+            typst_src = render_typst(content, "classic")
+            pdf = compile_pdf(typst_src)
             tailored = TailoredResume(
                 user_id=task.user_id,
                 job_id=task.job_id,
                 content_json=content_dict,
                 template="classic",
+                pdf_bytes=pdf,
             )
             db.add(tailored)
             await db.flush()

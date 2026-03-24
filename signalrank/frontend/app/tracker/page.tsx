@@ -248,11 +248,10 @@ export default function TrackerPage() {
     }
     setTailoring((prev) => new Set(prev).add(app.id));
     try {
-      await api.resume.download(token, app.job_id);
-
       const recs = app.company ? await api.applications.recruitersByCompany(token, app.company) : [];
       const recruiterName = recs[0]?.name || app.recruiter?.name || "Hiring Manager";
       const email = await api.resume.email(token, { job_id: app.job_id, recruiter_name: recruiterName });
+
       if (email.body) {
         setGeneratedEmails((prev) => new Map(prev).set(app.id, email));
         setExpandedEmail(app.id);
@@ -262,6 +261,9 @@ export default function TrackerPage() {
       }
       if (app.job_url) window.open(app.job_url, "_blank");
       toast(`Ready to apply for ${app.title}`, "success");
+
+      // PDF download last — doesn't block email/job URL
+      api.resume.download(token, app.job_id).catch(() => toast("Resume download failed", "error"));
     } catch (e) {
       toast(`Failed: ${e instanceof Error ? e.message : "unknown error"}`, "error");
     } finally {

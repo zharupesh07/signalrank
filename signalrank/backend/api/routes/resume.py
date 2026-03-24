@@ -126,9 +126,12 @@ async def download_tailored(
     if not tailored:
         return JSONResponse(status_code=202, content={"status": "pending", "job_id": str(job_id)})
 
-    content = TailoredContent(**tailored.content_json)
-    typst_src = render_typst(content, template)
-    pdf_bytes = compile_pdf(typst_src)
+    if tailored.pdf_bytes and template == (tailored.template or "classic"):
+        pdf_bytes = tailored.pdf_bytes
+    else:
+        content = TailoredContent(**tailored.content_json)
+        typst_src = render_typst(content, template)
+        pdf_bytes = compile_pdf(typst_src)
 
     job_res = await db.execute(select(JobRaw).where(JobRaw.id == job_id))
     job = job_res.scalar_one_or_none()
