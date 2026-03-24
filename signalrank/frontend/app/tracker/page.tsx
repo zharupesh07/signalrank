@@ -241,16 +241,15 @@ export default function TrackerPage() {
     setConfirmDelete(null);
   }
 
-  async function tailorAndEmail(app: Application) {
+  async function downloadAndEmail(app: Application) {
     if (!app.job_id) {
-      toast("No job linked — cannot tailor resume", "error");
+      toast("No job linked", "error");
       return;
     }
     setTailoring((prev) => new Set(prev).add(app.id));
     try {
-      await api.resume.tailor(token, { job_id: app.job_id });
       await api.resume.download(token, app.job_id);
-      toast(`Resume tailored and downloaded for ${app.title}`, "success");
+      toast(`Resume downloaded for ${app.title}`, "success");
 
       const recs = app.company ? await api.applications.recruitersByCompany(token, app.company) : [];
       const recruiterName = recs[0]?.name || app.recruiter?.name || "Hiring Manager";
@@ -261,10 +260,9 @@ export default function TrackerPage() {
         const emails = recs.filter((r: { email: string }) => isValidEmail(r.email)).map((r: { email: string }) => r.email);
         const to = emails.length ? emails[0] : (app.recruiter?.email && isValidEmail(app.recruiter.email) ? app.recruiter.email : "");
         window.open(gmailComposeUrl(to, email.subject, email.body + MY_SIGNATURE), "_blank");
-        toast("Cold email generated", "success");
       }
     } catch (e) {
-      toast(`Tailor failed: ${e instanceof Error ? e.message : "unknown error"}`, "error");
+      toast(`Failed: ${e instanceof Error ? e.message : "unknown error"}`, "error");
     } finally {
       setTailoring((prev) => { const n = new Set(prev); n.delete(app.id); return n; });
     }
@@ -773,13 +771,13 @@ export default function TrackerPage() {
                         </button>
                         {app.job_id && (
                           <button
-                            onClick={() => tailorAndEmail(app)}
+                            onClick={() => downloadAndEmail(app)}
                             disabled={tailoring.has(app.id)}
                             className="flex items-center gap-1 text-[11px] text-[var(--terminal-green-bright)] border border-[var(--terminal-green-bright)]/30 px-1.5 py-0.5 hover:bg-[var(--terminal-green-bright)]/10 transition-colors uppercase tracking-wider disabled:opacity-50"
-                            title="Tailor resume + generate cold email"
+                            title="Download resume + open cold email draft"
                           >
                             {tailoring.has(app.id) ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                            tailor
+                            apply
                           </button>
                         )}
                         <button
