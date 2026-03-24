@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 @router.get("")
 async def list_jobs(
     page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=1, le=500),
+    limit: int = Query(50, ge=1, le=5000),
     sort: str = Query("final_score"),
     search: str = Query(""),
     current_user: User = Depends(get_current_user),
