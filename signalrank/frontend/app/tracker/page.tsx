@@ -249,7 +249,6 @@ export default function TrackerPage() {
     setTailoring((prev) => new Set(prev).add(app.id));
     try {
       await api.resume.download(token, app.job_id);
-      toast(`Resume downloaded for ${app.title}`, "success");
 
       const recs = app.company ? await api.applications.recruitersByCompany(token, app.company) : [];
       const recruiterName = recs[0]?.name || app.recruiter?.name || "Hiring Manager";
@@ -261,6 +260,8 @@ export default function TrackerPage() {
         const to = emails.length ? emails[0] : (app.recruiter?.email && isValidEmail(app.recruiter.email) ? app.recruiter.email : "");
         window.open(gmailComposeUrl(to, email.subject, email.body + MY_SIGNATURE), "_blank");
       }
+      if (app.job_url) window.open(app.job_url, "_blank");
+      toast(`Ready to apply for ${app.title}`, "success");
     } catch (e) {
       toast(`Failed: ${e instanceof Error ? e.message : "unknown error"}`, "error");
     } finally {

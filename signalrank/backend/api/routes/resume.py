@@ -130,16 +130,19 @@ async def download_tailored(
     typst_src = render_typst(content, template)
     pdf_bytes = compile_pdf(typst_src)
 
-    company = ""
     job_res = await db.execute(select(JobRaw).where(JobRaw.id == job_id))
     job = job_res.scalar_one_or_none()
-    if job and job.company:
-        company = "_" + job.company.replace(" ", "_").replace("/", "_")[:30]
+
+    candidate = (content.name or "candidate").lower().replace(" ", "_")
+    company_part = (job.company or "").lower().replace(" ", "_").replace("/", "_")[:20] if job else ""
+    title_part = (job.title or "").lower().replace(" ", "_").replace("/", "_")[:20] if job else ""
+    parts = [p for p in [candidate, company_part, title_part] if p]
+    filename = "_".join(parts) + ".pdf"
 
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="resume{company}_{job_id[:8]}.pdf"'},
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 
