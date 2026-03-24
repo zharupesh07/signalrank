@@ -25,7 +25,7 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(as_uuid=False), nullable=False),
     sa.Column('user_id', sa.UUID(as_uuid=False), nullable=False),
     sa.Column('job_id', sa.UUID(as_uuid=False), nullable=False),
-    sa.Column('status', sa.String(length=20), nullable=False),
+    sa.Column('status', sa.String(length=20), server_default='pending', nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('error', sa.Text(), nullable=True),
     sa.ForeignKeyConstraint(['job_id'], ['jobs_raw.id'], ondelete='CASCADE'),
