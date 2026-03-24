@@ -20,17 +20,8 @@ def _get_probe_lock(key: tuple) -> asyncio.Lock:
     return _probe_locks[key]
 
 FALLBACK_MODELS = [
-    "arcee-ai/trinity-large-preview:free",
-    "nvidia/nemotron-3-super-120b-a12b:free",
-    "stepfun/step-3.5-flash:free",
-    "z-ai/glm-4.5-air:free",
-    "nvidia/nemotron-nano-9b-v2:free",
-    "google/gemma-3-27b-it:free",
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "mistralai/mistral-small-3.1-24b-instruct:free",
-    "qwen/qwen3-coder:free",
-    "nousresearch/hermes-3-llama-3.1-405b:free",
-    "openrouter/free",
+    "arcee-ai/trinity-mini:free",           # 14s, 4 exp — fastest + works
+    "arcee-ai/trinity-large-preview:free",  # 72s, 4 exp — quality fallback
 ]
 
 BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
