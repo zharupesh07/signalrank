@@ -140,6 +140,8 @@ class Application(Base):
     job: Mapped["JobRaw | None"] = relationship()
     recruiter: Mapped["Recruiter | None"] = relationship()
 
+    __table_args__ = (UniqueConstraint("user_id", "job_id", name="uq_application_user_job"),)
+
 
 class Recruiter(Base):
     __tablename__ = "recruiters"
