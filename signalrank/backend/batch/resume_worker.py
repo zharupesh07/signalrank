@@ -32,7 +32,7 @@ async def process_generation_task(
         )
     )
     existing = existing_res.scalar_one_or_none()
-    if existing and existing.email_body:
+    if existing and existing.email_body and existing.pdf_bytes:
         await db.execute(
             update(GenerationQueue)
             .where(GenerationQueue.id == task.id)
@@ -66,7 +66,14 @@ async def process_generation_task(
         return
 
     try:
-        if existing:
+        if existing and existing.pdf_bytes:
+            tailored = existing
+        elif existing and existing.content_json and not existing.pdf_bytes:
+            # content already generated but PDF missing — recompile from existing JSON
+            from llm.resume_tailor import TailoredContent, render_typst, compile_pdf as _compile_pdf
+            content_obj = TailoredContent(**existing.content_json)
+            typst_src = render_typst(content_obj, "classic")
+            existing.pdf_bytes = _compile_pdf(typst_src)
             tailored = existing
         else:
             content = await tailor_resume(
@@ -169,7 +176,7 @@ async def boot_scan(db: AsyncSession) -> None:
         )
         .where(
             Application.job_id.isnot(None),
-            (TailoredResume.id.is_(None)) | (TailoredResume.email_body.is_(None)),
+            (TailoredResume.id.is_(None)) | (TailoredResume.email_body.is_(None)) | (TailoredResume.email_body == "") | (TailoredResume.pdf_bytes.is_(None)),
         )
     )
     rows = result.all()
