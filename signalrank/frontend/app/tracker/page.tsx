@@ -141,6 +141,7 @@ export default function TrackerPage() {
   const [priorityFilter, setPriorityFilter] = useState<"all" | "p1" | "p1p2">("all");
   const [expandedColumns, setExpandedColumns] = useState<Set<string>>(new Set());
   const [tailoring, setTailoring] = useState<Set<string>>(new Set());
+  const [gmailLinks, setGmailLinks] = useState<Map<string, string>>(new Map());
   const COLUMN_LIMIT = 10;
 
   const loadData = useCallback(async () => {
@@ -244,9 +245,6 @@ export default function TrackerPage() {
       toast("No job linked", "error");
       return;
     }
-    // Open blank tab synchronously (inside click handler = user gesture).
-    // Browser allows this. We navigate it after async work — tab stays in background.
-    const gmailTab = window.open("about:blank", "_blank");
     setTailoring((prev) => new Set(prev).add(app.id));
     try {
       const recs = app.company ? await api.applications.recruitersByCompany(token, app.company) : [];
@@ -257,25 +255,22 @@ export default function TrackerPage() {
         api.resume.download(token, app.job_id).catch(() => "error" as const),
       ]);
 
-      if (email.body && gmailTab) {
+      if (email.body) {
         const recEmails = recs.filter((r: { email: string }) => isValidEmail(r.email)).map((r: { email: string }) => r.email);
         const to = recEmails.length ? recEmails[0] : (app.recruiter?.email && isValidEmail(app.recruiter.email) ? app.recruiter.email : "");
-        gmailTab.location.href = gmailComposeUrl(to, email.subject, email.body + MY_SIGNATURE);
-      } else {
-        gmailTab?.close();
+        setGmailLinks((prev) => new Map(prev).set(app.id, gmailComposeUrl(to, email.subject, email.body + MY_SIGNATURE)));
       }
 
       await updateStatus(app.id, "applied");
 
       if (dlResult === "pending") {
-        toast("Resume still generating (~2 min) — click Apply again to download PDF", "info");
+        toast("Resume generating — PDF will be available in ~2 min, click Apply again", "info");
       } else if (dlResult === "error") {
         toast("Resume download failed", "error");
       } else {
-        toast(`Applied to ${app.title}`, "success");
+        toast(email.body ? `Applied — Cmd+click the Gmail link to open in background` : `Applied to ${app.title}`, "success");
       }
     } catch (e) {
-      gmailTab?.close();
       toast(`Failed: ${e instanceof Error ? e.message : "unknown error"}`, "error");
     } finally {
       setTailoring((prev) => { const n = new Set(prev); n.delete(app.id); return n; });
@@ -779,11 +774,23 @@ export default function TrackerPage() {
                             onClick={() => downloadAndEmail(app)}
                             disabled={tailoring.has(app.id)}
                             className="flex items-center gap-1 text-[11px] text-[var(--terminal-green-bright)] border border-[var(--terminal-green-bright)]/30 px-1.5 py-0.5 hover:bg-[var(--terminal-green-bright)]/10 transition-colors uppercase tracking-wider disabled:opacity-50"
-                            title="Download resume + open cold email draft"
+                            title="Download resume + prepare email"
                           >
                             {tailoring.has(app.id) ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
                             apply
                           </button>
+                        )}
+                        {gmailLinks.has(app.id) && (
+                          <a
+                            href={gmailLinks.get(app.id)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 px-1.5 py-0.5 hover:bg-primary/10 transition-colors uppercase tracking-wider"
+                            title="Cmd+click to open in background"
+                          >
+                            <Mail size={9} />
+                            gmail
+                          </a>
                         )}
                         <button
                           onClick={() => deleteApp(app.id)}
