@@ -152,10 +152,11 @@ export const api = {
         "/api/resume/tailor",
         { method: "POST", token, body: JSON.stringify(data) }
       ),
-    download: async (token: string, jobId: string) => {
+    download: async (token: string, jobId: string): Promise<"ok" | "pending"> => {
       const res = await fetch(`${BASE_URL}/api/resume/tailor/${jobId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (res.status === 202) return "pending";
       if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
@@ -168,6 +169,7 @@ export const api = {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+      return "ok";
     },
     email: (token: string, data: { job_id: string; recruiter_name: string }) =>
       request<{ subject: string; body: string }>(

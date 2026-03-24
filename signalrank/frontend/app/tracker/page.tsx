@@ -260,10 +260,19 @@ export default function TrackerPage() {
         window.open(gmailComposeUrl(to, email.subject, email.body + MY_SIGNATURE), "_blank");
       }
       if (app.job_url) window.open(app.job_url, "_blank");
-      toast(`Ready to apply for ${app.title}`, "success");
 
-      // PDF download last — doesn't block email/job URL
-      api.resume.download(token, app.job_id).catch(() => toast("Resume download failed", "error"));
+      // Mark as applied
+      await updateStatus(app.id, "applied");
+
+      // PDF download — show clear message if still generating
+      const dlResult = await api.resume.download(token, app.job_id).catch(() => "error" as const);
+      if (dlResult === "pending") {
+        toast("Resume still generating — check back in ~2 min and click Apply again to download", "info");
+      } else if (dlResult === "error") {
+        toast("Resume download failed", "error");
+      } else {
+        toast(`Applied to ${app.title}`, "success");
+      }
     } catch (e) {
       toast(`Failed: ${e instanceof Error ? e.message : "unknown error"}`, "error");
     } finally {
@@ -726,16 +735,7 @@ export default function TrackerPage() {
 
                       {/* Action buttons */}
                       <div className="flex items-center gap-2 pt-0.5">
-                        {app.status === "interested" && (
-                          <button
-                            onClick={() => applyToJob(app)}
-                            className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 px-1.5 py-0.5 hover:bg-primary/10 transition-colors uppercase tracking-wider"
-                          >
-                            apply
-                            <ExternalLink size={9} />
-                          </button>
-                        )}
-                        {app.status !== "applied" && app.status !== "phone_screen" && app.status !== "interview" && app.status !== "offer" && app.status !== "rejected" && app.status !== "archived" && (
+                        {app.status !== "interested" && app.status !== "applied" && app.status !== "phone_screen" && app.status !== "interview" && app.status !== "offer" && app.status !== "rejected" && app.status !== "archived" && (
                           <button
                             onClick={() => updateStatus(app.id, "applied")}
                             className="flex items-center gap-1 text-[11px] text-muted-foreground border border-border px-1.5 py-0.5 hover:text-primary hover:border-primary/30 transition-colors uppercase tracking-wider"
