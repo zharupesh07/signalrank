@@ -141,9 +141,6 @@ export default function TrackerPage() {
   const [priorityFilter, setPriorityFilter] = useState<"all" | "p1" | "p1p2">("all");
   const [expandedColumns, setExpandedColumns] = useState<Set<string>>(new Set());
   const [tailoring, setTailoring] = useState<Set<string>>(new Set());
-  const [generatedEmails, setGeneratedEmails] = useState<Map<string, { subject: string; body: string }>>(new Map());
-  const [expandedEmail, setExpandedEmail] = useState<string | null>(null);
-  const [applyLinks, setApplyLinks] = useState<Map<string, { gmailUrl: string; jobUrl: string | null; resumePending: boolean }>>(new Map());
   const COLUMN_LIMIT = 10;
 
   const loadData = useCallback(async () => {
@@ -251,33 +248,26 @@ export default function TrackerPage() {
     try {
       const recs = app.company ? await api.applications.recruitersByCompany(token, app.company) : [];
       const recruiterName = recs[0]?.name || app.recruiter?.name || "Hiring Manager";
-      const email = await api.resume.email(token, { job_id: app.job_id, recruiter_name: recruiterName });
 
-      const recEmails = recs.filter((r: { email: string }) => isValidEmail(r.email)).map((r: { email: string }) => r.email);
-      const to = recEmails.length ? recEmails[0] : (app.recruiter?.email && isValidEmail(app.recruiter.email) ? app.recruiter.email : "");
+      // Fetch email + PDF in parallel
+      const [email, dlResult] = await Promise.all([
+        api.resume.email(token, { job_id: app.job_id, recruiter_name: recruiterName }),
+        api.resume.download(token, app.job_id).catch(() => "error" as const),
+      ]);
 
-      let gmailUrl = "";
+      // Copy email to clipboard
       if (email.body) {
-        setGeneratedEmails((prev) => new Map(prev).set(app.id, email));
-        setExpandedEmail(app.id);
-        gmailUrl = gmailComposeUrl(to, email.subject, email.body + MY_SIGNATURE);
+        await navigator.clipboard.writeText(`Subject: ${email.subject}\n\n${email.body}${MY_SIGNATURE}`).catch(() => {});
       }
 
-      // Store links for user to open manually — browsers block background tabs
-      setApplyLinks((prev) => new Map(prev).set(app.id, { gmailUrl, jobUrl: app.job_url ?? null, resumePending: false }));
-
-      // Mark as applied
       await updateStatus(app.id, "applied");
 
-      // PDF download — fire in background, update pending state if not ready
-      const dlResult = await api.resume.download(token, app.job_id).catch(() => "error" as const);
       if (dlResult === "pending") {
-        setApplyLinks((prev) => new Map(prev).set(app.id, { gmailUrl, jobUrl: app.job_url ?? null, resumePending: true }));
-        toast("Resume still generating — links ready below, PDF will be available in ~2 min", "info");
+        toast(email.body ? "Email copied — resume still generating (~2 min)" : "Resume generating, email not ready yet", "info");
       } else if (dlResult === "error") {
-        toast("Resume download failed", "error");
+        toast(email.body ? "Email copied — resume download failed" : "Apply failed", "error");
       } else {
-        toast(`Applied to ${app.title} — links ready below`, "success");
+        toast(email.body ? `Applied to ${app.title} — resume downloaded + email copied` : `Applied to ${app.title} — resume downloaded`, "success");
       }
     } catch (e) {
       toast(`Failed: ${e instanceof Error ? e.message : "unknown error"}`, "error");
@@ -802,76 +792,6 @@ export default function TrackerPage() {
                         </button>
                       </div>
 
-                      {/* Apply links — shown after Apply is clicked, user opens manually */}
-                      {applyLinks.has(app.id) && (() => {
-                        const links = applyLinks.get(app.id)!;
-                        return (
-                          <div className="flex items-center gap-3 pt-1 text-[10px] font-mono text-muted-foreground">
-                            <span className="text-[var(--terminal-green-bright)]/70">ready →</span>
-                            {links.gmailUrl && (
-                              <a href={links.gmailUrl} target="_blank" rel="noreferrer" className="hover:text-primary underline underline-offset-2">
-                                open gmail
-                              </a>
-                            )}
-                            {links.jobUrl && (
-                              <a href={links.jobUrl} target="_blank" rel="noreferrer" className="hover:text-primary underline underline-offset-2">
-                                open job
-                              </a>
-                            )}
-                            {links.resumePending ? (
-                              <span className="text-yellow-500/70">pdf generating…</span>
-                            ) : (
-                              <button
-                                onClick={() => api.resume.download(token, app.job_id!).catch(() => toast("Download failed", "error"))}
-                                className="hover:text-primary underline underline-offset-2"
-                              >
-                                download pdf
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })()}
-
-                      {/* Generated email preview */}
-                      {generatedEmails.has(app.id) && (
-                        <div className="mt-1">
-                          <button
-                            onClick={() => setExpandedEmail(expandedEmail === app.id ? null : app.id)}
-                            className="flex items-center gap-1 text-[10px] text-[var(--terminal-green-bright)] uppercase tracking-wider"
-                          >
-                            <ChevronRight size={10} className={`transition-transform ${expandedEmail === app.id ? "rotate-90" : ""}`} />
-                            generated email
-                          </button>
-                          {expandedEmail === app.id && (() => {
-                            const email = generatedEmails.get(app.id)!;
-                            const recruiterEmail = app.recruiter?.email;
-                            return (
-                              <div className="mt-1.5 border border-[var(--terminal-green-bright)]/20 bg-[var(--terminal-green-bright)]/5 p-2 space-y-1.5">
-                                <div className="text-[11px] font-medium text-secondary-foreground">{email.subject}</div>
-                                <pre className="text-[10px] text-muted-foreground whitespace-pre-wrap leading-relaxed">{email.body}</pre>
-                                <div className="flex gap-2 pt-1">
-                                  <button
-                                    onClick={() => { navigator.clipboard.writeText(`Subject: ${email.subject}\n\n${email.body}`); toast("Copied", "success"); }}
-                                    className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary border border-border px-1.5 py-0.5 uppercase tracking-wider"
-                                  >
-                                    <Copy size={9} /> copy
-                                  </button>
-                                  {recruiterEmail && isValidEmail(recruiterEmail) && (
-                                    <a
-                                      href={gmailComposeUrl(recruiterEmail, email.subject, email.body + MY_SIGNATURE)}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="flex items-center gap-1 text-[10px] text-primary border border-primary/30 px-1.5 py-0.5 hover:bg-primary/10 uppercase tracking-wider"
-                                    >
-                                      <Mail size={9} /> gmail
-                                    </a>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      )}
                     </div>
                     );})
                 )}
