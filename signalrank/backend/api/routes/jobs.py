@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select, or_
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.database import get_db
 from api.deps import get_current_user
-from api.models import JobRaw, JobResult, Run, User
+from api.models import ArchivalQueue, JobRaw, JobResult, Run, User
+
+ARCHIVAL_TIERS = {"tier_ss", "tier_s", "tier_a"}
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
@@ -15,6 +18,7 @@ async def list_jobs(
     limit: int = Query(50, ge=1, le=5000),
     sort: str = Query("final_score"),
     search: str = Query(""),
+    show_archived: bool = Query(True),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -31,6 +35,10 @@ async def list_jobs(
     sort_col = getattr(JobResult, sort, JobResult.final_score)
 
     base_filters = [JobResult.run_id == run.id, JobResult.user_id == current_user.id]
+    if not show_archived:
+        base_filters.append(
+            or_(JobResult.archived_by_llm.is_(None), JobResult.archived_by_llm == False)
+        )
     if search:
         pattern = f"%{search}%"
         base_filters.append(
@@ -70,9 +78,80 @@ async def list_jobs(
             "recency_score": result.recency_score / 100 if result.recency_score is not None else None,
             "company_tier": result.company_tier if result.company_tier not in ("default", "", None) else None,
             "is_contract": result.is_contract,
+            "archived_by_llm": result.archived_by_llm,
+            "archival_reason": result.archival_reason,
         })
 
     return {"jobs": jobs, "total": total, "page": page, "limit": limit}
+
+
+@router.post("/archive-unsuitable", status_code=200)
+async def archive_unsuitable(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Enqueue all unevaluated SS/S/A tier JobResults for LLM archival evaluation."""
+    latest_run = await db.execute(
+        select(Run)
+        .where(Run.user_id == current_user.id, Run.status == "success")
+        .order_by(Run.finished_at.desc())
+        .limit(1)
+    )
+    run = latest_run.scalar_one_or_none()
+    if not run:
+        return {"queued": 0, "message": "No successful run found"}
+
+    results = await db.execute(
+        select(JobResult.id)
+        .where(
+            JobResult.run_id == run.id,
+            JobResult.user_id == current_user.id,
+            JobResult.archived_by_llm.is_(None),
+            JobResult.company_tier.in_(ARCHIVAL_TIERS),
+        )
+    )
+    job_result_ids = [r[0] for r in results.all()]
+
+    if not job_result_ids:
+        return {"queued": 0, "message": "All eligible jobs already evaluated"}
+
+    await db.execute(
+        pg_insert(ArchivalQueue)
+        .values([
+            {"user_id": current_user.id, "job_result_id": jrid}
+            for jrid in job_result_ids
+        ])
+        .on_conflict_do_nothing(constraint="uq_archival_queue_user_job_result")
+    )
+    await db.commit()
+
+    return {"queued": len(job_result_ids)}
+
+
+@router.get("/archive-status")
+async def archive_status(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return progress of archival evaluation for the current user."""
+    result = await db.execute(
+        select(
+            ArchivalQueue.status,
+            func.count(ArchivalQueue.id),
+        )
+        .where(ArchivalQueue.user_id == current_user.id)
+        .group_by(ArchivalQueue.status)
+    )
+    counts = {row[0]: row[1] for row in result.all()}
+    total = sum(counts.values())
+
+    return {
+        "total": total,
+        "done": counts.get("done", 0),
+        "pending": counts.get("pending", 0),
+        "running": counts.get("running", 0),
+        "failed": counts.get("failed", 0),
+    }
 
 
 @router.get("/analytics")

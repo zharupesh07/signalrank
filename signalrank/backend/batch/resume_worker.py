@@ -14,7 +14,7 @@ from llm.resume_tailor import compile_pdf, render_typst, tailor_resume
 
 logger = logging.getLogger(__name__)
 
-CONCURRENCY = 1        # 1 task at a time — LLM semaphore handles the real throttle
+CONCURRENCY = 3        # tasks per poll cycle — LLM semaphore handles the real throttle
 MAX_TASK_RETRIES = 3   # retry failed tasks up to this many times
 POLL_INTERVAL = 5      # seconds between queue polls
 

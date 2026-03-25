@@ -14,7 +14,7 @@ import { api } from "@/lib/api";
 import type { Job } from "@/types";
 import { useToast } from "@/components/toast";
 import { TableRowSkeleton } from "@/components/skeleton";
-import { ExternalLink, ChevronUp, ChevronDown, Search, X, Plus, ChevronRight, ChevronLeft, SlidersHorizontal, XCircle } from "lucide-react";
+import { ExternalLink, ChevronUp, ChevronDown, Search, X, Plus, ChevronRight, ChevronLeft, SlidersHorizontal, XCircle, Archive, Loader2 } from "lucide-react";
 
 const col = createColumnHelper<Job>();
 
@@ -173,8 +173,9 @@ const DEFAULT_FILTERS: Filters = {
   dateRange: "any",
 };
 
-function filterJobs(jobs: Job[], filters: Filters): Job[] {
+function filterJobs(jobs: Job[], filters: Filters, showArchived: boolean): Job[] {
   return jobs.filter((job) => {
+    if (!showArchived && job.archived_by_llm === true) return false;
     if (filters.minScore > 0 && (job.final_score ?? 0) * 100 < filters.minScore) return false;
     if (filters.tiers.length > 0 && !filters.tiers.includes(job.company_tier ?? "")) return false;
     if (filters.jobType === "fte" && job.is_contract) return false;
@@ -221,6 +222,9 @@ export default function JobsPage() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [pageSize, setPageSize] = useState<number | "all">(50);
+  const [showArchived, setShowArchived] = useState(true);
+  const [archiveStatus, setArchiveStatus] = useState<{ total: number; done: number; pending: number; running: number } | null>(null);
+  const [archiving, setArchiving] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("signalrank-sidebar-collapsed");
@@ -268,6 +272,42 @@ export default function JobsPage() {
     toast("Added to tracker", "success");
   }
 
+  async function triggerArchive() {
+    setArchiving(true);
+    try {
+      const res = await api.jobs.archiveUnsuitable(token);
+      toast(`Queued ${res.queued} jobs for evaluation`, "success");
+      pollArchiveStatus();
+    } catch {
+      toast("Failed to start archival", "error");
+    } finally {
+      setArchiving(false);
+    }
+  }
+
+  function pollArchiveStatus() {
+    const interval = setInterval(async () => {
+      try {
+        const status = await api.jobs.archiveStatus(token);
+        setArchiveStatus(status);
+        if (status.pending === 0 && status.running === 0 && status.total > 0) {
+          clearInterval(interval);
+          api.jobs.list(token, 1, 5000, "").then((r) => setAllJobs(r.jobs));
+        }
+      } catch {
+        clearInterval(interval);
+      }
+    }, 3000);
+  }
+
+  useEffect(() => {
+    if (!token) return;
+    api.jobs.archiveStatus(token).then((s) => {
+      setArchiveStatus(s);
+      if (s.pending > 0 || s.running > 0) pollArchiveStatus();
+    }).catch(() => null);
+  }, [token]);
+
   const availableSites = useMemo(() => {
     const sites = new Set(allJobs.map((j) => j.site ?? "").filter(Boolean));
     return Array.from(sites).sort();
@@ -281,7 +321,7 @@ export default function JobsPage() {
     );
   }, [allJobs, debouncedSearch]);
 
-  const filteredJobs = useMemo(() => filterJobs(searchFiltered, filters), [searchFiltered, filters]);
+  const filteredJobs = useMemo(() => filterJobs(searchFiltered, filters, showArchived), [searchFiltered, filters, showArchived]);
 
   const pageJobs = useMemo(() => {
     if (pageSize === "all") return filteredJobs;
@@ -338,6 +378,19 @@ export default function JobsPage() {
                 <span className="text-[11px] text-muted-foreground">of {allJobs.length}</span>
               )}
             </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={triggerArchive}
+              disabled={archiving || (archiveStatus !== null && (archiveStatus.pending > 0 || archiveStatus.running > 0))}
+              className="flex items-center gap-1.5 text-[11px] border border-border px-3 py-2 hover:border-primary hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-wider"
+            >
+              {archiving || (archiveStatus && (archiveStatus.pending > 0 || archiveStatus.running > 0)) ? (
+                <><Loader2 size={11} className="animate-spin" />archiving {archiveStatus ? `${archiveStatus.done}/${archiveStatus.total}` : ""}</>
+              ) : (
+                <><Archive size={11} />archive unsuitable</>
+              )}
+            </button>
           </div>
           <div className="flex items-center border border-border bg-input focus-within:border-primary transition-colors w-64">
             <Search size={11} className="text-muted-foreground ml-3 shrink-0" />
@@ -499,6 +552,20 @@ export default function JobsPage() {
                     </div>
                   </>
                 )}
+
+                <hr className="border-border" />
+
+                {/* Show Archived */}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showArchived}
+                    onChange={() => setShowArchived((v) => !v)}
+                    suppressHydrationWarning
+                    className="accent-[#22c55e] w-3 h-3"
+                  />
+                  <span className="text-xs text-foreground">Show archived</span>
+                </label>
               </div>
             )}
           </aside>
@@ -554,7 +621,10 @@ export default function JobsPage() {
                           key={row.id}
                           onClick={() => setSelectedJob(isSelected ? null : job)}
                           className="job-row-item border-b border-border bg-card"
-                          style={isSelected ? { boxShadow: "inset 2px 0 0 var(--primary)", background: "color-mix(in srgb, var(--primary) 5%, transparent)" } : {}}
+                          style={{
+                            ...(isSelected ? { boxShadow: "inset 2px 0 0 var(--primary)", background: "color-mix(in srgb, var(--primary) 5%, transparent)" } : {}),
+                            ...(job.archived_by_llm ? { opacity: 0.45 } : {}),
+                          }}
                         >
                           {row.getVisibleCells().map((cell) => (
                             <td key={cell.id} className="px-3 py-2.5 overflow-hidden">
@@ -665,7 +735,16 @@ export default function JobsPage() {
                 )}
                 <span className="text-[10px] text-muted-foreground">{selectedJob.location ?? "—"}</span>
                 <span className="text-[10px] text-muted-foreground">{selectedJob.site}</span>
+                {selectedJob.archived_by_llm && (
+                  <span className="text-[10px] text-destructive border border-destructive/30 px-1.5 py-0.5">ARCHIVED</span>
+                )}
               </div>
+
+              {selectedJob.archival_reason && (
+                <div className="text-[11px] text-muted-foreground bg-muted/30 border border-border px-2 py-1.5 italic">
+                  {selectedJob.archival_reason}
+                </div>
+              )}
 
               <div className="flex items-center gap-2 pt-1">
                 {selectedJob.job_url && (

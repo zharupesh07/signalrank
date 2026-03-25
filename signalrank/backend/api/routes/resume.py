@@ -127,9 +127,12 @@ async def download_tailored(
     if not tailored:
         return JSONResponse(status_code=202, content={"status": "pending", "job_id": str(job_id)})
 
+    content: TailoredContent | None = None
     if tailored.pdf_bytes and template == (tailored.template or "classic"):
         pdf_bytes = tailored.pdf_bytes
     else:
+        if not tailored.content_json:
+            return JSONResponse(status_code=202, content={"status": "pending", "job_id": str(job_id)})
         content = TailoredContent(**tailored.content_json)
         typst_src = render_typst(content, template)
         pdf_bytes = compile_pdf(typst_src)
@@ -137,7 +140,7 @@ async def download_tailored(
     job_res = await db.execute(select(JobRaw).where(JobRaw.id == job_id))
     job = job_res.scalar_one_or_none()
 
-    candidate = (content.name or "candidate").lower().replace(" ", "_")
+    candidate = ((content.name if content else None) or "candidate").lower().replace(" ", "_")
     company_part = (job.company or "").lower().replace(" ", "_").replace("/", "_")[:20] if job else ""
     title_part = (job.title or "").lower().replace(" ", "_").replace("/", "_")[:20] if job else ""
     parts = [p for p in [candidate, company_part, title_part] if p]

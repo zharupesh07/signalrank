@@ -11,6 +11,7 @@ from api.database import AsyncSessionLocal
 from api.deps_llm import get_llm_client
 from api.models import Run
 from api.routes import applications, auth, ingest, jobs, onboarding, profile, recruiters, resume, runs
+from batch.archival_worker import archival_worker_loop, recover_stuck_archival_tasks
 from batch.resume_worker import boot_scan, recover_stuck_generation_tasks, resume_worker_loop
 from batch.worker import get_queue, worker_loop
 
@@ -20,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 _worker_task: asyncio.Task | None = None
 _resume_worker_task: asyncio.Task | None = None
+_archival_worker_task: asyncio.Task | None = None
 
 
 async def _resume_worker_watchdog(session_factory, llm) -> None:
@@ -34,9 +36,21 @@ async def _resume_worker_watchdog(session_factory, llm) -> None:
             await asyncio.sleep(10)
 
 
+async def _archival_worker_watchdog(session_factory, llm) -> None:
+    """Run archival_worker_loop and restart it if it crashes unexpectedly."""
+    while True:
+        try:
+            await archival_worker_loop(session_factory, llm)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Archival worker crashed — restarting in 10s")
+            await asyncio.sleep(10)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _worker_task, _resume_worker_task
+    global _worker_task, _resume_worker_task, _archival_worker_task
     _worker_task = asyncio.create_task(worker_loop(AsyncSessionLocal))
 
     llm = get_llm_client()
@@ -60,6 +74,18 @@ async def lifespan(app: FastAPI):
         _resume_worker_watchdog(AsyncSessionLocal, llm)
     )
 
+    try:
+        async with AsyncSessionLocal() as db:
+            recovered = await recover_stuck_archival_tasks(db)
+            if recovered:
+                logger.info("Recovered %d stuck archival task(s) from prior crash", recovered)
+    except Exception:
+        logger.warning("Archival task recovery failed", exc_info=True)
+
+    _archival_worker_task = asyncio.create_task(
+        _archival_worker_watchdog(AsyncSessionLocal, llm)
+    )
+
     # Re-queue any runs that were left stuck (pending/scraping) from a prior restart
     async with AsyncSessionLocal() as db:
         result = await db.execute(
@@ -77,7 +103,7 @@ async def lifespan(app: FastAPI):
             await db.commit()
 
     yield
-    for t in (_worker_task, _resume_worker_task):
+    for t in (_worker_task, _resume_worker_task, _archival_worker_task):
         if t:
             t.cancel()
             try:

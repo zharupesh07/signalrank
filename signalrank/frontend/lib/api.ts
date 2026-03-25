@@ -59,8 +59,8 @@ export const api = {
   },
 
   jobs: {
-    list: (token: string, page = 1, limit = 50, search = "") =>
-      request<JobsResponse>(`/api/jobs?page=${page}&limit=${limit}${search ? `&search=${encodeURIComponent(search)}` : ""}`, { token }),
+    list: (token: string, page = 1, limit = 50, search = "", showArchived = true) =>
+      request<JobsResponse>(`/api/jobs?page=${page}&limit=${limit}&show_archived=${showArchived}${search ? `&search=${encodeURIComponent(search)}` : ""}`, { token }),
     get: (token: string, id: string) =>
       request<Job>(`/api/jobs/${id}`, { token }),
     analytics: (token: string) =>
@@ -70,6 +70,10 @@ export const api = {
         sites: { site: string; count: number }[];
         total: number;
       }>("/api/jobs/analytics", { token }),
+    archiveUnsuitable: (token: string) =>
+      request<{ queued: number; message?: string }>("/api/jobs/archive-unsuitable", { method: "POST", token }),
+    archiveStatus: (token: string) =>
+      request<{ total: number; done: number; pending: number; running: number; failed: number }>("/api/jobs/archive-status", { token }),
   },
 
   runs: {

@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from batch.recruiter_finder import (
+    _guess_domain,
     _is_recruiter_title,
     _parse_ddg_html,
     _slug_to_name,
@@ -111,7 +112,6 @@ async def test_find_recruiters_with_llm_enrichment():
     assert results[0]["source"] == "ddg+llm"
     assert results[0]["confidence"] == "high"
     assert "email" not in results[0]
-    assert "domain" not in results[0]
 
 
 @pytest.mark.asyncio
@@ -123,7 +123,6 @@ async def test_find_recruiters_heuristic_fallback_no_api_key():
     assert len(results) == 2
     for r in results:
         assert "email" not in r
-        assert "domain" not in r
 
 
 @pytest.mark.asyncio
@@ -229,3 +228,86 @@ def test_valid_slug_regex():
     assert not _VALID_SLUG_RE.match("a" * 200)
     assert not _VALID_SLUG_RE.match("has spaces")
     assert not _VALID_SLUG_RE.match("UPPERCASE")
+
+
+# ---------------------------------------------------------------------------
+# _guess_domain
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_guess_domain_finds_matching_domain():
+    html = '<a href="https://www.adobe.com/careers">Adobe Careers</a>'
+    with patch("batch.recruiter_finder._ddg_search_sync", return_value=html):
+        domain = await _guess_domain("Adobe")
+    assert domain == "adobe.com"
+
+
+@pytest.mark.asyncio
+async def test_guess_domain_skips_linkedin():
+    html = '<a href="https://www.linkedin.com/company/adobe">LinkedIn</a>'
+    with patch("batch.recruiter_finder._ddg_search_sync", return_value=html):
+        domain = await _guess_domain("Adobe")
+    assert domain is None
+
+
+@pytest.mark.asyncio
+async def test_guess_domain_handles_error():
+    with patch("batch.recruiter_finder._ddg_search_sync", side_effect=Exception("fail")):
+        domain = await _guess_domain("Adobe")
+    assert domain is None
+
+
+# ---------------------------------------------------------------------------
+# find_recruiters with Hunter integration
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_find_recruiters_with_hunter_enrichment():
+    from batch.hunter import EmailResult
+
+    mock_llm = MagicMock()
+    mock_hunter = MagicMock()
+    mock_hunter.available = True
+    mock_hunter.find_email = AsyncMock(return_value=EmailResult(
+        email="alice.jones@adobe.com", confidence=92, type="personal", sources=1,
+    ))
+
+    with patch("batch.recruiter_finder._ddg_search_sync", return_value=_SAMPLE_HTML), \
+         patch("batch.recruiter_finder._llm_enrich", new_callable=AsyncMock, return_value=_LLM_RESPONSE), \
+         patch("batch.recruiter_finder._guess_domain", new_callable=AsyncMock, return_value="adobe.com"):
+        results = await find_recruiters("Adobe", max_results=5, llm=mock_llm, hunter=mock_hunter)
+
+    assert len(results) >= 1
+    r = results[0]
+    assert r["email"] == "alice.jones@adobe.com"
+    assert r["email_source"] == "hunter"
+    assert r["email_verified"] is True
+    assert r["domain"] == "adobe.com"
+    assert r["title"] == "Senior Recruiter at Adobe"
+
+
+@pytest.mark.asyncio
+async def test_find_recruiters_without_hunter_no_email():
+    mock_llm = MagicMock()
+    with patch("batch.recruiter_finder._ddg_search_sync", return_value=_SAMPLE_HTML), \
+         patch("batch.recruiter_finder._llm_enrich", new_callable=AsyncMock, return_value=_LLM_RESPONSE):
+        results = await find_recruiters("Adobe", max_results=5, llm=mock_llm)
+
+    assert len(results) >= 1
+    assert "email" not in results[0]
+
+
+@pytest.mark.asyncio
+async def test_find_recruiters_hunter_error_graceful():
+    mock_llm = MagicMock()
+    mock_hunter = MagicMock()
+    mock_hunter.available = True
+    mock_hunter.find_email = AsyncMock(side_effect=Exception("hunter down"))
+
+    with patch("batch.recruiter_finder._ddg_search_sync", return_value=_SAMPLE_HTML), \
+         patch("batch.recruiter_finder._llm_enrich", new_callable=AsyncMock, return_value=_LLM_RESPONSE), \
+         patch("batch.recruiter_finder._guess_domain", new_callable=AsyncMock, return_value="adobe.com"):
+        results = await find_recruiters("Adobe", max_results=5, llm=mock_llm, hunter=mock_hunter)
+
+    assert len(results) >= 1
+    assert "email" not in results[0]

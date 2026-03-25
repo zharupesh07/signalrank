@@ -112,6 +112,8 @@ class JobResult(Base):
     final_score: Mapped[float | None] = mapped_column(Float)
     company_tier: Mapped[str | None] = mapped_column(String(50))
     is_contract: Mapped[bool | None] = mapped_column(Boolean)
+    archived_by_llm: Mapped[bool | None] = mapped_column(Boolean)
+    archival_reason: Mapped[str | None] = mapped_column(String(500))
 
     run: Mapped["Run"] = relationship(back_populates="results")
     job: Mapped["JobRaw"] = relationship(back_populates="results")
@@ -149,9 +151,13 @@ class Recruiter(Base):
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
     company: Mapped[str | None] = mapped_column(String(255))
     name: Mapped[str | None] = mapped_column(String(255))
+    title: Mapped[str | None] = mapped_column(String(255))
     linkedin_url: Mapped[str | None] = mapped_column(Text)
     email: Mapped[str | None] = mapped_column(String(255))
     domain: Mapped[str | None] = mapped_column(String(255))
+    confidence: Mapped[str | None] = mapped_column(String(20))
+    email_source: Mapped[str | None] = mapped_column(String(50))
+    email_verified: Mapped[bool | None] = mapped_column(Boolean)
     found_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (UniqueConstraint("company", "linkedin_url", name="uq_recruiter_company_linkedin"),)
@@ -208,6 +214,23 @@ class GenerationQueue(Base):
 
     __table_args__ = (
         UniqueConstraint("user_id", "job_id", name="uq_generation_queue_user_job"),
+    )
+
+
+class ArchivalQueue(Base):
+    __tablename__ = "archival_queue"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    job_result_id: Mapped[str] = mapped_column(ForeignKey("job_results.id", ondelete="CASCADE"), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    retry_count: Mapped[int] = mapped_column(Integer, default=0)
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    error: Mapped[str | None] = mapped_column(Text)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "job_result_id", name="uq_archival_queue_user_job_result"),
     )
 
 

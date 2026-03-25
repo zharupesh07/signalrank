@@ -26,7 +26,7 @@ FALLBACK_MODELS = [
 
 BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
 MAX_RETRIES_PER_MODEL = 3
-_llm_semaphore = asyncio.Semaphore(2)  # max 2 concurrent LLM calls across all workers
+_llm_semaphore = asyncio.Semaphore(3)  # max 3 concurrent LLM calls across all workers
 
 
 def _extract_json(raw: str) -> dict | None:

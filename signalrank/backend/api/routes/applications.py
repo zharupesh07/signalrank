@@ -1,4 +1,6 @@
+import asyncio
 import logging
+import random
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,13 +10,18 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from api.database import get_db
+from api.database import AsyncSessionLocal, get_db
 from api.deps import get_current_user
+from api.deps_hunter import get_hunter_client
+from api.deps_llm import get_llm_client
 from api.models import Application, GenerationQueue, JobRaw, JobResult, Profile, Recruiter, User
+from batch.recruiter_finder import find_recruiters
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/applications", tags=["applications"])
+
+_background_tasks: set[asyncio.Task] = set()
 
 VALID_STATUSES = {"interested", "applied", "messaged_recruiter", "phone_screen", "interview", "offer", "rejected", "archived"}
 
@@ -111,6 +118,41 @@ async def list_applications(
     return [_serialize_app(a, jr_map.get(a.job_id)) for a in apps]
 
 
+async def _auto_find_recruiters(company: str, session_factory, llm, hunter):
+    """Background: find recruiters for a company if none exist yet."""
+    async with session_factory() as db:
+        existing = await db.execute(
+            select(Recruiter).where(Recruiter.company == company).limit(1)
+        )
+        if existing.scalar_one_or_none():
+            logger.info("Recruiters already exist for %s, skipping auto-find", company)
+            return
+
+        try:
+            found = await find_recruiters(company=company, max_results=10, db=db, llm=llm, hunter=hunter)
+            for rec in found:
+                stmt = (
+                    pg_insert(Recruiter)
+                    .values(
+                        company=company,
+                        name=rec.get("name"),
+                        title=rec.get("title"),
+                        linkedin_url=rec["linkedin_url"],
+                        domain=rec.get("domain"),
+                        email=rec.get("email"),
+                        confidence=rec.get("confidence"),
+                        email_source=rec.get("email_source"),
+                        email_verified=rec.get("email_verified"),
+                    )
+                    .on_conflict_do_nothing(constraint="uq_recruiter_company_linkedin")
+                )
+                await db.execute(stmt)
+            await db.commit()
+            logger.info("Auto-find: saved %d recruiters for %s", len(found), company)
+        except Exception as exc:
+            logger.warning("Auto-find recruiters failed for %s: %s", company, exc)
+
+
 @router.post("", status_code=201)
 async def create_application(
     body: ApplicationCreate,
@@ -148,6 +190,14 @@ async def create_application(
             await db.commit()
         except Exception:
             logger.warning("Failed to enqueue resume generation for job=%s", app.job_id, exc_info=True)
+    if app.company:
+        llm = get_llm_client()
+        hunter = get_hunter_client()
+        bg = asyncio.create_task(
+            _auto_find_recruiters(app.company, AsyncSessionLocal, llm, hunter)
+        )
+        _background_tasks.add(bg)
+        bg.add_done_callback(_background_tasks.discard)
     return {"id": app.id, "status": app.status}
 
 

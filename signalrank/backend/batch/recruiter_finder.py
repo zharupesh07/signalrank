@@ -6,8 +6,8 @@ Pipeline:
   3. Send raw snippets to openrouter/free (batch) to extract clean names,
      confirm recruiter role, discard non-HR profiles
 
-Emails are NOT guessed. They must be entered manually and verified separately
-via batch.email_verifier.
+If a Hunter.io client is provided, verified emails are fetched automatically.
+Otherwise, emails must be entered manually and verified via batch.email_verifier.
 """
 from __future__ import annotations
 
@@ -166,11 +166,37 @@ async def _llm_enrich(
 # Public API
 # ---------------------------------------------------------------------------
 
+async def _guess_domain(company: str) -> str | None:
+    """Derive corporate email domain from company name via DDG search."""
+    query = f'"{company}" official website'
+    try:
+        html = await asyncio.wait_for(
+            asyncio.to_thread(_ddg_search_sync, query, retries=1),
+            timeout=15,
+        )
+    except Exception:
+        return None
+
+    domain_re = re.compile(
+        r"https?://(?:www\.)?([a-z0-9\-]+\.[a-z]{2,}(?:\.[a-z]{2,})?)",
+        re.IGNORECASE,
+    )
+    skip = {"linkedin.com", "wikipedia.org", "glassdoor.com", "ambitionbox.com",
+            "indeed.com", "naukri.com", "google.com", "facebook.com", "twitter.com"}
+
+    for m in domain_re.finditer(html):
+        domain = m.group(1).lower()
+        if domain not in skip and company.split()[0].lower() in domain:
+            return domain
+    return None
+
+
 async def find_recruiters(
     company: str,
     max_results: int = 10,
     db: AsyncSession | None = None,
     llm=None,  # OpenRouterClient — if None, falls back to keyword heuristic
+    hunter=None,  # HunterClient — if provided, finds verified emails
 ) -> list[dict]:
     """
     Find India-based recruiters at *company*.
@@ -276,18 +302,47 @@ async def find_recruiters(
             if _is_recruiter_title(c["snippet"]) or True  # keep all when no LLM
         ]
 
-    # Step 3 — Build output (no email guessing)
+    # Step 3 — Hunter.io email enrichment (if available)
+    domain = None
+    if hunter is not None and hunter.available and confirmed:
+        domain = await _guess_domain(company)
+        if domain:
+            logger.info("Resolved domain %s for %s", domain, company)
+            for c in confirmed:
+                name = c.get("name")
+                if not name or not domain:
+                    continue
+                try:
+                    result = await hunter.find_email(domain, name)
+                    if result:
+                        c["email"] = result.email
+                        c["email_source"] = "hunter"
+                        c["email_verified"] = result.confidence >= 80
+                        logger.info("Hunter found %s for %s (confidence=%d)", result.email, name, result.confidence)
+                except Exception as exc:
+                    logger.warning("Hunter email lookup failed for %s: %s", name, exc)
+        else:
+            logger.info("Could not resolve domain for %s, skipping Hunter", company)
+
+    # Step 4 — Build output
     results = []
     for c in confirmed[:max_results]:
         slug = c.get("slug", "")
         if not slug or not _VALID_SLUG_RE.match(slug):
             continue
         name = c.get("name") or ""
-        results.append({
+        entry: dict = {
             "name": name or None,
             "linkedin_url": f"https://www.linkedin.com/in/{slug}",
+            "title": c.get("title", ""),
             "source": c["source"],
             "confidence": c["confidence"],
-        })
+            "domain": domain,
+        }
+        if c.get("email"):
+            entry["email"] = c["email"]
+            entry["email_source"] = c.get("email_source", "hunter")
+            entry["email_verified"] = c.get("email_verified", False)
+        results.append(entry)
 
     return results

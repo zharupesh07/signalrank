@@ -37,6 +37,8 @@ export interface Job {
   recency_score: number | null;
   company_tier: string | null;
   is_contract: boolean;
+  archived_by_llm: boolean | null;
+  archival_reason: string | null;
 }
 
 export interface JobsResponse {
