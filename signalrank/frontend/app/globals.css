@@ -403,6 +403,17 @@
   box-shadow: inset 2px 0 0 var(--primary);
 }
 
+/* Override browser autofill background (Chrome/Safari yellow/white) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #080808 inset !important;
+  -webkit-text-fill-color: #e4e4e7 !important;
+  caret-color: #e4e4e7;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
 /* Navbar glow line */
 .nav-glow {
   box-shadow: 0 1px 0 color-mix(in srgb, var(--primary) 15%, transparent), 0 4px 24px rgba(0, 0, 0, 0.3);
