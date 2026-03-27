@@ -71,6 +71,7 @@ async def scrape(
     queries: list[SearchQuery],
     config: ScraperConfig,
     on_progress: Callable | None = None,
+    on_persist: Callable | None = None,
 ) -> list[RawJob]:
     from batch.sources.rapidapi import search as search_rapidapi
     from batch.sources.jobspy_source import search as search_jobspy
@@ -78,6 +79,22 @@ async def scrape(
     from batch.sources.google_jobs import search as search_google
 
     all_jobs: list[RawJob] = []
+    seen_urls: set[str] = set()
+
+    def _dedup_new(jobs: list[RawJob]) -> list[RawJob]:
+        new = []
+        for j in jobs:
+            if j.job_url not in seen_urls:
+                seen_urls.add(j.job_url)
+                new.append(j)
+        return new
+
+    async def _persist_phase(phase_jobs: list[RawJob]) -> None:
+        deduped = _dedup_new(phase_jobs)
+        filtered = [j for j in deduped if not _is_blocked(j.title, config.title_blocklist)]
+        if filtered and on_persist:
+            await on_persist(filtered)
+        all_jobs.extend(filtered)
 
     async def _run():
         # Phase 1: JobSpy Indeed (fast, 30-day lookback)
@@ -88,8 +105,8 @@ async def scrape(
             )
         try:
             results = await asyncio.wait_for(search_jobspy(queries, config, site="indeed"), timeout=3600)
-            all_jobs.extend(results)
             logger.info("Phase jobspy/indeed: %d jobs", len(results))
+            await _persist_phase(results)
         except asyncio.TimeoutError:
             logger.warning("Phase jobspy/indeed timed out")
         except Exception:
@@ -105,8 +122,8 @@ async def scrape(
                 )
             try:
                 results = await asyncio.wait_for(search_jobspy(linkedin_queries, config, site="linkedin"), timeout=3600)
-                all_jobs.extend(results)
                 logger.info("Phase jobspy/linkedin: %d jobs", len(results))
+                await _persist_phase(results)
             except asyncio.TimeoutError:
                 logger.warning("Phase jobspy/linkedin timed out")
             except Exception:
@@ -131,28 +148,13 @@ async def scrape(
             if isinstance(res, Exception):
                 logger.exception("Phase %s failed: %s", name, res)
             else:
-                all_jobs.extend(res)
                 logger.info("Phase %s: %d jobs", name, len(res))
+                await _persist_phase(res)
 
     try:
         await asyncio.wait_for(_run(), timeout=7200)
     except asyncio.TimeoutError:
         logger.warning("Scrape timed out after 7200s, returning %d jobs", len(all_jobs))
 
-    seen_urls: set[str] = set()
-    deduped: list[RawJob] = []
-    for job in all_jobs:
-        if job.job_url not in seen_urls:
-            seen_urls.add(job.job_url)
-            deduped.append(job)
-
-    filtered = [
-        j for j in deduped
-        if not _is_blocked(j.title, config.title_blocklist)
-    ]
-
-    logger.info(
-        "Scrape complete: %d raw -> %d deduped -> %d filtered",
-        len(all_jobs), len(deduped), len(filtered),
-    )
-    return filtered
+    logger.info("Scrape complete: %d jobs (deduped+filtered per phase)", len(all_jobs))
+    return all_jobs

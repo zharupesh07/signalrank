@@ -130,7 +130,18 @@ async def process_run(
                     logger.info("Run %s was cancelled before scraping", run_id)
                     return
 
-                raw_jobs = await scrape(queries, config, on_progress=_update_progress)
+                async def _persist_jobs(jobs):
+                    from sqlalchemy.dialects.postgresql import insert as pg_insert
+                    batch_size = 2000
+                    for i in range(0, len(jobs), batch_size):
+                        batch = jobs[i:i + batch_size]
+                        stmt = pg_insert(JobRaw).values([
+                            raw_job_to_dict(job) for job in batch
+                        ]).on_conflict_do_nothing(index_elements=["job_url"])
+                        await db.execute(stmt)
+                    await db.commit()
+
+                raw_jobs = await scrape(queries, config, on_progress=_update_progress, on_persist=_persist_jobs)
 
                 # Check cancellation after scraping
                 run_check_result = await db.execute(select(Run).where(Run.id == run_id))
@@ -140,18 +151,6 @@ async def process_run(
                     logger.info("Run %s was cancelled after scraping", run_id)
                     return
 
-                if raw_jobs:
-                    from sqlalchemy.dialects.postgresql import insert as pg_insert
-                    # Batch inserts to stay under PostgreSQL's 65535 bind-param limit
-                    # 8 columns per row → max ~8000 rows per batch
-                    batch_size = 2000
-                    for i in range(0, len(raw_jobs), batch_size):
-                        batch = raw_jobs[i:i + batch_size]
-                        stmt = pg_insert(JobRaw).values([
-                            raw_job_to_dict(job) for job in batch
-                        ]).on_conflict_do_nothing(index_elements=["job_url"])
-                        await db.execute(stmt)
-                    await db.commit()
                 scrape_count = len(raw_jobs)
 
                 if raw_jobs:
