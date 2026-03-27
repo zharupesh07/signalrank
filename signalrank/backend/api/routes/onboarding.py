@@ -1,18 +1,19 @@
+import asyncio
 import io
 import logging
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.database import get_db
+from api.database import AsyncSessionLocal, get_db
 from api.deps import get_current_user
 from api.deps_llm import get_llm_client
 from api.models import Profile, User
 from llm.onboarding import generate_onboarding_questions
 from llm.openrouter import OpenRouterClient
-from llm.resume_parser import parse_resume
+from llm.resume_parser import ResumeParseResult, parse_resume
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +40,35 @@ def _extract_text_from_docx(content: bytes) -> str:
         return ""
 
 
+async def _parse_and_update_profile(user_id: str, resume_text: str, llm: OpenRouterClient) -> None:
+    """Background task: parse resume with LLM and update profile fields."""
+    try:
+        parsed = await parse_resume(resume_text, llm)
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+            profile = result.scalar_one_or_none()
+            if not profile:
+                return
+            profile.skills = parsed.skills
+            parts = []
+            if parsed.recent_titles:
+                parts.append("Recent roles: " + ", ".join(parsed.recent_titles))
+            if parsed.skills:
+                parts.append("Skills: " + ", ".join(parsed.skills))
+            if parsed.years_of_experience:
+                parts.append(f"Experience: {parsed.years_of_experience} years")
+            if parts:
+                profile.distilled_text = "\n".join(parts)
+            await db.commit()
+            logger.info("Background parse complete for user=%s (%d skills)", user_id, len(parsed.skills or []))
+    except Exception:
+        logger.warning("Background resume parse failed for user=%s", user_id, exc_info=True)
+
+
 @router.post("/resume")
 async def upload_resume(
     file: UploadFile = File(...),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     llm: OpenRouterClient = Depends(get_llm_client),
@@ -61,35 +88,25 @@ async def upload_resume(
     if not resume_text.strip():
         raise HTTPException(status_code=422, detail="Could not extract text from file")
 
-    parsed = await parse_resume(resume_text, llm)
-
+    # Save raw text immediately so user can proceed
     result = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
     profile = result.scalar_one_or_none()
     if not profile:
         profile = Profile(user_id=current_user.id)
         db.add(profile)
-
     profile.resume_text = resume_text
-    profile.skills = parsed.skills
-    if parsed.skills or parsed.recent_titles or parsed.years_of_experience:
-        parts = []
-        if parsed.recent_titles:
-            parts.append("Recent roles: " + ", ".join(parsed.recent_titles))
-        if parsed.skills:
-            parts.append("Skills: " + ", ".join(parsed.skills))
-        if parsed.years_of_experience:
-            parts.append(f"Experience: {parsed.years_of_experience} years")
-        profile.distilled_text = "\n".join(parts)
     await db.commit()
 
-    questions = generate_onboarding_questions(parsed)
+    # Parse LLM fields in background — don't block the response
+    background_tasks.add_task(_parse_and_update_profile, current_user.id, resume_text, llm)
+
+    # Return static questions immediately (no LLM wait)
+    empty = ResumeParseResult(skills=[], recent_titles=[], years_of_experience=None)
+    questions = generate_onboarding_questions(empty)
     return {
-        "extracted": {
-            "skills": parsed.skills,
-            "years_of_experience": parsed.years_of_experience,
-            "recent_titles": parsed.recent_titles,
-        },
+        "extracted": {"skills": [], "years_of_experience": None, "recent_titles": []},
         "questions": questions,
+        "parsing": True,
     }
 
 

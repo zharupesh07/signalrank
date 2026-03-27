@@ -64,11 +64,15 @@ async def lifespan(app: FastAPI):
     except Exception:
         logger.warning("Generation task recovery failed", exc_info=True)
 
-    try:
-        async with AsyncSessionLocal() as db:
-            await boot_scan(db)
-    except Exception:
-        logger.warning("Boot scan failed", exc_info=True)
+    async def _delayed_boot_scan():
+        await asyncio.sleep(30)
+        try:
+            async with AsyncSessionLocal() as db:
+                await boot_scan(db)
+        except Exception:
+            logger.warning("Boot scan failed", exc_info=True)
+
+    asyncio.create_task(_delayed_boot_scan())
 
     _resume_worker_task = asyncio.create_task(
         _resume_worker_watchdog(AsyncSessionLocal, llm)
