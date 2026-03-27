@@ -5,7 +5,16 @@ from sqlalchemy.orm import DeclarativeBase
 
 from api.config import settings
 
-engine = create_async_engine(settings.database_url, echo=False)
+
+def _make_engine_url(url: str) -> str:
+    # asyncpg doesn't support sslmode= query param; convert to ssl=true
+    url = url.replace("sslmode=require", "ssl=true")
+    url = url.replace("sslmode=prefer", "ssl=true")
+    url = url.replace("&&", "&").strip("?&")
+    return url
+
+
+engine = create_async_engine(_make_engine_url(settings.database_url), echo=False)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 
