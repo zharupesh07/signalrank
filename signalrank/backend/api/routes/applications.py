@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -88,6 +89,20 @@ def _serialize_app(a: Application, job_result: JobResult | None = None) -> dict:
         "location": a.job.location if a.job else None,
         "recruiter": rec,
     }
+
+
+@router.get("/tracked-job-ids")
+async def tracked_job_ids(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Application.job_id).where(
+            Application.user_id == current_user.id,
+            Application.job_id.is_not(None),
+        )
+    )
+    return {"job_ids": [r[0] for r in result.all()]}
 
 
 @router.get("")
@@ -192,7 +207,11 @@ async def create_application(
         resume_match_pct=body.resume_match_pct,
     )
     db.add(app)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Application already exists for this job")
     await db.refresh(app)
     if app.job_id:
         try:

@@ -242,8 +242,8 @@ export default function JobsPage() {
       setTracked(new Set());
       return;
     }
-    api.applications.list(token).then((apps) =>
-      setTracked(new Set(apps.filter((a) => a.job_id).map((a) => a.job_id!)))
+    api.applications.trackedJobIds(token).then((ids) =>
+      setTracked(new Set(ids))
     ).catch(() => null);
   }, [token]);
 
@@ -282,9 +282,19 @@ export default function JobsPage() {
   }
 
   async function trackJob(job: Job) {
-    await api.applications.create(token, { job_id: job.id, company: job.company, title: job.title, status: "interested", system_score: job.final_score, resume_match_pct: job.semantic_score });
-    setTracked((prev) => new Set(prev).add(job.id));
-    toast("Added to tracker", "success");
+    try {
+      await api.applications.create(token, { job_id: job.id, company: job.company, title: job.title, status: "interested", system_score: job.final_score, resume_match_pct: job.semantic_score });
+      setTracked((prev) => new Set(prev).add(job.id));
+      toast("Added to tracker", "success");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.startsWith("409")) {
+        setTracked((prev) => new Set(prev).add(job.id));
+        toast("Already tracked", "info");
+      } else {
+        toast(msg || "Failed to track job", "error");
+      }
+    }
   }
 
   async function triggerArchive() {
@@ -707,9 +717,14 @@ export default function JobsPage() {
             </div>
           </div>
 
+          {/* Detail panel backdrop (click to close) */}
+          {selectedJob && (
+            <div className="fixed inset-0 z-30" onClick={() => setSelectedJob(null)} />
+          )}
+
           {/* Detail panel */}
           {selectedJob && (
-            <div className="w-80 shrink-0 sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto border border-border bg-card space-y-4 p-4">
+            <div className="w-80 shrink-0 sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto border border-border bg-card space-y-4 p-4 z-40 relative">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="text-xs font-bold text-foreground leading-snug">{selectedJob.title}</div>

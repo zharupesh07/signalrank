@@ -103,8 +103,11 @@ export const api = {
 
   applications: {
     list: (token: string) =>
-      request<{ applications: Application[]; total: number }>("/api/applications", { token })
+      request<{ applications: Application[]; total: number }>("/api/applications?limit=200", { token })
         .then((r) => r.applications),
+    trackedJobIds: (token: string) =>
+      request<{ job_ids: string[] }>("/api/applications/tracked-job-ids", { token })
+        .then((r) => r.job_ids),
     create: (token: string, data: Partial<Application>) =>
       request<Application>("/api/applications", {
         method: "POST",
