@@ -8,8 +8,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /app
 COPY pyproject.toml .
-RUN uv pip install --system --no-cache torch --index-url https://download.pytorch.org/whl/cpu \
-    && uv pip install --system --no-cache -e .
+RUN uv pip install --system --no-cache -e .
 
 # Install typst in builder (has xz-utils)
 RUN curl -fsSL https://github.com/typst/typst/releases/latest/download/typst-x86_64-unknown-linux-musl.tar.xz \
