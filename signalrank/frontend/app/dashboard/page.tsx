@@ -111,7 +111,15 @@ export default function DashboardPage() {
   }, [token]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setJobs([]);
+      setRun(null);
+      setAnalytics(null);
+      setTracked(new Set());
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     const cachedAnalytics = getCached<typeof analytics>("analytics", 300_000);
     if (cachedAnalytics) setAnalytics(cachedAnalytics);
     Promise.all([
@@ -169,7 +177,7 @@ export default function DashboardPage() {
   const lastRunTime = run?.started_at
     ? new Date(run.started_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     : null;
-  const isRunActive = run?.status === "pending" || run?.status === "running";
+  const isRunActive = ["pending", "running", "scraping", "ranking"].includes(run?.status ?? "");
 
   return (
     <>
@@ -190,14 +198,21 @@ export default function DashboardPage() {
               <Plus size={14} />
               Add Job
             </button>
-            <button
-              onClick={triggerRun}
-              disabled={triggering || isRunActive}
-              className="flex items-center gap-2 px-4 py-2.5 text-xs border border-primary/50 text-primary hover:bg-primary hover:text-background hover:border-primary transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-widest font-bold"
-            >
-              <RefreshCw size={11} className={triggering || isRunActive ? "spin-slow" : ""} />
-              {triggering ? "Queuing..." : isRunActive ? "Running..." : "Refresh Jobs"}
-            </button>
+            <div className="flex flex-col items-end gap-0.5">
+              <button
+                onClick={triggerRun}
+                disabled={triggering || isRunActive}
+                className="flex items-center gap-2 px-4 py-2.5 text-xs border border-primary/50 text-primary hover:bg-primary hover:text-background hover:border-primary transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-widest font-bold"
+              >
+                <RefreshCw size={11} className={triggering || isRunActive ? "spin-slow" : ""} />
+                {triggering ? "Queuing..." : isRunActive ? "Running..." : "New Scan"}
+              </button>
+              {run?.started_at && !isRunActive && (
+                <span className="text-[10px] text-muted-foreground">
+                  last {new Date(run.started_at).toLocaleDateString([], { month: "short", day: "numeric" })}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -207,7 +222,7 @@ export default function DashboardPage() {
             <><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /></>
           ) : (
             <>
-              <StatCard label="Jobs Scraped" value={run?.scrape_count ?? analytics?.total ?? 0} sub="in latest run" icon={Layers} accent />
+              <StatCard label="Jobs Indexed" value={analytics?.total ?? 0} sub={run?.scrape_count != null ? `${run.scrape_count} scraped last run` : "run a scan to populate"} icon={Layers} accent />
               <StatCard
                 label="Top Score"
                 value={topScore != null ? `${Math.round(topScore * 100)}%` : "—"}
@@ -357,7 +372,7 @@ export default function DashboardPage() {
     <AddJobModal
       open={addJobOpen}
       onClose={() => setAddJobOpen(false)}
-      onAdded={() => { /* dashboard refreshes on next navigation */ }}
+      onAdded={loadJobs}
     />
     </>
   );

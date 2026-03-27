@@ -40,8 +40,47 @@ def _extract_text_from_docx(content: bytes) -> str:
         return ""
 
 
+async def _embed_resume(user_id: str, resume_text: str, distilled_text: str | None) -> None:
+    """Pre-compute and cache resume embedding so ranking gets a 100% cache hit."""
+    import domain.embeddings as _emb_mod
+    from batch.context import build_context
+    from batch.embedding_cache import PgEmbeddingCache
+    from domain.embeddings import (
+        EmbeddingEngine,
+        build_resume_embedding_text,
+        fingerprint_text,
+    )
+
+    try:
+        ctx = build_context(user_id=user_id, resume_text=resume_text)
+        cfg = ctx.config
+        resume_emb_text = build_resume_embedding_text(
+            resume_text=resume_text,
+            distilled=distilled_text or cfg.get("resume", {}).get("distilled_text"),
+            cfg=cfg,
+            use_case="default",
+        )
+        resume_fp = fingerprint_text(resume_emb_text)
+
+        async with AsyncSessionLocal() as db:
+            cache = PgEmbeddingCache(db, ctx.config_fp)
+            cached = await cache.fetch([resume_fp])
+            if resume_fp not in cached:
+                engine = EmbeddingEngine(cfg)
+                r_emb = engine.embed([resume_emb_text])[0]
+                await cache.store_vectors([(resume_fp, r_emb.tolist())])
+                await db.commit()
+                logger.info("[EMBED] Pre-cached resume embedding for user=%s", user_id)
+    except Exception:
+        logger.warning("Resume embedding pre-cache failed for user=%s", user_id, exc_info=True)
+    finally:
+        if _emb_mod._ENGINE is not None:
+            _emb_mod._ENGINE.unload()
+
+
 async def _parse_and_update_profile(user_id: str, resume_text: str, llm: OpenRouterClient) -> None:
     """Background task: parse resume with LLM and update profile fields."""
+    distilled_text = None
     try:
         parsed = await parse_resume(resume_text, llm)
         async with AsyncSessionLocal() as db:
@@ -58,11 +97,14 @@ async def _parse_and_update_profile(user_id: str, resume_text: str, llm: OpenRou
             if parsed.years_of_experience:
                 parts.append(f"Experience: {parsed.years_of_experience} years")
             if parts:
-                profile.distilled_text = "\n".join(parts)
+                distilled_text = "\n".join(parts)
+                profile.distilled_text = distilled_text
             await db.commit()
             logger.info("Background parse complete for user=%s (%d skills)", user_id, len(parsed.skills or []))
     except Exception:
         logger.warning("Background resume parse failed for user=%s", user_id, exc_info=True)
+
+    await _embed_resume(user_id, resume_text, distilled_text)
 
 
 @router.post("/resume")

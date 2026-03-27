@@ -5,6 +5,8 @@ import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
 import { CheckCircle, XCircle, Play, Square } from "lucide-react";
 import { useToast } from "@/components/toast";
+import RunProgress from "@/components/run-progress";
+import type { Run } from "@/types";
 
 type RunRecord = {
   run_id: string;
@@ -89,11 +91,23 @@ export default function RunsPage() {
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
   const [stoppingRunId, setStoppingRunId] = useState<string | null>(null);
+  const [activeRun, setActiveRun] = useState<Run | null>(null);
+
+  const LIVE = ["pending", "running", "scraping", "ranking"];
+
+  async function refreshList() {
+    const r = await api.runs.list(token);
+    setRuns(r);
+  }
 
   useEffect(() => {
     if (!token) return;
-    api.runs.list(token).then((r) => {
-      setRuns(r);
+    Promise.all([
+      api.runs.list(token),
+      api.runs.latest(token).catch(() => null),
+    ]).then(([list, latest]) => {
+      setRuns(list);
+      if (latest && LIVE.includes(latest.status)) setActiveRun(latest);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [token]);
@@ -101,15 +115,29 @@ export default function RunsPage() {
   async function triggerRun() {
     setTriggering(true);
     try {
-      await api.runs.trigger(token);
-      toast("Run triggered", "success");
-      const r = await api.runs.list(token);
-      setRuns(r);
+      const res = await api.runs.trigger(token);
+      const newRun: Run = {
+        id: res.run_id,
+        status: "pending",
+        started_at: new Date().toISOString(),
+        finished_at: null,
+        job_count: null,
+        scrape_count: null,
+        progress: null,
+      };
+      setActiveRun(newRun);
+      toast("Run queued", "info");
+      await refreshList();
     } catch {
       toast("Failed to trigger run", "error");
     } finally {
       setTriggering(false);
     }
+  }
+
+  async function handleRunComplete(completed: Run) {
+    setActiveRun(completed);
+    await refreshList();
   }
 
   async function stopRun(runId: string) {
@@ -146,13 +174,15 @@ export default function RunsPage() {
           </div>
           <button
             onClick={triggerRun}
-            disabled={triggering}
+            disabled={triggering || (activeRun != null && LIVE.includes(activeRun.status))}
             className="flex items-center gap-2 text-[11px] text-primary border border-primary/40 px-3 py-1.5 hover:bg-primary/10 transition-colors uppercase tracking-wider disabled:opacity-50"
           >
             <Play size={10} />
-            {triggering ? "Triggering..." : "New Run"}
+            {triggering ? "Triggering..." : activeRun && LIVE.includes(activeRun.status) ? "Running..." : "New Run"}
           </button>
         </div>
+
+        {activeRun && <RunProgress run={activeRun} onComplete={handleRunComplete} />}
 
         <div className="border border-border overflow-hidden">
           <table className="w-full text-xs border-collapse">
@@ -181,7 +211,7 @@ export default function RunsPage() {
                 ))
               ) : runs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-16 text-center">
+                  <td colSpan={7} className="px-4 py-16 text-center">
                     <div className="font-mono text-muted-foreground text-xs space-y-1">
                       <div>┌─────────────────────┐</div>
                       <div>│   no runs found     │</div>

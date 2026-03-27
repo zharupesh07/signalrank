@@ -413,7 +413,14 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setAnalytics(null);
+      setStats(null);
+      setApplications([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     const ca = getCached<typeof analytics>("analytics", 300_000);
     const cs = getCached<typeof stats>("stats", 120_000);
     if (ca) setAnalytics(ca);

@@ -157,8 +157,13 @@ export default function TrackerPage() {
   }, [token]);
 
   useEffect(() => {
+    if (!token) {
+      setApplications([]);
+      setStats(null);
+      return;
+    }
     loadData();
-  }, [loadData]);
+  }, [loadData, token]);
 
   useEffect(() => {
     if (!token || !showImport) return;

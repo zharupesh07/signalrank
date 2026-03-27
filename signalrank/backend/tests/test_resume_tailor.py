@@ -243,8 +243,8 @@ def test_compile_pdf_passes_font_path():
 
 @pytest.fixture
 async def auth_token(client):
-    await client.post("/api/auth/register", json={"email": "tailor@test.com", "password": "pass"})
-    r = await client.post("/api/auth/login", json={"email": "tailor@test.com", "password": "pass"})
+    await client.post("/api/auth/register", json={"email": "tailor@test.com", "password": "password123"})
+    r = await client.post("/api/auth/login", json={"email": "tailor@test.com", "password": "password123"})
     return r.json()["access_token"]
 
 

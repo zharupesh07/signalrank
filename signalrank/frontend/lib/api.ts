@@ -103,7 +103,8 @@ export const api = {
 
   applications: {
     list: (token: string) =>
-      request<Application[]>("/api/applications", { token }),
+      request<{ applications: Application[]; total: number }>("/api/applications", { token })
+        .then((r) => r.applications),
     create: (token: string, data: Partial<Application>) =>
       request<Application>("/api/applications", {
         method: "POST",

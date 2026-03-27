@@ -238,14 +238,21 @@ export default function JobsPage() {
   }, [search]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setTracked(new Set());
+      return;
+    }
     api.applications.list(token).then((apps) =>
       setTracked(new Set(apps.filter((a) => a.job_id).map((a) => a.job_id!)))
     ).catch(() => null);
   }, [token]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setAllJobs([]);
+      setLoading(false);
+      return;
+    }
     const cached = getCached<Job[]>("jobs", 120_000);
     if (cached) {
       setAllJobs(cached);

@@ -2,14 +2,69 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 
+import numpy as np
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from api.models import JobRaw, JobResult, Profile, Run
+from batch.context import build_context
+from batch.embedding_cache import PgEmbeddingCache
 from batch.ranker import score_jobs_for_user
 
 logger = logging.getLogger(__name__)
+
+
+async def _embed_new_jobs(db: AsyncSession, raw_jobs: list) -> None:
+    """Pre-compute and cache embeddings for newly scraped jobs using base config."""
+    if not raw_jobs:
+        return
+
+    from batch.scraper import raw_job_to_dict
+    from domain.embeddings import (
+        EmbeddingEngine,
+        build_job_embedding_text,
+        fingerprint_text,
+    )
+    from domain.skills import SkillCanonicalizer, extract_skills_from_texts
+    import domain.embeddings as _emb_mod
+
+    ctx = build_context(user_id="__base__", resume_text="")
+    cfg = ctx.config
+    cache = PgEmbeddingCache(db, ctx.config_fp)
+
+    descriptions = [j.description or "" for j in raw_jobs]
+    raw_skills_list = extract_skills_from_texts(descriptions, cfg)
+    canon = SkillCanonicalizer(cfg)
+    canonical_skills_list = [sorted(canon.canonicalize(s)) for s in raw_skills_list]
+
+    job_texts = [
+        build_job_embedding_text(
+            title=j.title or "",
+            description=j.description or "",
+            canonical_skills=cs,
+            cfg=cfg,
+        )
+        for j, cs in zip(raw_jobs, canonical_skills_list)
+    ]
+    job_fps = [fingerprint_text(t) for t in job_texts]
+    cached = await cache.fetch(job_fps)
+
+    misses = [i for i, fp in enumerate(job_fps) if fp not in cached]
+    if not misses:
+        return
+
+    try:
+        engine = EmbeddingEngine(cfg)
+        new_vecs = engine.embed([job_texts[i] for i in misses])
+        await cache.store_vectors(
+            [(job_fps[i], v.tolist()) for i, v in zip(misses, new_vecs)]
+        )
+        await db.commit()
+        logger.info("[EMBED] Pre-cached %d job embeddings", len(misses))
+    finally:
+        if _emb_mod._ENGINE is not None:
+            _emb_mod._ENGINE.unload()
 
 _queue: asyncio.Queue | None = None
 
@@ -98,6 +153,9 @@ async def process_run(
                         await db.execute(stmt)
                     await db.commit()
                 scrape_count = len(raw_jobs)
+
+                if raw_jobs:
+                    await _embed_new_jobs(db, raw_jobs)
 
             # Check cancellation before ranking
             run_check_result = await db.execute(select(Run).where(Run.id == run_id))
