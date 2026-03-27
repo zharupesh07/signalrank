@@ -100,18 +100,20 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
   const activeIdx = PHASES.findIndex((ph) => ph.key === activePhaseKey);
 
   const barPct =
-    run.status === "done"   ? 100 :
-    run.status === "failed" ? 0 :
+    run.status === "done"      ? 100 :
+    run.status === "failed"    ? 0 :
+    run.status === "cancelled" ? 0 :
     p ? Math.round(((p.phase_num - 1) / (p.total_phases + 1)) * 100) :
     null;
 
   const statusLabel =
-    run.status === "pending"  ? "Queued..." :
-    run.status === "done"     ? "Complete" :
-    run.status === "failed"   ? "Failed" :
-    p?.message                ? p.message :
-    run.status === "scraping" ? "Scraping..." :
-    run.status === "ranking"  ? "Ranking jobs..." :
+    run.status === "pending"   ? "Queued..." :
+    run.status === "done"      ? "Complete" :
+    run.status === "failed"    ? "Failed" :
+    run.status === "cancelled" ? "Cancelled" :
+    p?.message                 ? p.message :
+    run.status === "scraping"  ? "Scraping..." :
+    run.status === "ranking"   ? "Ranking jobs..." :
     "Running...";
 
   const jobsFound = p?.jobs_found ?? run.scrape_count ?? run.job_count;
@@ -121,9 +123,10 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {run.status === "done"    && <span className="w-2 h-2 rounded-full bg-primary inline-block" />}
-          {run.status === "failed"  && <span className="w-2 h-2 rounded-full bg-destructive inline-block" />}
-          {run.status === "pending" && <span className="w-2 h-2 rounded-full bg-[var(--terminal-yellow)] pulse-dot inline-block" />}
+          {run.status === "done"      && <span className="w-2 h-2 rounded-full bg-primary inline-block" />}
+          {run.status === "failed"    && <span className="w-2 h-2 rounded-full bg-destructive inline-block" />}
+          {run.status === "cancelled" && <span className="w-2 h-2 rounded-full bg-[var(--terminal-yellow)] inline-block" />}
+          {run.status === "pending"   && <span className="w-2 h-2 rounded-full bg-[var(--terminal-yellow)] pulse-dot inline-block" />}
           {isLive && run.status !== "pending" && <span className="w-2 h-2 rounded-full bg-primary pulse-dot-fast inline-block" />}
           <span className="text-xs text-muted-foreground uppercase tracking-wider">{statusLabel}</span>
         </div>

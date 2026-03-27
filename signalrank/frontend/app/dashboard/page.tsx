@@ -198,7 +198,7 @@ export default function DashboardPage() {
               <Plus size={14} />
               Add Job
             </button>
-            <div className="flex flex-col items-end gap-0.5">
+            <div className="flex items-center gap-2">
               <button
                 onClick={triggerRun}
                 disabled={triggering || isRunActive}
@@ -208,8 +208,8 @@ export default function DashboardPage() {
                 {triggering ? "Queuing..." : isRunActive ? "Running..." : "New Scan"}
               </button>
               {run?.started_at && !isRunActive && (
-                <span className="text-[10px] text-muted-foreground">
-                  last {new Date(run.started_at).toLocaleDateString([], { month: "short", day: "numeric" })}
+                <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                  {new Date(run.started_at).toLocaleDateString([], { month: "short", day: "numeric" })}
                 </span>
               )}
             </div>

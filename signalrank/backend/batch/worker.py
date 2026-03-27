@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from datetime import datetime, timezone
 
 import numpy as np
@@ -141,7 +142,12 @@ async def process_run(
                         await db.execute(stmt)
                     await db.commit()
 
+                t_scrape = time.monotonic()
                 raw_jobs = await scrape(queries, config, on_progress=_update_progress, on_persist=_persist_jobs)
+                logger.info("Run %s scrape done", run_id,
+                            extra={"run_id": run_id, "phase": "scrape",
+                                   "duration_s": round(time.monotonic() - t_scrape, 1),
+                                   "jobs_found": len(raw_jobs)})
 
                 # Check cancellation after scraping
                 run_check_result = await db.execute(select(Run).where(Run.id == run_id))
@@ -154,7 +160,12 @@ async def process_run(
                 scrape_count = len(raw_jobs)
 
                 if raw_jobs:
+                    t_embed = time.monotonic()
                     await _embed_new_jobs(db, raw_jobs)
+                    logger.info("Run %s embed done", run_id,
+                                extra={"run_id": run_id, "phase": "embed",
+                                       "duration_s": round(time.monotonic() - t_embed, 1),
+                                       "jobs": len(raw_jobs)})
 
             # Check cancellation before ranking
             run_check_result = await db.execute(select(Run).where(Run.id == run_id))
@@ -205,7 +216,7 @@ async def process_run(
                     "company_tier": str(row.get("company_tier", "")),
                     "is_contract": bool(row.get("is_contract", False)),
                 }
-                for _, row in ranked_df.iterrows()
+                for row in ranked_df.to_dict("records")
             ]
             for i in range(0, len(result_rows), 2000):
                 await db.execute(

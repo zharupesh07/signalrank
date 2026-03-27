@@ -1,5 +1,6 @@
 import logging
 import re
+import time
 from datetime import datetime, timedelta, timezone
 
 import numpy as np
@@ -75,30 +76,34 @@ async def load_jobs_dataframe(db: AsyncSession) -> pd.DataFrame:
 
 
 def _apply_pre_filters(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
-    out = df.copy()
+    mask = pd.Series(True, index=df.index)
     blocklist = cfg.get("title_blocklist", [])
     if blocklist:
         rx = re.compile(r"\b(?:%s)\b" % "|".join(map(re.escape, blocklist)), re.I)
-        out = out.loc[~out["title"].fillna("").astype(str).str.contains(rx)].copy()
+        mask &= ~df["title"].fillna("").astype(str).str.contains(rx)
     max_yoe = cfg.get("experience", {}).get("max_yoe")
     if max_yoe is not None:
-        out["_required_yoe"] = out["description"].apply(extract_required_yoe)
-        out = out.loc[out["_required_yoe"].isna() | (out["_required_yoe"] <= max_yoe)].copy()
-    return out
+        required_yoe = df["description"].apply(extract_required_yoe)
+        mask &= required_yoe.isna() | (required_yoe <= max_yoe)
+    return df.loc[mask].reset_index(drop=True)
 
 
 def _apply_semantic_gates(df: pd.DataFrame, cfg: dict, role_intent: str) -> pd.DataFrame:
-    out = df.copy()
-    mask_non_ic = out["title"].astype(str).apply(requires_high_semantic_floor)
-    mask_semantic = out["semantic_score"] >= 0.75
-    out = out.loc[~mask_non_ic | mask_semantic].copy()
-    out["description_quality"] = out["description"].apply(description_quality_multiplier)
+    mask_non_ic = df["title"].astype(str).apply(requires_high_semantic_floor)
+    mask_semantic = df["semantic_score"] >= 0.75
+    mask = ~mask_non_ic | mask_semantic
+
+    desc_quality = df["description"].apply(description_quality_multiplier)
     ranking = cfg.get("ranking", {})
     min_q = ranking.get("min_quality_multiplier", 0.0)
-    out = out.loc[out["description_quality"] >= min_q].copy()
+    mask &= desc_quality >= min_q
+
     thresholds = ranking.get("role_semantic_thresholds", {})
     min_sem = thresholds.get(role_intent, ranking.get("min_semantic_score", 0.20))
-    out = out.loc[out["semantic_score"] >= min_sem].copy()
+    mask &= df["semantic_score"] >= min_sem
+
+    out = df.loc[mask].reset_index(drop=True)
+    out["description_quality"] = desc_quality.loc[mask].values
     return out
 
 
@@ -111,7 +116,11 @@ def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
             r["role_skill_score"], r["functional_role_penalty"], r["_consulting_damp"],
         ), axis=1,
     )
-    df["company_score"] = df["company_tier"].apply(company_score_0_100)
+    _TIER_SCORE_MAP = {
+        "tier_ss": 100.0, "tier_s": 95.0, "tier_a": 85.0, "tier_b": 65.0,
+        "tier_c": 45.0, "tier_d": 15.0, "preferred": 100.0, "deprioritized": 15.0,
+    }
+    df["company_score"] = df["company_tier"].map(_TIER_SCORE_MAP).fillna(40.0)
     semantic_floor = cfg.get("ranking", {}).get("company_semantic_floor", 0.60)
     df["company_score"] = df.apply(
         lambda r: apply_company_semantic_floor(r["company_score"], r["semantic_score"], semantic_floor),
@@ -166,6 +175,7 @@ async def _compute_embeddings(
     resume_text: str,
     distilled_text: str | None = None,
 ) -> pd.DataFrame:
+    t_emb = time.monotonic()
     cache = PgEmbeddingCache(db, cfg_fp)
 
     raw_skills = extract_skills_from_texts(df["description"].fillna("").tolist(), cfg)
@@ -174,11 +184,8 @@ async def _compute_embeddings(
     df["skill_overlap"] = df["canonical_skills"].apply(len)
 
     job_texts = [
-        build_job_embedding_text(
-            title=r["title"], description=r["description"],
-            canonical_skills=r["canonical_skills"], cfg=cfg,
-        )
-        for _, r in df.iterrows()
+        build_job_embedding_text(title=t, description=d, canonical_skills=cs, cfg=cfg)
+        for t, d, cs in zip(df["title"], df["description"], df["canonical_skills"])
     ]
     job_fps = [fingerprint_text(t) for t in job_texts]
     cached = await cache.fetch(job_fps)
@@ -192,6 +199,7 @@ async def _compute_embeddings(
         else:
             misses.append(i)
 
+    engine = None
     if misses:
         engine = EmbeddingEngine(cfg)
         new_vecs = engine.embed([job_texts[i] for i in misses])
@@ -213,7 +221,8 @@ async def _compute_embeddings(
     if resume_fp in resume_cached:
         r_emb = np.array(resume_cached[resume_fp], dtype="float32")
     else:
-        engine = EmbeddingEngine(cfg)
+        if engine is None:
+            engine = EmbeddingEngine(cfg)
         r_emb = engine.embed([resume_emb_text])[0]
         await cache.store_vectors([(resume_fp, r_emb.tolist())])
 
@@ -221,6 +230,11 @@ async def _compute_embeddings(
         _emb_mod._ENGINE.unload()
 
     df["semantic_score"] = cosine_similarity(r_emb, vectors)
+    logger.info(
+        "Embeddings computed",
+        extra={"jobs": len(df), "cache_misses": len(misses),
+               "duration_s": round(time.monotonic() - t_emb, 2)},
+    )
     return df
 
 
@@ -231,6 +245,7 @@ async def score_jobs_for_user(
     config_overrides: dict | None,
     distilled_text: str | None = None,
 ) -> pd.DataFrame:
+    t_total = time.monotonic()
     ctx = build_context(user_id, resume_text, config_overrides)
     cfg = ctx.config
 
@@ -280,9 +295,7 @@ async def score_jobs_for_user(
         axis=1,
     )
     penalties = cfg.get("ranking", {}).get("functional_role_penalties", {})
-    df["functional_role_penalty"] = df["functional_role"].apply(
-        lambda r: penalties.get(r, 1.0)
-    )
+    df["functional_role_penalty"] = df["functional_role"].map(penalties).fillna(1.0)
 
     df = _apply_additive_scoring(df, cfg)
 
@@ -299,4 +312,8 @@ async def score_jobs_for_user(
     df = df.drop_duplicates(subset="_fuzzy_key", keep="first")
     df = df.drop(columns=["_dedup_key", "_fuzzy_key"], errors="ignore").reset_index(drop=True)
 
+    logger.info(
+        "Ranking complete",
+        extra={"user_id": user_id, "input_jobs": len(df), "duration_s": round(time.monotonic() - t_total, 2)},
+    )
     return df

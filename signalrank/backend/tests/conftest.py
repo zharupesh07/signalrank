@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 import llm.openrouter as _openrouter_mod
 
 from api.database import Base, get_db
-from api.main import app
+from api.main import app, limiter as app_limiter
+from api.routes.auth import _limiter as auth_limiter
 
 TEST_DB_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/signalrank_test"
 
@@ -16,11 +17,11 @@ async def test_engine():
     engine = create_async_engine(TEST_DB_URL)
     async with engine.begin() as conn:
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
+        # Truncate all tables for a clean slate
+        for table in reversed(Base.metadata.sorted_tables):
+            await conn.execute(table.delete())
     yield engine
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()
 
 
@@ -32,8 +33,11 @@ async def db(test_engine):
 
 
 @pytest.fixture(autouse=True)
-def clear_llm_cache():
+def clear_caches():
     _openrouter_mod._response_cache.clear()
+    # Reset rate limiter storage to prevent cross-test 429s
+    app_limiter.reset()
+    auth_limiter.reset()
     yield
     _openrouter_mod._response_cache.clear()
 

@@ -30,6 +30,7 @@ logging.root.setLevel(logging.INFO)
 logging.root.handlers = [_handler]
 
 logger = logging.getLogger(__name__)
+logging.getLogger("passlib.handlers.bcrypt").setLevel(logging.ERROR)
 
 # --- Rate limiter (in-memory, no Redis — suitable for single-instance 512MB) ---
 limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
