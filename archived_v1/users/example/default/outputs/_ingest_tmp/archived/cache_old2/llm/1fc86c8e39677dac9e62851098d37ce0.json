@@ -1,4 +1,0 @@
-{
-  "_error": "no_json",
-  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"DevOps\",\n      \"Google Cloud Platform (GCP)\",\n      \"Infrastructure as Code (IaC)\",\n      \"CI/CD\",\n      \"Containerization\",\n      \"Kubernetes\",\n      \"Docker\",\n      \"Terraform\",\n      \"Cloud Build\",\n      \"GitHub Actions\",\n      \"GitLab CI\",\n      \"Jenkins\",\n      \"Observability\",\n      \"Cloud Monitoring\",\n      \"Cloud Logging\",\n      \"IAM\",\n      \"Secret Manager\",\n      \"GKE\",\n      \"Cloud Run\",\n      \"Cloud Storage\",\n      \"VPC\",\n      \"Compute Engine\",\n "
-}

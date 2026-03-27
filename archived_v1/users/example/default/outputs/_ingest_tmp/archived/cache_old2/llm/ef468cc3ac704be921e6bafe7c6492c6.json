@@ -1,4 +1,0 @@
-{
-  "_error": "no_json",
-  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"GPU\",\n      \"computer graphics\",\n      \"parallel computing\",\n      \"artificial intelligence\",\n      \"scalable computation\",\n      \"parallel computation\"\n    ],\n    [\n      \"circuit design\",\n      \"IP design\",\n      \"SRAM\",\n      \"analog circuits\",\n      \"digital circuits\",\n      \"sensor circuits\",\n      \"test structures\",\n      \"custom circuit IP\",\n      \"power optimization\",\n      \"performance optimization\",\n      \"silicon correlation\",\n      \"security\",\n   "
-}

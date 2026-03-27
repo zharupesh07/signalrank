@@ -1,4 +1,0 @@
-{
-  "_error": "no_json",
-  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"DevOps\",\n      \"System Administration\",\n      \"Technical Support\",\n      \"Hardware/Software Support\",\n      \"Operating Systems\",\n      \"Troubleshooting\"\n    ],\n    [\n      \"DevOps\",\n      \"Automation\",\n      \"Ansible\",\n      \"Python\",\n      \"Linux\",\n      \"CI/CD\",\n      \"Jenkins\",\n      \"GitHub Actions\",\n      \"GitLab CI\",\n      \"Networking\",\n      \"Monitoring\",\n      \"Cloud Computing\",\n      \"AWS\",\n      \"Azure\",\n      \"ServiceNow\",\n      \"Generative AI\"\n   "
-}

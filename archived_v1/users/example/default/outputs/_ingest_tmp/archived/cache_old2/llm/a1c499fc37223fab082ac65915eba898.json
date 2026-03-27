@@ -1,4 +1,0 @@
-{
-  "_error": "no_json",
-  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"Generative AI\",\n      \"Agentic Systems\",\n      \"LLMs\",\n      \"Python\",\n      \"Cloud-Native Development\",\n      \"Microservices\",\n      \"Distributed Systems\",\n      \"Data Pipelines\",\n      \"REST APIs\",\n      \"gRPC APIs\",\n      \"AWS\",\n      \"Kubernetes\",\n      \"Docker\",\n      \"Serverless\",\n      \"Event-Driven Architecture\",\n      \"ETL\",\n      \"Apache Kafka\",\n      \"Airflow\",\n      \"Dagster\",\n      \"AWS Step Functions\",\n      \"Databases (MongoDB, OpenSearch, Post"
-}

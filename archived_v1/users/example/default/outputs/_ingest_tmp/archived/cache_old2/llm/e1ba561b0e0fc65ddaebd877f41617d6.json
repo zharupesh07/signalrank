@@ -1,4 +1,0 @@
-{
-  "_error": "no_json",
-  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"data analytics\",\n      \"trust and safety\",\n      \"policy\",\n      \"cybersecurity\"\n    ],\n    [\n      \"sql\",\n      \"dashboarding\",\n      \"data collection\",\n      \"data transformation\",\n      \"data visualization\",\n      \"scripting\",\n      \"programming\"\n    ],\n    [\n      \"adversarial testing\",\n      \"red teaming\",\n      \"jailbreaking\",\n      \"ethical hacking\"\n    ],\n    [\n      \"content safety\"\n    ],\n    [\n      \"artificial intelligence\",\n      \"ai responsibili"
-}

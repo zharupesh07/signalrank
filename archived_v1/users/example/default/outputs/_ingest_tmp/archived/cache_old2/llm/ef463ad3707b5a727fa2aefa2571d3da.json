@@ -1,4 +1,0 @@
-{
-  "_error": "no_json",
-  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"AI/ML\",\n      \"Natural Language Processing\",\n      \"Statistics\",\n      \"Probability\",\n      \"Model Classification\",\n      \"System Design\",\n      \"Frontend to Backend Integration\",\n      \"Proactive Attitude\"\n    ],\n    [\n      \"AI/GenAI Research\"\n    ],\n    [\n      \"GenAI\",\n      \"Backend Development\",\n      \"AWS Services (Bedrock, RDS, S3, ECR, Lambda, Textract)\",\n      \"AI Workflows\",\n      \"Prompt Orchestration\",\n      \"APIs\",\n      \"Document Ingestion\",\n  "
-}

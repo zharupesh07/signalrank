@@ -1,4 +1,0 @@
-{
-  "_error": "no_json",
-  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"Backend Development\",\n      \"API Development\",\n      \"Data Pipelines\",\n      \"AI/ML Platform\",\n      \"Python\",\n      \"Java\",\n      \"Node.js\",\n      \"RESTful APIs\",\n      \"SQL\",\n      \"NoSQL Databases\",\n      \"Cloud Platforms\",\n      \"AWS\",\n      \"GCP\",\n      \"Azure\",\n      \"Microservices Architecture\",\n      \"Performance Optimization\",\n      \"Security\",\n      \"Reliability\",\n      \"SDLC\",\n      \"Agile Methodologies\"\n    ],\n    [\n      \"ETL/ELT\",\n      \"Data Pi"
-}

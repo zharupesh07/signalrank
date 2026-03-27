@@ -1,2 +1,0 @@
-[console_scripts]
-job-ranker = job_ranker.entrypoint:main

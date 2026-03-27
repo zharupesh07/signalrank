@@ -1,4 +1,0 @@
-{
-  "_error": "no_json",
-  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"Software Engineering\",\n      \"Agile Methodologies\",\n      \"Go Programming Language\",\n      \"SQL\",\n      \"Machine Learning\",\n      \".Net Full Stack Development\"\n    ],\n    [\n      \"Technical Leadership\",\n      \"Software Design Patterns\",\n      \"Cloud Platforms (AWS, Azure, Google Cloud)\",\n      \"SaaS Applications\",\n      \"CI/CD\",\n      \"Containerization (Docker, Kubernetes)\",\n      \"Infrastructure as Code (Terraform, CloudFormation)\",\n      \"Database Systems ("
-}

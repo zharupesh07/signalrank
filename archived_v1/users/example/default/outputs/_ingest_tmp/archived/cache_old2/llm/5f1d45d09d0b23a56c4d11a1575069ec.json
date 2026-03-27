@@ -1,4 +1,0 @@
-{
-  "_error": "no_json",
-  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"deep learning\",\n      \"model accuracy\",\n      \"inference\",\n      \"python\",\n      \"inference pipelines\",\n      \"accuracy KPIs\",\n      \"accuracy evaluation\",\n      \"automated pipelines\",\n      \"inference frameworks\",\n      \"TensorRT\",\n      \"ONNX Runtime\",\n      \"AITemplate\",\n      \"Triton\",\n      \"ONNX\",\n      \"TensorFlow\",\n      \"PyTorch\",\n      \"preprocessing\",\n      \"post-processing\",\n      \"metric evaluation\",\n      \"large-scale models\",\n      \"LLMs\",\n    "
-}

@@ -1,4 +1,0 @@
-{
-  "_error": "no_json",
-  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"ETL/ELT\",\n      \"Data Pipelines\",\n      \"Data Lake\",\n      \"SQL\",\n      \"Python\",\n      \"Informatica\",\n      \"Talend\",\n      \"dbt\",\n      \"AWS Glue\",\n      \"Spark\",\n      \"Hadoop\",\n      \"Hive\",\n      \"Cloud Data Platforms\",\n      \"AWS\",\n      \"Azure\",\n      \"GCP\",\n      \"Airflow\",\n      \"Kafka\",\n      \"Kinesis\",\n      \"Data Warehousing\",\n      \"CI/CD\",\n      \"Data Security\"\n    ],\n    [\n      \"QA\",\n      \"Manual Testing\",\n      \"Automation Testing\",\n      \"A"
-}

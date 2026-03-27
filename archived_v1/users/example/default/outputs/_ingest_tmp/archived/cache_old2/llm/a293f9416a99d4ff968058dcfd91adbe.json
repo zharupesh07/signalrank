@@ -1,4 +1,0 @@
-{
-  "_error": "no_json",
-  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"AWS SageMaker\",\n      \"Azure ML Studio\",\n      \"GCP Vertex AI\",\n      \"PySpark\",\n      \"Azure Databricks\",\n      \"MLFlow\",\n      \"KubeFlow\",\n      \"AirFlow\",\n      \"Github Actions\",\n      \"AWS CodePipeline\",\n      \"Kubernetes\",\n      \"AKS\",\n      \"Terraform\",\n      \"FastAPI\",\n      \"Model Deployment\",\n      \"Model Monitoring\",\n      \"Model Retraining\",\n      \"Deployment Pipeline\",\n      \"Inference Pipeline\",\n      \"Monitoring Pipeline\",\n      \"Retraining Pipe"
-}

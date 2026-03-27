@@ -1,4 +1,0 @@
-{
-  "_error": "no_json",
-  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"MEGA HOPEX\",\n      \"GraphQL\",\n      \"ERQL\",\n      \"Java\",\n      \"VBScript\",\n      \"SQL\",\n      \"Git\",\n      \"Agile\"\n    ],\n    [\n      \"GenAI\",\n      \"LLMs\",\n      \"RAG\",\n      \"AI Agents\",\n      \"PyTorch\",\n      \"TensorFlow\",\n      \"Hugging Face Transformers\",\n      \"LangChain\",\n      \"LangGraph\",\n      \"FastAPI\",\n      \"Flask\",\n      \"Docker\",\n      \"Kubernetes\",\n      \"Azure\",\n      \"AWS\",\n      \"GCP\",\n      \"Databricks\",\n      \"FAISS\",\n      \"Pinecone\",\n "
-}

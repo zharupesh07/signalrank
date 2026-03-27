@@ -1,4 +1,0 @@
-{
-  "_error": "no_json",
-  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"Python\",\n      \"CommerceTools Commerce Platform\"\n    ],\n    [\n      \"Python\",\n      \"CommerceTools Commerce Platform\",\n      \"GenAI\",\n      \"LLMs\",\n      \"RAG\",\n      \"API Integrations\",\n      \"FastAPI\",\n      \"Flask\",\n      \"Django\",\n      \"React\",\n      \"Angular\",\n      \"AWS Bedrock\",\n      \"Azure OpenAI\",\n      \"Google Vertex AI\",\n      \"Hugging Face\",\n      \"S3\",\n      \"Blob\",\n      \"GCS\",\n      \"Kendra\",\n      \"Azure AI Search\",\n      \"Vertex Search\",\n  "
-}

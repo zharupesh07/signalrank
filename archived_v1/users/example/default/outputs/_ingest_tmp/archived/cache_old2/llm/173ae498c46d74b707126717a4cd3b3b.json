@@ -1,4 +1,0 @@
-{
-  "_error": "no_json",
-  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \".NET Worker Services\",\n      \"ASP.NET Core\",\n      \"PostgreSQL\",\n      \"Npgsql\",\n      \"Event Hub SDK\",\n      \"REST API design\",\n      \"Authentication middleware\",\n      \"Software Engineering\",\n      \"R&D\",\n      \"Digital and Software Technology\"\n    ],\n    [\n      \"Assembler/Assembly language\",\n      \"JCL\",\n      \"Z/OS\",\n      \"VSAM\",\n      \"HLASM macros\",\n      \"XDC\",\n      \"C++\",\n      \"z/os system macros\",\n      \"TLS\",\n      \"SSL\",\n      \"Software Enginee"
-}

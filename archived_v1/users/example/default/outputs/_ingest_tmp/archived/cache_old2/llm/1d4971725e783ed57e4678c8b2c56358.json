@@ -1,4 +1,0 @@
-{
-  "_error": "no_json",
-  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"AI\",\n      \"Machine Learning\",\n      \"Data Science\",\n      \"Recruitment\",\n      \"ATS\",\n      \"CRM\",\n      \"Automation\",\n      \"ETL\",\n      \"ELT\",\n      \"Data Pipelines\",\n      \"AWS\",\n      \"S3\",\n      \"Glue\",\n      \"EMR\",\n      \"Kinesis\",\n      \"Vector Databases\",\n      \"Embeddings\",\n      \"Semantic Search\",\n      \"Docker\",\n      \"Containerization\",\n      \"Amazon ECR\",\n      \"Kubernetes\",\n      \"EC2\",\n      \"Data Modeling\",\n      \"SQL\",\n      \"Redshift\",\n    "
-}

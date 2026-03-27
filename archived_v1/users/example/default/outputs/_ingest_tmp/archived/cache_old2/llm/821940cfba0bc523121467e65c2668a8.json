@@ -1,4 +1,0 @@
-{
-  "_error": "no_json",
-  "_raw": "```json\n{\n  \"skills\": [\n    [\n      \"Python\",\n      \"GenAI\",\n      \"Machine Learning\",\n      \"AI\",\n      \"TensorFlow\",\n      \"PyTorch\",\n      \"LangChain\",\n      \"LlamaIndex\",\n      \"FastAPI\",\n      \"Flask\",\n      \"Pandas\",\n      \"NumPy\",\n      \"SQL\",\n      \"NoSQL\",\n      \"MongoDB\",\n      \"Cassandra\",\n      \"LLMs\",\n      \"RAG\",\n      \"Prompt Engineering\",\n      \"Autonomous Agents\",\n      \"Multi-agent Systems\",\n      \"AutoGen\",\n      \"Semantic Kernel\",\n      \"Crew AI\",\n      \"Model Context Protoco"
-}
