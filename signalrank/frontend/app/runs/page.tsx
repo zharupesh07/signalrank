@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
-import { CheckCircle, XCircle, Play } from "lucide-react";
+import { CheckCircle, XCircle, Play, Square } from "lucide-react";
 import { useToast } from "@/components/toast";
 
 type RunRecord = {
@@ -37,6 +37,14 @@ function StatusBadge({ status }: { status: string }) {
       <div className="flex items-center gap-1.5 text-primary">
         <span className="pulse-dot-fast" />
         <span className="text-xs uppercase tracking-wider">running</span>
+      </div>
+    );
+  }
+  if (status === "cancelled") {
+    return (
+      <div className="flex items-center gap-1.5 text-[var(--terminal-yellow)]">
+        <span className="pulse-dot" />
+        <span className="text-xs uppercase tracking-wider">cancelled</span>
       </div>
     );
   }
@@ -80,6 +88,7 @@ export default function RunsPage() {
   const [runs, setRuns] = useState<RunRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
+  const [stoppingRunId, setStoppingRunId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -100,6 +109,21 @@ export default function RunsPage() {
       toast("Failed to trigger run", "error");
     } finally {
       setTriggering(false);
+    }
+  }
+
+  async function stopRun(runId: string) {
+    setStoppingRunId(runId);
+    try {
+      await api.runs.stop(token, runId);
+      toast("Run stopping...", "success");
+      // Refresh the list immediately to show updated status
+      const r = await api.runs.list(token);
+      setRuns(r);
+    } catch {
+      toast("Failed to stop run", "error");
+    } finally {
+      setStoppingRunId(null);
     }
   }
 
@@ -130,7 +154,7 @@ export default function RunsPage() {
           <table className="w-full text-xs border-collapse">
             <thead>
               <tr className="border-b border-border bg-card">
-                {["Run ID", "Status", "Scraped", "Ranked", "Started", "Duration"].map((h) => (
+                {["Run ID", "Status", "Scraped", "Ranked", "Started", "Duration", "Actions"].map((h) => (
                   <th
                     key={h}
                     className="px-4 py-3 text-left text-xs text-muted-foreground uppercase tracking-[0.15em]"
@@ -165,6 +189,8 @@ export default function RunsPage() {
               ) : (
                 runs.map((run, idx) => {
                   const dur = duration(run.started_at, run.finished_at);
+                  const canCancel = ["pending", "scraping", "ranking"].includes(run.status);
+                  const isStopping = stoppingRunId === run.run_id;
                   return (
                     <tr
                       key={run.run_id}
@@ -188,6 +214,19 @@ export default function RunsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-muted-foreground tabular-nums">{dur ?? "—"}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {canCancel && (
+                          <button
+                            onClick={() => stopRun(run.run_id)}
+                            disabled={isStopping}
+                            className="flex items-center gap-1.5 text-[10px] text-destructive border border-destructive/40 px-2 py-1 hover:bg-destructive/10 transition-colors uppercase tracking-wider disabled:opacity-50"
+                            title="Stop run"
+                          >
+                            <Square size={10} fill="current" />
+                            {isStopping ? "Stopping…" : "Stop"}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );

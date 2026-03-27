@@ -25,6 +25,13 @@ async def process_run(
 ) -> None:
     async with session_factory() as db:
         try:
+            # Check if run was cancelled before it even started
+            run_check_result = await db.execute(select(Run).where(Run.id == run_id))
+            run_check = run_check_result.scalar_one_or_none()
+            if run_check and run_check.status == "cancelled":
+                logger.info("Run %s was cancelled before starting, skipping", run_id)
+                return
+
             await db.execute(
                 update(Run).where(Run.id == run_id).values(status="scraping")
             )
@@ -53,7 +60,29 @@ async def process_run(
             if queries:
                 title_blocklist = (config_overrides or {}).get("title_blocklist", [])
                 config = ScraperConfig.from_env(title_blocklist=title_blocklist)
+
+                # Check cancellation before scraping
+                run_check_result = await db.execute(select(Run).where(Run.id == run_id))
+                run_check = run_check_result.scalar_one_or_none()
+                if run_check and run_check.status == "cancelled":
+                    await db.execute(
+                        update(Run).where(Run.id == run_id).values(
+                            status="cancelled", finished_at=datetime.now(timezone.utc)
+                        )
+                    )
+                    await db.commit()
+                    logger.info("Run %s was cancelled before scraping", run_id)
+                    return
+
                 raw_jobs = await scrape(queries, config, on_progress=_update_progress)
+
+                # Check cancellation after scraping
+                run_check_result = await db.execute(select(Run).where(Run.id == run_id))
+                run_check = run_check_result.scalar_one_or_none()
+                if run_check and run_check.status == "cancelled":
+                    await db.commit()
+                    logger.info("Run %s was cancelled after scraping", run_id)
+                    return
 
                 if raw_jobs:
                     from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -68,6 +97,14 @@ async def process_run(
                         await db.execute(stmt)
                     await db.commit()
                 scrape_count = len(raw_jobs)
+
+            # Check cancellation before ranking
+            run_check_result = await db.execute(select(Run).where(Run.id == run_id))
+            run_check = run_check_result.scalar_one_or_none()
+            if run_check and run_check.status == "cancelled":
+                await db.commit()
+                logger.info("Run %s was cancelled before ranking", run_id)
+                return
 
             await db.execute(
                 update(Run).where(Run.id == run_id).values(
@@ -86,6 +123,14 @@ async def process_run(
                 distilled_text=distilled_text,
                 config_overrides=config_overrides,
             )
+
+            # Check cancellation after ranking (before inserting results)
+            run_check_result = await db.execute(select(Run).where(Run.id == run_id))
+            run_check = run_check_result.scalar_one_or_none()
+            if run_check and run_check.status == "cancelled":
+                await db.commit()
+                logger.info("Run %s was cancelled before saving results", run_id)
+                return
 
             for _, row in ranked_df.iterrows():
                 db.add(JobResult(

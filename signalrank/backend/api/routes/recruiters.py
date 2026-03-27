@@ -284,7 +284,13 @@ async def list_recruiters(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    q = select(Recruiter)
+    user_company_subq = (
+        select(Application.company)
+        .where(Application.user_id == current_user.id, Application.company.isnot(None))
+        .distinct()
+        .scalar_subquery()
+    )
+    q = select(Recruiter).where(Recruiter.company.in_(user_company_subq))
     if company:
         q = q.where(Recruiter.company == company)
     result = await db.execute(q.order_by(Recruiter.company, Recruiter.name))

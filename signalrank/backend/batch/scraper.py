@@ -46,6 +46,7 @@ class ScraperConfig:
     title_blocklist: list[str] = field(default_factory=list)
     # 0 = disabled, N = run only first N queries on LinkedIn (slow ~80s/query)
     linkedin_max_queries: int = 0
+    default_country: str = "India"
 
     @classmethod
     def from_env(cls, title_blocklist: list[str] | None = None) -> ScraperConfig:
@@ -54,6 +55,7 @@ class ScraperConfig:
             max_results_per_query=int(os.environ.get("SCRAPER_MAX_RESULTS", "3000")),
             hours_old=int(os.environ.get("SCRAPER_HOURS_OLD", "720")),
             linkedin_max_queries=int(os.environ.get("LINKEDIN_MAX_QUERIES", "0")),
+            default_country=os.environ.get("SCRAPER_DEFAULT_COUNTRY", "India"),
             title_blocklist=title_blocklist or [],
         )
 

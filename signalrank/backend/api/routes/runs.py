@@ -1,6 +1,8 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.database import get_db
@@ -109,3 +111,31 @@ async def get_run_status(
         started_at=str(run.started_at) if run.started_at else None,
         finished_at=str(run.finished_at) if run.finished_at else None,
     )
+
+
+@router.post("/{run_id}/stop", status_code=200)
+async def stop_run(
+    run_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Run).where(Run.id == run_id, Run.user_id == current_user.id)
+    )
+    run = result.scalar_one_or_none()
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    # Can only cancel runs that are pending, scraping, or ranking
+    cancellable_statuses = {"pending", "scraping", "ranking"}
+    if run.status not in cancellable_statuses:
+        return {"stopped": False, "status": run.status, "message": f"Run is already {run.status}"}
+
+    # If run is pending (queued but not started), we need to try to remove it from the queue
+    # If run is already processing, we mark it as cancelled in the DB; the worker will check
+    await db.execute(
+        update(Run).where(Run.id == run_id).values(status="cancelled", finished_at=datetime.now(timezone.utc))
+    )
+    await db.commit()
+
+    return {"stopped": True, "status": "cancelled"}

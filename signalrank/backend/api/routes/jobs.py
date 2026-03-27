@@ -203,7 +203,7 @@ async def get_analytics(
     top_companies = sorted(company_counts.items(), key=lambda x: x[1], reverse=True)[:10]
     sites = sorted(site_counts.items(), key=lambda x: x[1], reverse=True)
 
-    total_jobs = await db.scalar(select(func.count(JobRaw.id)))
+    total_jobs = len(rows)
 
     return {
         "score_distribution": [{"range": k, "count": v} for k, v in score_buckets.items()],
@@ -219,7 +219,11 @@ async def get_job(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(JobRaw).where(JobRaw.id == job_id))
+    result = await db.execute(
+        select(JobRaw)
+        .join(JobResult, JobResult.job_id == JobRaw.id)
+        .where(JobRaw.id == job_id, JobResult.user_id == current_user.id)
+    )
     job = result.scalar_one_or_none()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")

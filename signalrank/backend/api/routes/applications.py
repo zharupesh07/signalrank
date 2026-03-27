@@ -354,6 +354,13 @@ async def list_recruiters_by_company(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    app_check = await db.execute(
+        select(Application.id)
+        .where(Application.user_id == current_user.id, Application.company == company)
+        .limit(1)
+    )
+    if not app_check.scalar_one_or_none():
+        return []
     result = await db.execute(
         select(Recruiter)
         .where(Recruiter.company == company, Recruiter.email.isnot(None))

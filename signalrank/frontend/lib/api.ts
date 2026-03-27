@@ -84,6 +84,11 @@ export const api = {
         method: "POST",
         token,
       }),
+    stop: (token: string, runId: string) =>
+      request<{ stopped: boolean; status: string }>(`/api/runs/${runId}/stop`, {
+        method: "POST",
+        token,
+      }),
     latest: async (token: string): Promise<Run> => {
       const r = await request<{ run_id: string; status: string; job_count: number | null; scrape_count: number | null; started_at: string | null; finished_at: string | null; progress: RunProgress | null }>("/api/runs/latest", { token });
       const status = r.status === "success" ? "done" : r.status as Run["status"];
