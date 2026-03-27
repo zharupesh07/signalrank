@@ -73,7 +73,10 @@ async def upload_resume(
     db: AsyncSession = Depends(get_db),
     llm: OpenRouterClient = Depends(get_llm_client),
 ):
-    content = await file.read()
+    MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5MB
+    content = await file.read(MAX_UPLOAD_BYTES + 1)
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="File too large — maximum 5MB")
     filename = (file.filename or "").lower()
 
     if filename.endswith(".pdf"):

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
+import { getCached, setCache } from "@/lib/cache";
 import type { Application, TrackerStats } from "@/types";
 import {
   BarChart2,
@@ -413,9 +414,13 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     if (!token) return;
+    const ca = getCached<typeof analytics>("analytics", 300_000);
+    const cs = getCached<typeof stats>("stats", 120_000);
+    if (ca) setAnalytics(ca);
+    if (cs) setStats(cs);
     Promise.all([
-      api.jobs.analytics(token).then(setAnalytics).catch(() => null),
-      api.applications.stats(token).then(setStats).catch(() => null),
+      api.jobs.analytics(token).then((a) => { setAnalytics(a); setCache("analytics", a); }).catch(() => null),
+      api.applications.stats(token).then((s) => { setStats(s); setCache("stats", s); }).catch(() => null),
       api.applications.list(token).then(setApplications).catch(() => null),
     ]).finally(() => setLoading(false));
   }, [token]);

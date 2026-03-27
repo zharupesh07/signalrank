@@ -3,9 +3,9 @@ import logging
 import random
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -92,14 +92,23 @@ def _serialize_app(a: Application, job_result: JobResult | None = None) -> dict:
 
 @router.get("")
 async def list_applications(
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    total_result = await db.execute(
+        select(func.count(Application.id)).where(Application.user_id == current_user.id)
+    )
+    total = total_result.scalar()
+
     result = await db.execute(
         select(Application)
         .options(selectinload(Application.recruiter), selectinload(Application.job))
         .where(Application.user_id == current_user.id)
         .order_by(Application.applied_at.desc().nullslast())
+        .offset((page - 1) * limit)
+        .limit(limit)
     )
     apps = result.scalars().all()
 
@@ -115,7 +124,12 @@ async def list_applications(
             if jr.job_id not in jr_map:
                 jr_map[jr.job_id] = jr
 
-    return [_serialize_app(a, jr_map.get(a.job_id)) for a in apps]
+    return {
+        "applications": [_serialize_app(a, jr_map.get(a.job_id)) for a in apps],
+        "total": total,
+        "page": page,
+        "limit": limit,
+    }
 
 
 async def _auto_find_recruiters(company: str, session_factory, llm, hunter):
@@ -378,22 +392,38 @@ async def application_stats(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(Application).where(Application.user_id == current_user.id)
+    from sqlalchemy import case, literal
+
+    base = Application.user_id == current_user.id
+
+    status_q = await db.execute(
+        select(Application.status, func.count()).where(base).group_by(Application.status)
     )
-    apps = result.scalars().all()
+    by_status = {s: 0 for s in VALID_STATUSES}
+    total = 0
+    for status, cnt in status_q.all():
+        if status in by_status:
+            by_status[status] = cnt
+        total += cnt
 
-    by_priority: dict[str, int] = {"P1": 0, "P2": 0, "P3": 0, "unset": 0}
-    by_status: dict[str, int] = {s: 0 for s in VALID_STATUSES}
-    offers: list[float] = []
+    priority_q = await db.execute(
+        select(
+            case(
+                (Application.priority.in_(list(VALID_PRIORITIES)), Application.priority),
+                else_=literal("unset"),
+            ).label("prio"),
+            func.count(),
+        ).where(base).group_by("prio")
+    )
+    by_priority = {"P1": 0, "P2": 0, "P3": 0, "unset": 0}
+    for prio, cnt in priority_q.all():
+        by_priority[prio] = cnt
 
-    for a in apps:
-        key = a.priority if a.priority in VALID_PRIORITIES else "unset"
-        by_priority[key] += 1
-        if a.status in by_status:
-            by_status[a.status] += 1
-        if a.offer_lpa is not None:
-            offers.append(a.offer_lpa)
+    offer_q = await db.execute(
+        select(func.count(), func.max(Application.offer_lpa))
+        .where(base, Application.offer_lpa.isnot(None))
+    )
+    offer_row = offer_q.one()
 
     profile_result = await db.execute(
         select(Profile.target_lpa).where(Profile.user_id == current_user.id)
@@ -401,10 +431,10 @@ async def application_stats(
     target_lpa = profile_result.scalar_one_or_none()
 
     return {
-        "total": len(apps),
+        "total": total,
         "by_priority": by_priority,
         "by_status": by_status,
-        "offers_count": len(offers),
-        "best_offer_lpa": max(offers) if offers else None,
+        "offers_count": offer_row[0],
+        "best_offer_lpa": offer_row[1],
         "target_lpa": target_lpa,
     }

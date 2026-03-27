@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select, or_
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -15,8 +17,8 @@ router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 @router.get("")
 async def list_jobs(
     page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=1, le=5000),
-    sort: str = Query("final_score"),
+    limit: int = Query(50, ge=1, le=2000),
+    sort: Literal["final_score", "semantic_score", "skills_score", "company_score", "seniority_score", "location_score", "recency_score"] = Query("final_score"),
     search: str = Query(""),
     show_archived: bool = Query(True),
     current_user: User = Depends(get_current_user),
@@ -32,7 +34,7 @@ async def list_jobs(
     if not run:
         return {"jobs": [], "total": 0, "page": page, "limit": limit}
 
-    sort_col = getattr(JobResult, sort, JobResult.final_score)
+    sort_col = getattr(JobResult, sort)
 
     base_filters = [JobResult.run_id == run.id, JobResult.user_id == current_user.id]
     if not show_archived:
@@ -169,47 +171,56 @@ async def get_analytics(
     if not run:
         return {"score_distribution": [], "top_companies": [], "sites": []}
 
-    results = await db.execute(
-        select(JobResult, JobRaw)
-        .join(JobRaw, JobResult.job_id == JobRaw.id)
-        .where(JobResult.run_id == run.id, JobResult.user_id == current_user.id)
+    from sqlalchemy import case, literal_column
+
+    base = [JobResult.run_id == run.id, JobResult.user_id == current_user.id]
+
+    score_q = await db.execute(
+        select(
+            case(
+                (JobResult.final_score < 40, literal_column("'0-40'")),
+                (JobResult.final_score < 60, literal_column("'40-60'")),
+                (JobResult.final_score < 70, literal_column("'60-70'")),
+                (JobResult.final_score < 80, literal_column("'70-80'")),
+                (JobResult.final_score < 90, literal_column("'80-90'")),
+                else_=literal_column("'90-100'"),
+            ).label("bucket"),
+            func.count().label("cnt"),
+        ).where(*base).group_by("bucket")
     )
-    rows = results.all()
+    bucket_rows = {r.bucket: r.cnt for r in score_q.all()}
+    score_distribution = [
+        {"range": k, "count": bucket_rows.get(k, 0)}
+        for k in ("0-40", "40-60", "60-70", "70-80", "80-90", "90-100")
+    ]
 
-    score_buckets = {"0-40": 0, "40-60": 0, "60-70": 0, "70-80": 0, "80-90": 0, "90-100": 0}
-    company_counts: dict[str, int] = {}
-    site_counts: dict[str, int] = {}
+    company_q = await db.execute(
+        select(JobRaw.company, func.count().label("cnt"))
+        .join(JobResult, JobResult.job_id == JobRaw.id)
+        .where(*base, JobRaw.company.isnot(None))
+        .group_by(JobRaw.company)
+        .order_by(func.count().desc())
+        .limit(10)
+    )
+    top_companies = [{"company": r.company, "count": r.cnt} for r in company_q.all()]
 
-    for result, job in rows:
-        score = result.final_score or 0
-        if score < 40:
-            score_buckets["0-40"] += 1
-        elif score < 60:
-            score_buckets["40-60"] += 1
-        elif score < 70:
-            score_buckets["60-70"] += 1
-        elif score < 80:
-            score_buckets["70-80"] += 1
-        elif score < 90:
-            score_buckets["80-90"] += 1
-        else:
-            score_buckets["90-100"] += 1
+    site_q = await db.execute(
+        select(JobRaw.site, func.count().label("cnt"))
+        .join(JobResult, JobResult.job_id == JobRaw.id)
+        .where(*base, JobRaw.site.isnot(None))
+        .group_by(JobRaw.site)
+        .order_by(func.count().desc())
+    )
+    sites = [{"site": r.site, "count": r.cnt} for r in site_q.all()]
 
-        if job.company:
-            company_counts[job.company] = company_counts.get(job.company, 0) + 1
-        if job.site:
-            site_counts[job.site] = site_counts.get(job.site, 0) + 1
-
-    top_companies = sorted(company_counts.items(), key=lambda x: x[1], reverse=True)[:10]
-    sites = sorted(site_counts.items(), key=lambda x: x[1], reverse=True)
-
-    total_jobs = len(rows)
+    total_q = await db.execute(select(func.count()).where(*base))
+    total_jobs = total_q.scalar() or 0
 
     return {
-        "score_distribution": [{"range": k, "count": v} for k, v in score_buckets.items()],
-        "top_companies": [{"company": c, "count": n} for c, n in top_companies],
-        "sites": [{"site": s, "count": n} for s, n in sites],
-        "total": total_jobs or 0,
+        "score_distribution": score_distribution,
+        "top_companies": top_companies,
+        "sites": sites,
+        "total": total_jobs,
     }
 
 

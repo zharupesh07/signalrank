@@ -115,11 +115,15 @@ export default function RunsPage() {
   async function stopRun(runId: string) {
     setStoppingRunId(runId);
     try {
-      await api.runs.stop(token, runId);
-      toast("Run stopping...", "success");
-      // Refresh the list immediately to show updated status
-      const r = await api.runs.list(token);
-      setRuns(r);
+      const result = await api.runs.stop(token, runId);
+      if (result.stopped) {
+        toast("Run stopping...", "success");
+        // Refresh the list immediately to show updated status
+        const r = await api.runs.list(token);
+        setRuns(r);
+      } else {
+        toast(`Failed to stop run: ${result.message}`, "error");
+      }
     } catch {
       toast("Failed to stop run", "error");
     } finally {

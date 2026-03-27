@@ -25,7 +25,7 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
   const [run, setRun] = useState(initialRun);
   const [tick, setTick] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completedRef = useRef(false);
 
   useEffect(() => {
@@ -50,28 +50,39 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
     if (!isLiveStatus(run.status)) return;
     if (completedRef.current) return;
 
-    pollRef.current = setInterval(async () => {
-      try {
-        const updated = await api.runs.status(token, run.id);
-        setRun(updated);
-        const finished = updated.status === "done";
-        if (finished && !completedRef.current) {
-          completedRef.current = true;
-          toast(`Run complete — ${updated.job_count ?? 0} jobs ranked`, "success");
-          onComplete?.({ ...updated, status: "done" });
-          clearInterval(pollRef.current!);
-        } else if (updated.status === "failed" && !completedRef.current) {
-          completedRef.current = true;
-          toast("Run failed", "error");
-          clearInterval(pollRef.current!);
+    let delay = 2000;
+    const MAX_DELAY = 30000;
+
+    function schedulePoll() {
+      pollRef.current = setTimeout(async () => {
+        try {
+          const updated = await api.runs.status(token, run.id);
+          setRun(updated);
+          if (updated.status === "done" && !completedRef.current) {
+            completedRef.current = true;
+            toast(`Run complete — ${updated.job_count ?? 0} jobs ranked`, "success");
+            onComplete?.({ ...updated, status: "done" });
+            return;
+          } else if (updated.status === "failed" && !completedRef.current) {
+            completedRef.current = true;
+            toast("Run failed", "error");
+            return;
+          } else if (updated.status === "cancelled" && !completedRef.current) {
+            completedRef.current = true;
+            return;
+          }
+        } catch {
+          /* ignore transient errors */
         }
-      } catch {
-        /* ignore transient errors */
-      }
-    }, 2000);
+        delay = Math.min(delay * 1.5, MAX_DELAY);
+        schedulePoll();
+      }, delay);
+    }
+
+    schedulePoll();
 
     return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
+      if (pollRef.current) clearTimeout(pollRef.current);
     };
   }, [token, run.id, run.status, onComplete, toast]);
 

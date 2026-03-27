@@ -1,13 +1,21 @@
 import asyncio
 import logging
+import logging.config
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select, update
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import JSONResponse
+from pythonjsonlogger import jsonlogger
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
+from sqlalchemy import text, update, select
 
 from api.config import settings
-from api.database import AsyncSessionLocal
+from api.database import AsyncSessionLocal, engine
 from api.deps_llm import get_llm_client
 from api.models import Run
 from api.routes import applications, auth, ingest, jobs, onboarding, profile, recruiters, resume, runs
@@ -15,9 +23,16 @@ from batch.archival_worker import archival_worker_loop, recover_stuck_archival_t
 from batch.resume_worker import boot_scan, recover_stuck_generation_tasks, resume_worker_loop
 from batch.worker import get_queue, worker_loop
 
-logging.basicConfig(level=logging.INFO)
+# --- Structured JSON logging ---
+_handler = logging.StreamHandler()
+_handler.setFormatter(jsonlogger.JsonFormatter("%(asctime)s %(name)s %(levelname)s %(message)s"))
+logging.root.setLevel(logging.INFO)
+logging.root.handlers = [_handler]
 
 logger = logging.getLogger(__name__)
+
+# --- Rate limiter (in-memory, no Redis — suitable for single-instance 512MB) ---
+limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 
 _worker_task: asyncio.Task | None = None
 _resume_worker_task: asyncio.Task | None = None
@@ -25,7 +40,6 @@ _archival_worker_task: asyncio.Task | None = None
 
 
 async def _resume_worker_watchdog(session_factory, llm) -> None:
-    """Run resume_worker_loop and restart it if it crashes unexpectedly."""
     while True:
         try:
             await resume_worker_loop(session_factory, llm)
@@ -37,7 +51,6 @@ async def _resume_worker_watchdog(session_factory, llm) -> None:
 
 
 async def _archival_worker_watchdog(session_factory, llm) -> None:
-    """Run archival_worker_loop and restart it if it crashes unexpectedly."""
     while True:
         try:
             await archival_worker_loop(session_factory, llm)
@@ -55,7 +68,6 @@ async def lifespan(app: FastAPI):
 
     llm = get_llm_client()
 
-    # Crash recovery: reset any tasks left in "running" state from a prior restart
     try:
         async with AsyncSessionLocal() as db:
             recovered = await recover_stuck_generation_tasks(db)
@@ -90,7 +102,6 @@ async def lifespan(app: FastAPI):
         _archival_worker_watchdog(AsyncSessionLocal, llm)
     )
 
-    # Re-queue any runs that were left stuck (pending/scraping) from a prior restart
     async with AsyncSessionLocal() as db:
         result = await db.execute(
             select(Run).where(Run.status.in_(["pending", "scraping"]))
@@ -118,6 +129,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="SignalRank API", version="0.1.0", lifespan=lifespan)
 
+# Rate limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
@@ -138,6 +156,24 @@ app.include_router(recruiters.router)
 app.include_router(ingest.router)
 
 
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "Internal server error"},
+    )
+
+
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        return {"status": "ok", "db": "ok"}
+    except Exception:
+        logger.exception("Health check DB ping failed")
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"status": "degraded", "db": "unreachable"},
+        )

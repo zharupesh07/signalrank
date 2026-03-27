@@ -3,6 +3,7 @@ import logging
 from datetime import datetime, timezone
 
 from sqlalchemy import select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from api.models import JobRaw, JobResult, Profile, Run
@@ -132,21 +133,27 @@ async def process_run(
                 logger.info("Run %s was cancelled before saving results", run_id)
                 return
 
-            for _, row in ranked_df.iterrows():
-                db.add(JobResult(
-                    run_id=run_id,
-                    user_id=user_id,
-                    job_id=row["id"],
-                    semantic_score=float(row.get("semantic_score", 0)),
-                    skills_score=float(row.get("skills_score", 0)),
-                    company_score=float(row.get("company_score", 0)),
-                    seniority_score=float(row.get("seniority_score_dim", 0)),
-                    location_score=float(row.get("location_score", 0)),
-                    recency_score=float(row.get("recency_score", 0)),
-                    final_score=float(row.get("final_score", 0)),
-                    company_tier=str(row.get("company_tier", "")),
-                    is_contract=bool(row.get("is_contract", False)),
-                ))
+            result_rows = [
+                {
+                    "run_id": run_id,
+                    "user_id": user_id,
+                    "job_id": row["id"],
+                    "semantic_score": float(row.get("semantic_score", 0)),
+                    "skills_score": float(row.get("skills_score", 0)),
+                    "company_score": float(row.get("company_score", 0)),
+                    "seniority_score": float(row.get("seniority_score_dim", 0)),
+                    "location_score": float(row.get("location_score", 0)),
+                    "recency_score": float(row.get("recency_score", 0)),
+                    "final_score": float(row.get("final_score", 0)),
+                    "company_tier": str(row.get("company_tier", "")),
+                    "is_contract": bool(row.get("is_contract", False)),
+                }
+                for _, row in ranked_df.iterrows()
+            ]
+            for i in range(0, len(result_rows), 2000):
+                await db.execute(
+                    pg_insert(JobResult).values(result_rows[i:i + 2000])
+                )
 
             await db.execute(
                 update(Run)

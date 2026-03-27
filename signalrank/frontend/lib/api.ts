@@ -85,7 +85,7 @@ export const api = {
         token,
       }),
     stop: (token: string, runId: string) =>
-      request<{ stopped: boolean; status: string }>(`/api/runs/${runId}/stop`, {
+      request<{ stopped: boolean; status: string; message?: string }>(`/api/runs/${runId}/stop`, {
         method: "POST",
         token,
       }),

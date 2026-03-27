@@ -1,5 +1,6 @@
 import logging
 import re
+from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd
@@ -48,12 +49,16 @@ logger = logging.getLogger(__name__)
 
 
 
+_JOB_WINDOW_DAYS = 45
+
+
 async def load_jobs_dataframe(db: AsyncSession) -> pd.DataFrame:
+    cutoff = datetime.now(timezone.utc) - timedelta(days=_JOB_WINDOW_DAYS)
     result = await db.execute(
         select(
             JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.company,
             JobRaw.description, JobRaw.location, JobRaw.site, JobRaw.date_posted,
-        )
+        ).where(JobRaw.ingested_at >= cutoff)
     )
     rows = result.all()
     if not rows:

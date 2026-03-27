@@ -105,7 +105,7 @@ export interface RunProgress {
 
 export interface Run {
   id: string;
-  status: "pending" | "scraping" | "ranking" | "running" | "done" | "failed";
+  status: "pending" | "scraping" | "ranking" | "running" | "done" | "failed" | "cancelled";
   started_at: string;
   finished_at: string | null;
   job_count: number | null;

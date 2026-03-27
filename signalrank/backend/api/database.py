@@ -18,7 +18,15 @@ def _parse_url(url: str) -> tuple[str, dict]:
 
 
 _db_url, _connect_args = _parse_url(settings.database_url)
-engine = create_async_engine(_db_url, echo=False, connect_args=_connect_args)
+engine = create_async_engine(
+    _db_url,
+    echo=False,
+    connect_args=_connect_args,
+    pool_size=3,
+    max_overflow=4,
+    pool_timeout=30,
+    pool_pre_ping=True,
+)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 

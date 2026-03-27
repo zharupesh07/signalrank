@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { getCached, setCache } from "@/lib/cache";
 import {
   useReactTable,
   getCoreRowModel,
@@ -245,11 +246,18 @@ export default function JobsPage() {
 
   useEffect(() => {
     if (!token) return;
-    setLoading(true);
-    api.jobs.list(token, 1, 5000, "").then((r) => {
-      setAllJobs(r.jobs);
+    const cached = getCached<Job[]>("jobs", 120_000);
+    if (cached) {
+      setAllJobs(cached);
       setLoading(false);
-    });
+    } else {
+      setLoading(true);
+    }
+    api.jobs.list(token, 1, 2000, "").then((r) => {
+      setAllJobs(r.jobs);
+      setCache("jobs", r.jobs);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, [token]);
 
   useEffect(() => {
@@ -286,18 +294,28 @@ export default function JobsPage() {
   }
 
   function pollArchiveStatus() {
-    const interval = setInterval(async () => {
-      try {
-        const status = await api.jobs.archiveStatus(token);
-        setArchiveStatus(status);
-        if (status.pending === 0 && status.running === 0 && status.total > 0) {
-          clearInterval(interval);
-          api.jobs.list(token, 1, 5000, "").then((r) => setAllJobs(r.jobs));
+    let delay = 3000;
+    const MAX_DELAY = 30000;
+    const timeoutRef = { current: undefined as ReturnType<typeof setTimeout> | undefined };
+
+    function schedule() {
+      timeoutRef.current = setTimeout(async () => {
+        try {
+          const status = await api.jobs.archiveStatus(token);
+          setArchiveStatus(status);
+          if (status.pending === 0 && status.running === 0 && status.total > 0) {
+            api.jobs.list(token, 1, 2000, "").then((r) => setAllJobs(r.jobs));
+            return;
+          }
+          delay = Math.min(delay * 1.5, MAX_DELAY);
+          schedule();
+        } catch {
+          clearTimeout(timeoutRef.current);
         }
-      } catch {
-        clearInterval(interval);
-      }
-    }, 3000);
+      }, delay);
+    }
+
+    schedule();
   }
 
   useEffect(() => {
