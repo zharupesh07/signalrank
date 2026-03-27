@@ -53,10 +53,10 @@ async def upload_resume(
         resume_text = _extract_text_from_pdf(content)
     elif filename.endswith(".docx"):
         resume_text = _extract_text_from_docx(content)
-    elif filename.endswith(".txt"):
+    elif filename.endswith((".txt", ".tex", ".md")):
         resume_text = content.decode("utf-8", errors="replace")
     else:
-        raise HTTPException(status_code=422, detail="Supported formats: PDF, DOCX, TXT")
+        raise HTTPException(status_code=422, detail="Supported formats: PDF, DOCX, TXT, TEX")
 
     if not resume_text.strip():
         raise HTTPException(status_code=422, detail="Could not extract text from file")
