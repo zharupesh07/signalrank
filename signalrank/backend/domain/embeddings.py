@@ -70,6 +70,14 @@ class EmbeddingEngine:
 
         return np.asarray(vecs, dtype="float32")
 
+    def unload(self):
+        global _ENGINE
+        del self.model
+        _ENGINE = None
+        import gc
+        gc.collect()
+        logger.info("[EMBED] Model unloaded, memory freed")
+
 
 class EmbeddingCache:
     """

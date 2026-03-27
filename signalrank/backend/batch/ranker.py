@@ -24,6 +24,7 @@ from domain.additive_scoring import (
 from domain.company import CompanyScorer
 from domain.description_quality import description_quality_multiplier
 from domain.embed_math import cosine_similarity
+import domain.embeddings as _emb_mod
 from domain.embeddings import (
     EmbeddingEngine,
     build_job_embedding_text,
@@ -215,6 +216,9 @@ async def _compute_embeddings(
         engine = EmbeddingEngine(cfg)
         r_emb = engine.embed([resume_emb_text])[0]
         await cache.store_vectors([(resume_fp, r_emb.tolist())])
+
+    if _emb_mod._ENGINE is not None:
+        _emb_mod._ENGINE.unload()
 
     df["semantic_score"] = cosine_similarity(r_emb, vectors)
     return df
