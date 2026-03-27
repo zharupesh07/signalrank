@@ -5,7 +5,7 @@ from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from api.config import settings
-from api.database import Base
+from api.database import Base, _parse_url
 import api.models  # noqa: F401 — registers all models with Base.metadata
 
 config = context.config
@@ -32,7 +32,8 @@ def do_run_migrations(connection) -> None:
 
 
 async def run_migrations_online() -> None:
-    connectable = create_async_engine(settings.database_url)
+    url, connect_args = _parse_url(settings.database_url)
+    connectable = create_async_engine(url, connect_args=connect_args)
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
     await connectable.dispose()
