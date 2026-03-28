@@ -12,20 +12,12 @@ from api.models import JobRaw
 from batch.context import build_context
 from batch.embedding_cache import PgEmbeddingCache
 from domain.additive_scoring import (
-    apply_company_semantic_floor,
-    apply_hidden_gem_bonus,
-    company_score_0_100,
-    compute_weighted_score,
     detect_contract_type,
-    location_score_0_100,
     recency_score_0_100,
-    seniority_score_0_100,
-    skills_score_0_100,
 )
 from domain.company import CompanyScorer
 from domain.description_quality import description_quality_multiplier
 from domain.embed_math import cosine_similarity
-import domain.embeddings as _emb_mod
 from domain.embeddings import (
     EmbeddingEngine,
     build_job_embedding_text,
@@ -51,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 
 
-_JOB_WINDOW_DAYS = 45
+_JOB_WINDOW_DAYS = 90
 
 
 async def load_jobs_dataframe(db: AsyncSession) -> pd.DataFrame:
@@ -109,53 +101,62 @@ def _apply_semantic_gates(df: pd.DataFrame, cfg: dict, role_intent: str) -> pd.D
 
 def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     df = df.copy()
-    df["_consulting_damp"] = df["title"].apply(consulting_dampener)
-    df["skills_score"] = df.apply(
-        lambda r: skills_score_0_100(
-            r["semantic_score"], r["skill_overlap"],
-            r["role_skill_score"], r["functional_role_penalty"], r["_consulting_damp"],
-        ), axis=1,
-    )
+
+    # Skills score — vectorized
+    damp = df["title"].apply(consulting_dampener)
+    base = df["semantic_score"] * 100
+    base = base + np.minimum(df["skill_overlap"] * 2, 8)
+    role_mod = np.clip((df["role_skill_score"] - 1.0) * 25, -10, 10)
+    base = base + role_mod
+    func_mod = np.clip((df["functional_role_penalty"] - 1.0) * 50, -8, 10)
+    base = base + func_mod
+    base = base - (damp < 1.0).astype(float) * 10
+    df["skills_score"] = np.clip(base, 0, 100)
+
+    # Company score — vectorized
     _TIER_SCORE_MAP = {
         "tier_ss": 100.0, "tier_s": 95.0, "tier_a": 85.0, "tier_b": 65.0,
         "tier_c": 45.0, "tier_d": 15.0, "preferred": 100.0, "deprioritized": 15.0,
     }
     df["company_score"] = df["company_tier"].map(_TIER_SCORE_MAP).fillna(40.0)
+
     semantic_floor = cfg.get("ranking", {}).get("company_semantic_floor", 0.60)
-    df["company_score"] = df.apply(
-        lambda r: apply_company_semantic_floor(r["company_score"], r["semantic_score"], semantic_floor),
-        axis=1,
-    )
+    if semantic_floor > 0:
+        below_floor = df["semantic_score"] < semantic_floor
+        df.loc[below_floor, "company_score"] *= df.loc[below_floor, "semantic_score"] / semantic_floor
+
     gem_threshold = cfg.get("ranking", {}).get("hidden_gem_semantic_threshold", 0.70)
     gem_bonus = cfg.get("ranking", {}).get("hidden_gem_company_bonus", 60)
-    df["company_score"] = df.apply(
-        lambda r: apply_hidden_gem_bonus(
-            r["company_score"], r["company_tier"], r["semantic_score"],
-            threshold=gem_threshold, bonus_score=gem_bonus,
-        ), axis=1,
-    )
-    df["seniority_score_dim"] = df["seniority_score"].apply(seniority_score_0_100)
-    df["location_score"] = df["location_weight"].apply(location_score_0_100)
+    is_default_tier = df["company_tier"].isin(["default", "", None]) | df["company_tier"].isna()
+    high_semantic = df["semantic_score"] >= gem_threshold
+    gem_mask = is_default_tier & high_semantic
+    df.loc[gem_mask, "company_score"] = np.maximum(df.loc[gem_mask, "company_score"], gem_bonus)
+
+    # Seniority — vectorized
+    df["seniority_score_dim"] = np.clip(((df["seniority_score"] - 0.4) / 0.75) * 90 + 10, 0, 100)
+
+    # Location — vectorized
+    df["location_score"] = np.where(df["location_weight"] > 1.0, 100.0, 30.0)
+
+    # Recency — still per-row (date parsing)
     df["recency_score"] = df["date_posted"].apply(recency_score_0_100)
-    weights = cfg.get("ranking", {}).get("scoring_weights", {})
-    df["final_score"] = df.apply(
-        lambda r: compute_weighted_score(
-            {
-                "skills_match": r["skills_score"],
-                "company_fit": r["company_score"],
-                "seniority": r["seniority_score_dim"],
-                "location": r["location_score"],
-                "recency": r["recency_score"],
-            },
-            weights or None,
-        ), axis=1,
+
+    # Weighted final score — vectorized
+    w = cfg.get("ranking", {}).get("scoring_weights", {})
+    df["final_score"] = (
+        df["skills_score"] * w.get("skills_match", 0.40)
+        + df["company_score"] * w.get("company_fit", 0.20)
+        + df["seniority_score_dim"] * w.get("seniority", 0.15)
+        + df["location_score"] * w.get("location", 0.15)
+        + df["recency_score"] * w.get("recency", 0.10)
     ).fillna(0.0)
+
+    # Contract penalty — vectorized
     contract_penalty = cfg.get("ranking", {}).get("contract_penalty", 0.9)
     df["is_contract"] = df.apply(
         lambda r: detect_contract_type(r["title"], r["description"]), axis=1,
     )
     df.loc[df["is_contract"], "final_score"] *= contract_penalty
-    df = df.drop(columns=["_consulting_damp"])
     return df
 
 
@@ -199,13 +200,19 @@ async def _compute_embeddings(
         else:
             misses.append(i)
 
+    logger.info("Embedding cache: %d hits, %d misses out of %d jobs",
+                len(cached), len(misses), len(job_fps))
+
     engine = None
     if misses:
         engine = EmbeddingEngine(cfg)
         new_vecs = engine.embed([job_texts[i] for i in misses])
+        logger.info("Embedding %d texts complete, storing to cache...", len(misses))
         await cache.store_vectors(
             [(job_fps[i], v.tolist()) for i, v in zip(misses, new_vecs)]
         )
+        await db.commit()
+        logger.info("Embedding cache store complete")
         for i, v in zip(misses, new_vecs):
             vectors[i] = v
 
@@ -225,9 +232,6 @@ async def _compute_embeddings(
             engine = EmbeddingEngine(cfg)
         r_emb = engine.embed([resume_emb_text])[0]
         await cache.store_vectors([(resume_fp, r_emb.tolist())])
-
-    if _emb_mod._ENGINE is not None:
-        _emb_mod._ENGINE.unload()
 
     df["semantic_score"] = cosine_similarity(r_emb, vectors)
     logger.info(

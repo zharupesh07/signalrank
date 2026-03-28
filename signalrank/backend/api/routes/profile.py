@@ -23,6 +23,8 @@ class ProfileUpdate(BaseModel):
     custom_search_queries: list[str] | None = None
     target_roles: list[str] | None = None
     preferred_locations: list[str] | None = None
+    scraper_hours_old: int | None = None
+    scraper_max_terms: int | None = None
 
 
 @router.get("/profile")
@@ -55,6 +57,8 @@ async def get_profile(current_user: User = Depends(get_current_user), db: AsyncS
         "preferred_locations": p.preferred_locations if p else None,
         "custom_search_queries": p.custom_search_queries if p else None,
         "config_overrides": p.config_overrides if p else None,
+        "scraper_hours_old": p.scraper_hours_old if p else None,
+        "scraper_max_terms": p.scraper_max_terms if p else None,
         "onboarding_complete": p.onboarding_complete if p else False,
         "skills": [],
     }

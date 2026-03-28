@@ -56,6 +56,8 @@ export default function SettingsPage() {
   const [targetLpa, setTargetLpa] = useState("");
   const [minYoe, setMinYoe] = useState("");
   const [maxYoe, setMaxYoe] = useState("");
+  const [scraperHoursOld, setScraperHoursOld] = useState("");
+  const [scraperMaxTerms, setScraperMaxTerms] = useState("");
 
   const loaded = useRef(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -77,6 +79,8 @@ export default function SettingsPage() {
     setTargetLpa(p.target_lpa != null ? String(p.target_lpa) : "");
     setMinYoe(p.min_yoe != null ? String(p.min_yoe) : "");
     setMaxYoe(p.max_yoe != null ? String(p.max_yoe) : "");
+    setScraperHoursOld(p.scraper_hours_old != null ? String(p.scraper_hours_old) : "");
+    setScraperMaxTerms(p.scraper_max_terms != null ? String(p.scraper_max_terms) : "");
     loaded.current = true;
   }, [token]);
 
@@ -95,7 +99,7 @@ export default function SettingsPage() {
     if (!loaded.current) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(save, 1000);
-  }, [targetRoles, locations, customQueries, targetLpa, minYoe, maxYoe]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [targetRoles, locations, customQueries, targetLpa, minYoe, maxYoe, scraperHoursOld, scraperMaxTerms]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function save() {
     setSaving(true);
@@ -108,6 +112,8 @@ export default function SettingsPage() {
         target_lpa: targetLpa ? Number(targetLpa) : null,
         min_yoe: minYoe ? Number(minYoe) : null,
         max_yoe: maxYoe ? Number(maxYoe) : null,
+        scraper_hours_old: scraperHoursOld ? Number(scraperHoursOld) : null,
+        scraper_max_terms: scraperMaxTerms ? Number(scraperMaxTerms) : null,
       });
       toast("Settings saved", "success");
       setSaved(true);
@@ -240,6 +246,47 @@ export default function SettingsPage() {
             onChange={setCustomQueries}
             placeholder="e.g. 'LLM platform engineer Bangalore'"
           />
+        </div>
+
+        {/* Scraping Config */}
+        <div className="stat-card card-hover border border-border bg-card p-5 space-y-5">
+          <div className="flex items-center gap-2">
+            <RefreshCw size={13} className="text-primary" />
+            <span className="text-[11px] text-muted-foreground uppercase tracking-[0.15em]">Scraping Config</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground leading-relaxed border-l-2 border-primary/20 pl-3">
+            Quick refresh uses Indeed only with 1 title and 24h lookback. A full background run (all titles, 7 days, all sources) starts automatically after.
+            Override the full run defaults here.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">
+                Full Run Lookback
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={scraperHoursOld}
+                  onChange={(e) => setScraperHoursOld(e.target.value)}
+                  placeholder="168"
+                  className="w-full text-xs bg-input border border-border text-foreground px-3 py-2 focus:border-primary focus:outline-none placeholder:text-muted-foreground/40 transition-colors"
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">hrs</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">
+                Full Run Max Titles
+              </label>
+              <input
+                type="number"
+                value={scraperMaxTerms}
+                onChange={(e) => setScraperMaxTerms(e.target.value)}
+                placeholder="all"
+                className="w-full text-xs bg-input border border-border text-foreground px-3 py-2 focus:border-primary focus:outline-none placeholder:text-muted-foreground/40 transition-colors"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Save button */}

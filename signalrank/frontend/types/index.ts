@@ -16,6 +16,8 @@ export interface Profile {
   preferred_locations: string[] | null;
   custom_search_queries: string[] | null;
   config_overrides: Record<string, unknown> | null;
+  scraper_hours_old: number | null;
+  scraper_max_terms: number | null;
   onboarding_complete: boolean;
 }
 

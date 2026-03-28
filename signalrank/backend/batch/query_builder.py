@@ -11,7 +11,7 @@ class SearchQuery:
     country: str
 
 
-def build_queries(profile) -> list[SearchQuery]:
+def build_queries(profile, *, max_terms: int | None = None) -> list[SearchQuery]:
     roles = profile.target_roles
     if not roles and profile.config_overrides:
         roles = (profile.config_overrides.get("profile_intent") or {}).get("roles")
@@ -37,6 +37,9 @@ def build_queries(profile) -> list[SearchQuery]:
     # Normalize: "Remote" and country-level entries pass as city="" so jobspy
     # searches country-wide. City-level entries (Pune, Bangalore) pass as city.
     _country_like = {default_country.lower(), "remote", "india", "worldwide"}
+
+    limit = max_terms or int(os.environ.get("SCRAPER_MAX_TERMS", "1"))
+    terms = terms[:limit]
 
     queries: list[SearchQuery] = []
     seen_query_keys: set[tuple[str, str]] = set()

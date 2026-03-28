@@ -14,26 +14,38 @@ class PgEmbeddingCache:
     async def fetch(self, text_fps: Sequence[str]) -> dict[str, list[float]]:
         if not text_fps:
             return {}
-        result = await self.db.execute(
-            select(Embedding.text_fp, Embedding.vector).where(
-                Embedding.text_fp.in_(list(text_fps)),
-                Embedding.cfg_fp == self.cfg_fp,
+        out: dict[str, list[float]] = {}
+        batch_size = 5000
+        fps_list = list(text_fps)
+        for i in range(0, len(fps_list), batch_size):
+            batch = fps_list[i:i + batch_size]
+            result = await self.db.execute(
+                select(Embedding.text_fp, Embedding.vector).where(
+                    Embedding.text_fp.in_(batch),
+                    Embedding.cfg_fp == self.cfg_fp,
+                )
             )
-        )
-        return {row.text_fp: list(row.vector) for row in result.all()}
+            for row in result.all():
+                out[row.text_fp] = list(row.vector)
+        return out
 
     async def store_vectors(self, rows: list[tuple[str, list[float]]]) -> None:
         if not rows:
             return
-        for text_fp, vector in rows:
-            vector_str = "[" + ",".join(str(v) for v in vector) + "]"
-            stmt = text(
-                f"INSERT INTO embeddings (id, text_fp, cfg_fp, vector) "
-                f"VALUES (gen_random_uuid(), :text_fp, :cfg_fp, '{vector_str}'::vector) "
-                f"ON CONFLICT (text_fp, cfg_fp) DO NOTHING"
+        batch_size = 500
+        for i in range(0, len(rows), batch_size):
+            batch = rows[i:i + batch_size]
+            values_parts = []
+            params = {"cfg_fp": self.cfg_fp}
+            for j, (text_fp, vector) in enumerate(batch):
+                vector_str = "[" + ",".join(str(v) for v in vector) + "]"
+                values_parts.append(
+                    f"(gen_random_uuid(), :fp_{j}, :cfg_fp, '{vector_str}'::vector)"
+                )
+                params[f"fp_{j}"] = text_fp
+            sql = (
+                f"INSERT INTO embeddings (id, text_fp, cfg_fp, vector) VALUES "
+                f"{', '.join(values_parts)} ON CONFLICT (text_fp, cfg_fp) DO NOTHING"
             )
-            await self.db.execute(
-                stmt,
-                {"text_fp": text_fp, "cfg_fp": self.cfg_fp},
-            )
+            await self.db.execute(text(sql), params)
         await self.db.flush()

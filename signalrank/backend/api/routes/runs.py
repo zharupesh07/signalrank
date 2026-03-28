@@ -53,9 +53,10 @@ async def get_latest_run(
     run = result.scalar_one_or_none()
     if not run:
         raise HTTPException(status_code=404, detail="No runs found")
+    _status = "done" if run.status == "success" else run.status
     return RunResponse(
         run_id=run.id,
-        status=run.status,
+        status=_status,
         job_count=run.job_count,
         scrape_count=run.scrape_count,
         progress=run.progress,
@@ -79,7 +80,7 @@ async def list_runs(
     return [
         RunResponse(
             run_id=r.id,
-            status=r.status,
+            status="done" if r.status == "success" else r.status,
             job_count=r.job_count,
             scrape_count=r.scrape_count,
             progress=r.progress,
@@ -102,9 +103,10 @@ async def get_run_status(
     run = result.scalar_one_or_none()
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
+    _status = "done" if run.status == "success" else run.status
     return RunResponse(
         run_id=run.id,
-        status=run.status,
+        status=_status,
         job_count=run.job_count,
         scrape_count=run.scrape_count,
         progress=run.progress,

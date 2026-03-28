@@ -73,9 +73,6 @@ async def _embed_resume(user_id: str, resume_text: str, distilled_text: str | No
                 logger.info("[EMBED] Pre-cached resume embedding for user=%s", user_id)
     except Exception:
         logger.warning("Resume embedding pre-cache failed for user=%s", user_id, exc_info=True)
-    finally:
-        if _emb_mod._ENGINE is not None:
-            _emb_mod._ENGINE.unload()
 
 
 async def _parse_and_update_profile(user_id: str, resume_text: str, llm: OpenRouterClient) -> None:
@@ -89,6 +86,8 @@ async def _parse_and_update_profile(user_id: str, resume_text: str, llm: OpenRou
             if not profile:
                 return
             profile.skills = parsed.skills
+            if parsed.recent_titles and not profile.target_roles:
+                profile.target_roles = parsed.recent_titles
             parts = []
             if parsed.recent_titles:
                 parts.append("Recent roles: " + ", ".join(parsed.recent_titles))

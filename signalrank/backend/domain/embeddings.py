@@ -38,8 +38,8 @@ class EmbeddingEngine:
         tokenizer_path = hf_hub_download(repo_id=_MODEL_REPO, filename="tokenizer.json")
 
         sess_opts = ort.SessionOptions()
-        sess_opts.inter_op_num_threads = 1
-        sess_opts.intra_op_num_threads = 2
+        sess_opts.inter_op_num_threads = 2
+        sess_opts.intra_op_num_threads = 4
         self._session = ort.InferenceSession(
             model_path, sess_opts, providers=["CPUExecutionProvider"]
         )

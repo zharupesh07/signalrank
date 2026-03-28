@@ -26,7 +26,7 @@ def test_custom_queries_added():
         preferred_locations=["Pune"],
         custom_search_queries=["LLM Infra"],
     )
-    queries = build_queries(p)
+    queries = build_queries(p, max_terms=10)
     terms = {q.term for q in queries}
     assert "ML Engineer" in terms
     assert "LLM Infra" in terms
@@ -63,7 +63,7 @@ def test_cap_at_50():
         target_roles=[f"Role {i}" for i in range(20)],
         preferred_locations=[f"City {j}" for j in range(10)],
     )
-    queries = build_queries(p)
+    queries = build_queries(p, max_terms=20)
     assert len(queries) <= 50
 
 

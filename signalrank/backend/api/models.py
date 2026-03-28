@@ -58,6 +58,8 @@ class Profile(Base):
     config_overrides: Mapped[dict | None] = mapped_column(JSONB)
     target_lpa: Mapped[float | None] = mapped_column(Float)
     custom_search_queries: Mapped[list | None] = mapped_column(JSONB)
+    scraper_hours_old: Mapped[int | None] = mapped_column(Integer)
+    scraper_max_terms: Mapped[int | None] = mapped_column(Integer)
     onboarding_complete: Mapped[bool] = mapped_column(Boolean, default=False)
 
     user: Mapped["User"] = relationship(back_populates="profile")

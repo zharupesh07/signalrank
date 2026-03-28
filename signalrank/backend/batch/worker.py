@@ -63,9 +63,8 @@ async def _embed_new_jobs(db: AsyncSession, raw_jobs: list) -> None:
         )
         await db.commit()
         logger.info("[EMBED] Pre-cached %d job embeddings", len(misses))
-    finally:
-        if _emb_mod._ENGINE is not None:
-            _emb_mod._ENGINE.unload()
+    except Exception:
+        logger.warning("[EMBED] Pre-cache failed", exc_info=True)
 
 _queue: asyncio.Queue | None = None
 
@@ -78,7 +77,8 @@ def get_queue() -> asyncio.Queue:
 
 
 async def process_run(
-    run_id: str, user_id: str, session_factory: async_sessionmaker
+    run_id: str, user_id: str, session_factory: async_sessionmaker,
+    mode: str = "quick",
 ) -> None:
     async with session_factory() as db:
         try:
@@ -105,7 +105,13 @@ async def process_run(
             from batch.query_builder import build_queries
             from batch.scraper import ScraperConfig, scrape, raw_job_to_dict
 
-            queries = build_queries(profile) if profile else []
+            if mode == "quick":
+                scraper_max_terms = 1
+                scraper_hours_old = 24
+            else:
+                scraper_max_terms = profile.scraper_max_terms if profile else None
+                scraper_hours_old = profile.scraper_hours_old or 168  # 7 days
+            queries = build_queries(profile, max_terms=scraper_max_terms) if profile else []
 
             async def _update_progress(**kwargs):
                 await db.execute(
@@ -117,6 +123,9 @@ async def process_run(
             if queries:
                 title_blocklist = (config_overrides or {}).get("title_blocklist", [])
                 config = ScraperConfig.from_env(title_blocklist=title_blocklist)
+                config.hours_old = scraper_hours_old
+                if mode == "quick":
+                    config.sources = ["indeed"]
 
                 # Check cancellation before scraping
                 run_check_result = await db.execute(select(Run).where(Run.id == run_id))
@@ -185,13 +194,30 @@ async def process_run(
             )
             await db.commit()
 
-            ranked_df = await score_jobs_for_user(
-                db=db,
-                user_id=user_id,
-                resume_text=resume_text,
-                distilled_text=distilled_text,
-                config_overrides=config_overrides,
-            )
+            t_rank = time.monotonic()
+            try:
+                ranked_df = await asyncio.wait_for(
+                    score_jobs_for_user(
+                        db=db,
+                        user_id=user_id,
+                        resume_text=resume_text,
+                        distilled_text=distilled_text,
+                        config_overrides=config_overrides,
+                    ),
+                    timeout=600,  # 10 min max
+                )
+            except asyncio.TimeoutError:
+                logger.error("Run %s ranking timed out after 600s", run_id)
+                await db.execute(
+                    update(Run).where(Run.id == run_id).values(
+                        status="failed", finished_at=datetime.now(timezone.utc),
+                        progress=None,
+                    )
+                )
+                await db.commit()
+                return
+            logger.info("Run %s ranking done in %.1fs, %d jobs",
+                        run_id, time.monotonic() - t_rank, len(ranked_df))
 
             # Check cancellation after ranking (before inserting results)
             run_check_result = await db.execute(select(Run).where(Run.id == run_id))
@@ -234,7 +260,16 @@ async def process_run(
                 )
             )
             await db.commit()
-            logger.info("Run %s completed: %d scraped, %d ranked", run_id, scrape_count, len(ranked_df))
+            logger.info("Run %s (%s) completed: %d scraped, %d ranked", run_id, mode, scrape_count, len(ranked_df))
+
+            if mode == "quick":
+                bg_run = Run(user_id=user_id, status="pending")
+                db.add(bg_run)
+                await db.commit()
+                await db.refresh(bg_run)
+                queue = get_queue()
+                await queue.put((bg_run.id, user_id, "full"))
+                logger.info("Queued background full run %s after quick run %s", bg_run.id, run_id)
 
         except Exception:
             logger.exception("Run %s failed", run_id)
@@ -246,12 +281,31 @@ async def process_run(
             await db.commit()
 
 
+async def _cleanup_stale_runs(session_factory: async_sessionmaker) -> None:
+    async with session_factory() as db:
+        stale = await db.execute(
+            select(Run).where(Run.status.in_(["pending", "scraping", "ranking"]))
+        )
+        for run in stale.scalars().all():
+            run.status = "failed"
+            run.finished_at = datetime.now(timezone.utc)
+            run.progress = None
+            logger.warning("Marked stale run %s as failed", run.id)
+        await db.commit()
+
+
 async def worker_loop(session_factory: async_sessionmaker) -> None:
     queue = get_queue()
+    await _cleanup_stale_runs(session_factory)
     logger.info("Background worker started")
     while True:
-        run_id, user_id = await queue.get()
+        item = await queue.get()
+        if len(item) == 3:
+            run_id, user_id, mode = item
+        else:
+            run_id, user_id = item
+            mode = "quick"
         try:
-            await process_run(run_id, user_id, session_factory)
+            await process_run(run_id, user_id, session_factory, mode=mode)
         finally:
             queue.task_done()
