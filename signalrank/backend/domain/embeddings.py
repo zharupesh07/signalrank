@@ -192,8 +192,10 @@ def build_resume_embedding_text(*, resume_text, distilled, cfg, use_case):
 
     if distilled:
         parts.append(distilled)
-    else:
+    elif resume_text:
         parts.append(resume_text)
+    else:
+        parts.append("")
 
     prefix = cfg.get("resume", {}).get("embedding_prefix")
     if prefix:

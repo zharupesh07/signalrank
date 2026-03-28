@@ -114,10 +114,11 @@ async def process_run(
             queries = build_queries(profile, max_terms=scraper_max_terms) if profile else []
 
             async def _update_progress(**kwargs):
-                await db.execute(
-                    update(Run).where(Run.id == run_id).values(progress=kwargs)
-                )
-                await db.commit()
+                async with session_factory() as pdb:
+                    await pdb.execute(
+                        update(Run).where(Run.id == run_id).values(progress=kwargs)
+                    )
+                    await pdb.commit()
 
             scrape_count = 0
             if queries:
@@ -142,14 +143,15 @@ async def process_run(
 
                 async def _persist_jobs(jobs):
                     from sqlalchemy.dialects.postgresql import insert as pg_insert
-                    batch_size = 2000
-                    for i in range(0, len(jobs), batch_size):
-                        batch = jobs[i:i + batch_size]
-                        stmt = pg_insert(JobRaw).values([
-                            raw_job_to_dict(job) for job in batch
-                        ]).on_conflict_do_nothing(index_elements=["job_url"])
-                        await db.execute(stmt)
-                    await db.commit()
+                    async with session_factory() as pdb:
+                        batch_size = 2000
+                        for i in range(0, len(jobs), batch_size):
+                            batch = jobs[i:i + batch_size]
+                            stmt = pg_insert(JobRaw).values([
+                                raw_job_to_dict(job) for job in batch
+                            ]).on_conflict_do_nothing(index_elements=["job_url"])
+                            await pdb.execute(stmt)
+                        await pdb.commit()
 
                 t_scrape = time.monotonic()
                 raw_jobs = await scrape(queries, config, on_progress=_update_progress, on_persist=_persist_jobs)
