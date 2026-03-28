@@ -90,9 +90,13 @@ export default function AdminPage() {
 
   async function deleteUser(userId: string, email: string) {
     if (!confirm(`Delete ${email} and all their data?`)) return;
-    await api.admin.deleteUser(token, userId);
-    setUsers((prev) => prev.filter((u) => u.id !== userId));
-    toast(`Deleted ${email}`, "success");
+    try {
+      await api.admin.deleteUser(token, userId);
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+      toast(`Deleted ${email}`, "success");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to delete user", "error");
+    }
   }
 
   async function triggerRun(userId: string) {

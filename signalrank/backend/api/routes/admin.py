@@ -5,7 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.database import get_db
 from api.deps import get_current_user
-from api.models import Application, JobRaw, JobResult, Profile, Run, User
+from api.models import (
+    Application, ArchivalQueue, GenerationQueue, JobRaw, JobResult,
+    Profile, RecruiterRefreshTask, Run, TailoredResume, User,
+)
 from batch.worker import get_queue
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -127,6 +130,10 @@ async def delete_user(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    await db.execute(delete(ArchivalQueue).where(ArchivalQueue.user_id == user_id))
+    await db.execute(delete(GenerationQueue).where(GenerationQueue.user_id == user_id))
+    await db.execute(delete(TailoredResume).where(TailoredResume.user_id == user_id))
+    await db.execute(delete(RecruiterRefreshTask).where(RecruiterRefreshTask.user_id == user_id))
     await db.execute(delete(JobResult).where(JobResult.user_id == user_id))
     await db.execute(delete(Run).where(Run.user_id == user_id))
     await db.execute(delete(Application).where(Application.user_id == user_id))
