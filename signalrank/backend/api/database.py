@@ -13,7 +13,7 @@ def _parse_url(url: str) -> tuple[str, dict]:
     needs_ssl = bool(re.search(r"sslmode=(require|verify-ca|verify-full|prefer|allow)", url))
     clean = re.sub(r"[?&](sslmode|ssl|channel_binding)=[^&]*", "", url)
     clean = re.sub(r"\?&", "?", clean).rstrip("?&")
-    connect_args = {"ssl": True} if needs_ssl else {}
+    connect_args = {"ssl": "require"} if needs_ssl else {}
     return clean, connect_args
 
 
