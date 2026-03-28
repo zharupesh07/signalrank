@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
+import { swr } from "@/lib/cache";
 import { CheckCircle, XCircle, Play, Square } from "lucide-react";
 import { useToast } from "@/components/toast";
 import RunProgress from "@/components/run-progress";
@@ -102,14 +103,13 @@ export default function RunsPage() {
 
   useEffect(() => {
     if (!token) return;
+    setLoading(true);
     Promise.all([
-      api.runs.list(token),
-      api.runs.latest(token).catch(() => null),
-    ]).then(([list, latest]) => {
-      setRuns(list);
-      if (latest && LIVE.includes(latest.status)) setActiveRun(latest);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+      swr("runs:list", () => api.runs.list(token), setRuns),
+      api.runs.latest(token).then((latest) => {
+        if (latest && LIVE.includes(latest.status)) setActiveRun(latest);
+      }).catch(() => null),
+    ]).finally(() => setLoading(false));
   }, [token]);
 
   async function triggerRun() {

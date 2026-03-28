@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
-import { getCached, setCache } from "@/lib/cache";
+import { swr } from "@/lib/cache";
 import type { Job, Profile, Run } from "@/types";
 import { useToast } from "@/components/toast";
 import RunProgress from "@/components/run-progress";
@@ -122,13 +122,11 @@ export default function DashboardPage() {
       return;
     }
     setLoading(true);
-    const cachedAnalytics = getCached<typeof analytics>("analytics", 300_000);
-    if (cachedAnalytics) setAnalytics(cachedAnalytics);
     Promise.all([
-      api.jobs.list(token, 1, 10).then((r) => setJobs(r.jobs)),
-      api.runs.latest(token).then(setRun).catch(() => null),
-      api.jobs.analytics(token).then((a) => { setAnalytics(a); setCache("analytics", a); }).catch(() => null),
-      api.applications.list(token).then((apps) => setTracked(new Set(apps.filter((a) => a.job_id).map((a) => a.job_id!)))).catch(() => null),
+      swr("dash:jobs", () => api.jobs.list(token, 1, 10).then((r) => r.jobs), setJobs),
+      swr("dash:run", () => api.runs.latest(token), setRun),
+      swr("analytics", () => api.jobs.analytics(token), setAnalytics),
+      swr("dash:tracked", () => api.applications.list(token).then((apps) => new Set(apps.filter((a) => a.job_id).map((a) => a.job_id!))), setTracked),
       api.profile.get(token).then((p) => setOnboardingComplete(p.onboarding_complete)).catch(() => null),
     ]).finally(() => setLoading(false));
   }, [token]);

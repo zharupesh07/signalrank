@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
+import { swr, setCache } from "@/lib/cache";
 import type { Application, ApplicationStatus, TrackerStats, Run } from "@/types";
 import { useToast } from "@/components/toast";
 import AddJobModal from "@/components/add-job-modal";
@@ -154,6 +155,8 @@ export default function TrackerPage() {
     ]);
     setApplications(apps);
     setStats(s);
+    setCache("tracker:apps", apps);
+    setCache("tracker:stats", s);
   }, [token]);
 
   useEffect(() => {
@@ -162,8 +165,11 @@ export default function TrackerPage() {
       setStats(null);
       return;
     }
-    loadData();
-  }, [loadData, token]);
+    Promise.all([
+      swr("tracker:apps", () => api.applications.list(token), setApplications),
+      swr("tracker:stats", () => api.applications.stats(token), setStats),
+    ]);
+  }, [token]);
 
   useEffect(() => {
     if (!token || !showImport) return;

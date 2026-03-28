@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { getCached, setCache } from "@/lib/cache";
+import { swr } from "@/lib/cache";
 import {
   useReactTable,
   getCoreRowModel,
@@ -253,18 +253,11 @@ export default function JobsPage() {
       setLoading(false);
       return;
     }
-    const cached = getCached<Job[]>("jobs", 120_000);
-    if (cached) {
-      setAllJobs(cached);
+    setLoading(true);
+    swr("jobs", () => api.jobs.list(token, 1, 2000, "").then((r) => r.jobs), (jobs) => {
+      setAllJobs(jobs);
       setLoading(false);
-    } else {
-      setLoading(true);
-    }
-    api.jobs.list(token, 1, 2000, "").then((r) => {
-      setAllJobs(r.jobs);
-      setCache("jobs", r.jobs);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    });
   }, [token]);
 
   useEffect(() => {

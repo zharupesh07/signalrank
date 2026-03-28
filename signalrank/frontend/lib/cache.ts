@@ -1,4 +1,4 @@
-const DEFAULT_TTL = 60_000; // 1 minute
+const DEFAULT_TTL = 300_000; // 5 minutes
 
 interface CacheEntry<T> {
   data: T;
@@ -35,4 +35,18 @@ export function clearCache(key: string): void {
   } catch {
     // ignore
   }
+}
+
+export function swr<T>(
+  key: string,
+  fetcher: () => Promise<T>,
+  setter: (data: T) => void,
+  ttl = DEFAULT_TTL,
+): Promise<void> {
+  const cached = getCached<T>(key, ttl);
+  if (cached) setter(cached);
+  return fetcher().then((fresh) => {
+    setter(fresh);
+    setCache(key, fresh);
+  }).catch(() => {});
 }
