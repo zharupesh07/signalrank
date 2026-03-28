@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.database import get_db
 from api.deps import get_current_user
-from api.models import Run, User
+from api.models import Profile, Run, User
 from batch.worker import get_queue
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
@@ -28,6 +28,11 @@ async def trigger_run(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    result = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
+    profile = result.scalar_one_or_none()
+    if not profile or not profile.onboarding_complete:
+        raise HTTPException(status_code=400, detail="Please complete onboarding before triggering a run")
+
     run = Run(user_id=current_user.id, status="pending")
     db.add(run)
     await db.commit()

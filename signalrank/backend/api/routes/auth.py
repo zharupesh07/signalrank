@@ -66,4 +66,4 @@ async def login(request: Request, body: LoginRequest, db: AsyncSession = Depends
         raise HTTPException(status_code=401, detail="Invalid credentials")
     user.last_login = datetime.now(timezone.utc)
     await db.commit()
-    return TokenResponse(access_token=create_access_token(user.id, user.email))
+    return TokenResponse(access_token=create_access_token(user.id, user.email, is_admin=user.is_admin))

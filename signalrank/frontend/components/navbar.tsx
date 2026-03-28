@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LogOut, Terminal, Sun, Moon, Code2 } from "lucide-react";
+import { LogOut, Terminal, Sun, Moon, Code2, Shield } from "lucide-react";
 import { useTheme } from "./theme-provider";
 import { useDevMode } from "./dev-mode-provider";
 
@@ -25,6 +25,11 @@ export default function Navbar() {
   if (!session) return null;
 
   const email = (session.user as { email?: string })?.email ?? "";
+  const isAdmin = (session as { isAdmin?: boolean })?.isAdmin ?? false;
+
+  const links = isAdmin
+    ? [...NAV_LINKS, { href: "/admin", label: "Admin" }]
+    : NAV_LINKS;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 h-13 bg-background/95 backdrop-blur-sm border-b border-border nav-glow flex items-center px-6 gap-8">
@@ -44,7 +49,7 @@ export default function Navbar() {
 
       {/* Nav links */}
       <div className="flex items-center gap-0.5 flex-1">
-        {NAV_LINKS.map(({ href, label }) => {
+        {links.map(({ href, label }) => {
           const active = pathname === href || pathname.startsWith(href + "/");
           return (
             <Link

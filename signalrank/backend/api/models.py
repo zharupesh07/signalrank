@@ -33,6 +33,7 @@ class User(Base):
     provider: Mapped[str] = mapped_column(String(50), default="credentials")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     last_login: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
 
     profile: Mapped["Profile"] = relationship(back_populates="user", uselist=False)
     runs: Mapped[list["Run"]] = relationship(back_populates="user")

@@ -9,9 +9,8 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 _ENGINE = None
-
-_MODEL_REPO = "sentence-transformers/all-MiniLM-L6-v2"
 _MAX_SEQ_LEN = 256
+_EMBED_BATCH_SIZE = 64
 
 
 def fingerprint_text(text: str) -> str:
@@ -33,9 +32,11 @@ class EmbeddingEngine:
 
         emb_cfg = cfg["embeddings"]
         self.normalize = emb_cfg["text"].get("normalize_embeddings", True)
+        model_repo = emb_cfg.get("model_name", "BAAI/bge-small-en-v1.5")
+        self._model_repo = model_repo
 
-        model_path = hf_hub_download(repo_id=_MODEL_REPO, filename="onnx/model.onnx")
-        tokenizer_path = hf_hub_download(repo_id=_MODEL_REPO, filename="tokenizer.json")
+        model_path = hf_hub_download(repo_id=model_repo, filename="onnx/model.onnx")
+        tokenizer_path = hf_hub_download(repo_id=model_repo, filename="tokenizer.json")
 
         sess_opts = ort.SessionOptions()
         sess_opts.inter_op_num_threads = 2
@@ -47,7 +48,7 @@ class EmbeddingEngine:
         self._tokenizer.enable_truncation(max_length=_MAX_SEQ_LEN)
         self._tokenizer.enable_padding(length=_MAX_SEQ_LEN)
 
-        logger.info("[EMBED] ONNX model loaded from %s", _MODEL_REPO)
+        logger.info("[EMBED] ONNX model loaded from %s", model_repo)
 
     def __new__(cls, cfg):
         global _ENGINE
@@ -57,42 +58,60 @@ class EmbeddingEngine:
         _ENGINE = self
         return self
 
+    def _embed_batch(self, texts: List[str]) -> np.ndarray:
+        encoded = self._tokenizer.encode_batch(texts)
+        input_ids = np.array([e.ids for e in encoded], dtype=np.int64)
+        attention_mask = np.array([e.attention_mask for e in encoded], dtype=np.int64)
+        token_type_ids = np.zeros_like(input_ids, dtype=np.int64)
+
+        outputs = self._session.run(
+            None,
+            {
+                "input_ids": input_ids,
+                "attention_mask": attention_mask,
+                "token_type_ids": token_type_ids,
+            },
+        )
+        token_embs = outputs[0]
+
+        mask_exp = attention_mask[:, :, np.newaxis].astype(np.float32)
+        sum_embs = np.sum(token_embs * mask_exp, axis=1)
+        sum_mask = np.sum(mask_exp, axis=1).clip(min=1e-9)
+        mean_pooled = sum_embs / sum_mask
+
+        if self.normalize:
+            norms = np.linalg.norm(mean_pooled, axis=1, keepdims=True).clip(min=1e-9)
+            mean_pooled = mean_pooled / norms
+
+        return mean_pooled
+
     def embed(self, texts: List[str]) -> np.ndarray:
         if not texts:
             return np.zeros((0, 0), dtype="float32")
 
-        logger.info("[EMBED] Encoding %d texts via ONNX", len(texts))
+        logger.info("[EMBED] Encoding %d texts via ONNX (%s)", len(texts), self._model_repo)
 
-        batch_size = 256
         all_vecs = []
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i : i + batch_size]
-            encoded = self._tokenizer.encode_batch(batch)
+        for i in range(0, len(texts), _EMBED_BATCH_SIZE):
+            batch = texts[i : i + _EMBED_BATCH_SIZE]
+            all_vecs.append(self._embed_batch(batch))
 
-            input_ids = np.array([e.ids for e in encoded], dtype=np.int64)
-            attention_mask = np.array([e.attention_mask for e in encoded], dtype=np.int64)
-            token_type_ids = np.zeros_like(input_ids, dtype=np.int64)
+        return np.concatenate(all_vecs, axis=0).astype("float32")
 
-            outputs = self._session.run(
-                None,
-                {
-                    "input_ids": input_ids,
-                    "attention_mask": attention_mask,
-                    "token_type_ids": token_type_ids,
-                },
-            )
-            token_embs = outputs[0]  # (batch, seq_len, 384)
+    def embed_chunked(self, texts: List[str], on_progress=None) -> np.ndarray:
+        if not texts:
+            return np.zeros((0, 0), dtype="float32")
 
-            mask_exp = attention_mask[:, :, np.newaxis].astype(np.float32)
-            sum_embs = np.sum(token_embs * mask_exp, axis=1)
-            sum_mask = np.sum(mask_exp, axis=1).clip(min=1e-9)
-            mean_pooled = sum_embs / sum_mask
+        logger.info("[EMBED] Encoding %d texts via ONNX (%s)", len(texts), self._model_repo)
 
-            if self.normalize:
-                norms = np.linalg.norm(mean_pooled, axis=1, keepdims=True).clip(min=1e-9)
-                mean_pooled = mean_pooled / norms
-
-            all_vecs.append(mean_pooled)
+        all_vecs = []
+        total = len(texts)
+        for i in range(0, total, _EMBED_BATCH_SIZE):
+            batch = texts[i : i + _EMBED_BATCH_SIZE]
+            all_vecs.append(self._embed_batch(batch))
+            done = min(i + _EMBED_BATCH_SIZE, total)
+            if on_progress:
+                on_progress(done, total)
 
         return np.concatenate(all_vecs, axis=0).astype("float32")
 

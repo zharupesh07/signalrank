@@ -2,6 +2,13 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { api } from "@/lib/api";
 
+function decodeJwtPayload(token: string): Record<string, unknown> {
+  const parts = token.split(".");
+  if (parts.length !== 3) return {};
+  const payload = Buffer.from(parts[1], "base64url").toString("utf-8");
+  return JSON.parse(payload);
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
@@ -16,7 +23,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             credentials.email as string,
             credentials.password as string
           );
-          return { id: "user", email: credentials.email as string, accessToken: data.access_token };
+          const decoded = decodeJwtPayload(data.access_token);
+          return {
+            id: "user",
+            email: credentials.email as string,
+            accessToken: data.access_token,
+            isAdmin: (decoded.is_admin as boolean) ?? false,
+          };
         } catch {
           return null;
         }
@@ -25,11 +38,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.accessToken = (user as { accessToken?: string }).accessToken;
+      if (user) {
+        token.accessToken = (user as { accessToken?: string }).accessToken;
+        token.isAdmin = (user as { isAdmin?: boolean }).isAdmin;
+      }
       return token;
     },
     async session({ session, token }) {
       (session as { accessToken?: string }).accessToken = token.accessToken as string;
+      (session as { isAdmin?: boolean }).isAdmin = (token.isAdmin as boolean) ?? false;
       return session;
     },
   },

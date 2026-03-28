@@ -4,11 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
 import { getCached, setCache } from "@/lib/cache";
-import type { Job, Run } from "@/types";
+import type { Job, Profile, Run } from "@/types";
 import { useToast } from "@/components/toast";
 import RunProgress from "@/components/run-progress";
 import { JobCardSkeleton, StatCardSkeleton } from "@/components/skeleton";
-import { RefreshCw, ExternalLink, TrendingUp, Layers, Clock, BarChart2, Plus } from "lucide-react";
+import { RefreshCw, ExternalLink, TrendingUp, Layers, Clock, BarChart2, Plus, AlertCircle } from "lucide-react";
+import Link from "next/link";
 import AddJobModal from "@/components/add-job-modal";
 
 type Analytics = {
@@ -98,6 +99,7 @@ export default function DashboardPage() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [tracked, setTracked] = useState<Set<string>>(new Set());
   const [addJobOpen, setAddJobOpen] = useState(false);
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
 
   const loadJobs = useCallback(async () => {
     if (!token) return;
@@ -127,6 +129,7 @@ export default function DashboardPage() {
       api.runs.latest(token).then(setRun).catch(() => null),
       api.jobs.analytics(token).then((a) => { setAnalytics(a); setCache("analytics", a); }).catch(() => null),
       api.applications.list(token).then((apps) => setTracked(new Set(apps.filter((a) => a.job_id).map((a) => a.job_id!)))).catch(() => null),
+      api.profile.get(token).then((p) => setOnboardingComplete(p.onboarding_complete)).catch(() => null),
     ]).finally(() => setLoading(false));
   }, [token]);
 
@@ -201,7 +204,8 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={triggerRun}
-                disabled={triggering || isRunActive}
+                disabled={triggering || isRunActive || onboardingComplete === false}
+                title={onboardingComplete === false ? "Complete onboarding first" : undefined}
                 className="flex items-center gap-2 px-4 py-2.5 text-xs border border-primary/50 text-primary hover:bg-primary hover:text-background hover:border-primary transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-widest font-bold"
               >
                 <RefreshCw size={11} className={triggering || isRunActive ? "spin-slow" : ""} />
@@ -215,6 +219,17 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* Onboarding banner */}
+        {onboardingComplete === false && (
+          <div className="flex items-center gap-3 px-4 py-3 border border-[var(--terminal-yellow)]/30 bg-[var(--terminal-yellow)]/5">
+            <AlertCircle size={14} className="text-[var(--terminal-yellow)] shrink-0" />
+            <span className="text-sm text-foreground">Complete onboarding to start scanning for jobs.</span>
+            <Link href="/onboarding" className="ml-auto text-xs text-primary border border-primary/50 px-3 py-1.5 hover:bg-primary hover:text-background transition-all uppercase tracking-widest font-bold">
+              Complete Setup
+            </Link>
+          </div>
+        )}
 
         {/* Stat cards */}
         <div className="grid grid-cols-3 gap-3">

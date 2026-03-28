@@ -18,7 +18,7 @@ from api.config import settings
 from api.database import AsyncSessionLocal, engine
 from api.deps_llm import get_llm_client
 from api.models import Run
-from api.routes import applications, auth, ingest, jobs, onboarding, profile, recruiters, resume, runs
+from api.routes import admin, applications, auth, ingest, jobs, onboarding, profile, recruiters, resume, runs
 from batch.archival_worker import archival_worker_loop, recover_stuck_archival_tasks
 from batch.resume_worker import boot_scan, recover_stuck_generation_tasks, resume_worker_loop
 from batch.worker import get_queue, worker_loop
@@ -147,6 +147,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(admin.router)
 app.include_router(profile.router)
 app.include_router(runs.router)
 app.include_router(jobs.router)

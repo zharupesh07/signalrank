@@ -16,19 +16,26 @@ from batch.ranker import score_jobs_for_user
 logger = logging.getLogger(__name__)
 
 
-async def _embed_new_jobs(db: AsyncSession, raw_jobs: list) -> None:
-    """Pre-compute and cache embeddings for newly scraped jobs using base config."""
+_EMBED_CHUNK_SIZE = 64
+_EMBED_MAX_RETRIES = 3
+_EMBED_BACKOFF_BASE = 2
+
+
+async def _embed_new_jobs(
+    db: AsyncSession,
+    raw_jobs: list,
+    update_progress=None,
+) -> None:
+    """Pre-compute and cache embeddings with retry, chunked saves, and progress."""
     if not raw_jobs:
         return
 
-    from batch.scraper import raw_job_to_dict
     from domain.embeddings import (
         EmbeddingEngine,
         build_job_embedding_text,
         fingerprint_text,
     )
     from domain.skills import SkillCanonicalizer, extract_skills_from_texts
-    import domain.embeddings as _emb_mod
 
     ctx = build_context(user_id="__base__", resume_text="")
     cfg = ctx.config
@@ -49,22 +56,61 @@ async def _embed_new_jobs(db: AsyncSession, raw_jobs: list) -> None:
         for j, cs in zip(raw_jobs, canonical_skills_list)
     ]
     job_fps = [fingerprint_text(t) for t in job_texts]
-    cached = await cache.fetch(job_fps)
 
-    misses = [i for i, fp in enumerate(job_fps) if fp not in cached]
-    if not misses:
-        return
+    for attempt in range(1, _EMBED_MAX_RETRIES + 1):
+        try:
+            cached = await cache.fetch(job_fps)
+            misses = [i for i, fp in enumerate(job_fps) if fp not in cached]
+            if not misses:
+                logger.info("[EMBED] All %d embeddings cached, skipping", len(job_fps))
+                return
 
-    try:
-        engine = EmbeddingEngine(cfg)
-        new_vecs = engine.embed([job_texts[i] for i in misses])
-        await cache.store_vectors(
-            [(job_fps[i], v.tolist()) for i, v in zip(misses, new_vecs)]
-        )
-        await db.commit()
-        logger.info("[EMBED] Pre-cached %d job embeddings", len(misses))
-    except Exception:
-        logger.warning("[EMBED] Pre-cache failed", exc_info=True)
+            logger.info(
+                "[EMBED] %d cache hits, %d misses (attempt %d/%d)",
+                len(job_fps) - len(misses), len(misses), attempt, _EMBED_MAX_RETRIES,
+            )
+
+            engine = EmbeddingEngine(cfg)
+            miss_texts = [job_texts[i] for i in misses]
+            total = len(miss_texts)
+
+            embedded = 0
+            for chunk_start in range(0, total, _EMBED_CHUNK_SIZE):
+                chunk_end = min(chunk_start + _EMBED_CHUNK_SIZE, total)
+                chunk_texts = miss_texts[chunk_start:chunk_end]
+                chunk_indices = misses[chunk_start:chunk_end]
+
+                vecs = await asyncio.to_thread(engine.embed, chunk_texts)
+
+                await cache.store_vectors(
+                    [(job_fps[i], v.tolist()) for i, v in zip(chunk_indices, vecs)]
+                )
+                await db.commit()
+
+                embedded = chunk_end
+                if update_progress:
+                    await update_progress(
+                        phase="embedding",
+                        phase_num=0,
+                        total_phases=1,
+                        jobs_found=len(raw_jobs),
+                        message=f"Embedding jobs: {embedded}/{total}",
+                    )
+
+            logger.info("[EMBED] Pre-cached %d job embeddings", total)
+            return
+
+        except Exception:
+            logger.warning(
+                "[EMBED] Attempt %d/%d failed", attempt, _EMBED_MAX_RETRIES,
+                exc_info=True,
+            )
+            if attempt < _EMBED_MAX_RETRIES:
+                delay = _EMBED_BACKOFF_BASE ** attempt
+                logger.info("[EMBED] Retrying in %ds...", delay)
+                await asyncio.sleep(delay)
+            else:
+                logger.error("[EMBED] All %d attempts failed, continuing without full cache", _EMBED_MAX_RETRIES)
 
 _queue: asyncio.Queue | None = None
 
@@ -172,7 +218,7 @@ async def process_run(
 
                 if raw_jobs:
                     t_embed = time.monotonic()
-                    await _embed_new_jobs(db, raw_jobs)
+                    await _embed_new_jobs(db, raw_jobs, update_progress=_update_progress)
                     logger.info("Run %s embed done", run_id,
                                 extra={"run_id": run_id, "phase": "embed",
                                        "duration_s": round(time.monotonic() - t_embed, 1),

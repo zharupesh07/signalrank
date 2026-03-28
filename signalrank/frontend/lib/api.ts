@@ -210,6 +210,21 @@ export const api = {
       }),
   },
 
+  admin: {
+    stats: (token: string) =>
+      request<{ total_users: number; total_jobs: number; total_runs: number; total_applications: number }>("/api/admin/stats", { token }),
+    users: (token: string) =>
+      request<{ id: string; email: string; is_admin: boolean; created_at: string; last_login: string | null; onboarding_complete: boolean; run_count: number; last_run_status: string | null }[]>("/api/admin/users", { token }),
+    updateUser: (token: string, userId: string, data: { is_admin?: boolean }) =>
+      request<{ status: string }>(`/api/admin/users/${userId}`, { method: "PATCH", token, body: JSON.stringify(data) }),
+    deleteUser: (token: string, userId: string) =>
+      request<{ status: string }>(`/api/admin/users/${userId}`, { method: "DELETE", token }),
+    triggerRun: (token: string, userId: string) =>
+      request<{ run_id: string; status: string; user_email: string }>(`/api/admin/users/${userId}/trigger-run`, { method: "POST", token }),
+    runs: (token: string) =>
+      request<{ run_id: string; user_email: string; status: string; job_count: number | null; started_at: string | null; finished_at: string | null }[]>("/api/admin/runs", { token }),
+  },
+
   ingest: {
     extract: (token: string, payload: { url?: string; text?: string }) =>
       request<{

@@ -8,8 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 @pytest.fixture
-async def auth_token(client):
+async def auth_token(client, db: AsyncSession):
     await client.post("/api/auth/register", json={"email": "runner@test.com", "password": "password123"})
+    from api.models import Profile
+    from sqlalchemy import update
+    await db.execute(update(Profile).values(onboarding_complete=True))
+    await db.commit()
     r = await client.post("/api/auth/login", json={"email": "runner@test.com", "password": "password123"})
     return r.json()["access_token"]
 
