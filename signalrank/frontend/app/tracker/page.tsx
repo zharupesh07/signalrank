@@ -63,12 +63,10 @@ function scoreColor(score: number) {
   return "var(--chart-4)";
 }
 
-const MY_SIGNATURE = `
-
---
-Example Candidate
-Senior ML Platform Engineer
-linkedin.com/in/example-candidate | github.com/examplecandidate | examplecandidate.github.io`;
+function buildSignature(name: string | null | undefined, email: string | null | undefined) {
+  const displayName = name || email || "";
+  return displayName ? `\n\n--\n${displayName}` : "";
+}
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -87,7 +85,7 @@ function linkedinRecruiterSearchUrl(company: string) {
   return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
 }
 
-function emailTemplate(app: Application, recruiterName: string) {
+function emailTemplate(app: Application, recruiterName: string, signature: string) {
   const firstName = recruiterName.split(" ")[0] || recruiterName;
   const subject = `${app.title} — built 400+ AI agents at scale (applied)`;
   const jobLink = app.job_url ? `I applied for the ${app.title} role (${app.job_url}) and ` : `I applied for the ${app.title} role and `;
@@ -99,7 +97,7 @@ At Fractal Analytics, I built an "Agentic Factory" that standardised 400+ AI age
 
 That experience maps directly to what ${app.company} is building. Happy to jump on a 15-min call if you think there's a fit.
 
-Best,${MY_SIGNATURE}`;
+Best,${signature}`;
 
   return { subject, body };
 }
@@ -127,6 +125,7 @@ export default function TrackerPage() {
   const { data: session } = useSession();
   const token = (session as { accessToken?: string })?.accessToken ?? "";
   const { toast } = useToast();
+  const MY_SIGNATURE = buildSignature(session?.user?.name, session?.user?.email);
 
   const [applications, setApplications] = useState<Application[]>([]);
   const [stats, setStats] = useState<TrackerStats | null>(null);
@@ -178,16 +177,29 @@ export default function TrackerPage() {
 
   async function updateStatus(id: string, status: ApplicationStatus) {
     const app = applications.find((a) => a.id === id);
-    await api.applications.update(token, id, { status });
+    const prev = app?.status;
     setApplications((apps) =>
       apps.map((a) => (a.id === id ? { ...a, status, applied_at: status === "applied" && !a.applied_at ? new Date().toISOString() : a.applied_at } : a))
     );
-    if (app) toast(`${app.title} -> ${status.replace("_", " ")}`, "success");
+    try {
+      await api.applications.update(token, id, { status });
+      if (app) toast(`${app.title} -> ${status.replace("_", " ")}`, "success");
+    } catch (e) {
+      // Revert on failure
+      if (prev !== undefined) setApplications((apps) => apps.map((a) => (a.id === id ? { ...a, status: prev } : a)));
+      toast(`Failed to update status: ${e instanceof Error ? e.message : "unknown error"}`, "error");
+    }
   }
 
   async function updateField(id: string, field: string, value: string | number | null) {
-    await api.applications.update(token, id, { [field]: value } as Partial<Application>);
+    const prev = applications.find((a) => a.id === id)?.[field as keyof Application];
     setApplications((apps) => apps.map((a) => (a.id === id ? { ...a, [field]: value } : a)));
+    try {
+      await api.applications.update(token, id, { [field]: value } as Partial<Application>);
+    } catch (e) {
+      setApplications((apps) => apps.map((a) => (a.id === id ? { ...a, [field]: prev } : a)));
+      toast(`Failed to update: ${e instanceof Error ? e.message : "unknown error"}`, "error");
+    }
   }
 
   async function cyclePriority(id: string, current: string | null) {
@@ -198,8 +210,14 @@ export default function TrackerPage() {
   }
 
   async function updateNotes(id: string, notes: string) {
-    await api.applications.update(token, id, { notes });
+    const prev = applications.find((a) => a.id === id)?.notes;
     setApplications((apps) => apps.map((a) => (a.id === id ? { ...a, notes } : a)));
+    try {
+      await api.applications.update(token, id, { notes });
+    } catch (e) {
+      setApplications((apps) => apps.map((a) => (a.id === id ? { ...a, notes: prev ?? null } : a)));
+      toast(`Failed to save notes: ${e instanceof Error ? e.message : "unknown error"}`, "error");
+    }
   }
 
   async function saveRecruiter(appId: string) {
@@ -208,21 +226,25 @@ export default function TrackerPage() {
       toast("Invalid email address", "error");
       return;
     }
-    const res = await api.applications.patchRecruiter(token, appId, {
-      recruiter_name: recruiterForm.name || undefined,
-      recruiter_email: recruiterForm.email || undefined,
-      recruiter_linkedin_url: recruiterForm.linkedin_url || undefined,
-    });
-    setApplications((apps) =>
-      apps.map((a) =>
-        a.id === appId
-          ? { ...a, recruiter: { id: res.recruiter_id, name: recruiterForm.name, email: recruiterForm.email, linkedin_url: recruiterForm.linkedin_url || null } }
-          : a
-      )
-    );
-    setExpandedRecruiter(null);
-    setRecruiterForm({ name: "", email: "", linkedin_url: "" });
-    toast("Recruiter saved", "success");
+    try {
+      const res = await api.applications.patchRecruiter(token, appId, {
+        recruiter_name: recruiterForm.name || undefined,
+        recruiter_email: recruiterForm.email || undefined,
+        recruiter_linkedin_url: recruiterForm.linkedin_url || undefined,
+      });
+      setApplications((apps) =>
+        apps.map((a) =>
+          a.id === appId
+            ? { ...a, recruiter: { id: res.recruiter_id, name: recruiterForm.name, email: recruiterForm.email, linkedin_url: recruiterForm.linkedin_url || null } }
+            : a
+        )
+      );
+      setExpandedRecruiter(null);
+      setRecruiterForm({ name: "", email: "", linkedin_url: "" });
+      toast("Recruiter saved", "success");
+    } catch (e) {
+      toast(`Failed to save recruiter: ${e instanceof Error ? e.message : "unknown error"}`, "error");
+    }
   }
 
   async function applyToJob(app: Application) {
@@ -236,7 +258,7 @@ export default function TrackerPage() {
     const emails = recs.filter((r: { email: string }) => isValidEmail(r.email)).map((r: { email: string }) => r.email);
     if (!emails.length) { toast("No emails found for this company", "info"); return; }
     const to = emails.join(",");
-    const { subject, body } = emailTemplate(app, recs[0]?.name ?? "Recruiter");
+    const { subject, body } = emailTemplate(app, recs[0]?.name ?? "Recruiter", MY_SIGNATURE);
     window.open(gmailComposeUrl(to, subject, body), "_blank");
   }
 
@@ -646,8 +668,8 @@ export default function TrackerPage() {
                             <a
                               href={gmailComposeUrl(
                                 app.recruiter.email,
-                                emailTemplate(app, app.recruiter.name ?? "Recruiter").subject,
-                                emailTemplate(app, app.recruiter.name ?? "Recruiter").body,
+                                emailTemplate(app, app.recruiter.name ?? "Recruiter", MY_SIGNATURE).subject,
+                                emailTemplate(app, app.recruiter.name ?? "Recruiter", MY_SIGNATURE).body,
                               )}
                               target="_blank"
                               rel="noreferrer"
@@ -778,7 +800,7 @@ export default function TrackerPage() {
                         </button>
                         <button
                           onClick={() => {
-                            const { subject, body } = emailTemplate(app, app.recruiter?.name ?? "Recruiter");
+                            const { subject, body } = emailTemplate(app, app.recruiter?.name ?? "Recruiter", MY_SIGNATURE);
                             navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`);
                             toast("Email copied to clipboard", "success");
                           }}

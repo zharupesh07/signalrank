@@ -72,33 +72,58 @@ async def list_users(
     _: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(User).order_by(User.created_at.desc()))
-    users = result.scalars().all()
-    out = []
-    for u in users:
-        profile = await db.execute(select(Profile).where(Profile.user_id == u.id))
-        p = profile.scalar_one_or_none()
-        run_count_q = await db.execute(
-            select(func.count(Run.id)).where(Run.user_id == u.id)
+    # Fetch all users
+    users_result = await db.execute(select(User).order_by(User.created_at.desc()))
+    users = users_result.scalars().all()
+    if not users:
+        return []
+
+    user_ids = [u.id for u in users]
+
+    # Batch fetch profiles
+    profiles_result = await db.execute(
+        select(Profile).where(Profile.user_id.in_(user_ids))
+    )
+    profiles_by_user = {p.user_id: p for p in profiles_result.scalars().all()}
+
+    # Batch fetch run counts
+    run_counts_result = await db.execute(
+        select(Run.user_id, func.count(Run.id).label("cnt"))
+        .where(Run.user_id.in_(user_ids))
+        .group_by(Run.user_id)
+    )
+    run_counts = {row.user_id: row.cnt for row in run_counts_result.all()}
+
+    # Batch fetch latest run per user using a subquery
+    latest_run_sq = (
+        select(Run.user_id, func.max(Run.started_at).label("max_started"))
+        .where(Run.user_id.in_(user_ids))
+        .group_by(Run.user_id)
+        .subquery()
+    )
+    latest_runs_result = await db.execute(
+        select(Run).join(
+            latest_run_sq,
+            (Run.user_id == latest_run_sq.c.user_id)
+            & (Run.started_at == latest_run_sq.c.max_started),
         )
-        run_count = run_count_q.scalar() or 0
-        last_run_q = await db.execute(
-            select(Run).where(Run.user_id == u.id).order_by(Run.started_at.desc()).limit(1)
+    )
+    latest_runs = {r.user_id: r for r in latest_runs_result.scalars().all()}
+
+    return [
+        AdminUserResponse(
+            id=u.id,
+            email=u.email,
+            is_admin=u.is_admin,
+            created_at=str(u.created_at),
+            last_login=str(u.last_login) if u.last_login else None,
+            onboarding_complete=profiles_by_user[u.id].onboarding_complete
+                if u.id in profiles_by_user else False,
+            run_count=run_counts.get(u.id, 0),
+            last_run_status=latest_runs[u.id].status if u.id in latest_runs else None,
         )
-        last_run = last_run_q.scalar_one_or_none()
-        out.append(
-            AdminUserResponse(
-                id=u.id,
-                email=u.email,
-                is_admin=u.is_admin,
-                created_at=str(u.created_at),
-                last_login=str(u.last_login) if u.last_login else None,
-                onboarding_complete=p.onboarding_complete if p else False,
-                run_count=run_count,
-                last_run_status=last_run.status if last_run else None,
-            )
-        )
-    return out
+        for u in users
+    ]
 
 
 @router.patch("/users/{user_id}")

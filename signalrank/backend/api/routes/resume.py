@@ -51,6 +51,8 @@ async def tailor(
     job = job_res.scalar_one_or_none()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+    if not job.title or not job.description:
+        raise HTTPException(status_code=422, detail="Job is missing title or description")
 
     existing_res = await db.execute(
         select(TailoredResume).where(

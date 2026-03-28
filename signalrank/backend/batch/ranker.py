@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 import time
@@ -168,6 +169,9 @@ _SENIORITY_SUFFIXES = re.compile(
 )
 
 
+_RANK_EMBED_CHUNK = 64
+
+
 async def _compute_embeddings(
     df: pd.DataFrame,
     cfg: dict,
@@ -177,7 +181,12 @@ async def _compute_embeddings(
     distilled_text: str | None = None,
 ) -> pd.DataFrame:
     t_emb = time.monotonic()
-    cache = PgEmbeddingCache(db, cfg_fp)
+
+    # Use __base__ cfg_fp for job embeddings so pre-embed cache is reusable
+    base_ctx = build_context(user_id="__base__", resume_text="")
+    job_cache = PgEmbeddingCache(db, base_ctx.config_fp)
+    # User-specific cache for resume embedding
+    resume_cache = PgEmbeddingCache(db, cfg_fp)
 
     raw_skills = extract_skills_from_texts(df["description"].fillna("").tolist(), cfg)
     canon = SkillCanonicalizer(cfg)
@@ -189,7 +198,7 @@ async def _compute_embeddings(
         for t, d, cs in zip(df["title"], df["description"], df["canonical_skills"])
     ]
     job_fps = [fingerprint_text(t) for t in job_texts]
-    cached = await cache.fetch(job_fps)
+    cached = await job_cache.fetch(job_fps)
 
     dim = cfg["embeddings"]["embedding_dim"]
     vectors = np.zeros((len(job_fps), dim), dtype="float32")
@@ -206,15 +215,23 @@ async def _compute_embeddings(
     engine = None
     if misses:
         engine = EmbeddingEngine(cfg)
-        new_vecs = engine.embed([job_texts[i] for i in misses])
-        logger.info("Embedding %d texts complete, storing to cache...", len(misses))
-        await cache.store_vectors(
-            [(job_fps[i], v.tolist()) for i, v in zip(misses, new_vecs)]
-        )
-        await db.commit()
-        logger.info("Embedding cache store complete")
-        for i, v in zip(misses, new_vecs):
-            vectors[i] = v
+        total = len(misses)
+        for chunk_start in range(0, total, _RANK_EMBED_CHUNK):
+            chunk_end = min(chunk_start + _RANK_EMBED_CHUNK, total)
+            chunk_indices = misses[chunk_start:chunk_end]
+            chunk_texts = [job_texts[i] for i in chunk_indices]
+
+            new_vecs = await asyncio.to_thread(engine.embed, chunk_texts)
+
+            await job_cache.store_vectors(
+                [(job_fps[i], v.tolist()) for i, v in zip(chunk_indices, new_vecs)]
+            )
+            await db.commit()
+
+            for i, v in zip(chunk_indices, new_vecs):
+                vectors[i] = v
+
+            logger.info("Ranking embed: %d/%d", chunk_end, total)
 
     resume_emb_text = build_resume_embedding_text(
         resume_text=resume_text,
@@ -223,15 +240,15 @@ async def _compute_embeddings(
         use_case="default",
     )
     resume_fp = fingerprint_text(resume_emb_text)
-    resume_cached = await cache.fetch([resume_fp])
+    resume_cached = await resume_cache.fetch([resume_fp])
 
     if resume_fp in resume_cached:
         r_emb = np.array(resume_cached[resume_fp], dtype="float32")
     else:
         if engine is None:
             engine = EmbeddingEngine(cfg)
-        r_emb = engine.embed([resume_emb_text])[0]
-        await cache.store_vectors([(resume_fp, r_emb.tolist())])
+        r_emb = (await asyncio.to_thread(engine.embed, [resume_emb_text]))[0]
+        await resume_cache.store_vectors([(resume_fp, r_emb.tolist())])
 
     df["semantic_score"] = cosine_similarity(r_emb, vectors)
     logger.info(

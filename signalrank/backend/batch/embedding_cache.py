@@ -1,6 +1,8 @@
+import math
 from collections.abc import Sequence
 
-from sqlalchemy import select, text
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models import Embedding
@@ -35,17 +37,14 @@ class PgEmbeddingCache:
         batch_size = 500
         for i in range(0, len(rows), batch_size):
             batch = rows[i:i + batch_size]
-            values_parts = []
-            params = {"cfg_fp": self.cfg_fp}
-            for j, (text_fp, vector) in enumerate(batch):
-                vector_str = "[" + ",".join(str(v) for v in vector) + "]"
-                values_parts.append(
-                    f"(gen_random_uuid(), :fp_{j}, :cfg_fp, '{vector_str}'::vector)"
-                )
-                params[f"fp_{j}"] = text_fp
-            sql = (
-                f"INSERT INTO embeddings (id, text_fp, cfg_fp, vector) VALUES "
-                f"{', '.join(values_parts)} ON CONFLICT (text_fp, cfg_fp) DO NOTHING"
+            values = []
+            for text_fp, vector in batch:
+                # Sanitize: replace non-finite floats to avoid DB errors
+                clean = [v if math.isfinite(v) else 0.0 for v in vector]
+                values.append({"text_fp": text_fp, "cfg_fp": self.cfg_fp, "vector": clean})
+            await self.db.execute(
+                pg_insert(Embedding)
+                .values(values)
+                .on_conflict_do_nothing(index_elements=["text_fp", "cfg_fp"])
             )
-            await self.db.execute(text(sql), params)
         await self.db.flush()

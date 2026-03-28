@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
@@ -12,13 +14,24 @@ from api.routes.auth import _limiter as auth_limiter
 TEST_DB_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/signalrank_test"
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _ensure_schema():
+    """Create DB schema once per session synchronously — avoids event-loop sharing issues."""
+    async def _create():
+        engine = create_async_engine(TEST_DB_URL)
+        async with engine.begin() as conn:
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            await conn.run_sync(Base.metadata.create_all)
+        await engine.dispose()
+
+    asyncio.run(_create())
+
+
 @pytest.fixture
 async def test_engine():
+    """Per-test engine: truncate all tables for isolation, then yield."""
     engine = create_async_engine(TEST_DB_URL)
     async with engine.begin() as conn:
-        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        await conn.run_sync(Base.metadata.create_all)
-        # Truncate all tables for a clean slate
         for table in reversed(Base.metadata.sorted_tables):
             await conn.execute(table.delete())
     yield engine

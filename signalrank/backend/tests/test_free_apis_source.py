@@ -10,6 +10,17 @@ from batch.query_builder import SearchQuery
 from batch.scraper import ScraperConfig
 
 
+@pytest.fixture(autouse=True)
+def no_sleep(monkeypatch):
+    """Eliminate sleep between API calls so tests run at full speed."""
+    import batch.sources.free_apis as _fa
+
+    async def _noop(*_a, **_kw):
+        pass
+
+    monkeypatch.setattr(_fa.asyncio, "sleep", _noop)
+
+
 def _mock_response(json_data: dict, status_code: int = 200):
     resp = MagicMock(spec=httpx.Response)
     resp.status_code = status_code

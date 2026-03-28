@@ -5,6 +5,19 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+
+@pytest.fixture(autouse=True)
+def no_sleep(monkeypatch):
+    """Eliminate asyncio.sleep so tests run at full speed.
+    time.sleep lives inside _ddg_search_sync which is always mocked in these tests."""
+    import batch.recruiter_finder as _rf
+
+    async def _noop(*_a, **_kw):
+        pass
+
+    monkeypatch.setattr(_rf.asyncio, "sleep", _noop)
+
+
 from batch.recruiter_finder import (
     _guess_domain,
     _is_recruiter_title,
