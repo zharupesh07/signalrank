@@ -200,7 +200,7 @@ async def get_user_top_jobs(
     rows = result.mappings().all()
     return [
         TopJob(
-            job_id=r["job_id"],
+            job_id=str(r["job_id"]),
             title=r["title"],
             company=r["company"],
             location=r["location"],
