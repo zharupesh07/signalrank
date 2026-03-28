@@ -226,9 +226,14 @@ async def get_user_top_jobs(
     ]
 
 
+class TriggerRunRequest(BaseModel):
+    force_scrape: bool = False
+
+
 @router.post("/users/{user_id}/trigger-run", status_code=202)
 async def trigger_run_for_user(
     user_id: str,
+    body: TriggerRunRequest = TriggerRunRequest(),
     _: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
@@ -241,7 +246,7 @@ async def trigger_run_for_user(
     await db.commit()
     await db.refresh(run)
     queue = get_queue()
-    await queue.put((run.id, user.id))
+    await queue.put((run.id, user.id, "full", body.force_scrape))
     return {"run_id": run.id, "status": "pending", "user_email": user.email}
 
 

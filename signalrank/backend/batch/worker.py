@@ -125,6 +125,7 @@ def get_queue() -> asyncio.Queue:
 async def process_run(
     run_id: str, user_id: str, session_factory: async_sessionmaker,
     mode: str = "quick",
+    force_scrape: bool = False,
 ) -> None:
     async with session_factory() as db:
         try:
@@ -178,7 +179,7 @@ async def process_run(
                     Run.id != run_id,
                 )
             )
-            skip_scrape = recent_scrape.scalar_one_or_none() is not None
+            skip_scrape = (not force_scrape) and recent_scrape.scalar_one_or_none() is not None
             if skip_scrape:
                 logger.info(
                     "Run %s skipping scrape — recent scrape within %dh threshold",
@@ -458,12 +459,15 @@ async def worker_loop(session_factory: async_sessionmaker) -> None:
     logger.info("Background worker started")
     while True:
         item = await queue.get()
-        if len(item) == 3:
+        force_scrape = False
+        if len(item) == 4:
+            run_id, user_id, mode, force_scrape = item
+        elif len(item) == 3:
             run_id, user_id, mode = item
         else:
             run_id, user_id = item
             mode = "quick"
         try:
-            await process_run(run_id, user_id, session_factory, mode=mode)
+            await process_run(run_id, user_id, session_factory, mode=mode, force_scrape=force_scrape)
         finally:
             queue.task_done()

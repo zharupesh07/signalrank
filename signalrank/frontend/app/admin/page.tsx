@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/toast";
-import { Users, Activity, BarChart2, Play, Trash2, Shield, ShieldOff, CheckCircle, XCircle, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import { Users, Activity, BarChart2, Play, Trash2, Shield, ShieldOff, CheckCircle, XCircle, ChevronDown, ChevronRight, ExternalLink, RefreshCw } from "lucide-react";
 
 type AdminUser = {
   id: string;
@@ -133,9 +133,9 @@ export default function AdminPage() {
     }
   }
 
-  async function triggerRun(userId: string) {
-    const res = await api.admin.triggerRun(token, userId);
-    toast(`Run queued for ${res.user_email}`, "success");
+  async function triggerRun(userId: string, forceScrape = false) {
+    const res = await api.admin.triggerRun(token, userId, forceScrape);
+    toast(`Run queued for ${res.user_email}${forceScrape ? " (force scrape)" : ""}`, "success");
     const updated = await api.admin.runs(token);
     setRuns(updated);
   }
@@ -235,6 +235,13 @@ export default function AdminPage() {
                       title="Trigger run"
                     >
                       <Play size={12} />
+                    </button>
+                    <button
+                      onClick={() => triggerRun(u.id, true)}
+                      className="p-1.5 text-muted-foreground hover:text-blue-400 transition-colors"
+                      title="Force scrape + run"
+                    >
+                      <RefreshCw size={12} />
                     </button>
                     <button
                       onClick={() => toggleAdmin(u.id, u.is_admin)}
