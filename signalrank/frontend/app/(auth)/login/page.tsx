@@ -56,6 +56,7 @@ export default function LoginPage() {
                   required
                   className="flex-1 bg-transparent px-2 py-2.5 text-sm text-[#e4e4e7] outline-none placeholder:text-[#3f3f46]"
                   placeholder="user@example.com"
+                  suppressHydrationWarning
                 />
               </div>
             </div>
@@ -71,6 +72,7 @@ export default function LoginPage() {
                   required
                   className="flex-1 bg-transparent px-2 py-2.5 text-sm text-[#e4e4e7] outline-none placeholder:text-[#3f3f46]"
                   placeholder="••••••••"
+                  suppressHydrationWarning
                 />
               </div>
             </div>
