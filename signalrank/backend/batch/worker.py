@@ -373,7 +373,7 @@ async def boot_embed_uncached_jobs(session_factory: async_sessionmaker) -> None:
     from datetime import timedelta
 
     async with session_factory() as db:
-        cutoff = datetime.now(timezone.utc) - timedelta(days=90)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=15)
         result = await db.execute(
             select(JobRaw.id, JobRaw.title, JobRaw.description)
             .where(JobRaw.ingested_at >= cutoff)

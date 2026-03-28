@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models import JobRaw
@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 
 
-_JOB_WINDOW_DAYS = 90
+_JOB_WINDOW_DAYS = 15
 
 
 async def load_jobs_dataframe(
@@ -57,7 +57,8 @@ async def load_jobs_dataframe(
     cutoff = datetime.now(timezone.utc) - timedelta(days=_JOB_WINDOW_DAYS)
     stmt = select(
         JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.company,
-        JobRaw.description, JobRaw.location, JobRaw.site, JobRaw.date_posted,
+        func.left(JobRaw.description, 2000).label("description"),
+        JobRaw.location, JobRaw.site, JobRaw.date_posted,
     ).where(JobRaw.ingested_at >= cutoff)
 
     if role_clusters and "general" not in role_clusters:
