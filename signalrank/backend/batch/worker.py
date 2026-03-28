@@ -206,15 +206,33 @@ async def process_run(
                     logger.info("Run %s was cancelled before scraping", run_id)
                     return
 
+                from domain.role_clusters import roles_to_clusters
+                user_clusters = sorted(roles_to_clusters(profile.target_roles or [] if profile else []))
+
                 async def _persist_jobs(jobs):
                     from sqlalchemy.dialects.postgresql import insert as pg_insert
+                    from sqlalchemy import text as sa_text
                     async with session_factory() as pdb:
                         batch_size = 2000
                         for i in range(0, len(jobs), batch_size):
                             batch = jobs[i:i + batch_size]
-                            stmt = pg_insert(JobRaw).values([
-                                raw_job_to_dict(job) for job in batch
-                            ]).on_conflict_do_nothing(index_elements=["job_url"])
+                            values = [raw_job_to_dict(job) for job in batch]
+                            for v in values:
+                                v["role_clusters"] = user_clusters
+                            stmt = (
+                                pg_insert(JobRaw).values(values)
+                                .on_conflict_do_update(
+                                    index_elements=["job_url"],
+                                    set_={
+                                        "role_clusters": sa_text(
+                                            "(SELECT jsonb_agg(DISTINCT elem) "
+                                            "FROM jsonb_array_elements("
+                                            "COALESCE(jobs_raw.role_clusters, '[]'::jsonb) || "
+                                            "excluded.role_clusters) AS elem)"
+                                        )
+                                    },
+                                )
+                            )
                             await pdb.execute(stmt)
                         await pdb.commit()
 

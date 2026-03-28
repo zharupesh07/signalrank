@@ -7,6 +7,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     LargeBinary,
     String,
@@ -79,6 +80,7 @@ class JobRaw(Base):
     date_posted: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     embedding: Mapped[list[float] | None] = mapped_column(Vector(384))
     ingested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    role_clusters: Mapped[list | None] = mapped_column(JSONB, server_default="'[]'::jsonb")
 
     results: Mapped[list["JobResult"]] = relationship(back_populates="job")
 
@@ -117,6 +119,10 @@ class JobResult(Base):
     is_contract: Mapped[bool | None] = mapped_column(Boolean)
     archived_by_llm: Mapped[bool | None] = mapped_column(Boolean)
     archival_reason: Mapped[str | None] = mapped_column(String(500))
+
+    __table_args__ = (
+        Index("ix_job_results_user_run_score", "user_id", "run_id", "final_score"),
+    )
 
     run: Mapped["Run"] = relationship(back_populates="results")
     job: Mapped["JobRaw"] = relationship(back_populates="results")

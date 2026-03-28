@@ -47,14 +47,30 @@ logger = logging.getLogger(__name__)
 _JOB_WINDOW_DAYS = 90
 
 
-async def load_jobs_dataframe(db: AsyncSession) -> pd.DataFrame:
+async def load_jobs_dataframe(
+    db: AsyncSession,
+    role_clusters: set[str] | None = None,
+) -> pd.DataFrame:
+    from sqlalchemy import cast, or_
+    from sqlalchemy.dialects.postgresql import JSONB
+
     cutoff = datetime.now(timezone.utc) - timedelta(days=_JOB_WINDOW_DAYS)
-    result = await db.execute(
-        select(
-            JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.company,
-            JobRaw.description, JobRaw.location, JobRaw.site, JobRaw.date_posted,
-        ).where(JobRaw.ingested_at >= cutoff)
-    )
+    stmt = select(
+        JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.company,
+        JobRaw.description, JobRaw.location, JobRaw.site, JobRaw.date_posted,
+    ).where(JobRaw.ingested_at >= cutoff)
+
+    if role_clusters and "general" not in role_clusters:
+        cluster_conditions = [
+            JobRaw.role_clusters.is_(None),
+            JobRaw.role_clusters == cast([], JSONB),
+            *[JobRaw.role_clusters.contains(cast([c], JSONB)) for c in role_clusters],
+        ]
+        stmt = stmt.where(or_(*cluster_conditions))
+
+    stmt = stmt.limit(5000)
+
+    result = await db.execute(stmt)
     rows = result.all()
     if not rows:
         return pd.DataFrame(
@@ -266,11 +282,16 @@ async def score_jobs_for_user(
     config_overrides: dict | None,
     distilled_text: str | None = None,
 ) -> pd.DataFrame:
+    from domain.role_clusters import roles_to_clusters
+
     t_total = time.monotonic()
     ctx = build_context(user_id, resume_text, config_overrides)
     cfg = ctx.config
 
-    df = await load_jobs_dataframe(db)
+    profile_roles = cfg.get("profile_intent", {}).get("roles", [])
+    clusters = roles_to_clusters(profile_roles) if profile_roles else None
+
+    df = await load_jobs_dataframe(db, role_clusters=clusters)
     if df.empty:
         return pd.DataFrame(columns=["final_score"])
 

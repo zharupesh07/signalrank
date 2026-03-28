@@ -79,7 +79,7 @@ async def _parse_and_update_profile(user_id: str, resume_text: str, llm: OpenRou
     """Background task: parse resume with LLM and auto-populate profile + config_overrides."""
     distilled_text = None
     try:
-        parsed = await parse_resume(resume_text, llm)
+        parsed = await asyncio.wait_for(parse_resume(resume_text, llm), timeout=60)
         async with AsyncSessionLocal() as db:
             result = await db.execute(select(Profile).where(Profile.user_id == user_id))
             profile = result.scalar_one_or_none()

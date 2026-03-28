@@ -254,7 +254,7 @@ export default function JobsPage() {
       return;
     }
     setLoading(true);
-    swr("jobs", () => api.jobs.list(token, 1, 2000, "").then((r) => r.jobs), (jobs) => {
+    swr("jobs", () => api.jobs.list(token, 1, 500, "").then((r) => r.jobs), (jobs) => {
       setAllJobs(jobs);
       setLoading(false);
     });
@@ -314,7 +314,7 @@ export default function JobsPage() {
           const status = await api.jobs.archiveStatus(token);
           setArchiveStatus(status);
           if (status.pending === 0 && status.running === 0 && status.total > 0) {
-            api.jobs.list(token, 1, 2000, "").then((r) => setAllJobs(r.jobs));
+            api.jobs.list(token, 1, 500, "").then((r) => setAllJobs(r.jobs));
             return;
           }
           delay = Math.min(delay * 1.5, MAX_DELAY);
@@ -640,6 +640,21 @@ export default function JobsPage() {
                     Array.from({ length: 10 }).map((_, i) => (
                       <TableRowSkeleton key={i} cols={10} />
                     ))
+                  ) : table.getRowModel().rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={10} className="px-4 py-16 text-center">
+                        <div className="font-mono text-muted-foreground text-xs space-y-1">
+                          <div>┌─────────────────────┐</div>
+                          <div>│   no jobs found     │</div>
+                          <div>└─────────────────────┘</div>
+                          <div className="mt-2">
+                            {allJobs.length === 0
+                              ? "trigger a scan from the dashboard to populate results"
+                              : "try adjusting your filters"}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
                   ) : (
                     table.getRowModel().rows.map((row) => {
                       const job = row.original;

@@ -87,15 +87,13 @@ function linkedinRecruiterSearchUrl(company: string) {
 
 function emailTemplate(app: Application, recruiterName: string, signature: string) {
   const firstName = recruiterName.split(" ")[0] || recruiterName;
-  const subject = `${app.title} — built 400+ AI agents at scale (applied)`;
-  const jobLink = app.job_url ? `I applied for the ${app.title} role (${app.job_url}) and ` : `I applied for the ${app.title} role and `;
+  const subject = `${app.title} at ${app.company} — following up`;
+  const jobLink = app.job_url ? `I applied for the ${app.title} role at ${app.company} (${app.job_url}) and` : `I applied for the ${app.title} role at ${app.company} and`;
   const body = `Hi ${firstName},
 
-${jobLink}wanted to share quick context that might not come through on a resume:
+${jobLink} wanted to reach out directly to express my interest.
 
-At Fractal Analytics, I built an "Agentic Factory" that standardised 400+ AI agents for a Fortune 5 US Telecom — the platform handles the full lifecycle from CI/CD to production deployment on GCP, supporting 16,000+ deployments with 90-second onboarding.
-
-That experience maps directly to what ${app.company} is building. Happy to jump on a 15-min call if you think there's a fit.
+I believe my background is a strong fit for what ${app.company} is building. Happy to jump on a 15-min call if you think there's a fit.
 
 Best,${signature}`;
 
@@ -666,7 +664,7 @@ export default function TrackerPage() {
                           )}
                           {app.recruiter.email && isValidEmail(app.recruiter.email) && (
                             <a
-                              href={gmailComposeUrl(
+                              href={gmailLinks.get(app.id) ?? gmailComposeUrl(
                                 app.recruiter.email,
                                 emailTemplate(app, app.recruiter.name ?? "Recruiter", MY_SIGNATURE).subject,
                                 emailTemplate(app, app.recruiter.name ?? "Recruiter", MY_SIGNATURE).body,
@@ -674,7 +672,7 @@ export default function TrackerPage() {
                               target="_blank"
                               rel="noreferrer"
                               className="mail-glow shrink-0"
-                              title={`Email ${app.recruiter.email} via Gmail`}
+                              title={`Email ${app.recruiter.email} via Gmail${gmailLinks.has(app.id) ? " (AI-generated)" : ""}`}
                             >
                               <Mail size={15} />
                             </a>
@@ -801,7 +799,11 @@ export default function TrackerPage() {
                         <button
                           onClick={() => {
                             const { subject, body } = emailTemplate(app, app.recruiter?.name ?? "Recruiter", MY_SIGNATURE);
-                            navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`);
+                            const llmLink = gmailLinks.get(app.id);
+                            const text = llmLink
+                              ? llmLink
+                              : `Subject: ${subject}\n\n${body}`;
+                            navigator.clipboard.writeText(text);
                             toast("Email copied to clipboard", "success");
                           }}
                           className="text-muted-foreground hover:text-primary transition-colors"

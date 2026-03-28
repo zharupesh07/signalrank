@@ -27,6 +27,11 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completedRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  });
 
   useEffect(() => {
     setRun(initialRun);
@@ -61,7 +66,7 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
           if (updated.status === "done" && !completedRef.current) {
             completedRef.current = true;
             toast(`Run complete — ${updated.job_count ?? 0} jobs ranked`, "success");
-            onComplete?.({ ...updated, status: "done" });
+            onCompleteRef.current?.({ ...updated, status: "done" });
             return;
           } else if (updated.status === "failed" && !completedRef.current) {
             completedRef.current = true;
@@ -84,7 +89,7 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
     return () => {
       if (pollRef.current) clearTimeout(pollRef.current);
     };
-  }, [token, run.id, run.status, onComplete, toast]);
+  }, [token, run.id, run.status, toast]);
 
   const isLive = isLiveStatus(run.status);
   const p = run.progress;

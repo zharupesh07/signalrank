@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.database import get_db
 from api.deps import get_current_user
 from api.deps_llm import get_llm_client
-from api.models import Application, GenerationQueue, JobRaw, JobResult, User
+from api.models import Application, GenerationQueue, JobRaw, JobResult, Profile, User
 from llm.openrouter import OpenRouterClient
 
 logger = logging.getLogger(__name__)
@@ -209,7 +209,15 @@ async def ingest_confirm(
 
     priority = _compute_priority(date_posted, company_tier)
 
-    # Upsert JobRaw (shared across users)
+    # Compute user's role clusters for tagging
+    from domain.role_clusters import roles_to_clusters
+    from sqlalchemy import cast, text as sa_text
+    from sqlalchemy.dialects.postgresql import JSONB as _JSONB
+    profile_res = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
+    profile = profile_res.scalar_one_or_none()
+    user_clusters = sorted(roles_to_clusters(profile.target_roles or [] if profile else []))
+
+    # Upsert JobRaw (shared across users) — merge role_clusters on conflict
     await db.execute(
         pg_insert(JobRaw)
         .values(
@@ -220,8 +228,19 @@ async def ingest_confirm(
             location=body.location or None,
             site="manual",
             date_posted=date_posted,
+            role_clusters=user_clusters,
         )
-        .on_conflict_do_nothing(index_elements=["job_url"])
+        .on_conflict_do_update(
+            index_elements=["job_url"],
+            set_={
+                "role_clusters": sa_text(
+                    "(SELECT jsonb_agg(DISTINCT elem) "
+                    "FROM jsonb_array_elements("
+                    "COALESCE(jobs_raw.role_clusters, '[]'::jsonb) || "
+                    "excluded.role_clusters) AS elem)"
+                )
+            },
+        )
     )
     await db.flush()
 

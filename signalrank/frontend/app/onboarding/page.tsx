@@ -8,12 +8,25 @@ import { Upload } from "lucide-react";
 
 const ROLE_OPTIONS = [
   "AI/ML Engineer",
+  "GenAI / LLM Engineer",
+  "AI Platform Engineer",
   "Data Scientist",
+  "Data Engineer",
+  "Analytics Engineer",
   "MLOps/Platform Engineer",
+  "Research Scientist",
   "Backend Engineer",
   "Full-Stack Engineer",
+  "Frontend Engineer",
+  "Mobile Engineer",
+  "API / Integrations Engineer",
   "DevOps/SRE",
+  "Platform Engineer",
+  "Cloud Infrastructure Engineer",
   "Security Engineer",
+  "Embedded / Systems Engineer",
+  "Product Engineer",
+  "QA / Test Engineer",
 ];
 
 const LOCATION_OPTIONS = [
