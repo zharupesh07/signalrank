@@ -63,7 +63,8 @@ class PgEmbeddingCache:
                 .on_conflict_do_nothing(index_elements=["text_fp", "cfg_fp"])
             )
             for text_fp, vector in batch:
-                if len(_VECTOR_CACHE) < _VECTOR_CACHE_MAX:
+                key = (self.cfg_fp, text_fp)
+                if key not in _VECTOR_CACHE and len(_VECTOR_CACHE) < _VECTOR_CACHE_MAX:
                     clean = [v if math.isfinite(v) else 0.0 for v in vector]
-                    _VECTOR_CACHE[(self.cfg_fp, text_fp)] = clean
+                    _VECTOR_CACHE[key] = clean
         await self.db.flush()
