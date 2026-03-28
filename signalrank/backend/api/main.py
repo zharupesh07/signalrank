@@ -21,7 +21,7 @@ from api.models import Run
 from api.routes import admin, applications, auth, ingest, jobs, onboarding, profile, recruiters, resume, runs
 from batch.archival_worker import archival_worker_loop, recover_stuck_archival_tasks
 from batch.resume_worker import boot_scan, recover_stuck_generation_tasks, resume_worker_loop
-from batch.worker import get_queue, worker_loop
+from batch.worker import boot_embed_uncached_jobs, get_queue, worker_loop
 
 # --- Structured JSON logging ---
 _handler = logging.StreamHandler()
@@ -86,6 +86,15 @@ async def lifespan(app: FastAPI):
             logger.warning("Boot scan failed", exc_info=True)
 
     asyncio.create_task(_delayed_boot_scan())
+
+    async def _delayed_boot_embed():
+        await asyncio.sleep(60)  # after boot_scan, lower priority
+        try:
+            await boot_embed_uncached_jobs(AsyncSessionLocal)
+        except Exception:
+            logger.warning("Boot embed failed", exc_info=True)
+
+    asyncio.create_task(_delayed_boot_embed())
 
     _resume_worker_task = asyncio.create_task(
         _resume_worker_watchdog(AsyncSessionLocal, llm)

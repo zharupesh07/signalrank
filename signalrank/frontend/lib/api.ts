@@ -202,6 +202,16 @@ export const api = {
         { method: "POST", token, body: form }
       );
     },
+    parsed: (token: string) =>
+      request<{
+        parsing: boolean;
+        prefill: {
+          target_roles: string[];
+          preferred_locations: string[];
+          exclusions: string[];
+          salary_lpa: number | null;
+        };
+      }>("/api/onboarding/parsed", { token }),
     refine: (token: string, question_id: string, answer: string | string[]) =>
       request<{ status: string }>("/api/onboarding/refine", {
         method: "POST",

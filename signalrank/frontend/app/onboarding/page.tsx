@@ -1,31 +1,120 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
 import { Upload } from "lucide-react";
 
-type Question = {
-  id: string;
-  text: string;
-  type: "text" | "multiselect";
-  options?: string[];
+const ROLE_OPTIONS = [
+  "AI/ML Engineer",
+  "Data Scientist",
+  "MLOps/Platform Engineer",
+  "Backend Engineer",
+  "Full-Stack Engineer",
+  "DevOps/SRE",
+  "Security Engineer",
+];
+
+const LOCATION_OPTIONS = [
+  "Remote only",
+  "Bangalore",
+  "Hyderabad",
+  "Mumbai",
+  "Delhi/NCR",
+  "Pune",
+  "Any India",
+  "Open to relocation",
+];
+
+type MultiSelectProps = {
+  label: string;
+  options: string[];
+  selected: string[];
+  onChange: (val: string[]) => void;
 };
+
+function MultiSelect({ label, options, selected, onChange }: MultiSelectProps) {
+  const toggle = (opt: string) => {
+    onChange(
+      selected.includes(opt) ? selected.filter((x) => x !== opt) : [...selected, opt]
+    );
+  };
+  return (
+    <div className="space-y-1.5">
+      <div className="text-[10px] text-[#71717a] uppercase tracking-wider">{label}</div>
+      <div className="flex flex-wrap gap-1.5">
+        {options.map((opt) => {
+          const active = selected.includes(opt);
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => toggle(opt)}
+              className={`px-2.5 py-1 text-[11px] border transition-colors ${
+                active
+                  ? "border-[#22c55e] text-[#22c55e] bg-[#22c55e]/10"
+                  : "border-[#3f3f46] text-[#71717a] hover:border-[#52525b]"
+              }`}
+            >
+              {active ? "✓ " : ""}{opt}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function OnboardingPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const token = (session as { accessToken?: string })?.accessToken ?? "";
 
-  const [step, setStep] = useState<"upload" | "questions">("upload");
+  const [step, setStep] = useState<"upload" | "preferences">("upload");
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Preferences state
+  const [parsing, setParsing] = useState(false);
+  const [targetRoles, setTargetRoles] = useState<string[]>([]);
+  const [locations, setLocations] = useState<string[]>([]);
+  const [exclusions, setExclusions] = useState("");
+  const [salaryLpa, setSalaryLpa] = useState("");
+
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  function stopPolling() {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }
+
+  useEffect(() => () => stopPolling(), []);
+
+  function startPolling() {
+    stopPolling();
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await api.onboarding.parsed(token);
+        if (!res.parsing) {
+          stopPolling();
+          setParsing(false);
+          const p = res.prefill;
+          if (p.target_roles?.length) setTargetRoles(p.target_roles);
+          if (p.preferred_locations?.length) setLocations(p.preferred_locations);
+          if (p.exclusions?.length) setExclusions(p.exclusions.join(", "));
+          if (p.salary_lpa) setSalaryLpa(String(p.salary_lpa));
+        }
+      } catch {
+        // ignore transient errors
+      }
+    }, 2500);
+  }
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
@@ -33,9 +122,10 @@ export default function OnboardingPage() {
     setUploading(true);
     setError("");
     try {
-      const res = await api.onboarding.uploadResume(token, file);
-      setQuestions(res.questions as Question[]);
-      setStep("questions");
+      await api.onboarding.uploadResume(token, file);
+      setParsing(true);
+      setStep("preferences");
+      startPolling();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -45,11 +135,21 @@ export default function OnboardingPage() {
 
   async function handleFinish(e: React.FormEvent) {
     e.preventDefault();
+    stopPolling();
     setSubmitting(true);
     try {
-      for (const [qid, answer] of Object.entries(answers)) {
-        if (answer.trim()) await api.onboarding.refine(token, qid, answer);
-      }
+      if (targetRoles.length)
+        await api.onboarding.refine(token, "target_roles", targetRoles);
+      if (locations.length)
+        await api.onboarding.refine(token, "preferred_locations", locations);
+      if (exclusions.trim())
+        await api.onboarding.refine(
+          token,
+          "exclusions",
+          exclusions.split(",").map((s) => s.trim()).filter(Boolean)
+        );
+      if (salaryLpa.trim())
+        await api.onboarding.refine(token, "salary_expectations", salaryLpa);
       await api.onboarding.refine(token, "onboarding_complete", "true");
       await api.runs.trigger(token);
       router.push("/dashboard");
@@ -164,27 +264,59 @@ export default function OnboardingPage() {
             </form>
           ) : (
             <form onSubmit={handleFinish} className="space-y-5">
-              <div className="text-[10px] text-[#52525b] uppercase tracking-widest">
-                // [2/2] PREFERENCES
+              <div className="flex items-center justify-between">
+                <div className="text-[10px] text-[#52525b] uppercase tracking-widest">
+                  // [2/2] PREFERENCES
+                </div>
+                {parsing && (
+                  <div className="text-[10px] text-[#a3e635] animate-pulse uppercase tracking-widest">
+                    AI analyzing resume...
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-4">
-                {questions.map((q: Question) => (
-                  <div key={q.id} className="space-y-1.5">
-                    <label className="text-[10px] text-[#71717a] uppercase tracking-wider">
-                      {q.text}
-                    </label>
-                    <div className="flex items-center border border-[#3f3f46] bg-[#0a0a0a] focus-within:border-[#22c55e] transition-colors">
-                      <span className="text-[#22c55e] text-xs pl-3 select-none">&gt;</span>
-                      <input
-                        value={answers[q.id] ?? ""}
-                        onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
-                        className="flex-1 bg-transparent px-2 py-2.5 text-sm text-[#e4e4e7] outline-none placeholder:text-[#3f3f46]"
-                        placeholder="Your answer"
-                      />
-                    </div>
-                  </div>
-                ))}
+              <MultiSelect
+                label="Target roles"
+                options={ROLE_OPTIONS}
+                selected={targetRoles}
+                onChange={setTargetRoles}
+              />
+
+              <MultiSelect
+                label="Preferred locations"
+                options={LOCATION_OPTIONS}
+                selected={locations}
+                onChange={setLocations}
+              />
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-[#71717a] uppercase tracking-wider">
+                  Salary expectation (LPA)
+                </label>
+                <div className="flex items-center border border-[#3f3f46] bg-[#0a0a0a] focus-within:border-[#22c55e] transition-colors">
+                  <span className="text-[#22c55e] text-xs pl-3 select-none">&gt;</span>
+                  <input
+                    value={salaryLpa}
+                    onChange={(e) => setSalaryLpa(e.target.value)}
+                    className="flex-1 bg-transparent px-2 py-2.5 text-sm text-[#e4e4e7] outline-none placeholder:text-[#3f3f46]"
+                    placeholder="e.g. 30"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-[#71717a] uppercase tracking-wider">
+                  Roles / companies to exclude
+                </label>
+                <div className="flex items-center border border-[#3f3f46] bg-[#0a0a0a] focus-within:border-[#22c55e] transition-colors">
+                  <span className="text-[#22c55e] text-xs pl-3 select-none">&gt;</span>
+                  <input
+                    value={exclusions}
+                    onChange={(e) => setExclusions(e.target.value)}
+                    className="flex-1 bg-transparent px-2 py-2.5 text-sm text-[#e4e4e7] outline-none placeholder:text-[#3f3f46]"
+                    placeholder="e.g. QA Engineer, Support, Consulting"
+                  />
+                </div>
               </div>
 
               <button
@@ -192,7 +324,7 @@ export default function OnboardingPage() {
                 disabled={submitting}
                 className="w-full py-2.5 text-xs font-bold uppercase tracking-widest bg-[#22c55e] text-[#0a0a0a] hover:bg-[#a3e635] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {submitting ? "Setting up..." : "Finish Setup"}
+                {submitting ? "Setting up..." : "Finish Setup →"}
               </button>
             </form>
           )}

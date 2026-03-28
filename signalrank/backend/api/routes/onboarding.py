@@ -76,7 +76,7 @@ async def _embed_resume(user_id: str, resume_text: str, distilled_text: str | No
 
 
 async def _parse_and_update_profile(user_id: str, resume_text: str, llm: OpenRouterClient) -> None:
-    """Background task: parse resume with LLM and update profile fields."""
+    """Background task: parse resume with LLM and auto-populate profile + config_overrides."""
     distilled_text = None
     try:
         parsed = await parse_resume(resume_text, llm)
@@ -85,9 +85,11 @@ async def _parse_and_update_profile(user_id: str, resume_text: str, llm: OpenRou
             profile = result.scalar_one_or_none()
             if not profile:
                 return
+
             profile.skills = parsed.skills
             if parsed.recent_titles and not profile.target_roles:
                 profile.target_roles = parsed.recent_titles
+
             parts = []
             if parsed.recent_titles:
                 parts.append("Recent roles: " + ", ".join(parsed.recent_titles))
@@ -98,8 +100,31 @@ async def _parse_and_update_profile(user_id: str, resume_text: str, llm: OpenRou
             if parts:
                 distilled_text = "\n".join(parts)
                 profile.distilled_text = distilled_text
+
+            # Auto-populate config_overrides from LLM extractions (only if not already set by user)
+            overrides = dict(profile.config_overrides or {})
+
+            if parsed.suggested_roles and not overrides.get("profile_intent", {}).get("roles"):
+                overrides.setdefault("profile_intent", {})["roles"] = parsed.suggested_roles
+
+            if parsed.suggested_locations and not overrides.get("scraping", {}).get("locations"):
+                overrides.setdefault("scraping", {})["locations"] = parsed.suggested_locations
+
+            if parsed.suggested_exclusions and not overrides.get("title_blocklist"):
+                overrides["title_blocklist"] = parsed.suggested_exclusions
+
+            if overrides != (profile.config_overrides or {}):
+                profile.config_overrides = overrides
+
+            if parsed.salary_lpa and not profile.target_lpa:
+                profile.target_lpa = float(parsed.salary_lpa)
+
             await db.commit()
-            logger.info("Background parse complete for user=%s (%d skills)", user_id, len(parsed.skills or []))
+            logger.info(
+                "Background parse complete for user=%s (%d skills, roles=%s, locs=%s)",
+                user_id, len(parsed.skills or []),
+                parsed.suggested_roles, parsed.suggested_locations,
+            )
     except Exception:
         logger.warning("Background resume parse failed for user=%s", user_id, exc_info=True)
 
@@ -151,6 +176,29 @@ async def upload_resume(
         "extracted": {"skills": [], "years_of_experience": None, "recent_titles": []},
         "questions": questions,
         "parsing": True,
+    }
+
+
+@router.get("/parsed")
+async def onboarding_parsed(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Poll this after resume upload to get LLM-extracted pre-fill values."""
+    result = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
+    profile = result.scalar_one_or_none()
+    if not profile or not profile.skills:
+        return {"parsing": True, "prefill": {}}
+
+    overrides = profile.config_overrides or {}
+    return {
+        "parsing": False,
+        "prefill": {
+            "target_roles": overrides.get("profile_intent", {}).get("roles", []),
+            "preferred_locations": overrides.get("scraping", {}).get("locations", []),
+            "exclusions": overrides.get("title_blocklist", []),
+            "salary_lpa": int(profile.target_lpa) if profile.target_lpa else None,
+        },
     }
 
 

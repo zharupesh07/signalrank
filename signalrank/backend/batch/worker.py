@@ -348,6 +348,79 @@ async def process_run(
             await db.commit()
 
 
+async def boot_embed_uncached_jobs(session_factory: async_sessionmaker) -> None:
+    """Pre-embed any job_raw rows not yet in the __base__ embedding cache."""
+    from api.models import JobRaw
+    from batch.context import build_context
+    from datetime import timedelta
+
+    async with session_factory() as db:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=90)
+        result = await db.execute(
+            select(JobRaw.id, JobRaw.title, JobRaw.description)
+            .where(JobRaw.ingested_at >= cutoff)
+        )
+        rows = result.all()
+
+    if not rows:
+        return
+
+    from domain.embeddings import build_job_embedding_text, fingerprint_text
+    from domain.skills import SkillCanonicalizer, extract_skills_from_texts
+
+    ctx = build_context(user_id="__base__", resume_text="")
+    cfg = ctx.config
+    canon = SkillCanonicalizer(cfg)
+
+    descriptions = [r.description or "" for r in rows]
+    raw_skills_list = extract_skills_from_texts(descriptions, cfg)
+    canonical_skills_list = [sorted(canon.canonicalize(s)) for s in raw_skills_list]
+
+    job_texts = [
+        build_job_embedding_text(
+            title=r.title or "",
+            description=r.description or "",
+            canonical_skills=cs,
+            cfg=cfg,
+        )
+        for r, cs in zip(rows, canonical_skills_list)
+    ]
+    job_fps = [fingerprint_text(t) for t in job_texts]
+
+    async with session_factory() as db:
+        cache = PgEmbeddingCache(db, ctx.config_fp)
+        cached = await cache.fetch(job_fps)
+        misses = [i for i, fp in enumerate(job_fps) if fp not in cached]
+
+    if not misses:
+        logger.info("[BOOT-EMBED] All %d job embeddings cached", len(job_fps))
+        return
+
+    logger.info("[BOOT-EMBED] Pre-embedding %d/%d uncached jobs", len(misses), len(job_fps))
+    from domain.embeddings import EmbeddingEngine
+    engine = EmbeddingEngine(cfg)
+    total = len(misses)
+
+    for chunk_start in range(0, total, _EMBED_CHUNK_SIZE):
+        chunk_end = min(chunk_start + _EMBED_CHUNK_SIZE, total)
+        chunk_indices = misses[chunk_start:chunk_end]
+        chunk_texts = [job_texts[i] for i in chunk_indices]
+
+        vecs = await asyncio.to_thread(engine.embed, chunk_texts)
+
+        async with session_factory() as db:
+            cache = PgEmbeddingCache(db, ctx.config_fp)
+            await cache.store_vectors(
+                [(job_fps[i], v.tolist()) for i, v in zip(chunk_indices, vecs)]
+            )
+            await db.commit()
+
+        if chunk_end % 500 == 0 or chunk_end == total:
+            logger.info("[BOOT-EMBED] %d/%d", chunk_end, total)
+
+    logger.info("[BOOT-EMBED] Done — pre-cached %d job embeddings", total)
+
+
 async def _cleanup_stale_runs(session_factory: async_sessionmaker) -> None:
     async with session_factory() as db:
         stale = await db.execute(
