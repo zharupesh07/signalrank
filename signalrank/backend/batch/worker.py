@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import numpy as np
 from sqlalchemy import select, update
@@ -166,8 +166,27 @@ async def process_run(
                     )
                     await pdb.commit()
 
+            # Skip scraping if a recent successful scrape already ran
+            scrape_threshold_hours = 1 if mode == "quick" else 6
+            scrape_cutoff = datetime.now(timezone.utc) - timedelta(hours=scrape_threshold_hours)
+            recent_scrape = await db.execute(
+                select(Run).where(
+                    Run.user_id == user_id,
+                    Run.status == "success",
+                    Run.scrape_count > 0,
+                    Run.finished_at >= scrape_cutoff,
+                    Run.id != run_id,
+                )
+            )
+            skip_scrape = recent_scrape.scalar_one_or_none() is not None
+            if skip_scrape:
+                logger.info(
+                    "Run %s skipping scrape — recent scrape within %dh threshold",
+                    run_id, scrape_threshold_hours,
+                )
+
             scrape_count = 0
-            if queries:
+            if queries and not skip_scrape:
                 title_blocklist = (config_overrides or {}).get("title_blocklist", [])
                 config = ScraperConfig.from_env(title_blocklist=title_blocklist)
                 config.hours_old = scraper_hours_old
