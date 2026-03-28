@@ -45,7 +45,7 @@ class Profile(Base):
     __tablename__ = "profiles"
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), unique=True, nullable=False)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
     resume_text: Mapped[str | None] = mapped_column(Text)
     resume_embedding: Mapped[list[float] | None] = mapped_column(Vector(384))
     distilled_text: Mapped[str | None] = mapped_column(Text)
@@ -89,7 +89,7 @@ class Run(Base):
     __tablename__ = "runs"
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="pending")
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -105,8 +105,8 @@ class JobResult(Base):
     __tablename__ = "job_results"
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
-    run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"), nullable=False)
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    run_id: Mapped[str] = mapped_column(ForeignKey("runs.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     job_id: Mapped[str] = mapped_column(ForeignKey("jobs_raw.id"), nullable=False)
     semantic_score: Mapped[float | None] = mapped_column(Float)
     skills_score: Mapped[float | None] = mapped_column(Float)
@@ -132,7 +132,7 @@ class Application(Base):
     __tablename__ = "applications"
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     job_id: Mapped[str | None] = mapped_column(ForeignKey("jobs_raw.id"))
     company: Mapped[str | None] = mapped_column(String(255))
     title: Mapped[str | None] = mapped_column(String(500))
@@ -185,7 +185,7 @@ class RecruiterRefreshTask(Base):
     __tablename__ = "recruiter_refresh_tasks"
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
-    user_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="pending")
     progress_json: Mapped[dict | None] = mapped_column(JSONB)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -196,7 +196,7 @@ class TailoredResume(Base):
     __tablename__ = "tailored_resumes"
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     job_id: Mapped[str | None] = mapped_column(ForeignKey("jobs_raw.id"))
     content_json: Mapped[dict | None] = mapped_column(JSONB)
     pdf_path: Mapped[str | None] = mapped_column(String(500))
