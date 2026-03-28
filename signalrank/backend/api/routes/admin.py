@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.database import get_db
@@ -166,6 +166,64 @@ async def delete_user(
     await db.execute(delete(User).where(User.id == user_id))
     await db.commit()
     return {"status": "deleted"}
+
+
+class TopJob(BaseModel):
+    job_id: str
+    title: str | None
+    company: str | None
+    location: str | None
+    final_score: float | None
+    semantic_score: float | None
+    skills_score: float | None
+    job_url: str
+
+
+@router.get("/users/{user_id}/top-jobs", response_model=list[TopJob])
+async def get_user_top_jobs(
+    user_id: str,
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        text("""
+            SELECT DISTINCT ON (jr.job_id)
+                jr.job_id, jr.semantic_score, jr.skills_score, jr.final_score,
+                j.title, j.company, j.location, j.job_url
+            FROM job_results jr
+            JOIN jobs_raw j ON jr.job_id = j.id
+            WHERE jr.user_id = :user_id
+            ORDER BY jr.job_id, jr.final_score DESC NULLS LAST
+        """),
+        {"user_id": user_id},
+    )
+    rows = result.mappings().all()
+    return [
+        TopJob(
+            job_id=r["job_id"],
+            title=r["title"],
+            company=r["company"],
+            location=r["location"],
+            final_score=r["final_score"],
+            semantic_score=r["semantic_score"],
+            skills_score=r["skills_score"],
+            job_url=r["job_url"],
+        )
+        for r in sorted(rows, key=lambda x: (x["final_score"] or 0), reverse=True)[:10]
+    ]
+    return [
+        TopJob(
+            job_id=jr.job_id,
+            title=title,
+            company=company,
+            location=location,
+            final_score=jr.final_score,
+            semantic_score=jr.semantic_score,
+            skills_score=jr.skills_score,
+            job_url=job_url,
+        )
+        for jr, title, company, location, job_url in rows
+    ]
 
 
 @router.post("/users/{user_id}/trigger-run", status_code=202)

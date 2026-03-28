@@ -8,6 +8,8 @@ from api.config import settings
 
 
 def _parse_url(url: str) -> tuple[str, dict]:
+    # Normalize driver prefix to asyncpg.
+    url = re.sub(r"^postgresql(\+\w+)?://", "postgresql+asyncpg://", url)
     # asyncpg doesn't accept sslmode/ssl/channel_binding as URL params.
     # Strip them from the URL and return connect_args instead.
     needs_ssl = bool(re.search(r"sslmode=(require|verify-ca|verify-full|prefer|allow)", url))

@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/toast";
-import { Users, Activity, BarChart2, Play, Trash2, Shield, ShieldOff, CheckCircle, XCircle } from "lucide-react";
+import { Users, Activity, BarChart2, Play, Trash2, Shield, ShieldOff, CheckCircle, XCircle, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 
 type AdminUser = {
   id: string;
@@ -16,6 +16,17 @@ type AdminUser = {
   onboarding_complete: boolean;
   run_count: number;
   last_run_status: string | null;
+};
+
+type TopJob = {
+  job_id: string;
+  title: string | null;
+  company: string | null;
+  location: string | null;
+  final_score: number | null;
+  semantic_score: number | null;
+  skills_score: number | null;
+  job_url: string;
 };
 
 type AdminRun = {
@@ -63,6 +74,9 @@ export default function AdminPage() {
   const [runs, setRuns] = useState<AdminRun[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const [topJobsCache, setTopJobsCache] = useState<Record<string, TopJob[]>>({});
+  const [loadingJobs, setLoadingJobs] = useState<string | null>(null);
 
   useEffect(() => {
     if (session && !isAdmin) {
@@ -96,6 +110,26 @@ export default function AdminPage() {
       toast(`Deleted ${email}`, "success");
     } catch (err) {
       toast(err instanceof Error ? err.message : "Failed to delete user", "error");
+    }
+  }
+
+  async function toggleExpand(userId: string) {
+    if (expandedUser === userId) {
+      setExpandedUser(null);
+      return;
+    }
+    setExpandedUser(userId);
+    if (topJobsCache[userId]) return;
+    setLoadingJobs(userId);
+    try {
+      const jobs = await api.admin.topJobs(token, userId);
+      const seen = new Set<string>();
+      const deduped = jobs.filter((j) => { if (seen.has(j.job_id)) return false; seen.add(j.job_id); return true; });
+      setTopJobsCache((prev) => ({ ...prev, [userId]: deduped }));
+    } catch {
+      toast("Failed to load top jobs", "error");
+    } finally {
+      setLoadingJobs(null);
     }
   }
 
@@ -155,7 +189,8 @@ export default function AdminPage() {
           <div className="text-center py-12 text-muted-foreground text-sm">Loading...</div>
         ) : tab === "users" ? (
           <div className="space-y-px">
-            <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-3 px-4 py-2 text-[11px] text-muted-foreground uppercase tracking-widest">
+            <div className="grid grid-cols-[1.5rem_2fr_1fr_1fr_1fr_1fr_auto] gap-3 px-4 py-2 text-[11px] text-muted-foreground uppercase tracking-widest">
+              <span></span>
               <span>Email</span>
               <span>Onboarding</span>
               <span>Runs</span>
@@ -164,53 +199,98 @@ export default function AdminPage() {
               <span>Actions</span>
             </div>
             {users.map((u) => (
-              <div
-                key={u.id}
-                className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-3 items-center px-4 py-3 bg-card border border-border"
-              >
-                <span className="text-sm text-foreground truncate">{u.email}</span>
-                <span>
-                  {u.onboarding_complete ? (
-                    <CheckCircle size={14} className="text-primary" />
-                  ) : (
-                    <XCircle size={14} className="text-[var(--terminal-yellow)]" />
-                  )}
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm tabular-nums">{u.run_count}</span>
-                  {u.last_run_status && <StatusBadge status={u.last_run_status} />}
+              <div key={u.id} className="border border-border">
+                <div className="grid grid-cols-[1.5rem_2fr_1fr_1fr_1fr_1fr_auto] gap-3 items-center px-4 py-3 bg-card">
+                  <button
+                    onClick={() => toggleExpand(u.id)}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    title="View top jobs"
+                  >
+                    {expandedUser === u.id ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                  </button>
+                  <span className="text-sm text-foreground truncate">{u.email}</span>
+                  <span>
+                    {u.onboarding_complete ? (
+                      <CheckCircle size={14} className="text-primary" />
+                    ) : (
+                      <XCircle size={14} className="text-[var(--terminal-yellow)]" />
+                    )}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm tabular-nums">{u.run_count}</span>
+                    {u.last_run_status && <StatusBadge status={u.last_run_status} />}
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {u.last_login ? new Date(u.last_login).toLocaleDateString([], { month: "short", day: "numeric" }) : "Never"}
+                  </span>
+                  <span>
+                    {u.is_admin && (
+                      <span className="text-[11px] text-primary border border-primary/30 px-1.5 py-0.5 leading-none uppercase">admin</span>
+                    )}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => triggerRun(u.id)}
+                      className="p-1.5 text-muted-foreground hover:text-primary transition-colors"
+                      title="Trigger run"
+                    >
+                      <Play size={12} />
+                    </button>
+                    <button
+                      onClick={() => toggleAdmin(u.id, u.is_admin)}
+                      className="p-1.5 text-muted-foreground hover:text-[var(--terminal-yellow)] transition-colors"
+                      title={u.is_admin ? "Revoke admin" : "Grant admin"}
+                    >
+                      {u.is_admin ? <ShieldOff size={12} /> : <Shield size={12} />}
+                    </button>
+                    <button
+                      onClick={() => deleteUser(u.id, u.email)}
+                      className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
+                      title="Delete user"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
                 </div>
-                <span className="text-xs text-muted-foreground">
-                  {u.last_login ? new Date(u.last_login).toLocaleDateString([], { month: "short", day: "numeric" }) : "Never"}
-                </span>
-                <span>
-                  {u.is_admin && (
-                    <span className="text-[11px] text-primary border border-primary/30 px-1.5 py-0.5 leading-none uppercase">admin</span>
-                  )}
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => triggerRun(u.id)}
-                    className="p-1.5 text-muted-foreground hover:text-primary transition-colors"
-                    title="Trigger run"
-                  >
-                    <Play size={12} />
-                  </button>
-                  <button
-                    onClick={() => toggleAdmin(u.id, u.is_admin)}
-                    className="p-1.5 text-muted-foreground hover:text-[var(--terminal-yellow)] transition-colors"
-                    title={u.is_admin ? "Revoke admin" : "Grant admin"}
-                  >
-                    {u.is_admin ? <ShieldOff size={12} /> : <Shield size={12} />}
-                  </button>
-                  <button
-                    onClick={() => deleteUser(u.id, u.email)}
-                    className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
-                    title="Delete user"
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
+                {expandedUser === u.id && (
+                  <div className="bg-muted/30 border-t border-border px-6 py-3">
+                    {loadingJobs === u.id ? (
+                      <div className="text-xs text-muted-foreground py-2">Loading top jobs...</div>
+                    ) : topJobsCache[u.id]?.length ? (
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="text-muted-foreground uppercase tracking-widest">
+                            <th className="text-left pb-2 font-normal w-[35%]">Title</th>
+                            <th className="text-left pb-2 font-normal w-[20%]">Company</th>
+                            <th className="text-left pb-2 font-normal w-[15%]">Location</th>
+                            <th className="text-right pb-2 font-normal w-[10%]">Final</th>
+                            <th className="text-right pb-2 font-normal w-[10%]">Semantic</th>
+                            <th className="text-right pb-2 font-normal w-[10%]">Skills</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {topJobsCache[u.id].map((j) => (
+                            <tr key={j.job_id} className="border-t border-border/50">
+                              <td className="py-1.5 pr-3">
+                                <a href={j.job_url} target="_blank" rel="noopener noreferrer" className="text-foreground hover:text-primary flex items-center gap-1 truncate">
+                                  {j.title ?? "—"}
+                                  <ExternalLink size={10} className="shrink-0 text-muted-foreground" />
+                                </a>
+                              </td>
+                              <td className="py-1.5 pr-3 text-muted-foreground truncate">{j.company ?? "—"}</td>
+                              <td className="py-1.5 pr-3 text-muted-foreground truncate">{j.location ?? "—"}</td>
+                              <td className="py-1.5 text-right tabular-nums font-medium text-foreground">{j.final_score != null ? j.final_score.toFixed(2) : "—"}</td>
+                              <td className="py-1.5 text-right tabular-nums text-muted-foreground">{j.semantic_score != null ? j.semantic_score.toFixed(2) : "—"}</td>
+                              <td className="py-1.5 text-right tabular-nums text-muted-foreground">{j.skills_score != null ? j.skills_score.toFixed(2) : "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="text-xs text-muted-foreground py-2">No job results yet.</div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

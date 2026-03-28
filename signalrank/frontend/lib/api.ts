@@ -233,6 +233,8 @@ export const api = {
       request<{ run_id: string; status: string; user_email: string }>(`/api/admin/users/${userId}/trigger-run`, { method: "POST", token }),
     runs: (token: string) =>
       request<{ run_id: string; user_email: string; status: string; job_count: number | null; started_at: string | null; finished_at: string | null }[]>("/api/admin/runs", { token }),
+    topJobs: (token: string, userId: string) =>
+      request<{ job_id: string; title: string | null; company: string | null; location: string | null; final_score: number | null; semantic_score: number | null; skills_score: number | null; job_url: string }[]>(`/api/admin/users/${userId}/top-jobs`, { token }),
   },
 
   ingest: {

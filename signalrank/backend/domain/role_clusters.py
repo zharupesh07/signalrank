@@ -1,6 +1,20 @@
 from __future__ import annotations
 
 ROLE_CLUSTERS: dict[str, set[str]] = {
+    "sap_erp": {
+        "SAP SD Consultant",
+        "SAP MM Consultant",
+        "SAP Functional Consultant",
+        "SAP Technical Consultant",
+        "SAP ABAP Developer",
+        "SAP Basis Consultant",
+        "SAP S/4HANA Consultant",
+        "SAP FI/CO Consultant",
+        "SAP HCM Consultant",
+        "SAP CRM Consultant",
+        "ERP Consultant",
+        "Oracle ERP Consultant",
+    },
     "ai_ml": {
         "AI/ML Engineer",
         "Data Scientist",
