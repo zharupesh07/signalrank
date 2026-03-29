@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import {
   ArrowRight,
@@ -67,7 +66,7 @@ const flow = [
 
 export default async function HomePage() {
   const session = await auth();
-  if (session) redirect("/dashboard");
+  const isAuthed = Boolean(session);
 
   return (
     <main className="min-h-screen page-content">
@@ -98,10 +97,10 @@ export default async function HomePage() {
 
               <div className="flex flex-wrap gap-3">
                 <Link
-                  href="/signup"
+                  href={isAuthed ? "/dashboard" : "/signup"}
                   className="inline-flex items-center gap-2 border border-primary bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground transition-colors hover:opacity-90"
                 >
-                  Get started
+                  {isAuthed ? "Open dashboard" : "Get started"}
                   <ArrowRight size={13} />
                 </Link>
                 <Link
@@ -199,10 +198,10 @@ export default async function HomePage() {
               </p>
             </div>
             <Link
-              href="/signup"
+              href={isAuthed ? "/dashboard" : "/signup"}
               className="inline-flex items-center gap-2 border border-primary bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground transition-colors hover:opacity-90"
             >
-              Start scanning
+              {isAuthed ? "Continue" : "Start scanning"}
               <Clock3 size={13} />
             </Link>
           </div>

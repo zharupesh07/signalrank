@@ -34,7 +34,7 @@ export default function Navbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 h-13 bg-background/95 backdrop-blur-sm border-b border-border nav-glow flex items-center px-6 gap-8">
       {/* Logo */}
-      <Link href="/dashboard" onClick={handleLogoClick} className="flex items-center gap-2 shrink-0 group relative">
+      <Link href="/" onClick={handleLogoClick} className="flex items-center gap-2 shrink-0 group relative">
         <Terminal size={14} className="text-primary group-hover:text-[var(--terminal-green-bright)] transition-colors" />
         <span className="text-primary font-bold text-sm tracking-[0.2em] text-glow-dim group-hover:text-glow-green transition-all">
           SIGNAL<span className="text-[var(--terminal-green-bright)]">RANK</span>

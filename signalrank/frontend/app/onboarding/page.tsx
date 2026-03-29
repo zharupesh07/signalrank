@@ -335,6 +335,10 @@ export default function OnboardingPage() {
                 </div>
               </div>
 
+              <div className="border-l-2 border-[#22c55e]/30 pl-3 text-[11px] leading-relaxed text-[#a1a1aa]">
+                The scrape window lives in Settings. Keep it small for quick refreshes, or expand it later if you want older jobs included in future scans.
+              </div>
+
               <div className="space-y-1.5">
                 <label className="text-[10px] text-[#71717a] uppercase tracking-wider">
                   Roles / companies to exclude
