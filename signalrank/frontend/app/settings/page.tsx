@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
 import { loadProfileOptions, PROFILE_OPTIONS_FALLBACK } from "@/lib/profile-options";
 import type { Profile } from "@/types";
 import { useToast } from "@/components/toast";
 import { TagInput } from "@/components/tag-input";
-import { Search, RefreshCw, User, Target, Briefcase, Shield, Save, CheckCircle } from "lucide-react";
+import { Search, RefreshCw, User, Target, Briefcase, Shield, Save, CheckCircle, Info } from "lucide-react";
 
 interface RecruiterRow {
   id: string;
@@ -26,6 +26,19 @@ interface FoundRecruiter {
   confidence: string;
 }
 
+function serializeSettingsSnapshot(input: {
+  targetRoles: string[];
+  locations: string[];
+  customQueries: string[];
+  targetLpa: string;
+  minYoe: string;
+  maxYoe: string;
+  scraperHoursOld: string;
+  scraperMaxTerms: string;
+}) {
+  return JSON.stringify(input);
+}
+
 export default function SettingsPage() {
   const { data: session } = useSession();
   const token = (session as { accessToken?: string })?.accessToken ?? "";
@@ -34,6 +47,7 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
   const [targetRoles, setTargetRoles] = useState<string[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
@@ -47,7 +61,7 @@ export default function SettingsPage() {
   const [scraperMaxTerms, setScraperMaxTerms] = useState("");
 
   const loaded = useRef(false);
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const snapshotRef = useRef("");
 
   const [findCompany, setFindCompany] = useState("");
   const [findDomain, setFindDomain] = useState("");
@@ -68,6 +82,17 @@ export default function SettingsPage() {
     setMaxYoe(p.max_yoe != null ? String(p.max_yoe) : "");
     setScraperHoursOld(p.scraper_hours_old != null ? String(p.scraper_hours_old) : "");
     setScraperMaxTerms(p.scraper_max_terms != null ? String(p.scraper_max_terms) : "");
+    snapshotRef.current = serializeSettingsSnapshot({
+      targetRoles: p.target_roles ?? [],
+      locations: p.preferred_locations ?? [],
+      customQueries: p.custom_search_queries ?? [],
+      targetLpa: p.target_lpa != null ? String(p.target_lpa) : "",
+      minYoe: p.min_yoe != null ? String(p.min_yoe) : "",
+      maxYoe: p.max_yoe != null ? String(p.max_yoe) : "",
+      scraperHoursOld: p.scraper_hours_old != null ? String(p.scraper_hours_old) : "",
+      scraperMaxTerms: p.scraper_max_terms != null ? String(p.scraper_max_terms) : "",
+    });
+    setDirty(false);
     loaded.current = true;
   }, [token]);
 
@@ -90,11 +115,25 @@ export default function SettingsPage() {
     });
   }, [token]);
 
+  const currentSnapshot = useMemo(
+    () =>
+      serializeSettingsSnapshot({
+        targetRoles,
+        locations,
+        customQueries,
+        targetLpa,
+        minYoe,
+        maxYoe,
+        scraperHoursOld,
+        scraperMaxTerms,
+      }),
+    [targetRoles, locations, customQueries, targetLpa, minYoe, maxYoe, scraperHoursOld, scraperMaxTerms]
+  );
+
   useEffect(() => {
     if (!loaded.current) return;
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(save, 1000);
-  }, [targetRoles, locations, customQueries, targetLpa, minYoe, maxYoe, scraperHoursOld, scraperMaxTerms]); // eslint-disable-line react-hooks/exhaustive-deps
+    setDirty(currentSnapshot !== snapshotRef.current);
+  }, [currentSnapshot]);
 
   async function save() {
     setSaving(true);
@@ -110,8 +149,10 @@ export default function SettingsPage() {
         scraper_hours_old: scraperHoursOld ? Number(scraperHoursOld) : null,
         scraper_max_terms: scraperMaxTerms ? Number(scraperMaxTerms) : null,
       });
+      snapshotRef.current = currentSnapshot;
       toast("Settings saved", "success");
       setSaved(true);
+      setDirty(false);
       setTimeout(() => setSaved(false), 2000);
     } catch {
       toast("Save failed", "error");
@@ -250,13 +291,13 @@ export default function SettingsPage() {
             <span className="text-[11px] text-muted-foreground uppercase tracking-[0.15em]">Scraping Config</span>
           </div>
           <p className="text-[10px] text-muted-foreground leading-relaxed border-l-2 border-primary/20 pl-3">
-            Quick refresh uses Indeed only with 1 title and 24h lookback. A full background run (all titles, 7 days, all sources) starts automatically after.
-            Override the full run defaults here.
+            Quick refresh uses Indeed only with 1 title and a 24h lookback. Full background runs use all roles and sources.
+            Raise the lookback here if you want the scraper to search further back in time.
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">
-                Full Run Lookback
+                Full Run Lookback (hours)
               </label>
               <div className="relative">
                 <input
@@ -267,6 +308,10 @@ export default function SettingsPage() {
                   className="w-full text-xs bg-input border border-border text-foreground px-3 py-2 focus:border-primary focus:outline-none placeholder:text-muted-foreground/40 transition-colors"
                 />
                 <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">hrs</span>
+              </div>
+              <div className="mt-1 flex items-start gap-1.5 text-[10px] text-muted-foreground/80 leading-relaxed">
+                <Info size={10} className="mt-0.5 shrink-0 text-primary" />
+                <span>Example: 168 = 7 days, 720 = 30 days. Higher values widen future scans.</span>
               </div>
             </div>
             <div>
@@ -286,14 +331,16 @@ export default function SettingsPage() {
 
         {/* Save button */}
         <div className="flex items-center justify-end gap-3">
-          <span className="text-[10px] text-muted-foreground">autosaves after changes</span>
+          <span className="text-[10px] text-muted-foreground">
+            {dirty ? "Unsaved changes" : "Changes saved"}
+          </span>
           <button
             onClick={save}
-            disabled={saving}
+            disabled={saving || !dirty}
             className="flex items-center gap-2 text-[11px] border px-5 py-2 uppercase tracking-wider transition-all duration-150 disabled:opacity-50"
             style={{
-              background: saved ? "var(--primary)" : "transparent",
-              borderColor: saved ? "var(--primary)" : "color-mix(in srgb, var(--primary) 40%, transparent)",
+              background: saved ? "var(--primary)" : dirty ? "transparent" : "color-mix(in srgb, var(--primary) 10%, transparent)",
+              borderColor: saved || dirty ? "var(--primary)" : "color-mix(in srgb, var(--primary) 25%, transparent)",
               color: saved ? "var(--primary-foreground)" : "var(--primary)",
             }}
           >
@@ -301,6 +348,11 @@ export default function SettingsPage() {
               <>
                 <RefreshCw size={10} className="animate-spin" />
                 Saving...
+              </>
+            ) : !dirty ? (
+              <>
+                <CheckCircle size={10} />
+                Saved
               </>
             ) : saved ? (
               <>
