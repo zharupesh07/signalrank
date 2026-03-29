@@ -328,8 +328,13 @@ async def refine_onboarding(
             pass
     elif qid == "target_roles":
         overrides = profile.config_overrides or {}
-        overrides.setdefault("profile_intent", {})["roles"] = answer if isinstance(answer, list) else [answer]
+        raw_roles = answer if isinstance(answer, list) else [answer]
+        cleaned_roles = [str(role).strip() for role in raw_roles if str(role).strip()]
+        overrides.setdefault("profile_intent", {})["roles"] = cleaned_roles
         profile.config_overrides = overrides
+        profile.target_roles = cleaned_roles
+        if cleaned_roles:
+            profile.role_intent = cleaned_roles[0]
     elif qid == "preferred_locations":
         overrides = profile.config_overrides or {}
         overrides.setdefault("scraping", {})["locations"] = answer if isinstance(answer, list) else [answer]
