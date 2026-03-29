@@ -27,6 +27,7 @@ const ROLE_OPTIONS = [
   "Embedded / Systems Engineer",
   "Product Engineer",
   "QA / Test Engineer",
+  "SAP SD Consultant",
 ];
 
 const LOCATION_OPTIONS = [

@@ -8,6 +8,7 @@ ROLE_OPTIONS = [
     "Full-Stack Engineer",
     "DevOps/SRE",
     "Security Engineer",
+    "SAP SD Consultant",
 ]
 
 TIER_OPTIONS = [
