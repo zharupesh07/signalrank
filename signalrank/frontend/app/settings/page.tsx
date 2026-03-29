@@ -3,9 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
+import { swr } from "@/lib/cache";
 import { loadProfileOptions, PROFILE_OPTIONS_FALLBACK } from "@/lib/profile-options";
-import type { Profile } from "@/types";
+import { makeQueuedRun, upsertRunCaches } from "@/lib/run-cache";
+import type { Profile, Run } from "@/types";
 import { useToast } from "@/components/toast";
+import RunProgress from "@/components/run-progress";
 import { TagInput } from "@/components/tag-input";
 import { Search, RefreshCw, User, Target, Briefcase, Shield, Save, CheckCircle, Info, Play } from "lucide-react";
 
@@ -49,6 +52,7 @@ export default function SettingsPage() {
   const [triggeringDeepScan, setTriggeringDeepScan] = useState(false);
   const [saved, setSaved] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [run, setRun] = useState<Run | null>(null);
 
   const [targetRoles, setTargetRoles] = useState<string[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
@@ -116,6 +120,14 @@ export default function SettingsPage() {
     });
   }, [token]);
 
+  useEffect(() => {
+    if (!token) {
+      setRun(null);
+      return;
+    }
+    swr("dash:run", () => api.runs.latest(token), setRun);
+  }, [token]);
+
   const currentSnapshot = useMemo(
     () =>
       serializeSettingsSnapshot({
@@ -170,7 +182,10 @@ export default function SettingsPage() {
     try {
       const ok = dirty ? await save() : true;
       if (!ok) return;
-      await api.runs.trigger(token, "full");
+      const res = await api.runs.trigger(token, "full");
+      const queuedRun = makeQueuedRun(res.run_id);
+      setRun(queuedRun);
+      upsertRunCaches(queuedRun);
       toast("Deep scan queued", "success");
     } catch {
       toast("Failed to queue deep scan", "error");
@@ -270,6 +285,24 @@ export default function SettingsPage() {
             ))}
           </div>
         </div>
+
+        {run && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="section-label">scan status</div>
+              <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+                updates live without refresh
+              </span>
+            </div>
+            <RunProgress
+              run={run}
+              onComplete={(completed) => {
+                setRun(completed);
+                upsertRunCaches(completed);
+              }}
+            />
+          </div>
+        )}
 
         {/* Search Preferences */}
         <div className="stat-card card-hover border border-border bg-card p-5 space-y-5">

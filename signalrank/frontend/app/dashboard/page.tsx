@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
 import { swr } from "@/lib/cache";
+import { makeQueuedRun, upsertRunCaches } from "@/lib/run-cache";
 import type { Job, Run } from "@/types";
 import { useToast } from "@/components/toast";
 import RunProgress from "@/components/run-progress";
@@ -135,15 +136,9 @@ export default function DashboardPage() {
     setTriggering(true);
     try {
       const res = await api.runs.trigger(token);
-      setRun({
-        id: res.run_id,
-        status: "pending",
-        started_at: new Date().toISOString(),
-        finished_at: null,
-        job_count: null,
-        scrape_count: null,
-        progress: null,
-      });
+      const queuedRun = makeQueuedRun(res.run_id);
+      setRun(queuedRun);
+      upsertRunCaches(queuedRun);
       toast("Run queued", "info");
     } catch (err) {
       toast(err instanceof Error ? err.message : "Failed to trigger run", "error");
@@ -160,6 +155,7 @@ export default function DashboardPage() {
 
   async function handleRunComplete(completed: Run) {
     setRun(completed);
+    upsertRunCaches(completed);
     loadJobs();
     loadAnalytics();
     if (completed.id && completed.status === "done") {

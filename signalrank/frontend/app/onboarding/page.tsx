@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
 import { loadProfileOptions, PROFILE_OPTIONS_FALLBACK } from "@/lib/profile-options";
+import { makeQueuedRun, upsertRunCaches } from "@/lib/run-cache";
 import { Upload } from "lucide-react";
 
 type MultiSelectProps = {
@@ -151,7 +152,8 @@ export default function OnboardingPage() {
         });
       }
       await api.onboarding.refine(token, "onboarding_complete", "true");
-      await api.runs.trigger(token);
+      const res = await api.runs.trigger(token);
+      upsertRunCaches(makeQueuedRun(res.run_id));
       router.push("/dashboard");
     } finally {
       setSubmitting(false);

@@ -9,6 +9,7 @@ import { useTheme } from "./theme-provider";
 import { ChipSelect } from "./chip-select";
 import { api } from "@/lib/api";
 import { loadProfileOptions, PROFILE_OPTIONS_FALLBACK } from "@/lib/profile-options";
+import { makeQueuedRun, upsertRunCaches } from "@/lib/run-cache";
 import type { Profile } from "@/types";
 
 type Tab = "profile" | "ranking" | "runs" | "debug";
@@ -177,7 +178,8 @@ export default function DevPanel() {
   async function triggerRun() {
     setTriggering(true);
     try {
-      await api.runs.trigger(token);
+      const res = await api.runs.trigger(token);
+      upsertRunCaches(makeQueuedRun(res.run_id));
       toast("Run queued", "info");
     } catch (err) {
       toast(err instanceof Error ? err.message : "Failed", "error");

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
 import { swr } from "@/lib/cache";
+import { makeQueuedRun, upsertRunCaches } from "@/lib/run-cache";
 import { CheckCircle, XCircle, Play, Square } from "lucide-react";
 import { useToast } from "@/components/toast";
 import RunProgress from "@/components/run-progress";
@@ -116,18 +117,21 @@ export default function RunsPage() {
     setTriggering(true);
     try {
       const res = await api.runs.trigger(token);
-      const newRun: Run = {
-        id: res.run_id,
-        status: "pending",
-        started_at: new Date().toISOString(),
-        finished_at: null,
-        job_count: null,
-        scrape_count: null,
-        progress: null,
-      };
+      const newRun = makeQueuedRun(res.run_id);
       setActiveRun(newRun);
+      setRuns((prev) => [
+        {
+          run_id: newRun.id,
+          status: newRun.status,
+          job_count: newRun.job_count,
+          scrape_count: newRun.scrape_count,
+          started_at: newRun.started_at,
+          finished_at: newRun.finished_at,
+        },
+        ...prev.filter((run) => run.run_id !== newRun.id),
+      ]);
+      upsertRunCaches(newRun);
       toast("Run queued", "info");
-      await refreshList();
     } catch {
       toast("Failed to trigger run", "error");
     } finally {
@@ -137,6 +141,7 @@ export default function RunsPage() {
 
   async function handleRunComplete(completed: Run) {
     setActiveRun(completed);
+    upsertRunCaches(completed);
     await refreshList();
   }
 
@@ -149,6 +154,11 @@ export default function RunsPage() {
         // Refresh the list immediately to show updated status
         const r = await api.runs.list(token);
         setRuns(r);
+        if (activeRun?.id === runId) {
+          const cancelledRun: Run = { ...activeRun, status: "cancelled" };
+          setActiveRun(cancelledRun);
+          upsertRunCaches(cancelledRun);
+        }
       } else {
         toast(`Failed to stop run: ${result.message}`, "error");
       }
