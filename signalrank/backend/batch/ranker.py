@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import time
+import uuid
 from datetime import datetime, timedelta, timezone
 
 import numpy as np
@@ -11,9 +12,9 @@ import pandas as pd
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.models import JobRaw
+from api.models import JobRaw, Profile
 from batch.context import build_context
-from batch.embedding_cache import PgEmbeddingCache
+from batch.embedding_cache import PgEmbeddingCache, store_job_embeddings
 from domain.additive_scoring import (
     detect_contract_type,
     recency_score_0_100,
@@ -54,6 +55,14 @@ _RANK_MAX_CANDIDATES = int(os.environ.get("RANKER_MAX_CANDIDATES", "2000"))
 _RANK_DESCRIPTION_CHARS = int(os.environ.get("RANKER_MAX_DESCRIPTION_CHARS", "1200"))
 
 
+def _is_uuid_like(value: str) -> bool:
+    try:
+        uuid.UUID(str(value))
+        return True
+    except (ValueError, TypeError, AttributeError):
+        return False
+
+
 def matches_requested_clusters_for_row(
     requested_clusters: set[str] | None,
     raw_clusters,
@@ -90,7 +99,7 @@ async def load_jobs_dataframe(
     stmt = select(
         JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.company,
         func.left(JobRaw.description, _RANK_DESCRIPTION_CHARS).label("description"),
-        JobRaw.location, JobRaw.site, JobRaw.date_posted, JobRaw.role_clusters,
+        JobRaw.location, JobRaw.site, JobRaw.date_posted, JobRaw.role_clusters, JobRaw.embedding,
     ).where(JobRaw.ingested_at >= cutoff)
 
     stmt = stmt.limit(_RANK_MAX_CANDIDATES)
@@ -100,12 +109,12 @@ async def load_jobs_dataframe(
     if not rows:
         return pd.DataFrame(
             columns=["id", "job_url", "title", "company", "description",
-                     "location", "site", "date_posted", "role_clusters"]
+                     "location", "site", "date_posted", "role_clusters", "embedding"]
         )
     df = pd.DataFrame(
         rows,
         columns=["id", "job_url", "title", "company", "description",
-                 "location", "site", "date_posted", "role_clusters"],
+                 "location", "site", "date_posted", "role_clusters", "embedding"],
     )
     if role_clusters and "general" not in role_clusters:
         match_mask = df.apply(
@@ -128,24 +137,24 @@ async def load_jobs_by_ids_dataframe(
     if not job_ids:
         return pd.DataFrame(
             columns=["id", "job_url", "title", "company", "description",
-                     "location", "site", "date_posted", "role_clusters"]
+                     "location", "site", "date_posted", "role_clusters", "embedding"]
         )
     stmt = select(
         JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.company,
         func.left(JobRaw.description, _RANK_DESCRIPTION_CHARS).label("description"),
-        JobRaw.location, JobRaw.site, JobRaw.date_posted, JobRaw.role_clusters,
+        JobRaw.location, JobRaw.site, JobRaw.date_posted, JobRaw.role_clusters, JobRaw.embedding,
     ).where(JobRaw.id.in_(job_ids))
     result = await db.execute(stmt)
     rows = result.all()
     if not rows:
         return pd.DataFrame(
             columns=["id", "job_url", "title", "company", "description",
-                     "location", "site", "date_posted", "role_clusters"]
+                     "location", "site", "date_posted", "role_clusters", "embedding"]
         )
     return pd.DataFrame(
         rows,
         columns=["id", "job_url", "title", "company", "description",
-                 "location", "site", "date_posted", "role_clusters"],
+                 "location", "site", "date_posted", "role_clusters", "embedding"],
     )
 
 
@@ -160,6 +169,30 @@ def _apply_pre_filters(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
         required_yoe = df["description"].apply(extract_required_yoe)
         mask &= required_yoe.isna() | (required_yoe <= max_yoe)
     return df.loc[mask].reset_index(drop=True)
+
+
+def _dedupe_before_embedding(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return df
+
+    dedupe_key = (
+        df["title"].fillna("").astype(str).str.strip().str.lower()
+        + "|"
+        + df["company"].fillna("").astype(str).str.strip().str.lower()
+        + "|"
+        + df["location"].fillna("").astype(str).str.strip().str.lower()
+    )
+    working = df.assign(
+        _pre_embed_key=dedupe_key,
+        _desc_len=df["description"].fillna("").astype(str).str.len(),
+    )
+    working = (
+        working.sort_values(["_pre_embed_key", "_desc_len"], ascending=[True, False])
+        .drop_duplicates(subset="_pre_embed_key", keep="first")
+        .drop(columns=["_pre_embed_key", "_desc_len"])
+        .reset_index(drop=True)
+    )
+    return working
 
 
 def _apply_semantic_gates(df: pd.DataFrame, cfg: dict, role_intent: str) -> pd.DataFrame:
@@ -320,7 +353,9 @@ async def _compute_embeddings(
     cfg: dict,
     db: AsyncSession,
     cfg_fp: str,
+    user_id: str,
     resume_text: str,
+    persisted_resume_embedding: list[float] | None = None,
     distilled_text: str | None = None,
 ) -> pd.DataFrame:
     t_emb = time.monotonic()
@@ -336,45 +371,64 @@ async def _compute_embeddings(
     df["canonical_skills"] = [sorted(canon.canonicalize(s)) for s in raw_skills]
     df["skill_overlap"] = df["canonical_skills"].apply(len)
 
-    job_texts = [
-        build_job_embedding_text(title=t, description=d, canonical_skills=cs, cfg=cfg)
-        for t, d, cs in zip(df["title"], df["description"], df["canonical_skills"])
-    ]
-    job_fps = [fingerprint_text(t) for t in job_texts]
-    cached = await job_cache.fetch(job_fps)
-
     dim = cfg["embeddings"]["embedding_dim"]
-    vectors = np.zeros((len(job_fps), dim), dtype="float32")
-    misses = []
-    for i, fp in enumerate(job_fps):
-        if fp in cached:
-            vectors[i] = np.array(cached[fp], dtype="float32")
-        else:
-            misses.append(i)
+    vectors = np.zeros((len(df), dim), dtype="float32")
+    stored_hits = 0
+    miss_specs: list[tuple[int, str, str]] = []
+    for i, (t, d, cs, stored_embedding) in enumerate(
+        zip(df["title"], df["description"], df["canonical_skills"], df["embedding"])
+    ):
+        if stored_embedding is not None:
+            vectors[i] = np.array(stored_embedding, dtype="float32")
+            stored_hits += 1
+            continue
+        job_text = build_job_embedding_text(title=t, description=d, canonical_skills=cs, cfg=cfg)
+        miss_specs.append((i, fingerprint_text(job_text), job_text))
 
-    logger.info("Embedding cache: %d hits, %d misses out of %d jobs",
-                len(cached), len(misses), len(job_fps))
+    cached = await job_cache.fetch([text_fp for _, text_fp, _ in miss_specs])
+    misses: list[tuple[int, str]] = []
+    miss_text_by_row_idx: dict[int, str] = {}
+    cached_job_rows: list[tuple[str, list[float]]] = []
+    for row_idx, text_fp, job_text in miss_specs:
+        if text_fp in cached:
+            vectors[row_idx] = np.array(cached[text_fp], dtype="float32")
+            cached_job_rows.append((df.at[row_idx, "job_url"], cached[text_fp]))
+        else:
+            misses.append((row_idx, text_fp))
+            miss_text_by_row_idx[row_idx] = job_text
+
+    logger.info(
+        "Embedding cache: %d stored hits, %d cache hits, %d misses out of %d jobs",
+        stored_hits, len(cached), len(misses), len(df),
+    )
 
     engine = None
     if misses:
         engine = EmbeddingEngine(cfg)
         total = len(misses)
+        cache_rows: list[tuple[str, list[float]]] = []
+        job_embedding_rows: list[tuple[str, list[float]]] = []
         for chunk_start in range(0, total, _RANK_EMBED_CHUNK):
             chunk_end = min(chunk_start + _RANK_EMBED_CHUNK, total)
-            chunk_indices = misses[chunk_start:chunk_end]
-            chunk_texts = [job_texts[i] for i in chunk_indices]
+            chunk = misses[chunk_start:chunk_end]
+            chunk_texts = [miss_text_by_row_idx[row_idx] for row_idx, _ in chunk]
 
             new_vecs = await asyncio.to_thread(engine.embed, chunk_texts)
 
-            await job_cache.store_vectors(
-                [(job_fps[i], v.tolist()) for i, v in zip(chunk_indices, new_vecs)]
-            )
-            await db.commit()
-
-            for i, v in zip(chunk_indices, new_vecs):
-                vectors[i] = v
+            for (row_idx, text_fp), v in zip(chunk, new_vecs):
+                vector = v.tolist()
+                cache_rows.append((text_fp, vector))
+                job_embedding_rows.append((df.at[row_idx, "job_url"], vector))
+                vectors[row_idx] = v
 
             logger.info("Ranking embed: %d/%d", chunk_end, total)
+
+        await job_cache.store_vectors(cache_rows)
+        await store_job_embeddings(db, cached_job_rows + job_embedding_rows)
+        await db.commit()
+    elif cached_job_rows:
+        await store_job_embeddings(db, cached_job_rows)
+        await db.commit()
 
     resume_emb_text = build_resume_embedding_text(
         resume_text=resume_text,
@@ -385,13 +439,21 @@ async def _compute_embeddings(
     resume_fp = fingerprint_text(resume_emb_text)
     resume_cached = await resume_cache.fetch([resume_fp])
 
-    if resume_fp in resume_cached:
+    if persisted_resume_embedding is not None:
+        r_emb = np.array(persisted_resume_embedding, dtype="float32")
+    elif resume_fp in resume_cached:
         r_emb = np.array(resume_cached[resume_fp], dtype="float32")
     else:
         if engine is None:
             engine = EmbeddingEngine(cfg)
         r_emb = (await asyncio.to_thread(engine.embed, [resume_emb_text]))[0]
         await resume_cache.store_vectors([(resume_fp, r_emb.tolist())])
+        if _is_uuid_like(user_id):
+            profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+            profile = profile_result.scalar_one_or_none()
+            if profile:
+                profile.resume_embedding = r_emb.tolist()
+            await db.commit()
 
     df["semantic_score"] = cosine_similarity(r_emb, vectors)
     nan_count = df["semantic_score"].isna().sum()
@@ -404,7 +466,8 @@ async def _compute_embeddings(
                "duration_s": round(time.monotonic() - t_emb, 2)},
     )
     df = df.drop(columns=["canonical_skills"], errors="ignore")
-    del vectors, cached, job_texts, job_fps, raw_skills, canon
+    del vectors, cached, raw_skills, canon
+    del miss_specs, miss_text_by_row_idx
     if "new_vecs" in locals():
         del new_vecs
     if "r_emb" in locals():
@@ -492,13 +555,34 @@ async def _score_loaded_jobs_dataframe(
     if df.empty:
         return pd.DataFrame(columns=["final_score"])
 
+    pre_dedupe_count = len(df)
+    df = _dedupe_before_embedding(df)
+    if len(df) != pre_dedupe_count:
+        logger.info("Pre-embedding dedupe removed %d duplicate rows", pre_dedupe_count - len(df))
+
     role_intent = (
         cfg.get("profile_intent", {}).get("preset")
         or cfg.get("ranking", {}).get("default_role")
         or "software_general"
     )
 
-    df = await _compute_embeddings(df, cfg, db, ctx.config_fp, resume_text, distilled_text=distilled_text)
+    persisted_resume_embedding = None
+    if _is_uuid_like(user_id):
+        profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+        profile = profile_result.scalar_one_or_none()
+        if profile and profile.resume_embedding is not None:
+            persisted_resume_embedding = list(profile.resume_embedding)
+
+    df = await _compute_embeddings(
+        df,
+        cfg,
+        db,
+        ctx.config_fp,
+        user_id,
+        resume_text,
+        persisted_resume_embedding=persisted_resume_embedding,
+        distilled_text=distilled_text,
+    )
 
     df = _apply_semantic_gates(df, cfg, role_intent)
     if df.empty:
@@ -550,7 +634,7 @@ async def _score_loaded_jobs_dataframe(
     )
     df = df.drop_duplicates(subset="_fuzzy_key", keep="first")
     df = df.drop(columns=["_dedup_key", "_fuzzy_key"], errors="ignore").reset_index(drop=True)
-    df = df.drop(columns=["description", "role_clusters"], errors="ignore")
+    df = df.drop(columns=["description", "role_clusters", "embedding"], errors="ignore")
     gc.collect()
 
     logger.info(

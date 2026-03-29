@@ -308,7 +308,10 @@ async def update_profile(
             editor_payload = value
             profile.config_overrides = _deep_merge_dict(profile.config_overrides, {"resume_editor": editor_payload})
             profile.resume_text = serialize_resume_editor(editor_payload)
+            profile.resume_embedding = None
             continue
+        if field in {"resume_text", "distilled_text"}:
+            profile.resume_embedding = None
         setattr(profile, field, value)
 
     await db.commit()

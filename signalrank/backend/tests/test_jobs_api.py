@@ -1,4 +1,5 @@
 import pytest
+from datetime import datetime, timezone
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -96,3 +97,83 @@ async def test_archive_unsuitable_admin_queues_background_tasks(client, admin_to
 
     queued = (await db.execute(select(ArchivalQueue))).scalars().all()
     assert len(queued) == 1
+
+
+async def test_list_jobs_returns_isoformatted_date_posted(client, auth_token, db: AsyncSession):
+    me = await client.get("/api/profile", headers={"Authorization": f"Bearer {auth_token}"})
+    user_id = me.json()["user_id"]
+
+    posted_at = datetime(2026, 3, 29, 12, 0, tzinfo=timezone.utc)
+    run = Run(user_id=user_id, status="success")
+    job = JobRaw(
+        job_url="https://example.com/jobs/iso-date",
+        title="ML Engineer",
+        company="Example Corp",
+        description="Role",
+        location="Remote",
+        site="manual",
+        date_posted=posted_at,
+    )
+    db.add_all([run, job])
+    await db.flush()
+    db.add(
+        JobResult(
+            run_id=run.id,
+            user_id=user_id,
+            job_id=job.id,
+            final_score=81.0,
+            company_tier="tier_a",
+        )
+    )
+    await db.commit()
+
+    response = await client.get(
+        "/api/jobs",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 200
+    jobs = response.json()["jobs"]
+    assert len(jobs) == 1
+    assert jobs[0]["date_posted"] == posted_at.isoformat()
+
+
+async def test_list_jobs_sorts_by_date_posted_desc(client, auth_token, db: AsyncSession):
+    me = await client.get("/api/profile", headers={"Authorization": f"Bearer {auth_token}"})
+    user_id = me.json()["user_id"]
+
+    run = Run(user_id=user_id, status="success")
+    older = JobRaw(
+        job_url="https://example.com/jobs/older",
+        title="Older Job",
+        company="Example Corp",
+        description="Role",
+        location="Remote",
+        site="manual",
+        date_posted=datetime(2026, 3, 20, 12, 0, tzinfo=timezone.utc),
+    )
+    newer = JobRaw(
+        job_url="https://example.com/jobs/newer",
+        title="Newer Job",
+        company="Example Corp",
+        description="Role",
+        location="Remote",
+        site="manual",
+        date_posted=datetime(2026, 3, 29, 12, 0, tzinfo=timezone.utc),
+    )
+    db.add_all([run, older, newer])
+    await db.flush()
+    db.add_all(
+        [
+            JobResult(run_id=run.id, user_id=user_id, job_id=older.id, final_score=70.0, company_tier="tier_a"),
+            JobResult(run_id=run.id, user_id=user_id, job_id=newer.id, final_score=60.0, company_tier="tier_a"),
+        ]
+    )
+    await db.commit()
+
+    response = await client.get(
+        "/api/jobs?sort=date_posted&sort_dir=desc",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 200
+    jobs = response.json()["jobs"]
+    assert [job["title"] for job in jobs] == ["Newer Job", "Older Job"]

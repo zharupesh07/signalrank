@@ -20,7 +20,8 @@ router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 async def list_jobs(
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
-    sort: Literal["final_score", "semantic_score", "skills_score", "company_score", "seniority_score", "location_score", "recency_score"] = Query("final_score"),
+    sort: Literal["final_score", "semantic_score", "skills_score", "company_score", "seniority_score", "location_score", "recency_score", "date_posted"] = Query("final_score"),
+    sort_dir: Literal["asc", "desc"] = Query("desc"),
     search: str = Query(""),
     show_archived: bool = Query(True),
     min_score: int = Query(0, ge=0, le=100),
@@ -41,7 +42,8 @@ async def list_jobs(
     if not run:
         return {"jobs": [], "total": 0, "page": page, "limit": limit}
 
-    sort_col = getattr(JobResult, sort)
+    sort_col = JobRaw.date_posted if sort == "date_posted" else getattr(JobResult, sort)
+    order_expr = sort_col.asc().nulls_last() if sort_dir == "asc" else sort_col.desc().nulls_last()
 
     base_filters = [JobResult.run_id == run.id, JobResult.user_id == current_user.id]
     run_total_query = select(func.count()).select_from(JobResult).where(*base_filters)
@@ -104,7 +106,7 @@ async def list_jobs(
         select(JobResult, JobRaw)
         .join(JobRaw, JobResult.job_id == JobRaw.id)
         .where(*site_filters)
-        .order_by(sort_col.desc())
+        .order_by(order_expr)
         .offset((page - 1) * limit)
         .limit(limit)
     )
@@ -119,7 +121,7 @@ async def list_jobs(
             "company": job.company,
             "location": job.location,
             "site": job.site,
-            "date_posted": str(job.date_posted) if job.date_posted else None,
+            "date_posted": job.date_posted.isoformat() if job.date_posted else None,
             "final_score": result.final_score / 100 if result.final_score is not None else None,
             "semantic_score": result.semantic_score,
             "skills_score": result.skills_score / 100 if result.skills_score is not None else None,
@@ -302,5 +304,5 @@ async def get_job(
         "description": job.description,
         "location": job.location,
         "site": job.site,
-        "date_posted": str(job.date_posted) if job.date_posted else None,
+        "date_posted": job.date_posted.isoformat() if job.date_posted else None,
     }

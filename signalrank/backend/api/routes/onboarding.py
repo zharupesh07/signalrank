@@ -221,14 +221,21 @@ async def _embed_resume(user_id: str, resume_text: str, distilled_text: str | No
         resume_fp = fingerprint_text(resume_emb_text)
 
         async with AsyncSessionLocal() as db:
+            result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+            profile = result.scalar_one_or_none()
+            if not profile:
+                return
             cache = PgEmbeddingCache(db, ctx.config_fp)
             cached = await cache.fetch([resume_fp])
-            if resume_fp not in cached:
+            if resume_fp in cached:
+                profile.resume_embedding = list(cached[resume_fp])
+            else:
                 engine = EmbeddingEngine(cfg)
                 r_emb = engine.embed([resume_emb_text])[0]
                 await cache.store_vectors([(resume_fp, r_emb.tolist())])
-                await db.commit()
+                profile.resume_embedding = r_emb.tolist()
                 logger.info("[EMBED] Pre-cached resume embedding for user=%s", user_id)
+            await db.commit()
     except Exception:
         logger.warning("Resume embedding pre-cache failed for user=%s", user_id, exc_info=True)
 
@@ -304,6 +311,7 @@ async def upload_resume(
         db.add(profile)
         await db.flush()
     profile.resume_text = resume_text
+    profile.resume_embedding = None
     _set_onboarding_parse_status(profile, "pending")
     await db.commit()
 

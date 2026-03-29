@@ -5,12 +5,16 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.models import Embedding
+from api.models import Embedding, JobRaw
 
 # Process-level LRU cache keyed by (cfg_fp, text_fp) — avoids re-fetching
 # vectors from Neon on repeated ranking runs within the same process lifetime.
 _VECTOR_CACHE: dict[tuple[str, str], list[float]] = {}
 _VECTOR_CACHE_MAX = 20_000
+
+
+def _clean_vector(vector: Sequence[float]) -> list[float]:
+    return [v if math.isfinite(v) else 0.0 for v in vector]
 
 
 class PgEmbeddingCache:
@@ -54,8 +58,7 @@ class PgEmbeddingCache:
             batch = rows[i:i + batch_size]
             values = []
             for text_fp, vector in batch:
-                # Sanitize: replace non-finite floats to avoid DB errors
-                clean = [v if math.isfinite(v) else 0.0 for v in vector]
+                clean = _clean_vector(vector)
                 values.append({"text_fp": text_fp, "cfg_fp": self.cfg_fp, "vector": clean})
             await self.db.execute(
                 pg_insert(Embedding)
@@ -65,6 +68,28 @@ class PgEmbeddingCache:
             for text_fp, vector in batch:
                 key = (self.cfg_fp, text_fp)
                 if key not in _VECTOR_CACHE and len(_VECTOR_CACHE) < _VECTOR_CACHE_MAX:
-                    clean = [v if math.isfinite(v) else 0.0 for v in vector]
-                    _VECTOR_CACHE[key] = clean
+                    _VECTOR_CACHE[key] = _clean_vector(vector)
         await self.db.flush()
+
+
+async def store_job_embeddings(
+    db: AsyncSession,
+    rows: list[tuple[str, list[float]]],
+) -> None:
+    if not rows:
+        return
+    batch_size = 500
+    for i in range(0, len(rows), batch_size):
+        batch = rows[i:i + batch_size]
+        values = [
+            {"job_url": job_url, "embedding": _clean_vector(vector)}
+            for job_url, vector in batch
+        ]
+        insert_stmt = pg_insert(JobRaw).values(values)
+        await db.execute(
+            insert_stmt.on_conflict_do_update(
+                index_elements=["job_url"],
+                set_={"embedding": insert_stmt.excluded.embedding},
+            )
+        )
+    await db.flush()

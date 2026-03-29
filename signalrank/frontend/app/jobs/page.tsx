@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
   flexRender,
   createColumnHelper,
   type SortingState,
@@ -33,6 +32,30 @@ const TIER_COLORS: Record<string, string> = {
   tier_c:  "#f97316",
   tier_d:  "var(--muted-foreground)",
 };
+
+function parseApiDate(value: string | null): Date | null {
+  if (!value) return null;
+  const normalized = value.includes("T") ? value : value.replace(" ", "T");
+  const parsed = new Date(normalized);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatJobAge(value: string | null): { label: string; color: string } | null {
+  const postedAt = parseApiDate(value);
+  if (!postedAt) return null;
+
+  const days = Math.max(0, Math.floor((Date.now() - postedAt.getTime()) / 86400000));
+  if (days === 0) {
+    return { label: "today", color: "var(--terminal-green-bright)" };
+  }
+  if (days < 14) {
+    return { label: `${days}d`, color: "var(--terminal-green-bright)" };
+  }
+  if (days < 60) {
+    return { label: `${Math.floor(days / 7)}w`, color: "var(--terminal-yellow)" };
+  }
+  return { label: `${Math.floor(days / 30)}mo`, color: "var(--muted-foreground)" };
+}
 
 function ScoreCell({ value }: { value: number | null }) {
   if (value == null) return <span className="text-muted-foreground">—</span>;
@@ -121,13 +144,9 @@ const columns = [
     header: "Age",
     size: 50,
     cell: (i) => {
-      const v = i.getValue();
-      if (!v) return <span className="text-muted-foreground text-xs">—</span>;
-      const days = Math.floor((Date.now() - new Date(v).getTime()) / 86400000);
-      if (days === 0) return <span className="text-xs text-[var(--terminal-green-bright)]">today</span>;
-      if (days < 7) return <span className="text-xs text-[var(--terminal-green-bright)]">{days}d</span>;
-      if (days < 30) return <span className="text-xs text-[var(--terminal-yellow)]">{Math.floor(days / 7)}w</span>;
-      return <span className="text-xs text-muted-foreground">{Math.floor(days / 30)}mo</span>;
+      const age = formatJobAge(i.getValue());
+      if (!age) return <span className="text-muted-foreground text-xs">—</span>;
+      return <span className="text-xs" style={{ color: age.color }}>{age.label}</span>;
     },
   }),
   col.display({
@@ -146,6 +165,40 @@ const columns = [
     ),
   }),
 ];
+
+type JobsSortField =
+  | "final_score"
+  | "semantic_score"
+  | "skills_score"
+  | "company_score"
+  | "seniority_score"
+  | "location_score"
+  | "recency_score"
+  | "date_posted";
+
+function getApiSort(sorting: SortingState): { sort: JobsSortField; sortDir: "asc" | "desc" } {
+  const current = sorting[0];
+  if (!current) {
+    return { sort: "final_score", sortDir: "desc" };
+  }
+  const allowed = new Set<JobsSortField>([
+    "final_score",
+    "semantic_score",
+    "skills_score",
+    "company_score",
+    "seniority_score",
+    "location_score",
+    "recency_score",
+    "date_posted",
+  ]);
+  if (!allowed.has(current.id as JobsSortField)) {
+    return { sort: "final_score", sortDir: "desc" };
+  }
+  return {
+    sort: current.id as JobsSortField,
+    sortDir: current.desc ? "desc" : "asc",
+  };
+}
 
 const TIERS = [
   { value: "tier_ss", label: "Tier SS" },
@@ -198,7 +251,7 @@ export default function JobsPage() {
   const [runTotal, setRunTotal] = useState(0);
   const [availableSites, setAvailableSites] = useState<string[]>([]);
   const [page, setPage] = useState(1);
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>([{ id: "final_score", desc: true }]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -244,15 +297,18 @@ export default function JobsPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, filters, showArchived, pageSize]);
+  }, [debouncedSearch, filters, showArchived, pageSize, sorting]);
 
   const loadJobs = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     try {
+      const { sort, sortDir } = getApiSort(sorting);
       const response = await api.jobs.list(token, {
         page,
         limit: pageSize,
+        sort,
+        sortDir,
         search: debouncedSearch,
         showArchived,
         minScore: filters.minScore,
@@ -268,7 +324,7 @@ export default function JobsPage() {
     } finally {
       setLoading(false);
     }
-  }, [token, page, pageSize, debouncedSearch, showArchived, filters]);
+  }, [token, page, pageSize, debouncedSearch, showArchived, filters, sorting]);
 
   useEffect(() => {
     loadJobs().catch(() => null);
@@ -380,8 +436,8 @@ export default function JobsPage() {
     columns: allColumns,
     state: { sorting },
     onSortingChange: setSorting,
+    manualSorting: true,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
   });
 
 

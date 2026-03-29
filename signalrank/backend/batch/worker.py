@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from api.models import JobRaw, JobResult, Profile, Run
 from batch.context import build_context
-from batch.embedding_cache import PgEmbeddingCache
+from batch.embedding_cache import PgEmbeddingCache, store_job_embeddings
 
 logger = logging.getLogger(__name__)
 
@@ -90,8 +90,16 @@ async def _embed_new_jobs(
     for attempt in range(1, _EMBED_MAX_RETRIES + 1):
         try:
             cached = await cache.fetch(job_fps)
+            cached_job_rows = [
+                (raw_jobs[i].job_url, cached[fp])
+                for i, fp in enumerate(job_fps)
+                if fp in cached
+            ]
             misses = [i for i, fp in enumerate(job_fps) if fp not in cached]
             if not misses:
+                if cached_job_rows:
+                    await store_job_embeddings(db, cached_job_rows)
+                    await db.commit()
                 logger.info("[EMBED] All %d embeddings cached, skipping", len(job_fps))
                 return
 
@@ -105,6 +113,8 @@ async def _embed_new_jobs(
             total = len(miss_texts)
 
             embedded = 0
+            cache_rows: list[tuple[str, list[float]]] = []
+            job_embedding_rows: list[tuple[str, list[float]]] = []
             for chunk_start in range(0, total, _EMBED_CHUNK_SIZE):
                 chunk_end = min(chunk_start + _EMBED_CHUNK_SIZE, total)
                 chunk_texts = miss_texts[chunk_start:chunk_end]
@@ -112,10 +122,10 @@ async def _embed_new_jobs(
 
                 vecs = await asyncio.to_thread(engine.embed, chunk_texts)
 
-                await cache.store_vectors(
-                    [(job_fps[i], v.tolist()) for i, v in zip(chunk_indices, vecs)]
-                )
-                await db.commit()
+                for i, v in zip(chunk_indices, vecs):
+                    vector = v.tolist()
+                    cache_rows.append((job_fps[i], vector))
+                    job_embedding_rows.append((raw_jobs[i].job_url, vector))
 
                 embedded = chunk_end
                 if update_progress:
@@ -126,6 +136,10 @@ async def _embed_new_jobs(
                         jobs_found=len(raw_jobs),
                         message=f"Embedding jobs: {embedded}/{total}",
                     )
+
+            await cache.store_vectors(cache_rows)
+            await store_job_embeddings(db, cached_job_rows + job_embedding_rows)
+            await db.commit()
 
             logger.info("[EMBED] Pre-cached %d job embeddings", total)
             unload_embedding_engine()
@@ -451,7 +465,7 @@ async def boot_embed_uncached_jobs(session_factory: async_sessionmaker) -> None:
     async with session_factory() as db:
         cutoff = datetime.now(timezone.utc) - timedelta(days=15)
         result = await db.execute(
-            select(JobRaw.id, JobRaw.title, JobRaw.description)
+            select(JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.description, JobRaw.embedding)
             .where(JobRaw.ingested_at >= cutoff)
         )
         rows = result.all()
@@ -466,7 +480,12 @@ async def boot_embed_uncached_jobs(session_factory: async_sessionmaker) -> None:
     cfg = ctx.config
     canon = SkillCanonicalizer(cfg)
 
-    descriptions = [r.description or "" for r in rows]
+    rows_to_embed = [r for r in rows if r.embedding is None]
+    if not rows_to_embed:
+        logger.info("[BOOT-EMBED] All %d recent jobs already have stored embeddings", len(rows))
+        return
+
+    descriptions = [r.description or "" for r in rows_to_embed]
     raw_skills_list = extract_skills_from_texts(descriptions, cfg)
     canonical_skills_list = [sorted(canon.canonicalize(s)) for s in raw_skills_list]
 
@@ -477,7 +496,7 @@ async def boot_embed_uncached_jobs(session_factory: async_sessionmaker) -> None:
             canonical_skills=cs,
             cfg=cfg,
         )
-        for r, cs in zip(rows, canonical_skills_list)
+        for r, cs in zip(rows_to_embed, canonical_skills_list)
     ]
     job_fps = [fingerprint_text(t) for t in job_texts]
 
@@ -485,8 +504,16 @@ async def boot_embed_uncached_jobs(session_factory: async_sessionmaker) -> None:
         cache = PgEmbeddingCache(db, ctx.config_fp)
         cached = await cache.fetch(job_fps)
         misses = [i for i, fp in enumerate(job_fps) if fp not in cached]
+        cached_job_rows = [
+            (rows_to_embed[i].job_url, cached[fp])
+            for i, fp in enumerate(job_fps)
+            if fp in cached
+        ]
 
     if not misses:
+        async with session_factory() as db:
+            await store_job_embeddings(db, cached_job_rows)
+            await db.commit()
         logger.info("[BOOT-EMBED] All %d job embeddings cached", len(job_fps))
         return
 
@@ -494,6 +521,8 @@ async def boot_embed_uncached_jobs(session_factory: async_sessionmaker) -> None:
     from domain.embeddings import EmbeddingEngine, unload_embedding_engine
     engine = EmbeddingEngine(cfg)
     total = len(misses)
+    cache_rows: list[tuple[str, list[float]]] = []
+    job_embedding_rows: list[tuple[str, list[float]]] = []
 
     for chunk_start in range(0, total, _EMBED_CHUNK_SIZE):
         chunk_end = min(chunk_start + _EMBED_CHUNK_SIZE, total)
@@ -501,16 +530,19 @@ async def boot_embed_uncached_jobs(session_factory: async_sessionmaker) -> None:
         chunk_texts = [job_texts[i] for i in chunk_indices]
 
         vecs = await asyncio.to_thread(engine.embed, chunk_texts)
-
-        async with session_factory() as db:
-            cache = PgEmbeddingCache(db, ctx.config_fp)
-            await cache.store_vectors(
-                [(job_fps[i], v.tolist()) for i, v in zip(chunk_indices, vecs)]
-            )
-            await db.commit()
+        for i, v in zip(chunk_indices, vecs):
+            vector = v.tolist()
+            cache_rows.append((job_fps[i], vector))
+            job_embedding_rows.append((rows_to_embed[i].job_url, vector))
 
         if chunk_end % 500 == 0 or chunk_end == total:
             logger.info("[BOOT-EMBED] %d/%d", chunk_end, total)
+
+    async with session_factory() as db:
+        cache = PgEmbeddingCache(db, ctx.config_fp)
+        await cache.store_vectors(cache_rows)
+        await store_job_embeddings(db, cached_job_rows + job_embedding_rows)
+        await db.commit()
 
     logger.info("[BOOT-EMBED] Done — pre-cached %d job embeddings", total)
     unload_embedding_engine()

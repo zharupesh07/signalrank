@@ -13,6 +13,8 @@ import type {
 type JobsListParams = {
   page?: number;
   limit?: number;
+  sort?: "final_score" | "semantic_score" | "skills_score" | "company_score" | "seniority_score" | "location_score" | "recency_score" | "date_posted";
+  sortDir?: "asc" | "desc";
   search?: string;
   showArchived?: boolean;
   minScore?: number;
@@ -78,6 +80,8 @@ export const api = {
       const {
         page = 1,
         limit = 50,
+        sort = "final_score",
+        sortDir = "desc",
         search = "",
         showArchived = true,
         minScore = 0,
@@ -89,6 +93,8 @@ export const api = {
       const qs = new URLSearchParams({
         page: String(page),
         limit: String(limit),
+        sort,
+        sort_dir: sortDir,
         show_archived: String(showArchived),
         min_score: String(minScore),
         job_type: jobType,
