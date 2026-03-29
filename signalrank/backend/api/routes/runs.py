@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -23,11 +24,17 @@ class RunResponse(BaseModel):
     finished_at: str | None = None
 
 
+class TriggerRunRequest(BaseModel):
+    mode: Literal["quick", "full"] = "quick"
+
+
 @router.post("/trigger", status_code=202)
 async def trigger_run(
+    body: TriggerRunRequest | None = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    requested_mode = (body.mode if body else "quick")
     result = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
     profile = result.scalar_one_or_none()
     if not profile or not profile.onboarding_complete:
@@ -36,14 +43,14 @@ async def trigger_run(
     run = Run(
         user_id=current_user.id,
         status="pending",
-        progress={"requested_mode": "quick", "force_scrape": False},
+        progress={"requested_mode": requested_mode, "force_scrape": False},
     )
     db.add(run)
     await db.commit()
     await db.refresh(run)
 
     queue = get_queue()
-    await queue.put((run.id, current_user.id))
+    await queue.put((run.id, current_user.id, requested_mode, False))
 
     return {"run_id": run.id, "status": "pending"}
 

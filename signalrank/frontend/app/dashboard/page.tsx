@@ -207,7 +207,7 @@ export default function DashboardPage() {
                 className="flex items-center gap-2 px-4 py-2.5 text-xs border border-primary/50 text-primary hover:bg-primary hover:text-background hover:border-primary transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-widest font-bold"
               >
                 <RefreshCw size={11} className={triggering || isRunActive ? "spin-slow" : ""} />
-                {triggering ? "Queuing..." : isRunActive ? "Running..." : "New Scan"}
+                {triggering ? "Queuing..." : isRunActive ? "Running..." : "Quick Scan"}
               </button>
               {run?.started_at && !isRunActive && (
                 <span className="text-[10px] text-muted-foreground whitespace-nowrap">

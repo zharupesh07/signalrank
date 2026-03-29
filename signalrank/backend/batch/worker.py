@@ -343,19 +343,6 @@ async def process_run(
             await db.commit()
             logger.info("Run %s (%s) completed: %d scraped, %d ranked", run_id, mode, scrape_count, len(ranked_df))
 
-            if mode == "quick":
-                bg_run = Run(
-                    user_id=user_id,
-                    status="pending",
-                    progress={"requested_mode": "full", "force_scrape": False},
-                )
-                db.add(bg_run)
-                await db.commit()
-                await db.refresh(bg_run)
-                queue = get_queue()
-                await queue.put((bg_run.id, user_id, "full"))
-                logger.info("Queued background full run %s after quick run %s", bg_run.id, run_id)
-
         except Exception:
             logger.exception("Run %s failed", run_id)
             await db.execute(

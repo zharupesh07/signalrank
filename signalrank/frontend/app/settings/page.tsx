@@ -7,7 +7,7 @@ import { loadProfileOptions, PROFILE_OPTIONS_FALLBACK } from "@/lib/profile-opti
 import type { Profile } from "@/types";
 import { useToast } from "@/components/toast";
 import { TagInput } from "@/components/tag-input";
-import { Search, RefreshCw, User, Target, Briefcase, Shield, Save, CheckCircle, Info } from "lucide-react";
+import { Search, RefreshCw, User, Target, Briefcase, Shield, Save, CheckCircle, Info, Play } from "lucide-react";
 
 interface RecruiterRow {
   id: string;
@@ -46,6 +46,7 @@ export default function SettingsPage() {
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [saving, setSaving] = useState(false);
+  const [triggeringDeepScan, setTriggeringDeepScan] = useState(false);
   const [saved, setSaved] = useState(false);
   const [dirty, setDirty] = useState(false);
 
@@ -154,10 +155,27 @@ export default function SettingsPage() {
       setSaved(true);
       setDirty(false);
       setTimeout(() => setSaved(false), 2000);
+      return true;
     } catch {
       toast("Save failed", "error");
+      return false;
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function triggerDeepScan() {
+    if (!token) return;
+    setTriggeringDeepScan(true);
+    try {
+      const ok = dirty ? await save() : true;
+      if (!ok) return;
+      await api.runs.trigger(token, "full");
+      toast("Deep scan queued", "success");
+    } catch {
+      toast("Failed to queue deep scan", "error");
+    } finally {
+      setTriggeringDeepScan(false);
     }
   }
 
@@ -327,6 +345,28 @@ export default function SettingsPage() {
               />
             </div>
           </div>
+          <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-[11px] text-muted-foreground leading-relaxed">
+              Longer-duration and multi-title scans are only launched from here. The button below uses the saved lookback and title settings on this page.
+            </div>
+            <button
+              onClick={triggerDeepScan}
+              disabled={triggeringDeepScan || saving}
+              className="inline-flex items-center justify-center gap-2 border border-primary/50 px-4 py-2 text-[11px] uppercase tracking-wider text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+            >
+              {triggeringDeepScan ? (
+                <>
+                  <RefreshCw size={10} className="animate-spin" />
+                  Queuing deep scan...
+                </>
+              ) : (
+                <>
+                  <Play size={10} />
+                  Run deep scan
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Save button */}
@@ -336,7 +376,7 @@ export default function SettingsPage() {
           </span>
           <button
             onClick={save}
-            disabled={saving || !dirty}
+            disabled={saving || triggeringDeepScan || !dirty}
             className="flex items-center gap-2 text-[11px] border px-5 py-2 uppercase tracking-wider transition-all duration-150 disabled:opacity-50"
             style={{
               background: saved ? "var(--primary)" : dirty ? "transparent" : "color-mix(in srgb, var(--primary) 10%, transparent)",

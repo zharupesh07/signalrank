@@ -178,7 +178,7 @@ export default function RunsPage() {
             className="flex items-center gap-2 text-[11px] text-primary border border-primary/40 px-3 py-1.5 hover:bg-primary/10 transition-colors uppercase tracking-wider disabled:opacity-50"
           >
             <Play size={10} />
-            {triggering ? "Triggering..." : activeRun && LIVE.includes(activeRun.status) ? "Running..." : "New Run"}
+            {triggering ? "Triggering..." : activeRun && LIVE.includes(activeRun.status) ? "Running..." : "Quick Run"}
           </button>
         </div>
 
@@ -216,7 +216,7 @@ export default function RunsPage() {
                       <div>┌─────────────────────┐</div>
                       <div>│   no runs found     │</div>
                       <div>└─────────────────────┘</div>
-                      <div className="mt-2 text-muted-foreground">trigger a run from the dashboard</div>
+                      <div className="mt-2 text-muted-foreground">trigger a quick run from the dashboard or a deep scan from settings</div>
                     </div>
                   </td>
                 </tr>

@@ -29,6 +29,18 @@ async def test_trigger_run_returns_run_id(client, auth_token):
     assert data["status"] == "pending"
 
 
+async def test_trigger_full_run_returns_run_id(client, auth_token):
+    r = await client.post(
+        "/api/runs/trigger",
+        headers={"Authorization": f"Bearer {auth_token}"},
+        json={"mode": "full"},
+    )
+    assert r.status_code == 202
+    data = r.json()
+    assert "run_id" in data
+    assert data["status"] == "pending"
+
+
 async def test_get_run_status(client, auth_token):
     trigger = await client.post(
         "/api/runs/trigger",
