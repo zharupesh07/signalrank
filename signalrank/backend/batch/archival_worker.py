@@ -16,12 +16,13 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from api.config import settings
 from api.models import ArchivalQueue, JobRaw, JobResult, Profile
 from llm.openrouter import OpenRouterClient
 
 logger = logging.getLogger(__name__)
 
-CONCURRENCY = 3
+CONCURRENCY = max(1, settings.archival_worker_concurrency)
 MAX_TASK_RETRIES = 3
 POLL_INTERVAL = 5
 

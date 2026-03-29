@@ -7,6 +7,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.dialects.postgresql import insert
 
+from api.config import settings
 from api.models import Application, GenerationQueue, JobRaw, Profile, TailoredResume
 from llm.email_generator import generate_email
 from llm.openrouter import OpenRouterClient
@@ -14,7 +15,7 @@ from llm.resume_tailor import compile_pdf, render_typst, tailor_resume
 
 logger = logging.getLogger(__name__)
 
-CONCURRENCY = 3        # tasks per poll cycle — LLM semaphore handles the real throttle
+CONCURRENCY = max(1, settings.resume_worker_concurrency)
 MAX_TASK_RETRIES = 3   # retry failed tasks up to this many times
 POLL_INTERVAL = 5      # seconds between queue polls
 

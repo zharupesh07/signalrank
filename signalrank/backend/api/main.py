@@ -20,9 +20,6 @@ from api.config import settings
 from api.database import AsyncSessionLocal, _parse_url
 from api.deps_llm import get_llm_client
 from api.routes import admin, applications, auth, ingest, jobs, onboarding, profile, recruiters, resume, runs
-from batch.archival_worker import archival_worker_loop, recover_stuck_archival_tasks
-from batch.resume_worker import boot_scan, recover_stuck_generation_tasks, resume_worker_loop
-from batch.worker import boot_embed_uncached_jobs, worker_loop
 
 # --- Structured JSON logging ---
 _handler = logging.StreamHandler()
@@ -43,6 +40,8 @@ _boot_tasks: list[asyncio.Task] = []
 
 
 async def _resume_worker_watchdog(session_factory, llm) -> None:
+    from batch.resume_worker import resume_worker_loop
+
     while True:
         try:
             await resume_worker_loop(session_factory, llm)
@@ -54,6 +53,8 @@ async def _resume_worker_watchdog(session_factory, llm) -> None:
 
 
 async def _archival_worker_watchdog(session_factory, llm) -> None:
+    from batch.archival_worker import archival_worker_loop
+
     while True:
         try:
             await archival_worker_loop(session_factory, llm)
@@ -70,6 +71,7 @@ async def lifespan(app: FastAPI):
     _boot_tasks = []
 
     if settings.run_api_worker:
+        from batch.worker import worker_loop
         _worker_task = asyncio.create_task(worker_loop(AsyncSessionLocal))
 
     llm = None
@@ -77,6 +79,7 @@ async def lifespan(app: FastAPI):
         llm = get_llm_client()
 
     if settings.run_resume_worker:
+        from batch.resume_worker import recover_stuck_generation_tasks
         try:
             async with AsyncSessionLocal() as db:
                 recovered = await recover_stuck_generation_tasks(db)
@@ -90,6 +93,8 @@ async def lifespan(app: FastAPI):
         )
 
     if settings.run_boot_scan:
+        from batch.resume_worker import boot_scan
+
         async def _delayed_boot_scan():
             await asyncio.sleep(30)
             try:
@@ -101,6 +106,8 @@ async def lifespan(app: FastAPI):
         _boot_tasks.append(asyncio.create_task(_delayed_boot_scan()))
 
     if settings.run_boot_embed:
+        from batch.worker import boot_embed_uncached_jobs
+
         async def _delayed_boot_embed():
             await asyncio.sleep(60)
             try:
@@ -111,6 +118,7 @@ async def lifespan(app: FastAPI):
         _boot_tasks.append(asyncio.create_task(_delayed_boot_embed()))
 
     if settings.run_archival_worker:
+        from batch.archival_worker import recover_stuck_archival_tasks
         try:
             async with AsyncSessionLocal() as db:
                 recovered = await recover_stuck_archival_tasks(db)

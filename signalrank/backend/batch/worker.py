@@ -1,9 +1,9 @@
 import asyncio
+import gc
 import logging
 import time
 from datetime import datetime, timedelta, timezone
 
-import numpy as np
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -11,12 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from api.models import JobRaw, JobResult, Profile, Run
 from batch.context import build_context
 from batch.embedding_cache import PgEmbeddingCache
-from batch.ranker import score_jobs_for_user
 
 logger = logging.getLogger(__name__)
 
 
-_EMBED_CHUNK_SIZE = 64
+_EMBED_CHUNK_SIZE = 4
 _EMBED_MAX_RETRIES = 3
 _EMBED_BACKOFF_BASE = 2
 
@@ -34,6 +33,7 @@ async def _embed_new_jobs(
         EmbeddingEngine,
         build_job_embedding_text,
         fingerprint_text,
+        unload_embedding_engine,
     )
     from domain.skills import SkillCanonicalizer, extract_skills_from_texts
 
@@ -98,6 +98,9 @@ async def _embed_new_jobs(
                     )
 
             logger.info("[EMBED] Pre-cached %d job embeddings", total)
+            unload_embedding_engine()
+            del job_texts, job_fps, raw_skills_list, canonical_skills_list, descriptions
+            gc.collect()
             return
 
         except Exception:
@@ -111,6 +114,11 @@ async def _embed_new_jobs(
                 await asyncio.sleep(delay)
             else:
                 logger.error("[EMBED] All %d attempts failed, continuing without full cache", _EMBED_MAX_RETRIES)
+    try:
+        unload_embedding_engine()
+    except Exception:
+        logger.debug("[EMBED] Engine unload skipped", exc_info=True)
+    gc.collect()
 
 _queue: asyncio.Queue | None = None
 
@@ -256,6 +264,8 @@ async def process_run(
                                 extra={"run_id": run_id, "phase": "embed",
                                        "duration_s": round(time.monotonic() - t_embed, 1),
                                        "jobs": len(raw_jobs)})
+                    del raw_jobs
+                    gc.collect()
 
             # Check cancellation before ranking
             run_check_result = await db.execute(select(Run).where(Run.id == run_id))
@@ -277,6 +287,7 @@ async def process_run(
 
             t_rank = time.monotonic()
             try:
+                from batch.ranker import score_jobs_for_user
                 ranked_df = await asyncio.wait_for(
                     score_jobs_for_user(
                         db=db,
@@ -329,6 +340,8 @@ async def process_run(
                 await db.execute(
                     pg_insert(JobResult).values(result_rows[i:i + 2000])
                 )
+            del result_rows
+            gc.collect()
 
             await db.execute(
                 update(Run)
@@ -342,6 +355,8 @@ async def process_run(
             )
             await db.commit()
             logger.info("Run %s (%s) completed: %d scraped, %d ranked", run_id, mode, scrape_count, len(ranked_df))
+            del ranked_df
+            gc.collect()
 
         except Exception:
             logger.exception("Run %s failed", run_id)
@@ -402,7 +417,7 @@ async def boot_embed_uncached_jobs(session_factory: async_sessionmaker) -> None:
         return
 
     logger.info("[BOOT-EMBED] Pre-embedding %d/%d uncached jobs", len(misses), len(job_fps))
-    from domain.embeddings import EmbeddingEngine
+    from domain.embeddings import EmbeddingEngine, unload_embedding_engine
     engine = EmbeddingEngine(cfg)
     total = len(misses)
 
@@ -424,6 +439,8 @@ async def boot_embed_uncached_jobs(session_factory: async_sessionmaker) -> None:
             logger.info("[BOOT-EMBED] %d/%d", chunk_end, total)
 
     logger.info("[BOOT-EMBED] Done — pre-cached %d job embeddings", total)
+    unload_embedding_engine()
+    gc.collect()
 
 
 async def _cleanup_stale_runs(session_factory: async_sessionmaker) -> None:

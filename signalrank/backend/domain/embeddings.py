@@ -10,7 +10,7 @@ import numpy as np
 logger = logging.getLogger(__name__)
 _ENGINE = None
 _MAX_SEQ_LEN = 256
-_EMBED_BATCH_SIZE = 64
+_EMBED_BATCH_SIZE = 4
 
 
 def fingerprint_text(text: str) -> str:
@@ -39,8 +39,8 @@ class EmbeddingEngine:
         tokenizer_path = hf_hub_download(repo_id=model_repo, filename="tokenizer.json")
 
         sess_opts = ort.SessionOptions()
-        sess_opts.inter_op_num_threads = 2
-        sess_opts.intra_op_num_threads = 4
+        sess_opts.inter_op_num_threads = 1
+        sess_opts.intra_op_num_threads = 1
         self._session = ort.InferenceSession(
             model_path, sess_opts, providers=["CPUExecutionProvider"]
         )
@@ -123,6 +123,17 @@ class EmbeddingEngine:
         import gc
         gc.collect()
         logger.info("[EMBED] ONNX model unloaded, memory freed")
+
+
+def unload_embedding_engine() -> None:
+    global _ENGINE
+    if _ENGINE is None:
+        return
+    try:
+        _ENGINE.unload()
+    except Exception:
+        logger.warning("[EMBED] Failed to unload ONNX model cleanly", exc_info=True)
+        _ENGINE = None
 
 
 class EmbeddingCache:

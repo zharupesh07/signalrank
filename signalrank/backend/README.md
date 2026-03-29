@@ -23,6 +23,33 @@ uv run alembic upgrade head
 uv run uvicorn api.main:app --port 8000 --reload
 ```
 
+## Low-Memory Railway Profile
+
+For a small deployment, start from:
+
+```bash
+cp .env.railway-low-memory.example .env
+```
+
+Recommended split:
+
+- API service:
+  - `RUN_API_WORKER=false`
+  - `RUN_RESUME_WORKER=false`
+  - `RUN_ARCHIVAL_WORKER=false`
+- Worker service:
+  - `RUN_API_WORKER=true`
+  - `RUN_RESUME_WORKER=true`
+  - `RUN_ARCHIVAL_WORKER=true`
+  - `RESUME_WORKER_CONCURRENCY=1`
+  - `ARCHIVAL_WORKER_CONCURRENCY=1`
+
+Measured locally after the memory pass:
+
+- API import, workers disabled: about `105 MB`
+- Worker-like process after ranker import: about `108 MB`
+- Worker-like process during embedding inference: about `385 MB`
+
 ## Environment Variables
 
 ```bash
@@ -34,10 +61,17 @@ OPENROUTER_API_KEY=sk-or-v1-...
 # Optional
 RAPIDAPI_KEY=                     # JSearch API — extra job sources
 ALLOWED_ORIGINS=http://localhost:3000
-SCRAPER_MAX_RESULTS=1000
+DB_POOL_SIZE=2
+DB_MAX_OVERFLOW=1
+DB_POOL_TIMEOUT=30
+SCRAPER_MAX_RESULTS=1500
 SCRAPER_HOURS_OLD=720             # 30-day lookback
 SCRAPER_DEFAULT_COUNTRY=India
 LINKEDIN_MAX_QUERIES=0            # 0 = disabled (slow: ~80s/query)
+RANKER_MAX_CANDIDATES=2000
+RANKER_MAX_DESCRIPTION_CHARS=1200
+RESUME_WORKER_CONCURRENCY=1
+ARCHIVAL_WORKER_CONCURRENCY=1
 ```
 
 `NEXTAUTH_SECRET` must match the frontend value exactly. Generate with `openssl rand -base64 32`.
@@ -102,7 +136,7 @@ alembic/versions/      # DB migrations
 
 ### Resume Worker
 
-- `CONCURRENCY = 3` — 3 tasks per poll cycle, semaphore-throttled
+- `CONCURRENCY = 1` by default for low-memory deployment
 - Failed tasks retry up to `MAX_TASK_RETRIES = 3` with exponential backoff via `next_retry_at`
 - After max retries: status → `failed`
 - Existing rows updated in-place (never duplicate INSERT)

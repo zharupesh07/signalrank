@@ -1,5 +1,7 @@
 import asyncio
+import gc
 import logging
+import os
 import re
 import time
 from datetime import datetime, timedelta, timezone
@@ -24,6 +26,7 @@ from domain.embeddings import (
     build_job_embedding_text,
     build_resume_embedding_text,
     fingerprint_text,
+    unload_embedding_engine,
 )
 from domain.profile_rules import enrich_config_with_profile_rules, title_rule_flags
 from domain.profile_rules import text_matches_profile_positive_terms
@@ -47,6 +50,8 @@ logger = logging.getLogger(__name__)
 
 
 _JOB_WINDOW_DAYS = 15
+_RANK_MAX_CANDIDATES = int(os.environ.get("RANKER_MAX_CANDIDATES", "2000"))
+_RANK_DESCRIPTION_CHARS = int(os.environ.get("RANKER_MAX_DESCRIPTION_CHARS", "1200"))
 
 
 def matches_requested_clusters_for_row(
@@ -84,11 +89,11 @@ async def load_jobs_dataframe(
     cutoff = datetime.now(timezone.utc) - timedelta(days=_JOB_WINDOW_DAYS)
     stmt = select(
         JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.company,
-        func.left(JobRaw.description, 2000).label("description"),
+        func.left(JobRaw.description, _RANK_DESCRIPTION_CHARS).label("description"),
         JobRaw.location, JobRaw.site, JobRaw.date_posted, JobRaw.role_clusters,
     ).where(JobRaw.ingested_at >= cutoff)
 
-    stmt = stmt.limit(5000)
+    stmt = stmt.limit(_RANK_MAX_CANDIDATES)
 
     result = await db.execute(stmt)
     rows = result.all()
@@ -127,7 +132,7 @@ async def load_jobs_by_ids_dataframe(
         )
     stmt = select(
         JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.company,
-        func.left(JobRaw.description, 2000).label("description"),
+        func.left(JobRaw.description, _RANK_DESCRIPTION_CHARS).label("description"),
         JobRaw.location, JobRaw.site, JobRaw.date_posted, JobRaw.role_clusters,
     ).where(JobRaw.id.in_(job_ids))
     result = await db.execute(stmt)
@@ -307,7 +312,7 @@ _SENIORITY_SUFFIXES = re.compile(
 )
 
 
-_RANK_EMBED_CHUNK = 64
+_RANK_EMBED_CHUNK = 4
 
 
 async def _compute_embeddings(
@@ -394,6 +399,14 @@ async def _compute_embeddings(
         extra={"jobs": len(df), "cache_misses": len(misses),
                "duration_s": round(time.monotonic() - t_emb, 2)},
     )
+    df = df.drop(columns=["canonical_skills"], errors="ignore")
+    del vectors, cached, job_texts, job_fps, raw_skills, canon
+    if "new_vecs" in locals():
+        del new_vecs
+    if "r_emb" in locals():
+        del r_emb
+    unload_embedding_engine()
+    gc.collect()
     return df
 
 
@@ -533,6 +546,8 @@ async def _score_loaded_jobs_dataframe(
     )
     df = df.drop_duplicates(subset="_fuzzy_key", keep="first")
     df = df.drop(columns=["_dedup_key", "_fuzzy_key"], errors="ignore").reset_index(drop=True)
+    df = df.drop(columns=["description", "role_clusters"], errors="ignore")
+    gc.collect()
 
     logger.info(
         "Ranking complete",

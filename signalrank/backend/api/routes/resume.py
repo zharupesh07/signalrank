@@ -10,10 +10,7 @@ from api.database import get_db
 from api.deps import get_current_user
 from api.deps_llm import get_llm_client
 from api.models import JobRaw, Profile, TailoredResume, User
-from batch.resume_worker import force_regenerate_all
 from llm.openrouter import OpenRouterClient
-from llm.email_generator import generate_email
-from llm.resume_tailor import TailoredContent, compile_pdf, render_typst, tailor_resume
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +36,8 @@ async def tailor(
     db: AsyncSession = Depends(get_db),
     llm: OpenRouterClient = Depends(get_llm_client),
 ):
+    from llm.resume_tailor import compile_pdf, render_typst, tailor_resume
+
     if body.template not in VALID_TEMPLATES:
         raise HTTPException(status_code=422, detail=f"Template must be one of: {VALID_TEMPLATES}")
 
@@ -119,6 +118,8 @@ async def download_tailored(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    from llm.resume_tailor import TailoredContent, compile_pdf, render_typst
+
     res = await db.execute(
         select(TailoredResume).where(
             TailoredResume.user_id == current_user.id,
@@ -129,7 +130,7 @@ async def download_tailored(
     if not tailored:
         return JSONResponse(status_code=202, content={"status": "pending", "job_id": str(job_id)})
 
-    content: TailoredContent | None = None
+    content = None
     if tailored.pdf_bytes and template == (tailored.template or "classic"):
         pdf_bytes = tailored.pdf_bytes
     else:
@@ -162,6 +163,8 @@ async def generate_cold_email(
     db: AsyncSession = Depends(get_db),
     llm: OpenRouterClient = Depends(get_llm_client),
 ):
+    from llm.email_generator import generate_email
+
     job_res = await db.execute(select(JobRaw).where(JobRaw.id == body.job_id))
     job = job_res.scalar_one_or_none()
     if not job:
@@ -206,6 +209,8 @@ async def regenerate_all_resumes(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    from batch.resume_worker import force_regenerate_all
+
     count = await force_regenerate_all(db, current_user.id)
     return {"enqueued": count}
 
