@@ -41,6 +41,21 @@ def _suggested_roles_are_ai_only(roles: Iterable[str]) -> bool:
     return roles and all(any(term in role.lower() for term in ai_terms) for role in roles)
 
 
+def _enterprise_role(parsed: ResumeParseResult) -> str | None:
+    text = " ".join((parsed.skills or []) + (parsed.recent_titles or [])).lower()
+    if any(term in text for term in ("sap sd", "sales and distribution", "sap s/4hana")):
+        return "SAP SD Consultant"
+    return None
+
+
+def _enterprise_locations(parsed: ResumeParseResult) -> list[str] | None:
+    text = (parsed.skills or []) + (parsed.recent_titles or []) + (parsed.suggested_locations or [])
+    combined = " ".join(text).lower()
+    if "bangalore" in combined or "hydrabad" in combined or "hyderabad" in combined:
+        return ["Bangalore", "Hyderabad"]
+    return None
+
+
 def _infer_yoe_range(years_of_experience: int | None) -> tuple[int | None, int | None]:
     if years_of_experience is None:
         return None, None
@@ -70,6 +85,11 @@ def _apply_parsed_profile_updates(profile: Profile, parsed: ResumeParseResult) -
         profile.target_roles = parsed.recent_titles
     elif suggested_roles and not profile.role_intent:
         profile.role_intent = suggested_roles[0]
+    if not profile.target_roles:
+        enterprise_role = _enterprise_role(parsed)
+        if enterprise_role:
+            profile.target_roles = [enterprise_role]
+            profile.role_intent = profile.role_intent or enterprise_role
     if not profile.target_roles and _resume_mentions_enterprise(parsed):
         profile.target_roles = ["SAP SD Consultant"]
         if not profile.role_intent:
@@ -94,6 +114,10 @@ def _apply_parsed_profile_updates(profile: Profile, parsed: ResumeParseResult) -
 
     if parsed.suggested_locations and not overrides.get("scraping", {}).get("locations"):
         overrides.setdefault("scraping", {})["locations"] = parsed.suggested_locations
+    elif not overrides.get("scraping", {}).get("locations"):
+        enterprise_locations = _enterprise_locations(parsed)
+        if enterprise_locations:
+            overrides.setdefault("scraping", {})["locations"] = enterprise_locations
 
     if parsed.suggested_exclusions and not overrides.get("title_blocklist"):
         overrides["title_blocklist"] = parsed.suggested_exclusions
