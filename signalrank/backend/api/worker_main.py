@@ -1,10 +1,22 @@
 import asyncio
 import logging
 
+from pythonjsonlogger import jsonlogger
+
 from api.config import worker_runtime_flags
 from api.database import AsyncSessionLocal, ensure_runtime_schema_compatibility
 from api.deps_llm import get_llm_client
 
+
+def _configure_logging() -> None:
+    handler = logging.StreamHandler()
+    handler.setFormatter(jsonlogger.JsonFormatter("%(asctime)s %(name)s %(levelname)s %(message)s"))
+    logging.root.setLevel(logging.INFO)
+    logging.root.handlers = [handler]
+    logging.getLogger("passlib.handlers.bcrypt").setLevel(logging.ERROR)
+
+
+_configure_logging()
 logger = logging.getLogger(__name__)
 
 
@@ -38,6 +50,7 @@ async def main() -> None:
     tasks: list[asyncio.Task] = []
     llm = None
     runtime_flags = worker_runtime_flags()
+    logger.info("Worker entrypoint starting with flags=%s", runtime_flags)
 
     await ensure_runtime_schema_compatibility()
 
@@ -46,6 +59,7 @@ async def main() -> None:
 
     if runtime_flags["run_api_worker"]:
         from batch.worker import worker_loop
+        logger.info("Starting queue worker")
         tasks.append(asyncio.create_task(worker_loop(AsyncSessionLocal)))
 
     if runtime_flags["run_resume_worker"]:
@@ -54,6 +68,7 @@ async def main() -> None:
             recovered = await recover_stuck_generation_tasks(db)
             if recovered:
                 logger.info("Recovered %d stuck generation task(s)", recovered)
+        logger.info("Starting resume worker")
         tasks.append(asyncio.create_task(_resume_worker_watchdog(llm)))
 
     if runtime_flags["run_archival_worker"]:
@@ -62,6 +77,7 @@ async def main() -> None:
             recovered = await recover_stuck_archival_tasks(db)
             if recovered:
                 logger.info("Recovered %d stuck archival task(s)", recovered)
+        logger.info("Starting archival worker")
         tasks.append(asyncio.create_task(_archival_worker_watchdog(llm)))
 
     if runtime_flags["run_boot_scan"]:
