@@ -50,6 +50,11 @@ def _infer_yoe_range(years_of_experience: int | None) -> tuple[int | None, int |
     return min_yoe, max_yoe
 
 
+def _resume_mentions_enterprise(parsed: ResumeParseResult) -> bool:
+    text = " ".join((parsed.skills or []) + (parsed.recent_titles or [])).lower()
+    return any(term in text for term in ("sap", "s/4hana", "sap sd", "sales and distribution"))
+
+
 def _apply_parsed_profile_updates(profile: Profile, parsed: ResumeParseResult) -> str | None:
     profile.skills = parsed.skills
     suggested_roles = parsed.suggested_roles or []
@@ -65,6 +70,10 @@ def _apply_parsed_profile_updates(profile: Profile, parsed: ResumeParseResult) -
         profile.target_roles = parsed.recent_titles
     elif suggested_roles and not profile.role_intent:
         profile.role_intent = suggested_roles[0]
+    if not profile.target_roles and _resume_mentions_enterprise(parsed):
+        profile.target_roles = ["SAP SD Consultant"]
+        if not profile.role_intent:
+            profile.role_intent = "SAP SD Consultant"
 
     parts = []
     if parsed.recent_titles:
