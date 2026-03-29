@@ -172,6 +172,11 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 
 @app.get("/health")
 async def health():
+    return {"status": "ok"}
+
+
+@app.get("/ready")
+async def ready():
     try:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
