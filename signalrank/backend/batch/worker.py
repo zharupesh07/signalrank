@@ -179,13 +179,13 @@ async def process_run(
             scrape_threshold_hours = 1 if mode == "quick" else 6
             scrape_cutoff = datetime.now(timezone.utc) - timedelta(hours=scrape_threshold_hours)
             recent_scrape = await db.execute(
-                select(Run).where(
+                select(Run.id).where(
                     Run.user_id == user_id,
                     Run.status == "success",
                     Run.scrape_count > 0,
                     Run.finished_at >= scrape_cutoff,
                     Run.id != run_id,
-                )
+                ).limit(1)
             )
             skip_scrape = (not force_scrape) and recent_scrape.scalar_one_or_none() is not None
             if skip_scrape:
