@@ -1,3 +1,4 @@
+import asyncio
 import re
 from collections.abc import AsyncGenerator
 
@@ -32,6 +33,8 @@ engine = create_async_engine(
     pool_use_lifo=True,
 )
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+_schema_compat_checked = False
+_schema_compat_lock = asyncio.Lock()
 
 
 class Base(DeclarativeBase):
@@ -40,6 +43,7 @@ class Base(DeclarativeBase):
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
+        await ensure_session_schema_compatibility(session)
         yield session
 
 
@@ -47,3 +51,14 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
     target = bind or engine
     async with target.begin() as conn:
         await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS error TEXT"))
+
+
+async def ensure_session_schema_compatibility(session: AsyncSession) -> None:
+    global _schema_compat_checked
+    if _schema_compat_checked:
+        return
+    async with _schema_compat_lock:
+        if _schema_compat_checked:
+            return
+        await ensure_runtime_schema_compatibility(session.bind)
+        _schema_compat_checked = True
