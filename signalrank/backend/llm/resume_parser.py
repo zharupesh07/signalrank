@@ -76,7 +76,7 @@ def _massage_parsed_data(data: dict, resume_text: str) -> dict:
         data.pop("suggested_roles", None)
     return data
 
-EXTRACTION_PROMPT = """Extract structured job search data from this resume. Return a single JSON object only.
+_PROMPT_TEMPLATE = """Extract structured job search data from this resume. Return a single JSON object only.
 
 Available role options (pick best matches): {role_options}
 Available location options (pick based on work history): {location_options}
@@ -101,13 +101,17 @@ Keys:
 Return JSON only. No explanations.
 
 RESUME:
-{{resume_text}}"""
+{resume_text}"""
 
-EXTRACTION_PROMPT = EXTRACTION_PROMPT.replace(
+EXTRACTION_PROMPT = _PROMPT_TEMPLATE.replace(
     "{role_options}", ", ".join(CANONICAL_ROLE_OPTIONS)
 ).replace(
     "{location_options}", ", ".join(LOCATION_OPTIONS)
 )
+
+
+def _build_extraction_prompt(resume_text: str) -> str:
+    return EXTRACTION_PROMPT.format(resume_text=resume_text[:10000])
 
 
 @dataclass
@@ -159,7 +163,7 @@ async def parse_resume(
     resume_text: str,
     llm_client: OpenRouterClient,
 ) -> ResumeParseResult:
-    prompt = EXTRACTION_PROMPT.format(resume_text=resume_text[:10000])
+    prompt = _build_extraction_prompt(resume_text)
     try:
         data = await llm_client.llm_json(prompt, max_tokens=900)
         data = _massage_parsed_data(data, resume_text)

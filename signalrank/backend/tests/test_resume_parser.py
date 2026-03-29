@@ -5,6 +5,7 @@ import pytest
 from llm.resume_parser import (
     EXTRACTION_PROMPT,
     ResumeParseResult,
+    _build_extraction_prompt,
     _validate_extraction,
     parse_resume,
 )
@@ -68,6 +69,9 @@ async def test_parse_resume_returns_result():
     assert isinstance(result, ResumeParseResult)
     assert "python" in result.skills
     mock_client.llm_json.assert_called_once()
+    called_prompt = mock_client.llm_json.await_args.args[0]
+    assert "I am a software engineer" in called_prompt
+    assert "{resume_text}" not in called_prompt
 
 
 @pytest.mark.asyncio
@@ -81,3 +85,9 @@ async def test_parse_resume_fails_open():
     )
     assert isinstance(result, ResumeParseResult)
     assert result.skills == []
+
+
+def test_build_extraction_prompt_includes_resume_text():
+    prompt = _build_extraction_prompt("HELLO WORLD")
+    assert "HELLO WORLD" in prompt
+    assert "{resume_text}" not in prompt
