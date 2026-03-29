@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Annotated
 
 from pydantic import field_validator
@@ -42,3 +43,30 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def _env_truthy(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def api_runtime_flags() -> dict[str, bool]:
+    return {
+        "run_api_worker": _env_truthy("RUN_API_WORKER", False),
+        "run_resume_worker": _env_truthy("RUN_RESUME_WORKER", False),
+        "run_archival_worker": _env_truthy("RUN_ARCHIVAL_WORKER", False),
+        "run_boot_scan": _env_truthy("RUN_BOOT_SCAN", False),
+        "run_boot_embed": _env_truthy("RUN_BOOT_EMBED", False),
+    }
+
+
+def worker_runtime_flags() -> dict[str, bool]:
+    return {
+        "run_api_worker": _env_truthy("RUN_API_WORKER", True),
+        "run_resume_worker": _env_truthy("RUN_RESUME_WORKER", True),
+        "run_archival_worker": _env_truthy("RUN_ARCHIVAL_WORKER", True),
+        "run_boot_scan": _env_truthy("RUN_BOOT_SCAN", False),
+        "run_boot_embed": _env_truthy("RUN_BOOT_EMBED", False),
+    }

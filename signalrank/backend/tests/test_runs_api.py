@@ -50,7 +50,11 @@ async def test_trigger_run_does_not_require_local_queue_when_api_worker_disabled
 ):
     import api.routes.runs as runs_route
 
-    monkeypatch.setattr(runs_route.settings, "run_api_worker", False)
+    monkeypatch.setattr(
+        runs_route,
+        "api_runtime_flags",
+        lambda: {"run_api_worker": False},
+    )
 
     def _should_not_queue():
         raise AssertionError("API route should not enqueue when local API worker is disabled")

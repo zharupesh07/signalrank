@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.config import settings
+from api.config import api_runtime_flags
 from api.database import get_db
 from api.deps import get_current_user
 from api.models import Profile, Run, User
@@ -50,7 +50,7 @@ async def trigger_run(
     await db.commit()
     await db.refresh(run)
 
-    if settings.run_api_worker:
+    if api_runtime_flags()["run_api_worker"]:
         queue = get_queue()
         await queue.put((run.id, current_user.id, requested_mode, False))
 

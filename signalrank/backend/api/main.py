@@ -16,7 +16,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
 
-from api.config import settings
+from api.config import api_runtime_flags, settings
 from api.database import AsyncSessionLocal, _parse_url
 from api.deps_llm import get_llm_client
 from api.routes import admin, applications, auth, ingest, jobs, onboarding, profile, recruiters, resume, runs
@@ -69,16 +69,17 @@ async def _archival_worker_watchdog(session_factory, llm) -> None:
 async def lifespan(app: FastAPI):
     global _worker_task, _resume_worker_task, _archival_worker_task, _boot_tasks
     _boot_tasks = []
+    runtime_flags = api_runtime_flags()
 
-    if settings.run_api_worker:
+    if runtime_flags["run_api_worker"]:
         from batch.worker import worker_loop
         _worker_task = asyncio.create_task(worker_loop(AsyncSessionLocal))
 
     llm = None
-    if settings.run_resume_worker or settings.run_archival_worker:
+    if runtime_flags["run_resume_worker"] or runtime_flags["run_archival_worker"]:
         llm = get_llm_client()
 
-    if settings.run_resume_worker:
+    if runtime_flags["run_resume_worker"]:
         from batch.resume_worker import recover_stuck_generation_tasks
         try:
             async with AsyncSessionLocal() as db:
@@ -92,7 +93,7 @@ async def lifespan(app: FastAPI):
             _resume_worker_watchdog(AsyncSessionLocal, llm)
         )
 
-    if settings.run_boot_scan:
+    if runtime_flags["run_boot_scan"]:
         from batch.resume_worker import boot_scan
 
         async def _delayed_boot_scan():
@@ -105,7 +106,7 @@ async def lifespan(app: FastAPI):
 
         _boot_tasks.append(asyncio.create_task(_delayed_boot_scan()))
 
-    if settings.run_boot_embed:
+    if runtime_flags["run_boot_embed"]:
         from batch.worker import boot_embed_uncached_jobs
 
         async def _delayed_boot_embed():
@@ -117,7 +118,7 @@ async def lifespan(app: FastAPI):
 
         _boot_tasks.append(asyncio.create_task(_delayed_boot_embed()))
 
-    if settings.run_archival_worker:
+    if runtime_flags["run_archival_worker"]:
         from batch.archival_worker import recover_stuck_archival_tasks
         try:
             async with AsyncSessionLocal() as db:
