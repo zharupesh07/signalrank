@@ -163,9 +163,16 @@ async def test_profile_options_exposes_shared_taxonomy(client, auth_token):
     assert "canonical_role_options" in payload
     assert "location_options" in payload
     assert "tier_options" in payload
+    assert "title_penalty_rules" in payload
+    assert "company_tier_lists" in payload
     assert "SAP SD Consultant" in payload["role_options"]
     assert "QA / Test Engineer" in payload["canonical_role_options"]
     assert "Remote only" in payload["location_options"]
+    assert "strong" in payload["title_penalty_rules"]
+    assert "adjacent" in payload["title_penalty_rules"]
+    assert "hybrid" in payload["title_penalty_rules"]
+    assert "Atlassian" in payload["company_tier_lists"]["tier_ss"]
+    assert "Microsoft" in payload["company_tier_lists"]["tier_s"]
 
 
 async def test_resume_tailor_nonexistent_job_returns_404(client, auth_token):

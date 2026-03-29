@@ -65,6 +65,15 @@ export interface ProfileOptions {
   canonical_role_options: string[];
   location_options: string[];
   tier_options: { label: string; value: string }[];
+  title_penalty_rules: {
+    strong: string[];
+    adjacent: string[];
+    hybrid: string[];
+  };
+  company_tier_lists: {
+    tier_ss: string[];
+    tier_s: string[];
+  };
 }
 
 export interface Job {

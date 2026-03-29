@@ -68,6 +68,15 @@ export const PROFILE_OPTIONS_FALLBACK: ProfileOptions = {
     { label: "B-tier (good companies)", value: "tier_b" },
     { label: "Any company", value: "any" },
   ],
+  title_penalty_rules: {
+    strong: [],
+    adjacent: [],
+    hybrid: [],
+  },
+  company_tier_lists: {
+    tier_ss: [],
+    tier_s: [],
+  },
 };
 
 export async function loadProfileOptions(token: string): Promise<ProfileOptions> {

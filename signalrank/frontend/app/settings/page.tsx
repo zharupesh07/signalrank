@@ -188,6 +188,49 @@ function sectionButtonClass(active: boolean) {
   ].join(" ");
 }
 
+function formatPenaltyPattern(pattern: string) {
+  return pattern
+    .replace(/\\b/g, "")
+    .replace(/\\s\+/g, " ")
+    .replace(/\\/g, "")
+    .trim();
+}
+
+function MetaListCard({
+  title,
+  tone,
+  items,
+  emptyLabel,
+}: {
+  title: string;
+  tone: string;
+  items: string[];
+  emptyLabel: string;
+}) {
+  return (
+    <div className="space-y-2 border border-border bg-background/40 p-4">
+      <div className="flex items-center justify-between">
+        <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{title}</div>
+        <div className={`text-[10px] tabular-nums ${tone}`}>{items.length}</div>
+      </div>
+      {items.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {items.map((item) => (
+            <span
+              key={`${title}-${item}`}
+              className={`border px-2 py-1 text-[11px] ${tone} border-current/20 bg-current/5`}
+            >
+              {item}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <div className="text-[11px] text-muted-foreground">{emptyLabel}</div>
+      )}
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { data: session } = useSession();
   const token = (session as { accessToken?: string })?.accessToken ?? "";
@@ -217,6 +260,8 @@ export default function SettingsPage() {
 
   const [roleOptions, setRoleOptions] = useState<string[]>(PROFILE_OPTIONS_FALLBACK.role_options);
   const [locationOptions, setLocationOptions] = useState<string[]>(PROFILE_OPTIONS_FALLBACK.location_options);
+  const [titlePenaltyRules, setTitlePenaltyRules] = useState(PROFILE_OPTIONS_FALLBACK.title_penalty_rules);
+  const [companyTierLists, setCompanyTierLists] = useState(PROFILE_OPTIONS_FALLBACK.company_tier_lists);
 
   const [findCompany, setFindCompany] = useState("");
   const [findDomain, setFindDomain] = useState("");
@@ -276,6 +321,8 @@ export default function SettingsPage() {
     loadProfileOptions(token).then((options) => {
       setRoleOptions(options.role_options);
       setLocationOptions(options.location_options);
+      setTitlePenaltyRules(options.title_penalty_rules);
+      setCompanyTierLists(options.company_tier_lists);
     });
     api.resume.templates(token)
       .then((res) => setResumeTemplates(res.templates))
@@ -970,6 +1017,9 @@ export default function SettingsPage() {
                     placeholder="Add role, press Enter..."
                     suggestions={roleOptions}
                   />
+                  <div className="mt-[-10px] text-[10px] leading-relaxed text-muted-foreground">
+                    Add any title here, not just the suggestions. Type a custom role and press Enter or comma to include it in future scans.
+                  </div>
 
                   <TagInput
                     label="Preferred Locations"
@@ -1053,6 +1103,60 @@ export default function SettingsPage() {
                         </>
                       )}
                     </button>
+                  </div>
+                </div>
+
+                <div className="stat-card card-hover space-y-5 border border-border bg-card p-5">
+                  <div className="flex items-center gap-2">
+                    <Info size={13} className="text-primary" />
+                    <span className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">Title Penalties</span>
+                  </div>
+                  <p className="border-l-2 border-primary/20 pl-3 text-[10px] leading-relaxed text-muted-foreground">
+                    These title-pattern penalties are currently active for your profile. Strong matches are heavily downranked, adjacent matches are softened, and hybrid matches are mildly penalized.
+                  </p>
+                  <div className="grid gap-3 xl:grid-cols-3">
+                    <MetaListCard
+                      title="Strong"
+                      tone="text-destructive"
+                      items={titlePenaltyRules.strong.map(formatPenaltyPattern)}
+                      emptyLabel="No strong title penalties active."
+                    />
+                    <MetaListCard
+                      title="Adjacent"
+                      tone="text-[var(--terminal-yellow)]"
+                      items={titlePenaltyRules.adjacent.map(formatPenaltyPattern)}
+                      emptyLabel="No adjacent title penalties active."
+                    />
+                    <MetaListCard
+                      title="Hybrid"
+                      tone="text-primary"
+                      items={titlePenaltyRules.hybrid.map(formatPenaltyPattern)}
+                      emptyLabel="No hybrid title penalties active."
+                    />
+                  </div>
+                </div>
+
+                <div className="stat-card card-hover space-y-5 border border-border bg-card p-5">
+                  <div className="flex items-center gap-2">
+                    <Briefcase size={13} className="text-primary" />
+                    <span className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">Top Company Tiers</span>
+                  </div>
+                  <p className="border-l-2 border-primary/20 pl-3 text-[10px] leading-relaxed text-muted-foreground">
+                    These are the current dream-company lists used by company scoring. SS gets the strongest boost, followed by S.
+                  </p>
+                  <div className="grid gap-3 xl:grid-cols-2">
+                    <MetaListCard
+                      title="Tier SS"
+                      tone="text-primary"
+                      items={companyTierLists.tier_ss}
+                      emptyLabel="No Tier SS companies configured."
+                    />
+                    <MetaListCard
+                      title="Tier S"
+                      tone="text-[var(--terminal-green-bright)]"
+                      items={companyTierLists.tier_s}
+                      emptyLabel="No Tier S companies configured."
+                    />
                   </div>
                 </div>
               </div>
