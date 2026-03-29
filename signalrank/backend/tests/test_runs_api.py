@@ -1,6 +1,7 @@
 import uuid
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models import User, Run
@@ -39,6 +40,35 @@ async def test_trigger_full_run_returns_run_id(client, auth_token):
     data = r.json()
     assert "run_id" in data
     assert data["status"] == "pending"
+
+
+async def test_trigger_run_does_not_require_local_queue_when_api_worker_disabled(
+    client,
+    auth_token,
+    db: AsyncSession,
+    monkeypatch,
+):
+    import api.routes.runs as runs_route
+
+    monkeypatch.setattr(runs_route.settings, "run_api_worker", False)
+
+    def _should_not_queue():
+        raise AssertionError("API route should not enqueue when local API worker is disabled")
+
+    monkeypatch.setattr(runs_route, "get_queue", _should_not_queue)
+
+    r = await client.post(
+        "/api/runs/trigger",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert r.status_code == 202
+
+    run_id = r.json()["run_id"]
+    run = (
+        await db.execute(select(Run).where(Run.id == run_id))
+    ).scalar_one()
+    assert run.status == "pending"
+    assert run.progress == {"requested_mode": "quick", "force_scrape": False}
 
 
 async def test_get_run_status(client, auth_token):

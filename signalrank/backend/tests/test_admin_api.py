@@ -190,3 +190,40 @@ async def test_reset_jobs_clears_user_specific_feed_state_only(client, admin_tok
     assert (await db.execute(select(func.count(GenerationQueue.id)))).scalar_one() == 0
     assert (await db.execute(select(func.count(ArchivalQueue.id)))).scalar_one() == 0
     assert (await db.execute(select(func.count(Application.id)))).scalar_one() == 1
+
+
+async def test_admin_trigger_run_does_not_require_local_queue_when_api_worker_disabled(
+    client,
+    admin_token,
+    regular_token,
+    db: AsyncSession,
+    monkeypatch,
+):
+    import api.routes.admin as admin_route
+
+    monkeypatch.setattr(admin_route.settings, "run_api_worker", False)
+
+    def _should_not_queue():
+        raise AssertionError("Admin trigger should not enqueue when local API worker is disabled")
+
+    monkeypatch.setattr(admin_route, "get_queue", _should_not_queue)
+
+    me = await client.get("/api/profile", headers={"Authorization": f"Bearer {regular_token}"})
+    user_id = me.json()["user_id"]
+    await db.execute(update(Profile).where(Profile.user_id == user_id).values(onboarding_complete=True))
+    await db.commit()
+
+    response = await client.post(
+        f"/api/admin/users/{user_id}/trigger-run",
+        headers={"Authorization": f"Bearer {admin_token}"},
+        json={"force_scrape": True},
+    )
+    assert response.status_code == 202
+    payload = response.json()
+    assert payload["status"] == "pending"
+
+    run = (
+        await db.execute(select(Run).where(Run.id == payload["run_id"]))
+    ).scalar_one()
+    assert run.status == "pending"
+    assert run.progress == {"requested_mode": "full", "force_scrape": True}

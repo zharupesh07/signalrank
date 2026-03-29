@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.config import settings
 from api.database import get_db
 from api.deps import get_current_user
 from api.models import (
@@ -299,8 +300,9 @@ async def trigger_run_for_user(
     db.add(run)
     await db.commit()
     await db.refresh(run)
-    queue = get_queue()
-    await queue.put((run.id, user.id, "full", body.force_scrape))
+    if settings.run_api_worker:
+        queue = get_queue()
+        await queue.put((run.id, user.id, "full", body.force_scrape))
     return {"run_id": run.id, "status": "pending", "user_email": user.email}
 
 
