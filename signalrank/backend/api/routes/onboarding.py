@@ -2,6 +2,8 @@ import asyncio
 import io
 import logging
 
+from typing import Iterable
+
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -20,6 +22,25 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
 
 
+def _ai_signal_count_from_parsed(parsed: ResumeParseResult) -> int:
+    ai_terms = {"ai", "ml", "mlops", "llm", "genai", "machine learning"}
+    signals = 0
+    if set((parsed.skills or [])).intersection({"llm", "agents", "genai", "mlops", "deep learning", "rag", "conversational ai"}):
+        signals += 1
+    titles_text = " ".join(parsed.recent_titles or []).lower()
+    if any(term in titles_text for term in ai_terms):
+        signals += 1
+    resume_text = " ".join((parsed.skills or []) + (parsed.recent_titles or []))
+    if any(term in resume_text.lower() for term in ai_terms):
+        signals += 1
+    return signals
+
+
+def _suggested_roles_are_ai_only(roles: Iterable[str]) -> bool:
+    ai_terms = {"ai", "ml", "genai", "agent", "mlo", "machine learning"}
+    return roles and all(any(term in role.lower() for term in ai_terms) for role in roles)
+
+
 def _infer_yoe_range(years_of_experience: int | None) -> tuple[int | None, int | None]:
     if years_of_experience is None:
         return None, None
@@ -31,12 +52,19 @@ def _infer_yoe_range(years_of_experience: int | None) -> tuple[int | None, int |
 
 def _apply_parsed_profile_updates(profile: Profile, parsed: ResumeParseResult) -> str | None:
     profile.skills = parsed.skills
-    if parsed.suggested_roles and not profile.target_roles:
-        profile.target_roles = parsed.suggested_roles
-    elif parsed.recent_titles and not profile.target_roles:
+    suggested_roles = parsed.suggested_roles or []
+    ai_signals = _ai_signal_count_from_parsed(parsed)
+    accept_suggested = suggested_roles and (
+        ai_signals >= 2 or not _suggested_roles_are_ai_only(suggested_roles)
+    )
+    if accept_suggested and not profile.target_roles:
+        profile.target_roles = suggested_roles
+        if not profile.role_intent:
+            profile.role_intent = suggested_roles[0]
+    elif not profile.target_roles and parsed.recent_titles:
         profile.target_roles = parsed.recent_titles
-    if parsed.suggested_roles and not profile.role_intent:
-        profile.role_intent = parsed.suggested_roles[0]
+    elif suggested_roles and not profile.role_intent:
+        profile.role_intent = suggested_roles[0]
 
     parts = []
     if parsed.recent_titles:
