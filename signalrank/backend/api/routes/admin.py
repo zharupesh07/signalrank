@@ -53,6 +53,17 @@ class UpdateUserRequest(BaseModel):
     is_admin: bool | None = None
 
 
+class ResetProfileJobsResponse(BaseModel):
+    status: str
+    user_email: str
+    runs_deleted: int
+    job_results_deleted: int
+    generation_queue_deleted: int
+    tailored_resumes_deleted: int
+    archival_queue_deleted: int
+    jobs_preserved: bool = True
+
+
 @router.get("/stats", response_model=AdminStatsResponse)
 async def get_stats(
     _: User = Depends(require_admin),
@@ -168,6 +179,45 @@ async def delete_user(
     return {"status": "deleted"}
 
 
+@router.post("/users/{user_id}/reset-jobs", response_model=ResetProfileJobsResponse)
+async def reset_jobs_for_user(
+    user_id: str,
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    archival_deleted = (
+        await db.execute(delete(ArchivalQueue).where(ArchivalQueue.user_id == user_id))
+    ).rowcount or 0
+    generation_deleted = (
+        await db.execute(delete(GenerationQueue).where(GenerationQueue.user_id == user_id))
+    ).rowcount or 0
+    tailored_deleted = (
+        await db.execute(delete(TailoredResume).where(TailoredResume.user_id == user_id))
+    ).rowcount or 0
+    job_results_deleted = (
+        await db.execute(delete(JobResult).where(JobResult.user_id == user_id))
+    ).rowcount or 0
+    runs_deleted = (
+        await db.execute(delete(Run).where(Run.user_id == user_id))
+    ).rowcount or 0
+
+    await db.commit()
+    return ResetProfileJobsResponse(
+        status="reset",
+        user_email=user.email,
+        runs_deleted=runs_deleted,
+        job_results_deleted=job_results_deleted,
+        generation_queue_deleted=generation_deleted,
+        tailored_resumes_deleted=tailored_deleted,
+        archival_queue_deleted=archival_deleted,
+    )
+
+
 class TopJob(BaseModel):
     job_id: str
     title: str | None
@@ -241,7 +291,11 @@ async def trigger_run_for_user(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    run = Run(user_id=user.id, status="pending")
+    run = Run(
+        user_id=user.id,
+        status="pending",
+        progress={"requested_mode": "full", "force_scrape": body.force_scrape},
+    )
     db.add(run)
     await db.commit()
     await db.refresh(run)

@@ -46,6 +46,22 @@ async def test_update_profile_persists(client, auth_token):
     assert data["profile"]["min_salary"] == data["min_salary"]
 
 
+async def test_profile_options_exposes_shared_taxonomy(client, auth_token):
+    response = await client.get(
+        "/api/profile/options",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert "role_options" in payload
+    assert "canonical_role_options" in payload
+    assert "location_options" in payload
+    assert "tier_options" in payload
+    assert "SAP SD Consultant" in payload["role_options"]
+    assert "QA / Test Engineer" in payload["canonical_role_options"]
+    assert "Remote only" in payload["location_options"]
+
+
 async def test_resume_tailor_nonexistent_job_returns_404(client, auth_token):
     """Tailor endpoint should 404 when job_id does not exist."""
     await client.patch(

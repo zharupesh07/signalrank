@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     allowed_origins: list[str] = ["http://localhost:3000"]
     openrouter_api_key: str = ""
     hunter_api_key: str = ""
+    run_api_worker: bool = True
+    run_resume_worker: bool = True
+    run_archival_worker: bool = True
+    run_boot_scan: bool = False
+    run_boot_embed: bool = False
 
     @field_validator("allowed_origins", mode="before")
     @classmethod

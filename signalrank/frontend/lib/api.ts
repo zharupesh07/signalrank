@@ -3,11 +3,24 @@ import type {
   Job,
   JobsResponse,
   OnboardingStatus,
+  ProfileOptions,
   Profile,
   Run,
   RunProgress,
   TrackerStats,
 } from "@/types";
+
+type JobsListParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  showArchived?: boolean;
+  minScore?: number;
+  tiers?: string[];
+  jobType?: "all" | "fte" | "contract";
+  sites?: string[];
+  dateRange?: "any" | "24h" | "week" | "month";
+};
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -50,6 +63,8 @@ export const api = {
   profile: {
     get: (token: string) =>
       request<Profile>("/api/profile", { token }),
+    options: (token: string) =>
+      request<ProfileOptions>("/api/profile/options", { token }),
     patch: (token: string, data: Partial<Profile>) =>
       request<{ status: string }>("/api/profile", {
         method: "PATCH",
@@ -59,8 +74,31 @@ export const api = {
   },
 
   jobs: {
-    list: (token: string, page = 1, limit = 50, search = "", showArchived = true) =>
-      request<JobsResponse>(`/api/jobs?page=${page}&limit=${limit}&show_archived=${showArchived}${search ? `&search=${encodeURIComponent(search)}` : ""}`, { token }),
+    list: (token: string, params: JobsListParams = {}) => {
+      const {
+        page = 1,
+        limit = 50,
+        search = "",
+        showArchived = true,
+        minScore = 0,
+        tiers = [],
+        jobType = "all",
+        sites = [],
+        dateRange = "any",
+      } = params;
+      const qs = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+        show_archived: String(showArchived),
+        min_score: String(minScore),
+        job_type: jobType,
+        date_range: dateRange,
+      });
+      if (search) qs.set("search", search);
+      for (const tier of tiers) qs.append("tiers", tier);
+      for (const site of sites) qs.append("sites", site);
+      return request<JobsResponse>(`/api/jobs?${qs.toString()}`, { token });
+    },
     get: (token: string, id: string) =>
       request<Job>(`/api/jobs/${id}`, { token }),
     analytics: (token: string) =>
@@ -232,6 +270,17 @@ export const api = {
       request<{ status: string }>(`/api/admin/users/${userId}`, { method: "PATCH", token, body: JSON.stringify(data) }),
     deleteUser: (token: string, userId: string) =>
       request<{ status: string }>(`/api/admin/users/${userId}`, { method: "DELETE", token }),
+    resetJobs: (token: string, userId: string) =>
+      request<{
+        status: string;
+        user_email: string;
+        runs_deleted: number;
+        job_results_deleted: number;
+        generation_queue_deleted: number;
+        tailored_resumes_deleted: number;
+        archival_queue_deleted: number;
+        jobs_preserved: boolean;
+      }>(`/api/admin/users/${userId}/reset-jobs`, { method: "POST", token }),
     triggerRun: (token: string, userId: string, forceScrape = false) =>
       request<{ run_id: string; status: string; user_email: string }>(`/api/admin/users/${userId}/trigger-run`, { method: "POST", token, body: JSON.stringify({ force_scrape: forceScrape }) }),
     runs: (token: string) =>

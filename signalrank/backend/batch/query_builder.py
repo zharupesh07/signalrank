@@ -3,12 +3,22 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+from domain.role_taxonomy import ROLE_QUERY_EXPANSIONS
+
 
 @dataclass
 class SearchQuery:
     term: str
     location: str
     country: str
+
+
+def _expand_role_terms(role: str) -> list[str]:
+    normalized = role.strip().lower()
+    expansions = ROLE_QUERY_EXPANSIONS.get(normalized)
+    if expansions:
+        return list(expansions)
+    return [role.strip()]
 
 
 def build_queries(profile, *, max_terms: int | None = None) -> list[SearchQuery]:
@@ -20,7 +30,13 @@ def build_queries(profile, *, max_terms: int | None = None) -> list[SearchQuery]
     custom = profile.custom_search_queries or []
     seen: set[str] = set()
     terms: list[str] = []
-    for t in [*roles, *custom]:
+    for t in roles:
+        for expanded in _expand_role_terms(t):
+            key = expanded.strip().lower()
+            if key and key not in seen:
+                seen.add(key)
+                terms.append(expanded.strip())
+    for t in custom:
         key = t.strip().lower()
         if key and key not in seen:
             seen.add(key)

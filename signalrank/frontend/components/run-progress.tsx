@@ -56,8 +56,8 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
     if (!isLiveStatus(run.status)) return;
     if (completedRef.current) return;
 
-    let delay = 2000;
-    const MAX_DELAY = 30000;
+    let delay = 3000;
+    const MAX_DELAY = 60000;
 
     function schedulePoll() {
       pollRef.current = setTimeout(async () => {
@@ -80,9 +80,10 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
         } catch {
           /* ignore transient errors */
         }
-        delay = Math.min(delay * 1.5, MAX_DELAY);
+        const multiplier = document.hidden ? 2.0 : 1.5;
+        delay = Math.min(delay * multiplier, MAX_DELAY);
         schedulePoll();
-      }, delay);
+      }, document.hidden ? Math.max(delay, 15000) : delay);
     }
 
     schedulePoll();

@@ -4,42 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
+import { loadProfileOptions, PROFILE_OPTIONS_FALLBACK } from "@/lib/profile-options";
 import { Upload } from "lucide-react";
-
-const ROLE_OPTIONS = [
-  "AI/ML Engineer",
-  "GenAI / LLM Engineer",
-  "AI Platform Engineer",
-  "Data Scientist",
-  "Data Engineer",
-  "Analytics Engineer",
-  "MLOps/Platform Engineer",
-  "Research Scientist",
-  "Backend Engineer",
-  "Full-Stack Engineer",
-  "Frontend Engineer",
-  "Mobile Engineer",
-  "API / Integrations Engineer",
-  "DevOps/SRE",
-  "Platform Engineer",
-  "Cloud Infrastructure Engineer",
-  "Security Engineer",
-  "Embedded / Systems Engineer",
-  "Product Engineer",
-  "QA / Test Engineer",
-  "SAP SD Consultant",
-];
-
-const LOCATION_OPTIONS = [
-  "Remote only",
-  "Bangalore",
-  "Hyderabad",
-  "Mumbai",
-  "Delhi/NCR",
-  "Pune",
-  "Any India",
-  "Open to relocation",
-];
 
 type MultiSelectProps = {
   label: string;
@@ -96,6 +62,8 @@ export default function OnboardingPage() {
   const [parsing, setParsing] = useState(false);
   const [targetRoles, setTargetRoles] = useState<string[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
+  const [roleOptions, setRoleOptions] = useState<string[]>(PROFILE_OPTIONS_FALLBACK.role_options);
+  const [locationOptions, setLocationOptions] = useState<string[]>(PROFILE_OPTIONS_FALLBACK.location_options);
   const [exclusions, setExclusions] = useState("");
   const [salaryLpa, setSalaryLpa] = useState("");
   const [minYoe, setMinYoe] = useState("");
@@ -111,6 +79,14 @@ export default function OnboardingPage() {
   }
 
   useEffect(() => () => stopPolling(), []);
+
+  useEffect(() => {
+    if (!token) return;
+    loadProfileOptions(token).then((options) => {
+      setRoleOptions(options.role_options);
+      setLocationOptions(options.location_options);
+    });
+  }, [token]);
 
   function startPolling() {
     stopPolling();
@@ -301,14 +277,14 @@ export default function OnboardingPage() {
 
               <MultiSelect
                 label="Target roles"
-                options={ROLE_OPTIONS}
+                options={roleOptions}
                 selected={targetRoles}
                 onChange={setTargetRoles}
               />
 
               <MultiSelect
                 label="Preferred locations"
-                options={LOCATION_OPTIONS}
+                options={locationOptions}
                 selected={locations}
                 onChange={setLocations}
               />

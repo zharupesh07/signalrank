@@ -103,7 +103,7 @@ export default function DashboardPage() {
 
   const loadJobs = useCallback(async () => {
     if (!token) return;
-    const r = await api.jobs.list(token, 1, 10);
+    const r = await api.jobs.list(token, { page: 1, limit: 10 });
     setJobs(r.jobs);
   }, [token]);
 
@@ -123,7 +123,7 @@ export default function DashboardPage() {
     }
     setLoading(true);
     Promise.all([
-      swr("dash:jobs", () => api.jobs.list(token, 1, 10).then((r) => r.jobs), setJobs),
+      swr("dash:jobs", () => api.jobs.list(token, { page: 1, limit: 10 }).then((r) => r.jobs), setJobs),
       swr("dash:run", () => api.runs.latest(token), setRun),
       swr("analytics", () => api.jobs.analytics(token), setAnalytics),
       swr("dash:tracked", () => api.applications.list(token).then((apps) => new Set(apps.filter((a) => a.job_id).map((a) => a.job_id!))), setTracked),

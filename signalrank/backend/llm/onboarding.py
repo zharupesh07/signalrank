@@ -1,33 +1,5 @@
+from domain.role_taxonomy import CANONICAL_ROLE_OPTIONS, LOCATION_OPTIONS, TIER_OPTIONS
 from llm.resume_parser import ResumeParseResult
-
-ROLE_OPTIONS = [
-    "AI/ML Engineer",
-    "Data Scientist",
-    "MLOps/Platform Engineer",
-    "Backend Engineer",
-    "Full-Stack Engineer",
-    "DevOps/SRE",
-    "Security Engineer",
-    "SAP SD Consultant",
-]
-
-TIER_OPTIONS = [
-    {"label": "S-tier (FAANG, top startups)", "value": "tier_s"},
-    {"label": "A-tier (strong tech companies)", "value": "tier_a"},
-    {"label": "B-tier (good companies)", "value": "tier_b"},
-    {"label": "Any company", "value": "any"},
-]
-
-LOCATION_OPTIONS = [
-    "Remote only",
-    "Bangalore",
-    "Hyderabad",
-    "Mumbai",
-    "Delhi/NCR",
-    "Pune",
-    "Any India",
-    "Open to relocation",
-]
 
 
 def generate_onboarding_questions(profile: ResumeParseResult) -> list[dict]:
@@ -42,7 +14,7 @@ def generate_onboarding_questions(profile: ResumeParseResult) -> list[dict]:
         "text": f"I see {yoe_str} of experience with {skills_str} "
                 f"(recent: {titles_str}). What roles are you targeting?",
         "type": "multi_select",
-        "options": ROLE_OPTIONS,
+        "options": CANONICAL_ROLE_OPTIONS,
     })
 
     questions.append({

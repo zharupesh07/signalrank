@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/toast";
-import { Users, Activity, BarChart2, Play, Trash2, Shield, ShieldOff, CheckCircle, XCircle, ChevronDown, ChevronRight, ExternalLink, RefreshCw } from "lucide-react";
+import { Users, Activity, BarChart2, Play, Trash2, Shield, ShieldOff, CheckCircle, XCircle, ChevronDown, ChevronRight, ExternalLink, RefreshCw, RotateCcw } from "lucide-react";
 
 type AdminUser = {
   id: string;
@@ -110,6 +110,33 @@ export default function AdminPage() {
       toast(`Deleted ${email}`, "success");
     } catch (err) {
       toast(err instanceof Error ? err.message : "Failed to delete user", "error");
+    }
+  }
+
+  async function resetUserJobs(userId: string, email: string) {
+    if (!confirm(`Reset ranked jobs and run history for ${email}? Shared jobs_raw rows will be preserved.`)) return;
+    try {
+      const res = await api.admin.resetJobs(token, userId);
+      setTopJobsCache((prev) => {
+        const next = { ...prev };
+        delete next[userId];
+        return next;
+      });
+      setExpandedUser((prev) => (prev === userId ? null : prev));
+      const [updatedRuns, updatedStats, updatedUsers] = await Promise.all([
+        api.admin.runs(token),
+        api.admin.stats(token),
+        api.admin.users(token),
+      ]);
+      setRuns(updatedRuns);
+      setStats(updatedStats);
+      setUsers(updatedUsers);
+      toast(
+        `Reset ${res.user_email}: removed ${res.job_results_deleted} results and ${res.runs_deleted} runs; shared jobs preserved`,
+        "success",
+      );
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to reset jobs", "error");
     }
   }
 
@@ -242,6 +269,13 @@ export default function AdminPage() {
                       title="Force scrape + run"
                     >
                       <RefreshCw size={12} />
+                    </button>
+                    <button
+                      onClick={() => resetUserJobs(u.id, u.email)}
+                      className="p-1.5 text-muted-foreground hover:text-[var(--terminal-yellow)] transition-colors"
+                      title="Reset this user's ranked jobs and run history"
+                    >
+                      <RotateCcw size={12} />
                     </button>
                     <button
                       onClick={() => toggleAdmin(u.id, u.is_admin)}

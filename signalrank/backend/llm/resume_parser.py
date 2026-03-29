@@ -2,58 +2,17 @@ import logging
 import re
 from dataclasses import dataclass, field
 
+from domain.role_taxonomy import CANONICAL_ROLE_OPTIONS, ENTERPRISE_ROLE_KEYWORDS, LOCATION_OPTIONS
 from llm.openrouter import OpenRouterClient
 
 logger = logging.getLogger(__name__)
 
-_ROLE_OPTIONS = [
-    "AI/ML Engineer",
-    "GenAI / LLM Engineer",
-    "AI Platform Engineer",
-    "Data Scientist",
-    "Data Engineer",
-    "Analytics Engineer",
-    "MLOps/Platform Engineer",
-    "Research Scientist",
-    "Backend Engineer",
-    "Full-Stack Engineer",
-    "Frontend Engineer",
-    "Mobile Engineer",
-    "API / Integrations Engineer",
-    "DevOps/SRE",
-    "Platform Engineer",
-    "Cloud Infrastructure Engineer",
-    "Security Engineer",
-    "Embedded / Systems Engineer",
-    "Product Engineer",
-    "QA / Test Engineer",
-    "SAP SD Consultant",
-]
-
-_LOCATION_OPTIONS = [
-    "Remote only",
-    "Bangalore",
-    "Hyderabad",
-    "Mumbai",
-    "Delhi/NCR",
-    "Pune",
-    "Any India",
-    "Open to relocation",
-]
-
-_ROLE_LOOKUP = {role.lower(): role for role in _ROLE_OPTIONS}
-_ENTERPRISE_ROLE_KEYWORDS = (
-    "sap sd",
-    "sales and distribution",
-    "s/4hana",
-    "sap s/4hana",
-    "sap sd consultant",
-)
+_ROLE_LOOKUP = {role.lower(): role for role in CANONICAL_ROLE_OPTIONS}
 
 
 def detect_enterprise_role_from_text(text: str) -> str | None:
     normalized_text = (text or "").lower()
-    if any(keyword in normalized_text for keyword in _ENTERPRISE_ROLE_KEYWORDS):
+    if any(keyword in normalized_text for keyword in ENTERPRISE_ROLE_KEYWORDS):
         return "SAP SD Consultant"
     return None
 
@@ -65,7 +24,7 @@ def _normalize_role_option(role: str) -> str | None:
     lower_candidate = candidate.lower()
     if lower_candidate in _ROLE_LOOKUP:
         return _ROLE_LOOKUP[lower_candidate]
-    for option in _ROLE_OPTIONS:
+    for option in CANONICAL_ROLE_OPTIONS:
         option_lower = option.lower()
         if option_lower in lower_candidate or lower_candidate in option_lower:
             return option
@@ -145,9 +104,9 @@ RESUME:
 {{resume_text}}"""
 
 EXTRACTION_PROMPT = EXTRACTION_PROMPT.replace(
-    "{role_options}", ", ".join(_ROLE_OPTIONS)
+    "{role_options}", ", ".join(CANONICAL_ROLE_OPTIONS)
 ).replace(
-    "{location_options}", ", ".join(_LOCATION_OPTIONS)
+    "{location_options}", ", ".join(LOCATION_OPTIONS)
 )
 
 

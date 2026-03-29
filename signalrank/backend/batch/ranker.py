@@ -26,6 +26,7 @@ from domain.embeddings import (
     fingerprint_text,
 )
 from domain.profile_rules import enrich_config_with_profile_rules, title_rule_flags
+from domain.profile_rules import text_matches_profile_positive_terms
 from domain.roles import (
     classify_functional_role,
     consulting_dampener,
@@ -48,27 +49,44 @@ logger = logging.getLogger(__name__)
 _JOB_WINDOW_DAYS = 15
 
 
+def matches_requested_clusters_for_row(
+    requested_clusters: set[str] | None,
+    raw_clusters,
+    title: str | None,
+    description: str | None,
+) -> bool:
+    from domain.role_clusters import infer_clusters_from_job_text
+
+    if not requested_clusters or "general" in requested_clusters:
+        return True
+    inferred_clusters = infer_clusters_from_job_text(title, description)
+    if inferred_clusters.intersection(requested_clusters):
+        return True
+
+    # Stored clusters are a fallback for sparse records where the ranking-time
+    # title/description window may not contain enough role evidence.
+    text = f"{title or ''} {description or ''}".strip()
+    if (
+        inferred_clusters == {"general"}
+        and len(text) < 120
+        and isinstance(raw_clusters, list)
+        and raw_clusters
+        and set(raw_clusters).issubset(requested_clusters | {"general"})
+    ):
+        return bool(set(raw_clusters).intersection(requested_clusters))
+    return False
+
+
 async def load_jobs_dataframe(
     db: AsyncSession,
     role_clusters: set[str] | None = None,
 ) -> pd.DataFrame:
-    from sqlalchemy import cast, or_
-    from sqlalchemy.dialects.postgresql import JSONB
-
     cutoff = datetime.now(timezone.utc) - timedelta(days=_JOB_WINDOW_DAYS)
     stmt = select(
         JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.company,
         func.left(JobRaw.description, 2000).label("description"),
-        JobRaw.location, JobRaw.site, JobRaw.date_posted,
+        JobRaw.location, JobRaw.site, JobRaw.date_posted, JobRaw.role_clusters,
     ).where(JobRaw.ingested_at >= cutoff)
-
-    if role_clusters and "general" not in role_clusters:
-        cluster_conditions = [
-            JobRaw.role_clusters.is_(None),
-            JobRaw.role_clusters == cast([], JSONB),
-            *[JobRaw.role_clusters.contains(cast([c], JSONB)) for c in role_clusters],
-        ]
-        stmt = stmt.where(or_(*cluster_conditions))
 
     stmt = stmt.limit(5000)
 
@@ -77,13 +95,25 @@ async def load_jobs_dataframe(
     if not rows:
         return pd.DataFrame(
             columns=["id", "job_url", "title", "company", "description",
-                     "location", "site", "date_posted"]
+                     "location", "site", "date_posted", "role_clusters"]
         )
-    return pd.DataFrame(
+    df = pd.DataFrame(
         rows,
         columns=["id", "job_url", "title", "company", "description",
-                 "location", "site", "date_posted"],
+                 "location", "site", "date_posted", "role_clusters"],
     )
+    if role_clusters and "general" not in role_clusters:
+        match_mask = df.apply(
+            lambda r: matches_requested_clusters_for_row(
+                role_clusters,
+                r["role_clusters"],
+                r["title"],
+                r["description"],
+            ),
+            axis=1,
+        )
+        df = df.loc[match_mask].reset_index(drop=True)
+    return df
 
 
 async def load_jobs_by_ids_dataframe(
@@ -93,24 +123,24 @@ async def load_jobs_by_ids_dataframe(
     if not job_ids:
         return pd.DataFrame(
             columns=["id", "job_url", "title", "company", "description",
-                     "location", "site", "date_posted"]
+                     "location", "site", "date_posted", "role_clusters"]
         )
     stmt = select(
         JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.company,
         func.left(JobRaw.description, 2000).label("description"),
-        JobRaw.location, JobRaw.site, JobRaw.date_posted,
+        JobRaw.location, JobRaw.site, JobRaw.date_posted, JobRaw.role_clusters,
     ).where(JobRaw.id.in_(job_ids))
     result = await db.execute(stmt)
     rows = result.all()
     if not rows:
         return pd.DataFrame(
             columns=["id", "job_url", "title", "company", "description",
-                     "location", "site", "date_posted"]
+                     "location", "site", "date_posted", "role_clusters"]
         )
     return pd.DataFrame(
         rows,
         columns=["id", "job_url", "title", "company", "description",
-                 "location", "site", "date_posted"],
+                 "location", "site", "date_posted", "role_clusters"],
     )
 
 
@@ -167,6 +197,17 @@ def _apply_semantic_gates(df: pd.DataFrame, cfg: dict, role_intent: str) -> pd.D
             & (df["semantic_score"] < hybrid_cfg.get("semantic_floor", 0.52))
             & (df["skill_overlap"] < hybrid_cfg.get("min_skill_overlap", 3))
         )
+
+    positive_terms = (cfg.get("ranking", {}) or {}).get("profile_positive_terms", [])
+    if positive_terms:
+        positive_mask = df.apply(
+            lambda r: text_matches_profile_positive_terms(
+                f"{r['title'] or ''} {r['description'] or ''}",
+                cfg,
+            ),
+            axis=1,
+        )
+        mask &= positive_mask
 
     out = df.loc[mask].reset_index(drop=True)
     out["description_quality"] = desc_quality.loc[mask].values

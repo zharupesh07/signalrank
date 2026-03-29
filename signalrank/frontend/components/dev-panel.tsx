@@ -8,6 +8,7 @@ import { useToast } from "./toast";
 import { useTheme } from "./theme-provider";
 import { ChipSelect } from "./chip-select";
 import { api } from "@/lib/api";
+import { loadProfileOptions, PROFILE_OPTIONS_FALLBACK } from "@/lib/profile-options";
 import type { Profile } from "@/types";
 
 type Tab = "profile" | "ranking" | "runs" | "debug";
@@ -17,48 +18,6 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "ranking", label: "Ranking & Scoring" },
   { key: "runs", label: "Run Controls" },
   { key: "debug", label: "Debug & System" },
-];
-
-const ROLE_OPTIONS = [
-  "AI Platform Engineer",
-  "ML Platform Engineer",
-  "MLOps",
-  "LLMOps",
-  "GenAI",
-  "Agentic Systems",
-  "AI Infrastructure",
-  "Forward Deployed Engineer",
-  "Developer Productivity Engineer",
-  "Machine Learning Engineer",
-  "ML Engineer",
-  "Data Scientist",
-  "AI Engineer",
-  "MLOps Engineer",
-  "Data Engineer",
-  "Platform Engineer",
-  "Backend Engineer",
-  "Software Engineer",
-  "Research Engineer",
-  "Applied Scientist",
-  "NLP Engineer",
-  "Computer Vision Engineer",
-  "Deep Learning Engineer",
-  "GenAI Engineer",
-  "LLM Engineer",
-  "Full Stack Engineer",
-];
-
-const LOCATION_OPTIONS = [
-  "Bangalore",
-  "Hyderabad",
-  "Mumbai",
-  "Pune",
-  "Delhi NCR",
-  "Chennai",
-  "Remote",
-  "India",
-  "Gurgaon",
-  "Noida",
 ];
 
 const BLOCKLIST_OPTIONS = [
@@ -81,8 +40,8 @@ const BLOCKLIST_OPTIONS = [
 ];
 
 const DEFAULTS = {
-  targetRoles: ["AI Platform Engineer", "ML Platform Engineer", "MLOps", "LLMOps", "GenAI", "Agentic Systems", "AI Infrastructure", "Forward Deployed Engineer", "Developer Productivity Engineer"],
-  preferredLocations: ["Pune", "Bangalore", "Remote"],
+  targetRoles: [] as string[],
+  preferredLocations: ["Any India", "Remote only"],
   titleBlocklist: ["Intern", "Trainee", "Fresher", "Junior"],
   minYoe: "3",
   maxYoe: "12",
@@ -120,6 +79,8 @@ export default function DevPanel() {
 
   const [targetRoles, setTargetRoles] = useState<string[]>(DEFAULTS.targetRoles);
   const [preferredLocations, setPreferredLocations] = useState<string[]>(DEFAULTS.preferredLocations);
+  const [roleOptions, setRoleOptions] = useState<string[]>(PROFILE_OPTIONS_FALLBACK.role_options);
+  const [locationOptions, setLocationOptions] = useState<string[]>(PROFILE_OPTIONS_FALLBACK.location_options);
   const [customSearchQueries, setCustomSearchQueries] = useState<string[]>([]);
   const [minYoe, setMinYoe] = useState(DEFAULTS.minYoe);
   const [maxYoe, setMaxYoe] = useState(DEFAULTS.maxYoe);
@@ -160,6 +121,14 @@ export default function DevPanel() {
       .catch(() => toast("Failed to load profile", "error"))
       .finally(() => setLoading(false));
   }, [isDevPanelOpen, token, toast]);
+
+  useEffect(() => {
+    if (!isDevPanelOpen || !token) return;
+    loadProfileOptions(token).then((options) => {
+      setRoleOptions(options.role_options);
+      setLocationOptions(options.location_options);
+    });
+  }, [isDevPanelOpen, token]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -237,7 +206,7 @@ export default function DevPanel() {
 
   async function fetchLastResponse() {
     try {
-      const data = await api.jobs.list(token, 1, 1);
+      const data = await api.jobs.list(token, { page: 1, limit: 1 });
       setLastApiResponse(JSON.stringify(data, null, 2));
     } catch (e) {
       setLastApiResponse(`Error: ${e instanceof Error ? e.message : "unknown"}`);
@@ -336,7 +305,7 @@ export default function DevPanel() {
                 <div className={sectionCls}>
                   <ChipSelect
                     label="Target Roles"
-                    options={ROLE_OPTIONS}
+                    options={roleOptions}
                     selected={targetRoles}
                     onChange={setTargetRoles}
                     customPlaceholder="Add custom role..."
@@ -344,7 +313,7 @@ export default function DevPanel() {
 
                   <ChipSelect
                     label="Preferred Locations"
-                    options={LOCATION_OPTIONS}
+                    options={locationOptions}
                     selected={preferredLocations}
                     onChange={setPreferredLocations}
                     customPlaceholder="Add custom location..."

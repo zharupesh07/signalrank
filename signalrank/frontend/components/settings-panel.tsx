@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { X, Sun, Moon } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
+import { loadProfileOptions, PROFILE_OPTIONS_FALLBACK } from "@/lib/profile-options";
 import { TagInput } from "@/components/tag-input";
 import { useTheme } from "@/components/theme-provider";
 import { useToast } from "@/components/toast";
@@ -25,6 +26,8 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
 
   const [targetRoles, setTargetRoles] = useState<string[]>([]);
   const [preferredLocations, setPreferredLocations] = useState<string[]>([]);
+  const [roleOptions, setRoleOptions] = useState<string[]>(PROFILE_OPTIONS_FALLBACK.role_options);
+  const [locationOptions, setLocationOptions] = useState<string[]>(PROFILE_OPTIONS_FALLBACK.location_options);
   const [customSearchQueries, setCustomSearchQueries] = useState<string[]>([]);
   const [minYoe, setMinYoe] = useState<string>("");
   const [maxYoe, setMaxYoe] = useState<string>("");
@@ -43,6 +46,14 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       const blocklist = (p.config_overrides?.title_blocklist as string[] | undefined) ?? [];
       setTitleBlocklist(blocklist);
     }).catch(() => null);
+  }, [isOpen, token]);
+
+  useEffect(() => {
+    if (!isOpen || !token) return;
+    loadProfileOptions(token).then((options) => {
+      setRoleOptions(options.role_options);
+      setLocationOptions(options.location_options);
+    });
   }, [isOpen, token]);
 
   async function save() {
@@ -124,31 +135,14 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 value={targetRoles}
                 onChange={setTargetRoles}
                 placeholder="Add role…"
-                suggestions={[
-                  "SAP SD Consultant",
-                  "Machine Learning Engineer",
-                  "ML Engineer",
-                  "Data Scientist",
-                  "AI Engineer",
-                  "MLOps Engineer",
-                  "Data Engineer",
-                  "Platform Engineer",
-                  "Backend Engineer",
-                  "Software Engineer",
-                  "Research Engineer",
-                  "Applied Scientist",
-                  "NLP Engineer",
-                  "GenAI Engineer",
-                  "LLM Engineer",
-                  "Full Stack Engineer",
-                ]}
+                suggestions={roleOptions}
               />
               <TagInput
                 label="Preferred locations"
                 value={preferredLocations}
                 onChange={setPreferredLocations}
                 placeholder="Add location…"
-                suggestions={["Bangalore", "Hyderabad", "Mumbai", "Pune", "Delhi NCR", "Chennai", "Remote", "India", "Gurgaon", "Noida"]}
+                suggestions={locationOptions}
               />
               <TagInput
                 label="Custom search queries"

@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { swr } from "@/lib/cache";
 import {
   useReactTable,
   getCoreRowModel,
@@ -155,7 +154,7 @@ const TIERS = [
   { value: "tier_b", label: "Tier B" },
   { value: "tier_c", label: "Tier C" },
   { value: "tier_d", label: "Tier D" },
-  { value: "", label: "Unknown" },
+  { value: "unknown", label: "Unknown" },
 ];
 
 interface Filters {
@@ -173,25 +172,6 @@ const DEFAULT_FILTERS: Filters = {
   sites: [],
   dateRange: "any",
 };
-
-function filterJobs(jobs: Job[], filters: Filters, showArchived: boolean): Job[] {
-  return jobs.filter((job) => {
-    if (!showArchived && job.archived_by_llm === true) return false;
-    if (filters.minScore > 0 && (job.final_score ?? 0) * 100 < filters.minScore) return false;
-    if (filters.tiers.length > 0 && !filters.tiers.includes(job.company_tier ?? "")) return false;
-    if (filters.jobType === "fte" && job.is_contract) return false;
-    if (filters.jobType === "contract" && !job.is_contract) return false;
-    if (filters.sites.length > 0 && !filters.sites.includes(job.site ?? "")) return false;
-    if (filters.dateRange !== "any") {
-      if (!job.date_posted) return false;
-      const posted = new Date(job.date_posted);
-      const now = new Date();
-      const hours = filters.dateRange === "24h" ? 24 : filters.dateRange === "week" ? 168 : 720;
-      if ((now.getTime() - posted.getTime()) > hours * 3600000) return false;
-    }
-    return true;
-  });
-}
 
 function countActiveFilters(filters: Filters): number {
   let n = 0;
@@ -212,7 +192,10 @@ export default function JobsPage() {
   const token = (session as { accessToken?: string })?.accessToken ?? "";
   const { toast } = useToast();
 
-  const [allJobs, setAllJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [total, setTotal] = useState(0);
+  const [runTotal, setRunTotal] = useState(0);
+  const [availableSites, setAvailableSites] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [loading, setLoading] = useState(true);
@@ -222,7 +205,7 @@ export default function JobsPage() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [collapsed, setCollapsed] = useState(false);
-  const [pageSize, setPageSize] = useState<number | "all">(50);
+  const [pageSize, setPageSize] = useState(50);
   const [showArchived, setShowArchived] = useState(true);
   const [archiveStatus, setArchiveStatus] = useState<{ total: number; done: number; pending: number; running: number } | null>(null);
   const [archiving, setArchiving] = useState(false);
@@ -249,22 +232,46 @@ export default function JobsPage() {
 
   useEffect(() => {
     if (!token) {
-      setAllJobs([]);
+      setJobs([]);
+      setTotal(0);
+      setRunTotal(0);
+      setAvailableSites([]);
       setLoading(false);
       return;
     }
-    setLoading(true);
-    swr("jobs", () => api.jobs.list(token, 1, 500, "").then((r) => r.jobs), (jobs) => {
-      setAllJobs(jobs);
-      setLoading(false);
-    });
   }, [token]);
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, filters]);
+  }, [debouncedSearch, filters, showArchived, pageSize]);
 
-  useEffect(() => { setPage(1); }, [pageSize]);
+  const loadJobs = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const response = await api.jobs.list(token, {
+        page,
+        limit: pageSize,
+        search: debouncedSearch,
+        showArchived,
+        minScore: filters.minScore,
+        tiers: filters.tiers,
+        jobType: filters.jobType,
+        sites: filters.sites,
+        dateRange: filters.dateRange,
+      });
+      setJobs(response.jobs);
+      setTotal(response.total);
+      setRunTotal(response.run_total);
+      setAvailableSites(response.available_sites);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, page, pageSize, debouncedSearch, showArchived, filters]);
+
+  useEffect(() => {
+    loadJobs().catch(() => null);
+  }, [loadJobs]);
 
   function toggleCollapsed() {
     setCollapsed((prev) => {
@@ -304,8 +311,8 @@ export default function JobsPage() {
   }
 
   const pollArchiveStatus = useCallback(() => {
-    let delay = 3000;
-    const MAX_DELAY = 30000;
+    let delay = 5000;
+    const MAX_DELAY = 60000;
     const timeoutRef = { current: undefined as ReturnType<typeof setTimeout> | undefined };
 
     function schedule() {
@@ -314,19 +321,20 @@ export default function JobsPage() {
           const status = await api.jobs.archiveStatus(token);
           setArchiveStatus(status);
           if (status.pending === 0 && status.running === 0 && status.total > 0) {
-            api.jobs.list(token, 1, 500, "").then((r) => setAllJobs(r.jobs));
+            loadJobs().catch(() => null);
             return;
           }
-          delay = Math.min(delay * 1.5, MAX_DELAY);
+          const multiplier = document.hidden ? 2.0 : 1.5;
+          delay = Math.min(delay * multiplier, MAX_DELAY);
           schedule();
         } catch {
           clearTimeout(timeoutRef.current);
         }
-      }, delay);
+      }, document.hidden ? Math.max(delay, 15000) : delay);
     }
 
     schedule();
-  }, [token]);
+  }, [token, loadJobs]);
 
   useEffect(() => {
     if (!token) return;
@@ -336,29 +344,7 @@ export default function JobsPage() {
     }).catch(() => null);
   }, [token, pollArchiveStatus]);
 
-  const availableSites = useMemo(() => {
-    const sites = new Set(allJobs.map((j) => j.site ?? "").filter(Boolean));
-    return Array.from(sites).sort();
-  }, [allJobs]);
-
-  const searchFiltered = useMemo(() => {
-    if (!debouncedSearch) return allJobs;
-    const q = debouncedSearch.toLowerCase();
-    return allJobs.filter(
-      (j) => j.title?.toLowerCase().includes(q) || j.company?.toLowerCase().includes(q)
-    );
-  }, [allJobs, debouncedSearch]);
-
-  const filteredJobs = useMemo(() => filterJobs(searchFiltered, filters, showArchived), [searchFiltered, filters, showArchived]);
-
-  const pageJobs = useMemo(() => {
-    if (pageSize === "all") return filteredJobs;
-    const start = (page - 1) * pageSize;
-    return filteredJobs.slice(start, start + pageSize);
-  }, [filteredJobs, page, pageSize]);
-
-  const total = filteredJobs.length;
-  const totalPages = pageSize === "all" ? 1 : Math.ceil(total / pageSize) || 1;
+  const totalPages = Math.ceil(total / pageSize) || 1;
   const activeFilterCount = countActiveFilters(filters);
 
   const allColumns = useMemo(() => [
@@ -384,7 +370,7 @@ export default function JobsPage() {
   ], [tracked, trackJob]);
 
   const table = useReactTable({
-    data: pageJobs,
+    data: jobs,
     columns: allColumns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -403,7 +389,7 @@ export default function JobsPage() {
               <h1 className="text-xl font-bold text-foreground">All Jobs</h1>
               <span className="text-primary text-sm tabular-nums text-glow-dim">{total}</span>
               {activeFilterCount > 0 && (
-                <span className="text-[11px] text-muted-foreground">of {allJobs.length}</span>
+                <span className="text-[11px] text-muted-foreground">of {runTotal}</span>
               )}
             </div>
           </div>
@@ -648,7 +634,7 @@ export default function JobsPage() {
                           <div>│   no jobs found     │</div>
                           <div>└─────────────────────┘</div>
                           <div className="mt-2">
-                            {allJobs.length === 0
+                            {runTotal === 0
                               ? "trigger a scan from the dashboard to populate results"
                               : "try adjusting your filters"}
                           </div>
@@ -684,13 +670,13 @@ export default function JobsPage() {
 
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>
-                {pageSize === "all"
-                  ? `Showing all ${total}`
-                  : `Showing ${total === 0 ? 0 : ((page - 1) * pageSize) + 1}–${Math.min(page * pageSize, total)} of ${total}`}
+                {total === 0
+                  ? "Showing 0"
+                  : `Showing ${((page - 1) * pageSize) + 1}–${Math.min(page * pageSize, total)} of ${total}`}
               </span>
               <div className="flex items-center gap-3" suppressHydrationWarning>
                 <div className="flex items-center gap-1 font-mono">
-                  {([50, 100, 200, "all"] as const).map((s) => (
+                  {[25, 50, 100].map((s) => (
                     <button
                       key={s}
                       onClick={() => setPageSize(s)}
@@ -700,27 +686,25 @@ export default function JobsPage() {
                     </button>
                   ))}
                 </div>
-                {pageSize !== "all" && (
-                  <div className="flex items-center gap-2 font-mono">
-                    <button
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      disabled={page === 1}
-                      className="px-3 py-1.5 border border-muted-foreground/40 hover:border-primary hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      [&lt; prev]
-                    </button>
-                    <span className="px-2">
-                      {page} / {totalPages}
-                    </span>
-                    <button
-                      onClick={() => setPage((p) => p + 1)}
-                      disabled={page >= totalPages}
-                      className="px-3 py-1.5 border border-muted-foreground/40 hover:border-primary hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      [next &gt;]
-                    </button>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 font-mono">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="px-3 py-1.5 border border-muted-foreground/40 hover:border-primary hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    [&lt; prev]
+                  </button>
+                  <span className="px-2">
+                    {page} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    className="px-3 py-1.5 border border-muted-foreground/40 hover:border-primary hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    [next &gt;]
+                  </button>
+                </div>
               </div>
             </div>
           </div>

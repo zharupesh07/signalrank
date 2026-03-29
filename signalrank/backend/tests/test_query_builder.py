@@ -74,3 +74,22 @@ def test_default_country_when_no_locations():
     # "India" is country-like, normalized to city="" for country-wide jobspy search
     assert queries[0].location == ""
     assert queries[0].country == "India"
+
+
+def test_role_alias_expands_to_relevant_query_terms():
+    p = _mock_profile(target_roles=["QA Automation Engineer"], preferred_locations=["Pune"])
+    queries = build_queries(p, max_terms=10)
+    terms = {q.term for q in queries}
+    assert "QA Automation Engineer" in terms
+    assert "SDET" in terms
+    assert "Test Engineer" in terms
+
+
+def test_sap_queries_stay_narrow_to_erp_roles():
+    p = _mock_profile(target_roles=["SAP SD Consultant"], preferred_locations=["Bangalore"])
+    queries = build_queries(p, max_terms=10)
+    terms = {q.term for q in queries}
+    assert "SAP SD Consultant" in terms
+    assert "SAP OTC Consultant" in terms
+    assert "SAP S/4HANA SD Consultant" in terms
+    assert "SAP Consultant" not in terms

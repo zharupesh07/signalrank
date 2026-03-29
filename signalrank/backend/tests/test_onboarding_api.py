@@ -78,3 +78,97 @@ async def test_upload_resume_prefills_qa_role_and_yoe(client, auth_token, monkey
     assert profile.config_overrides["scraping"]["locations"] == ["Pune"]
     assert profile.config_overrides["title_blocklist"] == ["Support"]
     assert "Experience: 6 years" in distilled
+
+
+def test_apply_parsed_profile_updates_overwrites_stale_roles_and_locations():
+    import api.routes.onboarding as onboarding_route
+    from api.models import Profile
+    from llm.resume_parser import ResumeParseResult
+
+    profile = Profile(
+        user_id="sap-user",
+        target_roles=["AI/ML Engineer", "Research Scientist"],
+        preferred_locations=["Bangalore"],
+        role_intent="AI/ML Engineer",
+        config_overrides={
+            "profile_intent": {"roles": ["AI/ML Engineer"]},
+            "scraping": {"locations": ["Bangalore"]},
+            "title_blocklist": ["Support"],
+        },
+        target_lpa=42.0,
+        min_yoe=2,
+        max_yoe=5,
+    )
+    parsed = ResumeParseResult(
+        skills=["sap sd", "s/4hana", "otc"],
+        years_of_experience=9,
+        recent_titles=["SAP SD Consultant"],
+        suggested_roles=["SAP SD Consultant"],
+        suggested_locations=["Hyderabad"],
+        salary_lpa=28,
+        suggested_exclusions=["QA Engineer"],
+    )
+
+    onboarding_route._apply_parsed_profile_updates(profile, parsed)
+
+    assert profile.target_roles == ["SAP SD Consultant"]
+    assert profile.role_intent == "SAP SD Consultant"
+    assert profile.preferred_locations == ["Hyderabad"]
+    assert profile.config_overrides["profile_intent"]["roles"] == ["SAP SD Consultant"]
+    assert profile.config_overrides["scraping"]["locations"] == ["Hyderabad"]
+    assert profile.config_overrides["title_blocklist"] == ["QA Engineer"]
+    assert profile.target_lpa == 28.0
+    assert profile.min_yoe == 7
+    assert profile.max_yoe == 11
+
+
+async def test_refine_preferred_locations_syncs_profile_field(client, auth_token):
+    await client.patch(
+        "/api/profile",
+        json={"role_intent": "sap"},
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+
+    response = await client.post(
+        "/api/onboarding/refine",
+        json={"question_id": "preferred_locations", "answer": ["Hyderabad", "Remote only"]},
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 200
+
+    profile = await client.get(
+        "/api/profile",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert profile.status_code == 200
+    assert profile.json()["preferred_locations"] == ["Hyderabad", "Remote only"]
+
+
+async def test_profile_patch_merges_config_overrides_instead_of_replacing(client, auth_token):
+    initial = await client.patch(
+        "/api/profile",
+        json={
+            "config_overrides": {
+                "profile_intent": {"roles": ["SAP SD Consultant"]},
+                "scraping": {"locations": ["Hyderabad"]},
+            }
+        },
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert initial.status_code == 200
+
+    follow_up = await client.patch(
+        "/api/profile",
+        json={"config_overrides": {"title_blocklist": ["QA Engineer"]}},
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert follow_up.status_code == 200
+
+    profile = await client.get(
+        "/api/profile",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    payload = profile.json()
+    assert payload["config_overrides"]["profile_intent"]["roles"] == ["SAP SD Consultant"]
+    assert payload["config_overrides"]["scraping"]["locations"] == ["Hyderabad"]
+    assert payload["config_overrides"]["title_blocklist"] == ["QA Engineer"]

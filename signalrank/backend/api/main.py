@@ -12,16 +12,15 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
-from sqlalchemy import text, update, select
+from sqlalchemy import text
 
 from api.config import settings
 from api.database import AsyncSessionLocal, engine
 from api.deps_llm import get_llm_client
-from api.models import Run
 from api.routes import admin, applications, auth, ingest, jobs, onboarding, profile, recruiters, resume, runs
 from batch.archival_worker import archival_worker_loop, recover_stuck_archival_tasks
 from batch.resume_worker import boot_scan, recover_stuck_generation_tasks, resume_worker_loop
-from batch.worker import boot_embed_uncached_jobs, get_queue, worker_loop
+from batch.worker import boot_embed_uncached_jobs, worker_loop
 
 # --- Structured JSON logging ---
 _handler = logging.StreamHandler()
@@ -38,6 +37,7 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 _worker_task: asyncio.Task | None = None
 _resume_worker_task: asyncio.Task | None = None
 _archival_worker_task: asyncio.Task | None = None
+_boot_tasks: list[asyncio.Task] = []
 
 
 async def _resume_worker_watchdog(session_factory, llm) -> None:
@@ -64,71 +64,65 @@ async def _archival_worker_watchdog(session_factory, llm) -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _worker_task, _resume_worker_task, _archival_worker_task
-    _worker_task = asyncio.create_task(worker_loop(AsyncSessionLocal))
+    global _worker_task, _resume_worker_task, _archival_worker_task, _boot_tasks
+    _boot_tasks = []
 
-    llm = get_llm_client()
+    if settings.run_api_worker:
+        _worker_task = asyncio.create_task(worker_loop(AsyncSessionLocal))
 
-    try:
-        async with AsyncSessionLocal() as db:
-            recovered = await recover_stuck_generation_tasks(db)
-            if recovered:
-                logger.info("Recovered %d stuck generation task(s) from prior crash", recovered)
-    except Exception:
-        logger.warning("Generation task recovery failed", exc_info=True)
+    llm = None
+    if settings.run_resume_worker or settings.run_archival_worker:
+        llm = get_llm_client()
 
-    async def _delayed_boot_scan():
-        await asyncio.sleep(30)
+    if settings.run_resume_worker:
         try:
             async with AsyncSessionLocal() as db:
-                await boot_scan(db)
+                recovered = await recover_stuck_generation_tasks(db)
+                if recovered:
+                    logger.info("Recovered %d stuck generation task(s) from prior crash", recovered)
         except Exception:
-            logger.warning("Boot scan failed", exc_info=True)
+            logger.warning("Generation task recovery failed", exc_info=True)
 
-    asyncio.create_task(_delayed_boot_scan())
-
-    async def _delayed_boot_embed():
-        await asyncio.sleep(60)  # after boot_scan, lower priority
-        try:
-            await boot_embed_uncached_jobs(AsyncSessionLocal)
-        except Exception:
-            logger.warning("Boot embed failed", exc_info=True)
-
-    asyncio.create_task(_delayed_boot_embed())
-
-    _resume_worker_task = asyncio.create_task(
-        _resume_worker_watchdog(AsyncSessionLocal, llm)
-    )
-
-    try:
-        async with AsyncSessionLocal() as db:
-            recovered = await recover_stuck_archival_tasks(db)
-            if recovered:
-                logger.info("Recovered %d stuck archival task(s) from prior crash", recovered)
-    except Exception:
-        logger.warning("Archival task recovery failed", exc_info=True)
-
-    _archival_worker_task = asyncio.create_task(
-        _archival_worker_watchdog(AsyncSessionLocal, llm)
-    )
-
-    async with AsyncSessionLocal() as db:
-        result = await db.execute(
-            select(Run).where(Run.status.in_(["pending", "scraping"]))
+        _resume_worker_task = asyncio.create_task(
+            _resume_worker_watchdog(AsyncSessionLocal, llm)
         )
-        stuck = result.scalars().all()
-        if stuck:
-            logger.info("Recovering %d stuck run(s) from prior restart", len(stuck))
-            queue = get_queue()
-            for run in stuck:
-                await db.execute(
-                    update(Run).where(Run.id == run.id).values(status="pending")
-                )
-                await queue.put((str(run.id), str(run.user_id)))
-            await db.commit()
+
+    if settings.run_boot_scan:
+        async def _delayed_boot_scan():
+            await asyncio.sleep(30)
+            try:
+                async with AsyncSessionLocal() as db:
+                    await boot_scan(db)
+            except Exception:
+                logger.warning("Boot scan failed", exc_info=True)
+
+        _boot_tasks.append(asyncio.create_task(_delayed_boot_scan()))
+
+    if settings.run_boot_embed:
+        async def _delayed_boot_embed():
+            await asyncio.sleep(60)
+            try:
+                await boot_embed_uncached_jobs(AsyncSessionLocal)
+            except Exception:
+                logger.warning("Boot embed failed", exc_info=True)
+
+        _boot_tasks.append(asyncio.create_task(_delayed_boot_embed()))
+
+    if settings.run_archival_worker:
+        try:
+            async with AsyncSessionLocal() as db:
+                recovered = await recover_stuck_archival_tasks(db)
+                if recovered:
+                    logger.info("Recovered %d stuck archival task(s) from prior crash", recovered)
+        except Exception:
+            logger.warning("Archival task recovery failed", exc_info=True)
+
+        _archival_worker_task = asyncio.create_task(
+            _archival_worker_watchdog(AsyncSessionLocal, llm)
+        )
 
     yield
-    for t in (_worker_task, _resume_worker_task, _archival_worker_task):
+    for t in (_worker_task, _resume_worker_task, _archival_worker_task, *_boot_tasks):
         if t:
             t.cancel()
             try:

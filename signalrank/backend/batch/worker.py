@@ -207,30 +207,25 @@ async def process_run(
                     logger.info("Run %s was cancelled before scraping", run_id)
                     return
 
-                from domain.role_clusters import roles_to_clusters
-                user_clusters = sorted(roles_to_clusters(profile.target_roles or [] if profile else []))
-
                 async def _persist_jobs(jobs):
                     from sqlalchemy.dialects.postgresql import insert as pg_insert
-                    from sqlalchemy import text as sa_text
+                    from domain.role_clusters import infer_clusters_from_job_text
                     async with session_factory() as pdb:
                         batch_size = 2000
                         for i in range(0, len(jobs), batch_size):
                             batch = jobs[i:i + batch_size]
                             values = [raw_job_to_dict(job) for job in batch]
                             for v in values:
-                                v["role_clusters"] = user_clusters
+                                v["role_clusters"] = sorted(
+                                    infer_clusters_from_job_text(v.get("title"), v.get("description")) - {"general"}
+                                )
+                            insert_stmt = pg_insert(JobRaw).values(values)
                             stmt = (
-                                pg_insert(JobRaw).values(values)
+                                insert_stmt
                                 .on_conflict_do_update(
                                     index_elements=["job_url"],
                                     set_={
-                                        "role_clusters": sa_text(
-                                            "(SELECT jsonb_agg(DISTINCT elem) "
-                                            "FROM jsonb_array_elements("
-                                            "COALESCE(jobs_raw.role_clusters, '[]'::jsonb) || "
-                                            "excluded.role_clusters) AS elem)"
-                                        )
+                                        "role_clusters": insert_stmt.excluded.role_clusters,
                                     },
                                 )
                             )
@@ -349,7 +344,11 @@ async def process_run(
             logger.info("Run %s (%s) completed: %d scraped, %d ranked", run_id, mode, scrape_count, len(ranked_df))
 
             if mode == "quick":
-                bg_run = Run(user_id=user_id, status="pending")
+                bg_run = Run(
+                    user_id=user_id,
+                    status="pending",
+                    progress={"requested_mode": "full", "force_scrape": False},
+                )
                 db.add(bg_run)
                 await db.commit()
                 await db.refresh(bg_run)
@@ -443,7 +442,7 @@ async def boot_embed_uncached_jobs(session_factory: async_sessionmaker) -> None:
 async def _cleanup_stale_runs(session_factory: async_sessionmaker) -> None:
     async with session_factory() as db:
         stale = await db.execute(
-            select(Run).where(Run.status.in_(["pending", "scraping", "ranking"]))
+            select(Run).where(Run.status.in_(["scraping", "ranking"]))
         )
         for run in stale.scalars().all():
             run.status = "failed"
@@ -453,12 +452,44 @@ async def _cleanup_stale_runs(session_factory: async_sessionmaker) -> None:
         await db.commit()
 
 
+async def _claim_pending_run(session_factory: async_sessionmaker):
+    async with session_factory() as db:
+        result = await db.execute(
+            select(Run)
+            .where(Run.status == "pending")
+            .order_by(Run.started_at.asc())
+            .limit(1)
+            .with_for_update(skip_locked=True)
+        )
+        run = result.scalar_one_or_none()
+        if not run:
+            await db.rollback()
+            return None
+
+        progress = run.progress if isinstance(run.progress, dict) else {}
+        mode = str(progress.get("requested_mode") or "quick")
+        force_scrape = bool(progress.get("force_scrape", False))
+
+        run.status = "scraping"
+        await db.commit()
+        return str(run.id), str(run.user_id), mode, force_scrape
+
+
 async def worker_loop(session_factory: async_sessionmaker) -> None:
     queue = get_queue()
     await _cleanup_stale_runs(session_factory)
     logger.info("Background worker started")
     while True:
-        item = await queue.get()
+        item = None
+        from_queue = False
+        try:
+            item = await asyncio.wait_for(queue.get(), timeout=5)
+            from_queue = True
+        except asyncio.TimeoutError:
+            item = await _claim_pending_run(session_factory)
+            if item is None:
+                continue
+
         force_scrape = False
         if len(item) == 4:
             run_id, user_id, mode, force_scrape = item
@@ -470,4 +501,5 @@ async def worker_loop(session_factory: async_sessionmaker) -> None:
         try:
             await process_run(run_id, user_id, session_factory, mode=mode, force_scrape=force_scrape)
         finally:
-            queue.task_done()
+            if from_queue:
+                queue.task_done()

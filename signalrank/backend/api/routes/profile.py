@@ -6,8 +6,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.database import get_db
 from api.deps import get_current_user
 from api.models import Profile, User
+from domain.role_taxonomy import CANONICAL_ROLE_OPTIONS, LOCATION_OPTIONS, ROLE_UI_OPTIONS, TIER_OPTIONS
 
 router = APIRouter(prefix="/api", tags=["profile"])
+
+
+def _deep_merge_dict(base: dict | None, incoming: dict | None) -> dict | None:
+    if base is None:
+        return incoming
+    if incoming is None:
+        return base
+    merged = dict(base)
+    for key, value in incoming.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _deep_merge_dict(merged.get(key), value)
+        else:
+            merged[key] = value
+    return merged
 
 
 class ProfileUpdate(BaseModel):
@@ -46,13 +61,23 @@ async def get_profile(current_user: User = Depends(get_current_user), db: AsyncS
         "scraper_hours_old": p.scraper_hours_old if p else None,
         "scraper_max_terms": p.scraper_max_terms if p else None,
         "onboarding_complete": p.onboarding_complete if p else False,
-        "skills": [],
+        "skills": p.skills if p and p.skills else [],
     }
     return {
         "user_id": current_user.id,
         "email": current_user.email,
         "profile": profile_data,
         **profile_data,
+    }
+
+
+@router.get("/profile/options")
+async def get_profile_options(current_user: User = Depends(get_current_user)):
+    return {
+        "role_options": ROLE_UI_OPTIONS,
+        "canonical_role_options": CANONICAL_ROLE_OPTIONS,
+        "location_options": LOCATION_OPTIONS,
+        "tier_options": TIER_OPTIONS,
     }
 
 
@@ -69,6 +94,9 @@ async def update_profile(
         db.add(profile)
 
     for field, value in body.model_dump(exclude_none=True).items():
+        if field == "config_overrides":
+            profile.config_overrides = _deep_merge_dict(profile.config_overrides, value)
+            continue
         setattr(profile, field, value)
 
     await db.commit()

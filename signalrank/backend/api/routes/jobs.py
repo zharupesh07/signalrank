@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -17,10 +18,15 @@ router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 @router.get("")
 async def list_jobs(
     page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=1, le=2000),
+    limit: int = Query(50, ge=1, le=200),
     sort: Literal["final_score", "semantic_score", "skills_score", "company_score", "seniority_score", "location_score", "recency_score"] = Query("final_score"),
     search: str = Query(""),
     show_archived: bool = Query(True),
+    min_score: int = Query(0, ge=0, le=100),
+    tiers: list[str] = Query(default=[]),
+    job_type: Literal["all", "fte", "contract"] = Query("all"),
+    sites: list[str] = Query(default=[]),
+    date_range: Literal["any", "24h", "week", "month"] = Query("any"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -37,6 +43,9 @@ async def list_jobs(
     sort_col = getattr(JobResult, sort)
 
     base_filters = [JobResult.run_id == run.id, JobResult.user_id == current_user.id]
+    run_total_query = select(func.count()).select_from(JobResult).where(*base_filters)
+    run_total = (await db.execute(run_total_query)).scalar() or 0
+
     if not show_archived:
         base_filters.append(
             or_(JobResult.archived_by_llm.is_(None), JobResult.archived_by_llm == False)
@@ -47,14 +56,53 @@ async def list_jobs(
             or_(JobRaw.title.ilike(pattern), JobRaw.company.ilike(pattern))
         )
 
-    count_query = select(func.count()).select_from(JobResult).join(JobRaw, JobResult.job_id == JobRaw.id).where(*base_filters)
+    if min_score > 0:
+        base_filters.append(JobResult.final_score >= min_score)
+
+    if tiers:
+        normalized_tiers = [tier for tier in tiers if tier and tier != "unknown"]
+        wants_unknown = "unknown" in tiers
+        tier_clauses = []
+        if normalized_tiers:
+            tier_clauses.append(JobResult.company_tier.in_(normalized_tiers))
+        if wants_unknown:
+            tier_clauses.append(JobResult.company_tier.is_(None))
+            tier_clauses.append(JobResult.company_tier.in_(["default", ""]))
+        if tier_clauses:
+            base_filters.append(or_(*tier_clauses))
+
+    if job_type == "contract":
+        base_filters.append(JobResult.is_contract.is_(True))
+    elif job_type == "fte":
+        base_filters.append(or_(JobResult.is_contract.is_(False), JobResult.is_contract.is_(None)))
+
+    if date_range != "any":
+        hours = {"24h": 24, "week": 24 * 7, "month": 24 * 30}[date_range]
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+        base_filters.append(JobRaw.date_posted.is_not(None))
+        base_filters.append(JobRaw.date_posted >= cutoff)
+
+    site_filters = list(base_filters)
+    if sites:
+        site_filters.append(JobRaw.site.in_(sites))
+
+    count_query = select(func.count()).select_from(JobResult).join(JobRaw, JobResult.job_id == JobRaw.id).where(*site_filters)
     total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
+
+    sites_query = await db.execute(
+        select(JobRaw.site)
+        .join(JobResult, JobResult.job_id == JobRaw.id)
+        .where(*base_filters, JobRaw.site.is_not(None))
+        .distinct()
+        .order_by(JobRaw.site.asc())
+    )
+    available_sites = [site for site in sites_query.scalars().all() if site]
 
     results = await db.execute(
         select(JobResult, JobRaw)
         .join(JobRaw, JobResult.job_id == JobRaw.id)
-        .where(*base_filters)
+        .where(*site_filters)
         .order_by(sort_col.desc())
         .offset((page - 1) * limit)
         .limit(limit)
@@ -84,7 +132,14 @@ async def list_jobs(
             "archival_reason": result.archival_reason,
         })
 
-    return {"jobs": jobs, "total": total, "page": page, "limit": limit}
+    return {
+        "jobs": jobs,
+        "total": total,
+        "run_total": run_total,
+        "available_sites": available_sites,
+        "page": page,
+        "limit": limit,
+    }
 
 
 @router.post("/archive-unsuitable", status_code=200)

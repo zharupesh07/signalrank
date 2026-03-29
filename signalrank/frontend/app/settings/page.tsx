@@ -3,26 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
+import { loadProfileOptions, PROFILE_OPTIONS_FALLBACK } from "@/lib/profile-options";
 import type { Profile } from "@/types";
 import { useToast } from "@/components/toast";
 import { TagInput } from "@/components/tag-input";
 import { Search, RefreshCw, User, Target, Briefcase, Shield, Save, CheckCircle } from "lucide-react";
-
-const ROLE_SUGGESTIONS = [
-  "ML Engineer", "Senior ML Engineer", "Staff ML Engineer",
-  "AI Engineer", "Senior AI Engineer",
-  "MLOps Engineer", "LLMOps Engineer",
-  "Platform Engineer", "Senior Platform Engineer", "Staff Platform Engineer",
-  "Backend Engineer", "Senior Backend Engineer",
-  "Data Scientist", "Senior Data Scientist",
-  "AI Platform Engineer", "Agentic Systems Engineer",
-];
-
-const LOCATION_SUGGESTIONS = [
-  "India", "Remote", "Bangalore", "Pune", "Hyderabad", "Mumbai",
-  "Chennai", "Delhi", "Noida", "Gurgaon",
-  "United States", "United Kingdom", "Germany", "Netherlands",
-];
 
 interface RecruiterRow {
   id: string;
@@ -52,6 +37,8 @@ export default function SettingsPage() {
 
   const [targetRoles, setTargetRoles] = useState<string[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
+  const [roleOptions, setRoleOptions] = useState<string[]>(PROFILE_OPTIONS_FALLBACK.role_options);
+  const [locationOptions, setLocationOptions] = useState<string[]>(PROFILE_OPTIONS_FALLBACK.location_options);
   const [customQueries, setCustomQueries] = useState<string[]>([]);
   const [targetLpa, setTargetLpa] = useState("");
   const [minYoe, setMinYoe] = useState("");
@@ -94,6 +81,14 @@ export default function SettingsPage() {
     load();
     loadRecruiters();
   }, [load, loadRecruiters]);
+
+  useEffect(() => {
+    if (!token) return;
+    loadProfileOptions(token).then((options) => {
+      setRoleOptions(options.role_options);
+      setLocationOptions(options.location_options);
+    });
+  }, [token]);
 
   useEffect(() => {
     if (!loaded.current) return;
@@ -229,7 +224,7 @@ export default function SettingsPage() {
             value={targetRoles}
             onChange={setTargetRoles}
             placeholder="Add role, press Enter..."
-            suggestions={ROLE_SUGGESTIONS}
+            suggestions={roleOptions}
           />
 
           <TagInput
@@ -237,7 +232,7 @@ export default function SettingsPage() {
             value={locations}
             onChange={setLocations}
             placeholder="Add location, press Enter..."
-            suggestions={LOCATION_SUGGESTIONS}
+            suggestions={locationOptions}
           />
 
           <TagInput

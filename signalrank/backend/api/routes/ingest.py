@@ -209,18 +209,13 @@ async def ingest_confirm(
 
     priority = _compute_priority(date_posted, company_tier)
 
-    # Compute user's role clusters for tagging
-    from domain.role_clusters import roles_to_clusters
-    from sqlalchemy import cast, text as sa_text
-    from sqlalchemy.dialects.postgresql import JSONB as _JSONB
-    profile_res = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
-    profile = profile_res.scalar_one_or_none()
-    user_clusters = sorted(roles_to_clusters(profile.target_roles or [] if profile else []))
+    from domain.role_clusters import infer_clusters_from_job_text
+    inferred_clusters = sorted(
+        infer_clusters_from_job_text(body.title or None, body.description or None) - {"general"}
+    )
 
-    # Upsert JobRaw (shared across users) — merge role_clusters on conflict
-    await db.execute(
-        pg_insert(JobRaw)
-        .values(
+    # Upsert JobRaw (shared across users) — tag by job content, not by the current user's profile.
+    insert_stmt = pg_insert(JobRaw).values(
             job_url=job_url,
             title=body.title or None,
             company=body.company or None,
@@ -228,17 +223,14 @@ async def ingest_confirm(
             location=body.location or None,
             site="manual",
             date_posted=date_posted,
-            role_clusters=user_clusters,
+            role_clusters=inferred_clusters,
         )
+    await db.execute(
+        insert_stmt
         .on_conflict_do_update(
             index_elements=["job_url"],
             set_={
-                "role_clusters": sa_text(
-                    "(SELECT jsonb_agg(DISTINCT elem) "
-                    "FROM jsonb_array_elements("
-                    "COALESCE(jobs_raw.role_clusters, '[]'::jsonb) || "
-                    "excluded.role_clusters) AS elem)"
-                )
+                "role_clusters": insert_stmt.excluded.role_clusters,
             },
         )
     )

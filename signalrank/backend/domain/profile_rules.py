@@ -120,6 +120,68 @@ def infer_profile_archetypes(
         enterprise_signals += 1
     if enterprise_signals >= 1:
         archetypes.append("enterprise_apps")
+
+    sap_functional_signals = 0
+    if _has_any(
+        roles_text,
+        [
+            "sap sd",
+            "sap mm",
+            "sap fico",
+            "sap fi/co",
+            "sap functional",
+            "sap s/4hana",
+            "sap gts",
+        ],
+    ):
+        sap_functional_signals += 1
+    if _has_any(
+        resume_text_lower,
+        [
+            "sap sd",
+            "sap mm",
+            "sap fico",
+            "sap fi/co",
+            "s/4hana",
+            "order to cash",
+            "order-to-cash",
+            "otc",
+            "sales and distribution",
+            "sales & distribution",
+            "gts",
+            "functional consultant",
+        ],
+    ):
+        sap_functional_signals += 1
+    if sap_functional_signals >= 1:
+        archetypes.append("sap_functional")
+
+    sap_sd_signals = 0
+    if _has_any(
+        roles_text,
+        [
+            "sap sd",
+            "sales and distribution",
+            "sap gts",
+        ],
+    ):
+        sap_sd_signals += 1
+    if _has_any(
+        resume_text_lower,
+        [
+            "sap sd",
+            "sales and distribution",
+            "sales & distribution",
+            "order to cash",
+            "order-to-cash",
+            "otc",
+            "gts",
+        ],
+    ):
+        sap_sd_signals += 1
+    if sap_sd_signals >= 1:
+        archetypes.append("sap_sd")
+
     if not archetypes and (skills & {"javascript", "java", "go", "python"} or "engineer" in roles_text):
         archetypes.append("software_generalist")
     if not archetypes:
@@ -188,11 +250,86 @@ def build_profile_title_rules(archetypes: Iterable[str]) -> dict[str, list[str]]
     if "enterprise_apps" in archetypes:
         adjacent = [p for p in adjacent if p not in {r"\barchitect\b"}]
 
+    if "sap_functional" in archetypes:
+        strong.extend([
+            r"\bbasis\b",
+            r"\babap\b",
+            r"\bbtp\b",
+            r"\bai\b",
+            r"\bml\b",
+            r"\bmachine learning\b",
+            r"\bgenai\b",
+            r"\bllm\b",
+            r"\bdata scientist\b",
+            r"\bdata engineer\b",
+            r"\bsoftware engineer\b",
+            r"\bdeveloper\b",
+            r"\bdevops\b",
+            r"\bplatform\b",
+            r"\bsecurity\b",
+            r"\bproduct manager\b",
+            r"\bproject manager\b",
+            r"\bprogram manager\b",
+        ])
+        adjacent.extend([
+            r"\barchitect\b",
+            r"\bintegration engineer\b",
+            r"\bfull stack\b",
+        ])
+
+    if "sap_sd" in archetypes:
+        strong.extend([
+            r"\blinux\b",
+            r"\bpacemaker\b",
+            r"\bqa\b",
+            r"\btest\b",
+            r"\bsalesforce\b",
+            r"\bfico\b",
+            r"\bfi/co\b",
+            r"\bp2p\b",
+            r"\bprocure to pay\b",
+            r"\bariba\b",
+            r"\bppds\b",
+            r"\bcpi\b",
+            r"\bmdm\b",
+            r"\bewm\b",
+            r"\btm\b",
+            r"\bhcm\b",
+            r"\bcrm\b",
+            r"\bbw\b",
+            r"\bbpc\b",
+            r"\bsuccessfactors\b",
+        ])
+
     return {
         "strong": sorted(set(strong)),
         "adjacent": sorted(set(adjacent)),
         "hybrid": sorted(set(hybrid)),
     }
+
+
+def build_profile_positive_terms(archetypes: Iterable[str]) -> list[str]:
+    archetypes = set(archetypes)
+    terms: list[str] = []
+
+    if "sap_sd" in archetypes:
+        terms.extend([
+            "sap sd",
+            "sd consultant",
+            "sales and distribution",
+            "sales & distribution",
+            "order to cash",
+            "order-to-cash",
+            "otc",
+            "gts",
+            "pricing",
+            "s/4hana sd",
+            "sap gts",
+            "functional analyst",
+            "functional consultant",
+        ])
+
+    return sorted(set(terms))
 
 
 def enrich_config_with_profile_rules(
@@ -205,6 +342,7 @@ def enrich_config_with_profile_rules(
     archetypes = infer_profile_archetypes(resume_text, profile_roles, cfg)
     ranking["profile_archetypes"] = archetypes
     ranking["profile_title_rules"] = build_profile_title_rules(archetypes)
+    ranking["profile_positive_terms"] = build_profile_positive_terms(archetypes)
     out = dict(cfg)
     out["ranking"] = ranking
     return out
@@ -222,3 +360,10 @@ def title_rule_flags(title: str, cfg: dict) -> dict[str, bool]:
         "adjacent": matches(rules.get("adjacent", [])),
         "hybrid": matches(rules.get("hybrid", [])),
     }
+
+
+def text_matches_profile_positive_terms(text: str, cfg: dict) -> bool:
+    positive_terms = (cfg.get("ranking", {}) or {}).get("profile_positive_terms", [])
+    if not positive_terms:
+        return True
+    return _has_any((text or "").lower(), positive_terms)

@@ -21,6 +21,13 @@ export interface Profile {
   onboarding_complete: boolean;
 }
 
+export interface ProfileOptions {
+  role_options: string[];
+  canonical_role_options: string[];
+  location_options: string[];
+  tier_options: { label: string; value: string }[];
+}
+
 export interface Job {
   id: string;
   title: string;
@@ -46,6 +53,8 @@ export interface Job {
 export interface JobsResponse {
   jobs: Job[];
   total: number;
+  run_total: number;
+  available_sites: string[];
   page: number;
   limit: number;
 }

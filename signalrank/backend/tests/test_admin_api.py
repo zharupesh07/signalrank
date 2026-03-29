@@ -1,8 +1,18 @@
 import pytest
-from sqlalchemy import update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.models import Profile, User
+from api.models import (
+    Application,
+    ArchivalQueue,
+    GenerationQueue,
+    JobRaw,
+    JobResult,
+    Profile,
+    Run,
+    TailoredResume,
+    User,
+)
 
 
 @pytest.fixture
@@ -130,3 +140,53 @@ async def test_list_runs_returns_expected_shape(client, admin_token):
     r = await client.get("/api/admin/runs", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
     assert isinstance(r.json(), list)
+
+
+async def test_reset_jobs_clears_user_specific_feed_state_only(client, admin_token, regular_token, db: AsyncSession):
+    me = await client.get("/api/profile", headers={"Authorization": f"Bearer {regular_token}"})
+    user_id = me.json()["user_id"]
+
+    job = JobRaw(
+        job_url="https://example.com/job-1",
+        title="SAP SD Consultant",
+        company="Example Corp",
+        description="SAP SD and S/4HANA role",
+        location="Hyderabad",
+        site="manual",
+    )
+    run = Run(user_id=user_id, status="success")
+    db.add_all([job, run])
+    await db.flush()
+
+    job_result = JobResult(user_id=user_id, run_id=run.id, job_id=job.id, final_score=88.0)
+    tailored = TailoredResume(user_id=user_id, job_id=job.id, template="classic")
+    generation = GenerationQueue(user_id=user_id, job_id=job.id, status="pending")
+    application = Application(user_id=user_id, job_id=job.id, company="Example Corp", title="SAP SD Consultant")
+    db.add_all([job_result, tailored, generation, application])
+    await db.flush()
+
+    archival = ArchivalQueue(user_id=user_id, job_result_id=job_result.id, status="pending")
+    db.add(archival)
+    await db.commit()
+
+    response = await client.post(
+        f"/api/admin/users/{user_id}/reset-jobs",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "reset"
+    assert payload["jobs_preserved"] is True
+    assert payload["runs_deleted"] == 1
+    assert payload["job_results_deleted"] == 1
+    assert payload["generation_queue_deleted"] == 1
+    assert payload["tailored_resumes_deleted"] == 1
+    assert payload["archival_queue_deleted"] == 1
+
+    assert (await db.execute(select(func.count(JobRaw.id)))).scalar_one() == 1
+    assert (await db.execute(select(func.count(Run.id)))).scalar_one() == 0
+    assert (await db.execute(select(func.count(JobResult.id)))).scalar_one() == 0
+    assert (await db.execute(select(func.count(TailoredResume.id)))).scalar_one() == 0
+    assert (await db.execute(select(func.count(GenerationQueue.id)))).scalar_one() == 0
+    assert (await db.execute(select(func.count(ArchivalQueue.id)))).scalar_one() == 0
+    assert (await db.execute(select(func.count(Application.id)))).scalar_one() == 1

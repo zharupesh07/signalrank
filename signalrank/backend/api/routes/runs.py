@@ -33,7 +33,11 @@ async def trigger_run(
     if not profile or not profile.onboarding_complete:
         raise HTTPException(status_code=400, detail="Please complete onboarding before triggering a run")
 
-    run = Run(user_id=current_user.id, status="pending")
+    run = Run(
+        user_id=current_user.id,
+        status="pending",
+        progress={"requested_mode": "quick", "force_scrape": False},
+    )
     db.add(run)
     await db.commit()
     await db.refresh(run)

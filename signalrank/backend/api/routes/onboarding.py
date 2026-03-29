@@ -1,6 +1,7 @@
 import asyncio
 import io
 import logging
+import re
 
 from typing import Iterable
 
@@ -68,30 +69,62 @@ def _resume_mentions_enterprise(parsed: ResumeParseResult) -> bool:
     return bool(detect_enterprise_role_from_text(text))
 
 
+def _normalize_str_list(values: Iterable[str] | None) -> list[str]:
+    if not values:
+        return []
+    seen: set[str] = set()
+    cleaned: list[str] = []
+    for value in values:
+        item = str(value).strip()
+        key = item.lower()
+        if not item or key in seen:
+            continue
+        seen.add(key)
+        cleaned.append(item)
+    return cleaned
+
+
+def _parse_salary_to_number(value: str | list[str]) -> int | None:
+    text = " ".join(value) if isinstance(value, list) else str(value)
+    normalized = text.strip().lower().replace(",", "")
+    if not normalized:
+        return None
+    match = re.search(r"(\d+(?:\.\d+)?)", normalized)
+    if not match:
+        return None
+    amount = float(match.group(1))
+    if "cr" in normalized or "crore" in normalized:
+        return int(amount * 10000000)
+    if "lpa" in normalized or re.search(r"\bl\b", normalized):
+        return int(amount * 100000)
+    if amount < 1000:
+        return int(amount * 100000)
+    return int(amount)
+
+
 def _apply_parsed_profile_updates(profile: Profile, parsed: ResumeParseResult) -> str | None:
     profile.skills = parsed.skills
-    suggested_roles = parsed.suggested_roles or []
+    suggested_roles = _normalize_str_list(parsed.suggested_roles)
+    suggested_locations = _normalize_str_list(parsed.suggested_locations)
+    suggested_exclusions = _normalize_str_list(parsed.suggested_exclusions)
     ai_signals = _ai_signal_count_from_parsed(parsed)
     accept_suggested = suggested_roles and (
         ai_signals >= 2 or not _suggested_roles_are_ai_only(suggested_roles)
     )
-    if accept_suggested and not profile.target_roles:
+    enterprise_role = _enterprise_role(parsed)
+    if accept_suggested:
         profile.target_roles = suggested_roles
-        if not profile.role_intent:
-            profile.role_intent = suggested_roles[0]
-    elif not profile.target_roles and parsed.recent_titles:
-        profile.target_roles = parsed.recent_titles
-    elif suggested_roles and not profile.role_intent:
         profile.role_intent = suggested_roles[0]
-    if not profile.target_roles:
-        enterprise_role = _enterprise_role(parsed)
-        if enterprise_role:
-            profile.target_roles = [enterprise_role]
-            profile.role_intent = profile.role_intent or enterprise_role
-    if not profile.target_roles and _resume_mentions_enterprise(parsed):
+    elif enterprise_role:
+        profile.target_roles = [enterprise_role]
+        profile.role_intent = enterprise_role
+    elif parsed.recent_titles:
+        profile.target_roles = _normalize_str_list(parsed.recent_titles)
+        if profile.target_roles:
+            profile.role_intent = profile.target_roles[0]
+    elif _resume_mentions_enterprise(parsed):
         profile.target_roles = ["SAP SD Consultant"]
-        if not profile.role_intent:
-            profile.role_intent = "SAP SD Consultant"
+        profile.role_intent = "SAP SD Consultant"
 
     parts = []
     if parsed.recent_titles:
@@ -107,29 +140,31 @@ def _apply_parsed_profile_updates(profile: Profile, parsed: ResumeParseResult) -
 
     overrides = dict(profile.config_overrides or {})
 
-    if parsed.suggested_roles and not overrides.get("profile_intent", {}).get("roles"):
-        overrides.setdefault("profile_intent", {})["roles"] = parsed.suggested_roles
+    if profile.target_roles:
+        overrides.setdefault("profile_intent", {})["roles"] = profile.target_roles
 
-    if parsed.suggested_locations and not overrides.get("scraping", {}).get("locations"):
-        overrides.setdefault("scraping", {})["locations"] = parsed.suggested_locations
-    elif not overrides.get("scraping", {}).get("locations"):
+    if suggested_locations:
+        profile.preferred_locations = suggested_locations
+        overrides.setdefault("scraping", {})["locations"] = suggested_locations
+    else:
         enterprise_locations = _enterprise_locations(parsed)
         if enterprise_locations:
+            profile.preferred_locations = enterprise_locations
             overrides.setdefault("scraping", {})["locations"] = enterprise_locations
 
-    if parsed.suggested_exclusions and not overrides.get("title_blocklist"):
-        overrides["title_blocklist"] = parsed.suggested_exclusions
+    if suggested_exclusions:
+        overrides["title_blocklist"] = suggested_exclusions
 
     if overrides != (profile.config_overrides or {}):
         profile.config_overrides = overrides
 
-    if parsed.salary_lpa and not profile.target_lpa:
+    if parsed.salary_lpa:
         profile.target_lpa = float(parsed.salary_lpa)
 
     inferred_min_yoe, inferred_max_yoe = _infer_yoe_range(parsed.years_of_experience)
-    if inferred_min_yoe is not None and profile.min_yoe is None:
+    if inferred_min_yoe is not None:
         profile.min_yoe = inferred_min_yoe
-    if inferred_max_yoe is not None and profile.max_yoe is None:
+    if inferred_max_yoe is not None:
         profile.max_yoe = inferred_max_yoe
 
     return distilled_text
@@ -322,14 +357,15 @@ async def refine_onboarding(
 
     if qid == "salary_expectations":
         try:
-            val = int(str(answer).replace("L", "00000").replace(",", "").replace(" ", ""))
-            profile.min_salary = val
+            val = _parse_salary_to_number(answer)
+            if val is not None:
+                profile.min_salary = val
         except ValueError:
             pass
     elif qid == "target_roles":
         overrides = profile.config_overrides or {}
         raw_roles = answer if isinstance(answer, list) else [answer]
-        cleaned_roles = [str(role).strip() for role in raw_roles if str(role).strip()]
+        cleaned_roles = _normalize_str_list(raw_roles)
         overrides.setdefault("profile_intent", {})["roles"] = cleaned_roles
         profile.config_overrides = overrides
         profile.target_roles = cleaned_roles
@@ -337,8 +373,10 @@ async def refine_onboarding(
             profile.role_intent = cleaned_roles[0]
     elif qid == "preferred_locations":
         overrides = profile.config_overrides or {}
-        overrides.setdefault("scraping", {})["locations"] = answer if isinstance(answer, list) else [answer]
+        cleaned_locations = _normalize_str_list(answer if isinstance(answer, list) else [answer])
+        overrides.setdefault("scraping", {})["locations"] = cleaned_locations
         profile.config_overrides = overrides
+        profile.preferred_locations = cleaned_locations
     elif qid == "exclusions":
         overrides = profile.config_overrides or {}
         exclusions = answer if isinstance(answer, list) else [answer]
