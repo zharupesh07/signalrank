@@ -124,7 +124,24 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 value={targetRoles}
                 onChange={setTargetRoles}
                 placeholder="Add role…"
-                suggestions={["Machine Learning Engineer", "ML Engineer", "Data Scientist", "AI Engineer", "MLOps Engineer", "Data Engineer", "Platform Engineer", "Backend Engineer", "Software Engineer", "Research Engineer", "Applied Scientist", "NLP Engineer", "GenAI Engineer", "LLM Engineer", "Full Stack Engineer"]}
+                suggestions={[
+                  "SAP SD Consultant",
+                  "Machine Learning Engineer",
+                  "ML Engineer",
+                  "Data Scientist",
+                  "AI Engineer",
+                  "MLOps Engineer",
+                  "Data Engineer",
+                  "Platform Engineer",
+                  "Backend Engineer",
+                  "Software Engineer",
+                  "Research Engineer",
+                  "Applied Scientist",
+                  "NLP Engineer",
+                  "GenAI Engineer",
+                  "LLM Engineer",
+                  "Full Stack Engineer",
+                ]}
               />
               <TagInput
                 label="Preferred locations"
