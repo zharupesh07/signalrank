@@ -117,10 +117,24 @@ flowchart TD
 | **Template Switching** | Switch PDF template (classic/modern/minimal) without LLM re-call — re-renders from cache |
 | **Jobs Page Pagination** | Page-size picker (50 / 100 / 200 / All); fetches up to 5000 jobs |
 | **Onboarding** | Guided flow to distil resume → profile → preferences |
+| **Intent-aware Onboarding** | Resume parsing now sanitizes suggested roles, prioritizes enterprise/SAP intent, and tightens location/penalty lists before prefilling the web UI |
 | **Dev Panel** | Hidden 5-click debug overlay: tweak roles, locations, scoring weights, trigger runs |
 | **Multi-source Scraping** | Indeed + LinkedIn (JobSpy), RapidAPI JSearch, Remotive, Himalayas, Jobicy, Google Jobs |
 
 ---
+
+## Onboarding Intent Guard
+
+The onboarding pipeline now scrubs every LLM parse before it touches the UI. Suggested roles are normalized against the supported taxonomy, enterprise/SAP signals (SAP SD, S/4HANA, Sales & Distribution) get top priority, and suggested locations/penalty lists respect the same grounding logic. That makes the prefill and `target_roles` fields reliably reflect the resume even if the raw LLM guidance is noisy.
+
+### Running Onboarding Tests
+
+```bash
+cd job_ranker/signalrank
+uv run -- python -m pytest backend/tests/test_resume_parser.py backend/tests/test_onboarding_llm.py backend/tests/test_onboarding_api.py
+```
+
+Ensure the `uv` virtual environment is bootstrapped (`uv install` or `uv sync` as needed) before running tests.
 
 ## Tech Stack
 

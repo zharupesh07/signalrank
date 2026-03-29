@@ -38,15 +38,31 @@ def _extract_json(raw: str) -> dict | None:
     if text.startswith("```"):
         lines = text.split("\n")
         text = "\n".join(lines[1:-1]) if len(lines) > 2 else text
-
-    start = text.find("{")
-    end = text.rfind("}")
-    if start == -1 or end == -1:
-        return None
     try:
-        return json.loads(text[start : end + 1])
+        return json.loads(text)
     except json.JSONDecodeError:
-        return None
+        pass
+
+    stack = 0
+    start_idx = None
+    candidates = []
+    for idx, ch in enumerate(text):
+        if ch == "{":
+            if stack == 0:
+                start_idx = idx
+            stack += 1
+        elif ch == "}" and stack > 0:
+            stack -= 1
+            if stack == 0 and start_idx is not None:
+                candidates.append(text[start_idx : idx + 1])
+
+    for candidate in reversed(candidates):
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+
+    return None
 
 
 class OpenRouterClient:

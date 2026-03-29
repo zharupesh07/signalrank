@@ -15,7 +15,7 @@ from api.deps_llm import get_llm_client
 from api.models import Profile, User
 from llm.onboarding import generate_onboarding_questions
 from llm.openrouter import OpenRouterClient
-from llm.resume_parser import ResumeParseResult, parse_resume
+from llm.resume_parser import ResumeParseResult, detect_enterprise_role_from_text, parse_resume
 
 logger = logging.getLogger(__name__)
 
@@ -43,15 +43,13 @@ def _suggested_roles_are_ai_only(roles: Iterable[str]) -> bool:
 
 def _enterprise_role(parsed: ResumeParseResult) -> str | None:
     text = " ".join((parsed.skills or []) + (parsed.recent_titles or [])).lower()
-    if any(term in text for term in ("sap sd", "sales and distribution", "sap s/4hana")):
-        return "SAP SD Consultant"
-    return None
+    return detect_enterprise_role_from_text(text)
 
 
 def _enterprise_locations(parsed: ResumeParseResult) -> list[str] | None:
     text = (parsed.skills or []) + (parsed.recent_titles or []) + (parsed.suggested_locations or [])
     combined = " ".join(text).lower()
-    if "bangalore" in combined or "hydrabad" in combined or "hyderabad" in combined:
+    if "bangalore" in combined or "bengaluru" in combined or "hyderabad" in combined or "hydrabad" in combined:
         return ["Bangalore", "Hyderabad"]
     return None
 
@@ -67,7 +65,7 @@ def _infer_yoe_range(years_of_experience: int | None) -> tuple[int | None, int |
 
 def _resume_mentions_enterprise(parsed: ResumeParseResult) -> bool:
     text = " ".join((parsed.skills or []) + (parsed.recent_titles or [])).lower()
-    return any(term in text for term in ("sap", "s/4hana", "sap sd", "sales and distribution"))
+    return bool(detect_enterprise_role_from_text(text))
 
 
 def _apply_parsed_profile_updates(profile: Profile, parsed: ResumeParseResult) -> str | None:

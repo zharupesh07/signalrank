@@ -1,4 +1,5 @@
 import logging
+import re
 from dataclasses import dataclass, field
 
 from llm.openrouter import OpenRouterClient
@@ -26,6 +27,7 @@ _ROLE_OPTIONS = [
     "Embedded / Systems Engineer",
     "Product Engineer",
     "QA / Test Engineer",
+    "SAP SD Consultant",
 ]
 
 _LOCATION_OPTIONS = [
@@ -39,10 +41,92 @@ _LOCATION_OPTIONS = [
     "Open to relocation",
 ]
 
-EXTRACTION_PROMPT = """Extract structured job search data from this resume. Return JSON only.
+_ROLE_LOOKUP = {role.lower(): role for role in _ROLE_OPTIONS}
+_ENTERPRISE_ROLE_KEYWORDS = (
+    "sap sd",
+    "sales and distribution",
+    "s/4hana",
+    "sap s/4hana",
+    "sap sd consultant",
+)
+
+
+def detect_enterprise_role_from_text(text: str) -> str | None:
+    normalized_text = (text or "").lower()
+    if any(keyword in normalized_text for keyword in _ENTERPRISE_ROLE_KEYWORDS):
+        return "SAP SD Consultant"
+    return None
+
+
+def _normalize_role_option(role: str) -> str | None:
+    candidate = re.sub(r"\s+", " ", (role or "").strip())
+    if not candidate:
+        return None
+    lower_candidate = candidate.lower()
+    if lower_candidate in _ROLE_LOOKUP:
+        return _ROLE_LOOKUP[lower_candidate]
+    for option in _ROLE_OPTIONS:
+        option_lower = option.lower()
+        if option_lower in lower_candidate or lower_candidate in option_lower:
+            return option
+    return candidate
+
+
+def _sanitize_roles(raw_roles) -> list[str]:
+    if raw_roles is None:
+        return []
+    roles = []
+    seen = set()
+    iterable = raw_roles if isinstance(raw_roles, list) else [raw_roles]
+    for entry in iterable:
+        normalized = _normalize_role_option(str(entry))
+        if not normalized:
+            continue
+        key = normalized.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        roles.append(normalized)
+        if len(roles) >= 5:
+            break
+    return roles
+
+
+def _ensure_enterprise_priority(roles: list[str], resume_text: str) -> list[str]:
+    enterprise = detect_enterprise_role_from_text(resume_text)
+    if not enterprise:
+        return roles
+    lower_roles = [role.lower() for role in roles]
+    if enterprise.lower() in lower_roles:
+        idx = lower_roles.index(enterprise.lower())
+        if idx != 0:
+            roles.insert(0, roles.pop(idx))
+    else:
+        roles.insert(0, enterprise)
+    return roles
+
+
+def _massage_parsed_data(data: dict, resume_text: str) -> dict:
+    if not isinstance(data, dict):
+        return data
+    cleaned = _sanitize_roles(data.get("suggested_roles"))
+    cleaned = _ensure_enterprise_priority(cleaned, resume_text)
+    if cleaned:
+        data["suggested_roles"] = cleaned
+    else:
+        data.pop("suggested_roles", None)
+    return data
+
+EXTRACTION_PROMPT = """Extract structured job search data from this resume. Return a single JSON object only.
 
 Available role options (pick best matches): {role_options}
 Available location options (pick based on work history): {location_options}
+
+Rules:
+- Focus on the candidate's true domain and seniority; do not default to AI/ML roles unless the resume clearly shows that focus.
+- If the resume flags SAP/Sales & Distribution/ERP delivery, prioritize "SAP SD Consultant" as the top suggested role.
+- Choose 1-3 roles that feel consistent with the bulk of the experience. Avoid adding multiple AI or generic roles unless the resume justifies them.
+- Choose 1-3 locations that align with the candidate's recent work history.
 
 Keys:
 - skills: list of technical skills
@@ -119,6 +203,7 @@ async def parse_resume(
     prompt = EXTRACTION_PROMPT.format(resume_text=resume_text[:10000])
     try:
         data = await llm_client.llm_json(prompt, max_tokens=900)
+        data = _massage_parsed_data(data, resume_text)
         return _validate_extraction(data)
     except Exception:
         logger.exception("Resume parse failed — returning empty result")
