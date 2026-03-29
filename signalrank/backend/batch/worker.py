@@ -2,6 +2,7 @@ import asyncio
 import gc
 import logging
 import time
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select, update
@@ -15,6 +16,14 @@ from batch.embedding_cache import PgEmbeddingCache
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class RunRequest:
+    run_id: str
+    user_id: str
+    mode: str = "quick"
+    force_scrape: bool = False
+
+
 _EMBED_CHUNK_SIZE = 4
 _EMBED_MAX_RETRIES = 3
 _EMBED_BACKOFF_BASE = 2
@@ -23,6 +32,22 @@ _EMBED_BACKOFF_BASE = 2
 def _format_run_error(exc: Exception) -> str:
     message = f"{exc.__class__.__name__}: {exc}".strip()
     return message[:1000]
+
+
+def _run_progress_meta(mode: str, force_scrape: bool, *, scrape_executed: bool | None = None) -> dict:
+    progress = {
+        "requested_mode": mode,
+        "force_scrape": force_scrape,
+    }
+    if scrape_executed is not None:
+        progress["scrape_executed"] = scrape_executed
+    return progress
+
+
+def _merge_run_progress(mode: str, force_scrape: bool, *, scrape_executed: bool | None = None, **kwargs) -> dict:
+    progress = _run_progress_meta(mode, force_scrape, scrape_executed=scrape_executed)
+    progress.update(kwargs)
+    return progress
 
 
 async def _embed_new_jobs(
@@ -141,6 +166,7 @@ async def process_run(
     force_scrape: bool = False,
 ) -> None:
     async with session_factory() as db:
+        scrape_executed = False
         try:
             # Check if run was cancelled before it even started
             run_check_result = await db.execute(select(Run).where(Run.id == run_id))
@@ -172,27 +198,54 @@ async def process_run(
                 scraper_max_terms = profile.scraper_max_terms if profile else None
                 scraper_hours_old = profile.scraper_hours_old or 168  # 7 days
             queries = build_queries(profile, max_terms=scraper_max_terms) if profile else []
-
             async def _update_progress(**kwargs):
                 async with session_factory() as pdb:
                     await pdb.execute(
-                        update(Run).where(Run.id == run_id).values(progress=kwargs)
+                        update(Run).where(Run.id == run_id).values(
+                            progress=_merge_run_progress(
+                                mode,
+                                force_scrape,
+                                scrape_executed=scrape_executed,
+                                **kwargs,
+                            )
+                        )
                     )
                     await pdb.commit()
 
-            # Skip scraping if a recent successful scrape already ran
-            scrape_threshold_hours = 1 if mode == "quick" else 6
-            scrape_cutoff = datetime.now(timezone.utc) - timedelta(hours=scrape_threshold_hours)
-            recent_scrape = await db.execute(
-                select(Run.id).where(
-                    Run.user_id == user_id,
-                    Run.status == "success",
-                    Run.scrape_count > 0,
-                    Run.finished_at >= scrape_cutoff,
-                    Run.id != run_id,
-                ).limit(1)
-            )
-            skip_scrape = (not force_scrape) and recent_scrape.scalar_one_or_none() is not None
+            now = datetime.now(timezone.utc)
+            skip_scrape = False
+            if not force_scrape:
+                if mode == "full":
+                    deep_scan_cutoff = now - timedelta(hours=48)
+                    recent_runs_result = await db.execute(
+                        select(Run).where(
+                            Run.user_id == user_id,
+                            Run.status == "success",
+                            Run.finished_at >= deep_scan_cutoff,
+                            Run.id != run_id,
+                        ).order_by(Run.finished_at.desc()).limit(20)
+                    )
+                    recent_runs = recent_runs_result.scalars().all()
+                    skip_scrape = any(
+                        isinstance(recent_run.progress, dict)
+                        and recent_run.progress.get("requested_mode") == "full"
+                        and recent_run.progress.get("scrape_executed") is True
+                        for recent_run in recent_runs
+                    )
+                    scrape_threshold_hours = 48
+                else:
+                    scrape_threshold_hours = 1
+                    scrape_cutoff = now - timedelta(hours=scrape_threshold_hours)
+                    recent_scrape = await db.execute(
+                        select(Run.id).where(
+                            Run.user_id == user_id,
+                            Run.status == "success",
+                            Run.scrape_count.is_not(None),
+                            Run.finished_at >= scrape_cutoff,
+                            Run.id != run_id,
+                        ).limit(1)
+                    )
+                    skip_scrape = recent_scrape.scalar_one_or_none() is not None
             if skip_scrape:
                 logger.info(
                     "Run %s skipping scrape — recent scrape within %dh threshold",
@@ -201,6 +254,7 @@ async def process_run(
 
             scrape_count = 0
             if queries and not skip_scrape:
+                scrape_executed = True
                 title_blocklist = (config_overrides or {}).get("title_blocklist", [])
                 config = ScraperConfig.from_env(title_blocklist=title_blocklist)
                 config.hours_old = scraper_hours_old
@@ -284,8 +338,16 @@ async def process_run(
                 update(Run).where(Run.id == run_id).values(
                     status="ranking",
                     scrape_count=scrape_count,
-                    progress={"phase": "ranking", "phase_num": 1, "total_phases": 1,
-                              "jobs_found": scrape_count, "message": "Ranking jobs..."},
+                    progress=_merge_run_progress(
+                        mode,
+                        force_scrape,
+                        scrape_executed=scrape_executed,
+                        phase="ranking",
+                        phase_num=1,
+                        total_phases=1,
+                        jobs_found=scrape_count,
+                        message="Ranking jobs...",
+                    ),
                 )
             )
             await db.commit()
@@ -308,7 +370,7 @@ async def process_run(
                 await db.execute(
                     update(Run).where(Run.id == run_id).values(
                         status="failed", finished_at=datetime.now(timezone.utc),
-                        progress=None,
+                        progress=_run_progress_meta(mode, force_scrape, scrape_executed=scrape_executed),
                         error="TimeoutError: Ranking timed out after 600s",
                     )
                 )
@@ -356,7 +418,7 @@ async def process_run(
                     status="success",
                     finished_at=datetime.now(timezone.utc),
                     job_count=len(ranked_df),
-                    progress=None,
+                    progress=_run_progress_meta(mode, force_scrape, scrape_executed=scrape_executed),
                     error=None,
                 )
             )
@@ -373,7 +435,7 @@ async def process_run(
                 .values(
                     status="failed",
                     finished_at=datetime.now(timezone.utc),
-                    progress=None,
+                    progress=_run_progress_meta(mode, force_scrape, scrape_executed=scrape_executed),
                     error=_format_run_error(exc),
                 )
             )
@@ -489,7 +551,7 @@ async def _claim_pending_run(session_factory: async_sessionmaker):
 
         run.status = "scraping"
         await db.commit()
-        return str(run.id), str(run.user_id), mode, force_scrape
+        return RunRequest(str(run.id), str(run.user_id), mode, force_scrape)
 
 
 async def worker_loop(session_factory: async_sessionmaker) -> None:
@@ -507,16 +569,16 @@ async def worker_loop(session_factory: async_sessionmaker) -> None:
             if item is None:
                 continue
 
-        force_scrape = False
-        if len(item) == 4:
-            run_id, user_id, mode, force_scrape = item
+        if isinstance(item, RunRequest):
+            req = item
+        elif len(item) == 4:
+            req = RunRequest(*item)
         elif len(item) == 3:
-            run_id, user_id, mode = item
+            req = RunRequest(item[0], item[1], item[2])
         else:
-            run_id, user_id = item
-            mode = "quick"
+            req = RunRequest(item[0], item[1])
         try:
-            await process_run(run_id, user_id, session_factory, mode=mode, force_scrape=force_scrape)
+            await process_run(req.run_id, req.user_id, session_factory, mode=req.mode, force_scrape=req.force_scrape)
         finally:
             if from_queue:
                 queue.task_done()
