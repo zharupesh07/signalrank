@@ -118,6 +118,7 @@ export function TagInput({ label, value, onChange, placeholder, suggestions = []
           onKeyDown={handleKeyDown}
           onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
           placeholder={value.length === 0 ? placeholder : ""}
+          suppressHydrationWarning
           className="flex-1 min-w-24 bg-transparent text-[var(--fg)] placeholder:text-[var(--fg-dim)] text-sm outline-none border-none"
         />
       </div>

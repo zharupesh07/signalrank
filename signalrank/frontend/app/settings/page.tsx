@@ -277,6 +277,7 @@ export default function SettingsPage() {
                     value={value}
                     onChange={(e) => set(e.target.value)}
                     placeholder={placeholder}
+                    suppressHydrationWarning
                     className="w-full text-xs bg-input border border-border text-foreground px-3 py-2 focus:border-primary focus:outline-none placeholder:text-muted-foreground/40 transition-colors"
                   />
                   <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">{suffix}</span>
@@ -356,6 +357,7 @@ export default function SettingsPage() {
                   value={scraperHoursOld}
                   onChange={(e) => setScraperHoursOld(e.target.value)}
                   placeholder="168"
+                  suppressHydrationWarning
                   className="w-full text-xs bg-input border border-border text-foreground px-3 py-2 focus:border-primary focus:outline-none placeholder:text-muted-foreground/40 transition-colors"
                 />
                 <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">hrs</span>
@@ -374,6 +376,7 @@ export default function SettingsPage() {
                 value={scraperMaxTerms}
                 onChange={(e) => setScraperMaxTerms(e.target.value)}
                 placeholder="all"
+                suppressHydrationWarning
                 className="w-full text-xs bg-input border border-border text-foreground px-3 py-2 focus:border-primary focus:outline-none placeholder:text-muted-foreground/40 transition-colors"
               />
             </div>
@@ -466,6 +469,7 @@ export default function SettingsPage() {
                   onChange={(e) => setFindCompany(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && findRecruiters()}
                   placeholder="e.g. Adobe"
+                  suppressHydrationWarning
                   className="w-full text-xs bg-input border border-border text-foreground px-3 py-2 focus:border-primary focus:outline-none placeholder:text-muted-foreground/40 transition-colors"
                 />
               </div>
@@ -479,6 +483,7 @@ export default function SettingsPage() {
                   onChange={(e) => setFindDomain(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && findRecruiters()}
                   placeholder="e.g. adobe.com"
+                  suppressHydrationWarning
                   className="w-full text-xs bg-input border border-border text-foreground px-3 py-2 focus:border-primary focus:outline-none placeholder:text-muted-foreground/40 transition-colors"
                 />
               </div>
@@ -541,6 +546,7 @@ export default function SettingsPage() {
                 value={recruiterCompanyFilter}
                 onChange={(e) => setRecruiterCompanyFilter(e.target.value)}
                 placeholder="Filter company..."
+                suppressHydrationWarning
                 className="text-[11px] bg-input border border-border text-foreground pl-6 pr-2 py-1.5 focus:border-primary focus:outline-none placeholder:text-muted-foreground/40 w-44 transition-colors"
               />
             </div>
