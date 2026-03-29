@@ -10,9 +10,13 @@ from api.config import api_runtime_flags
 from api.database import get_db
 from api.deps import get_current_user
 from api.models import Profile, Run, User
-from batch.worker import get_queue
+from batch.worker import RunRequest, get_queue
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
+
+
+def _display_status(db_status: str) -> str:
+    return "done" if db_status == "success" else db_status
 
 
 class RunResponse(BaseModel):
@@ -53,7 +57,7 @@ async def trigger_run(
 
     if api_runtime_flags()["run_api_worker"]:
         queue = get_queue()
-        await queue.put((run.id, current_user.id, requested_mode, False))
+        await queue.put(RunRequest(run.id, current_user.id, requested_mode, False))
 
     return {"run_id": run.id, "status": "pending"}
 
@@ -72,7 +76,7 @@ async def get_latest_run(
     run = result.scalar_one_or_none()
     if not run:
         raise HTTPException(status_code=404, detail="No runs found")
-    _status = "done" if run.status == "success" else run.status
+    _status = _display_status(run.status)
     return RunResponse(
         run_id=run.id,
         status=_status,
@@ -100,7 +104,7 @@ async def list_runs(
     return [
         RunResponse(
             run_id=r.id,
-            status="done" if r.status == "success" else r.status,
+            status=_display_status(r.status),
             job_count=r.job_count,
             scrape_count=r.scrape_count,
             progress=r.progress,
@@ -124,7 +128,7 @@ async def get_run_status(
     run = result.scalar_one_or_none()
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
-    _status = "done" if run.status == "success" else run.status
+    _status = _display_status(run.status)
     return RunResponse(
         run_id=run.id,
         status=_status,

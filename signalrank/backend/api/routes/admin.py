@@ -10,7 +10,7 @@ from api.models import (
     Application, ArchivalQueue, GenerationQueue, JobRaw, JobResult,
     Profile, RecruiterRefreshTask, Run, TailoredResume, User,
 )
-from batch.worker import get_queue
+from batch.worker import RunRequest, get_queue
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -289,7 +289,7 @@ async def trigger_run_for_user(
     await db.refresh(run)
     if api_runtime_flags()["run_api_worker"]:
         queue = get_queue()
-        await queue.put((run.id, user.id, "full", body.force_scrape))
+        await queue.put(RunRequest(run.id, user.id, "full", body.force_scrape))
     return {"run_id": run.id, "status": "pending", "user_email": user.email}
 
 

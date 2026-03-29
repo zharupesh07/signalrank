@@ -157,12 +157,11 @@ def _apply_resume_facts(content: "TailoredContent", resume_text: str) -> "Tailor
     experience_facts = _extract_experience_facts(resume_text)
     if not content.experiences and experience_facts:
         content.experiences = [dict(fact, bullets=[]) for fact in experience_facts[:3]]
-        return content
-
-    for exp, fact in zip(content.experiences, experience_facts):
-        for field_name in ("title", "company", "dates", "location"):
-            if fact.get(field_name):
-                exp[field_name] = fact[field_name]
+    elif content.experiences and experience_facts:
+        for exp, fact in zip(content.experiences, experience_facts):
+            for field_name in ("title", "company", "dates", "location"):
+                if fact.get(field_name):
+                    exp[field_name] = fact[field_name]
 
     return content
 
@@ -753,7 +752,7 @@ async def tailor_and_compile(
     typst_src = render_typst(content, template)
     pdf = compile_pdf(typst_src)
 
-    for _ in range(20):
+    for _ in range(5):
         if check_page_count(pdf) <= max_pages:
             break
         if not _fit_to_one_page(content, current_pages=check_page_count(pdf)):
@@ -761,6 +760,6 @@ async def tailor_and_compile(
         typst_src = render_typst(content, template)
         pdf = compile_pdf(typst_src)
     else:
-        logger.warning("_fit_to_one_page exhausted 20 iterations, returning best-effort PDF")
+        logger.warning("_fit_to_one_page exhausted iterations, returning best-effort PDF")
 
     return content, pdf

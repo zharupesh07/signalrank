@@ -23,6 +23,12 @@ router = APIRouter(prefix="/api/recruiters", tags=["recruiters"])
 _background_tasks: set[asyncio.Task] = set()
 
 
+def _on_task_done(task: asyncio.Task) -> None:
+    _background_tasks.discard(task)
+    if not task.cancelled() and task.exception():
+        logger.error("Background task failed: %s", task.exception(), exc_info=task.exception())
+
+
 async def _get_or_create_refresh_task(db: AsyncSession, user_id: str) -> tuple[str, bool]:
     """Returns (task_id, is_new). If a task is already in_progress, returns it."""
     result = await db.execute(
@@ -123,7 +129,7 @@ async def refresh_all_recruiters(
             _run_refresh(task_id, current_user.id, companies, AsyncSessionLocal, llm, hunter)
         )
         _background_tasks.add(bg)
-        bg.add_done_callback(_background_tasks.discard)
+        bg.add_done_callback(_on_task_done)
 
     return {"task_id": task_id, "is_new": is_new, "companies": len(companies)}
 
@@ -273,7 +279,7 @@ async def enrich_emails(
             _run_enrich_emails(task_id, current_user.id, AsyncSessionLocal, hunter)
         )
         _background_tasks.add(bg)
-        bg.add_done_callback(_background_tasks.discard)
+        bg.add_done_callback(_on_task_done)
 
     return {"task_id": task_id, "is_new": is_new}
 

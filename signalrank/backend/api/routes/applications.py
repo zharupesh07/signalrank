@@ -24,6 +24,12 @@ router = APIRouter(prefix="/api/applications", tags=["applications"])
 
 _background_tasks: set[asyncio.Task] = set()
 
+
+def _on_task_done(task: asyncio.Task) -> None:
+    _background_tasks.discard(task)
+    if not task.cancelled() and task.exception():
+        logger.error("Background task failed: %s", task.exception(), exc_info=task.exception())
+
 VALID_STATUSES = {"interested", "applied", "messaged_recruiter", "phone_screen", "interview", "offer", "rejected", "archived"}
 
 
@@ -236,7 +242,7 @@ async def create_application(
             _auto_find_recruiters(app.company, AsyncSessionLocal, llm, hunter)
         )
         _background_tasks.add(bg)
-        bg.add_done_callback(_background_tasks.discard)
+        bg.add_done_callback(_on_task_done)
     return {"id": app.id, "status": app.status}
 
 

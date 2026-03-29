@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.database import get_db
 from api.deps import get_current_user
 from api.models import Profile, User
+from batch.context import load_base_config
+from domain.profile_rules import enrich_config_with_profile_rules
 from domain.resume_editor import parse_resume_editor, serialize_resume_editor
 from domain.role_taxonomy import CANONICAL_ROLE_OPTIONS, LOCATION_OPTIONS, ROLE_UI_OPTIONS, TIER_OPTIONS
 
@@ -260,12 +262,26 @@ async def get_profile(current_user: User = Depends(get_current_user), db: AsyncS
 
 
 @router.get("/profile/options")
-async def get_profile_options(current_user: User = Depends(get_current_user)):
+async def get_profile_options(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
+    profile = result.scalar_one_or_none()
+    cfg = enrich_config_with_profile_rules(
+        load_base_config(),
+        resume_text=profile.resume_text if profile else "",
+        profile_roles=profile.target_roles if profile else [],
+    )
+    company_scoring = cfg.get("company_scoring", {}) or {}
+    ranking = cfg.get("ranking", {}) or {}
     return {
         "role_options": ROLE_UI_OPTIONS,
         "canonical_role_options": CANONICAL_ROLE_OPTIONS,
         "location_options": LOCATION_OPTIONS,
         "tier_options": TIER_OPTIONS,
+        "title_penalty_rules": ranking.get("profile_title_rules", {"strong": [], "adjacent": [], "hybrid": []}),
+        "company_tier_lists": {
+            "tier_ss": company_scoring.get("tier_ss", []) or [],
+            "tier_s": company_scoring.get("tier_s", []) or [],
+        },
     }
 
 
@@ -275,11 +291,14 @@ async def update_profile(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
+    result = await db.execute(
+        select(Profile).where(Profile.user_id == current_user.id).with_for_update()
+    )
     profile = result.scalar_one_or_none()
     if not profile:
         profile = Profile(user_id=current_user.id)
         db.add(profile)
+        await db.flush()
 
     for field, value in body.model_dump(exclude_none=True).items():
         if field == "config_overrides":

@@ -8,7 +8,7 @@ from api.config import settings
 
 logger = logging.getLogger(__name__)
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 4  # 4 hours
 
 
 def _normalize_password(password: str) -> str:

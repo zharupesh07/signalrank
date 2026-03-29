@@ -295,11 +295,14 @@ async def upload_resume(
         raise HTTPException(status_code=422, detail="Could not extract text from file")
 
     # Save raw text immediately so user can proceed
-    result = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
+    result = await db.execute(
+        select(Profile).where(Profile.user_id == current_user.id).with_for_update()
+    )
     profile = result.scalar_one_or_none()
     if not profile:
         profile = Profile(user_id=current_user.id)
         db.add(profile)
+        await db.flush()
     profile.resume_text = resume_text
     _set_onboarding_parse_status(profile, "pending")
     await db.commit()

@@ -108,7 +108,7 @@ async def scrape(
                     jobs_found=0, message="Scanning Indeed...",
                 )
             try:
-                results = await asyncio.wait_for(search_jobspy(queries, config, site="indeed"), timeout=3600)
+                results = await asyncio.wait_for(search_jobspy(queries, config, site="indeed"), timeout=300)
                 logger.info("Phase jobspy/indeed: %d jobs", len(results))
                 await _persist_phase(results)
             except asyncio.TimeoutError:
@@ -125,7 +125,7 @@ async def scrape(
                     jobs_found=len(all_jobs), message="Scanning LinkedIn...",
                 )
             try:
-                results = await asyncio.wait_for(search_jobspy(linkedin_queries, config, site="linkedin"), timeout=3600)
+                results = await asyncio.wait_for(search_jobspy(linkedin_queries, config, site="linkedin"), timeout=300)
                 logger.info("Phase jobspy/linkedin: %d jobs", len(results))
                 await _persist_phase(results)
             except asyncio.TimeoutError:
@@ -161,9 +161,9 @@ async def scrape(
             logger.info("Phase parallel: skipped (source filter)")
 
     try:
-        await asyncio.wait_for(_run(), timeout=7200)
+        await asyncio.wait_for(_run(), timeout=900)
     except asyncio.TimeoutError:
-        logger.warning("Scrape timed out after 7200s, returning %d jobs", len(all_jobs))
+        logger.warning("Scrape timed out after 900s, returning %d jobs", len(all_jobs))
 
     logger.info("Scrape complete: %d jobs (deduped+filtered per phase)", len(all_jobs))
     return all_jobs

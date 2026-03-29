@@ -394,6 +394,10 @@ async def _compute_embeddings(
         await resume_cache.store_vectors([(resume_fp, r_emb.tolist())])
 
     df["semantic_score"] = cosine_similarity(r_emb, vectors)
+    nan_count = df["semantic_score"].isna().sum()
+    if nan_count:
+        logger.warning("semantic_score has %d NaN values, filling with 0", nan_count)
+        df["semantic_score"] = df["semantic_score"].fillna(0.0)
     logger.info(
         "Embeddings computed",
         extra={"jobs": len(df), "cache_misses": len(misses),

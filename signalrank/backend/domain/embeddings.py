@@ -52,7 +52,9 @@ class EmbeddingEngine:
 
     def __new__(cls, cfg):
         global _ENGINE
-        if _ENGINE is not None:
+        emb_cfg = cfg.get("embeddings", {})
+        model_repo = emb_cfg.get("model_name", "BAAI/bge-small-en-v1.5")
+        if _ENGINE is not None and getattr(_ENGINE, "_model_repo", None) == model_repo:
             return _ENGINE
         self = super().__new__(cls)
         _ENGINE = self

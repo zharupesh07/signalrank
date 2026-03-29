@@ -184,9 +184,8 @@ class OpenRouterClient:
 
         return None
 
-    @staticmethod
-    def _cache_key(messages: list[dict], temperature: float) -> str:
-        blob = json.dumps(messages, sort_keys=True) + f"|t={temperature}"
+    def _cache_key(self, messages: list[dict], temperature: float) -> str:
+        blob = json.dumps(messages, sort_keys=True) + f"|t={temperature}|m={','.join(self.models)}"
         return hashlib.md5(blob.encode()).hexdigest()
 
     async def llm_json(
