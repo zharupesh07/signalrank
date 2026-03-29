@@ -71,7 +71,7 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
             return;
           } else if (updated.status === "failed" && !completedRef.current) {
             completedRef.current = true;
-            toast("Run failed", "error");
+            toast(updated.error ? `Run failed: ${updated.error}` : "Run failed", "error");
             return;
           } else if (updated.status === "cancelled" && !completedRef.current) {
             completedRef.current = true;
@@ -185,9 +185,14 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
       )}
 
       {/* Footer */}
-      <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+      <div className="flex items-center gap-4 text-[10px] text-muted-foreground flex-wrap">
         <span>RUN {run.id?.slice(0, 8).toUpperCase() ?? "--------"}</span>
         {run.started_at && <span>{new Date(run.started_at).toLocaleTimeString()}</span>}
+        {run.status === "failed" && run.error && (
+          <span className="text-destructive" title={run.error}>
+            {run.error.length > 120 ? `${run.error.slice(0, 120)}…` : run.error}
+          </span>
+        )}
       </div>
     </div>
   );

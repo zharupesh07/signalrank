@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
 
 from api.config import api_runtime_flags, settings
-from api.database import AsyncSessionLocal, _parse_url
+from api.database import AsyncSessionLocal, _parse_url, ensure_runtime_schema_compatibility
 from api.deps_llm import get_llm_client
 from api.routes import admin, applications, auth, ingest, jobs, onboarding, profile, recruiters, resume, runs
 
@@ -70,6 +70,12 @@ async def lifespan(app: FastAPI):
     global _worker_task, _resume_worker_task, _archival_worker_task, _boot_tasks
     _boot_tasks = []
     runtime_flags = api_runtime_flags()
+
+    try:
+        await ensure_runtime_schema_compatibility()
+    except Exception:
+        logger.exception("Runtime schema compatibility check failed")
+        raise
 
     if runtime_flags["run_api_worker"]:
         from batch.worker import worker_loop

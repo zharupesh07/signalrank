@@ -116,7 +116,7 @@ export const api = {
 
   runs: {
     list: (token: string) =>
-      request<{ run_id: string; status: string; job_count: number | null; scrape_count: number | null; started_at: string | null; finished_at: string | null; progress: RunProgress | null }[]>("/api/runs", { token }),
+      request<{ run_id: string; status: string; job_count: number | null; scrape_count: number | null; started_at: string | null; finished_at: string | null; progress: RunProgress | null; error: string | null }[]>("/api/runs", { token }),
     trigger: (token: string, mode: "quick" | "full" = "quick") =>
       request<{ run_id: string; status: string }>("/api/runs/trigger", {
         method: "POST",
@@ -129,14 +129,14 @@ export const api = {
         token,
       }),
     latest: async (token: string): Promise<Run> => {
-      const r = await request<{ run_id: string; status: string; job_count: number | null; scrape_count: number | null; started_at: string | null; finished_at: string | null; progress: RunProgress | null }>("/api/runs/latest", { token });
+      const r = await request<{ run_id: string; status: string; job_count: number | null; scrape_count: number | null; started_at: string | null; finished_at: string | null; progress: RunProgress | null; error: string | null }>("/api/runs/latest", { token });
       const status = r.status === "success" ? "done" : r.status as Run["status"];
-      return { id: r.run_id, status, job_count: r.job_count, scrape_count: r.scrape_count, started_at: r.started_at ?? "", finished_at: r.finished_at, progress: r.progress };
+      return { id: r.run_id, status, job_count: r.job_count, scrape_count: r.scrape_count, started_at: r.started_at ?? "", finished_at: r.finished_at, progress: r.progress, error: r.error };
     },
     status: async (token: string, runId: string): Promise<Run> => {
-      const r = await request<{ run_id: string; status: string; job_count: number | null; scrape_count: number | null; started_at: string | null; finished_at: string | null; progress: RunProgress | null }>(`/api/runs/${runId}/status`, { token });
+      const r = await request<{ run_id: string; status: string; job_count: number | null; scrape_count: number | null; started_at: string | null; finished_at: string | null; progress: RunProgress | null; error: string | null }>(`/api/runs/${runId}/status`, { token });
       const status = r.status === "success" ? "done" : r.status as Run["status"];
-      return { id: r.run_id, status, job_count: r.job_count, scrape_count: r.scrape_count, started_at: r.started_at ?? "", finished_at: r.finished_at, progress: r.progress };
+      return { id: r.run_id, status, job_count: r.job_count, scrape_count: r.scrape_count, started_at: r.started_at ?? "", finished_at: r.finished_at, progress: r.progress, error: r.error };
     },
   },
 
@@ -199,6 +199,8 @@ export const api = {
   },
 
   resume: {
+    templates: (token: string) =>
+      request<{ templates: string[] }>("/api/resume/templates", { token }),
     tailor: (token: string, data: { job_id: string; template?: string }) =>
       request<{ status: string; job_id: string; template: string; content: Record<string, unknown>; pdf_available: boolean }>(
         "/api/resume/tailor",

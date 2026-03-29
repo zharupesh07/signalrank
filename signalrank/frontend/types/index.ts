@@ -6,6 +6,8 @@ export interface User {
 export interface Profile {
   user_id: string;
   email: string;
+  is_admin: boolean;
+  resume_text: string | null;
   role_intent: string | null;
   min_salary: number | null;
   min_yoe: number | null;
@@ -16,6 +18,7 @@ export interface Profile {
   preferred_locations: string[] | null;
   custom_search_queries: string[] | null;
   config_overrides: Record<string, unknown> | null;
+  resume_template: string | null;
   scraper_hours_old: number | null;
   scraper_max_terms: number | null;
   onboarding_complete: boolean;
@@ -122,6 +125,7 @@ export interface Run {
   job_count: number | null;
   scrape_count: number | null;
   progress: RunProgress | null;
+  error?: string | null;
 }
 
 export interface OnboardingStatus {

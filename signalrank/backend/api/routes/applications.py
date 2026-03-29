@@ -30,6 +30,12 @@ VALID_STATUSES = {"interested", "applied", "messaged_recruiter", "phone_screen",
 VALID_PRIORITIES = {"P1", "P2", "P3"}
 
 
+def _normalize_score_fraction(value: float | None) -> float | None:
+    if value is None:
+        return None
+    return value / 100 if value > 1 else value
+
+
 class ApplicationCreate(BaseModel):
     job_id: str | None = None
     company: str | None = None
@@ -81,8 +87,8 @@ def _serialize_app(a: Application, job_result: JobResult | None = None) -> dict:
         "location_group": a.location_group,
         "interview_date": str(a.interview_date) if a.interview_date else None,
         "offer_lpa": a.offer_lpa,
-        "system_score": a.system_score,
-        "resume_match_pct": a.resume_match_pct,
+        "system_score": _normalize_score_fraction(a.system_score),
+        "resume_match_pct": _normalize_score_fraction(a.resume_match_pct),
         "job_url": a.job.job_url if a.job else None,
         "company_tier": job_result.company_tier if job_result else None,
         "is_contract": job_result.is_contract if job_result else None,
@@ -203,8 +209,8 @@ async def create_application(
         location_group=body.location_group,
         interview_date=datetime.fromisoformat(body.interview_date) if body.interview_date else None,
         offer_lpa=body.offer_lpa,
-        system_score=body.system_score,
-        resume_match_pct=body.resume_match_pct,
+        system_score=_normalize_score_fraction(body.system_score),
+        resume_match_pct=_normalize_score_fraction(body.resume_match_pct),
     )
     db.add(app)
     try:
@@ -342,7 +348,7 @@ async def import_from_run(
         select(JobResult, JobRaw)
         .join(JobRaw, JobResult.job_id == JobRaw.id)
         .where(JobResult.run_id == body.run_id, JobResult.user_id == current_user.id)
-        .where(JobResult.final_score >= body.min_score)
+        .where(JobResult.final_score >= body.min_score * 100)
         .order_by(JobResult.final_score.desc())
         .limit(body.limit)
     )
@@ -368,8 +374,8 @@ async def import_from_run(
             title=job_raw.title,
             status="interested",
             priority="P2",
-            system_score=job_result.final_score,
-            resume_match_pct=job_result.semantic_score,
+            system_score=_normalize_score_fraction(job_result.final_score),
+            resume_match_pct=_normalize_score_fraction(job_result.semantic_score),
         )
         if app.status == "applied" and app.applied_at is None:
             app.applied_at = datetime.now(timezone.utc)

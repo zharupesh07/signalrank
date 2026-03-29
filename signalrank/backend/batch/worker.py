@@ -20,6 +20,11 @@ _EMBED_MAX_RETRIES = 3
 _EMBED_BACKOFF_BASE = 2
 
 
+def _format_run_error(exc: Exception) -> str:
+    message = f"{exc.__class__.__name__}: {exc}".strip()
+    return message[:1000]
+
+
 async def _embed_new_jobs(
     db: AsyncSession,
     raw_jobs: list,
@@ -304,6 +309,7 @@ async def process_run(
                     update(Run).where(Run.id == run_id).values(
                         status="failed", finished_at=datetime.now(timezone.utc),
                         progress=None,
+                        error="TimeoutError: Ranking timed out after 600s",
                     )
                 )
                 await db.commit()
@@ -351,6 +357,7 @@ async def process_run(
                     finished_at=datetime.now(timezone.utc),
                     job_count=len(ranked_df),
                     progress=None,
+                    error=None,
                 )
             )
             await db.commit()
@@ -358,12 +365,17 @@ async def process_run(
             del ranked_df
             gc.collect()
 
-        except Exception:
+        except Exception as exc:
             logger.exception("Run %s failed", run_id)
             await db.execute(
                 update(Run)
                 .where(Run.id == run_id)
-                .values(status="failed", finished_at=datetime.now(timezone.utc), progress=None)
+                .values(
+                    status="failed",
+                    finished_at=datetime.now(timezone.utc),
+                    progress=None,
+                    error=_format_run_error(exc),
+                )
             )
             await db.commit()
 
@@ -452,6 +464,7 @@ async def _cleanup_stale_runs(session_factory: async_sessionmaker) -> None:
             run.status = "failed"
             run.finished_at = datetime.now(timezone.utc)
             run.progress = None
+            run.error = "Worker interrupted before run completion"
             logger.warning("Marked stale run %s as failed", run.id)
         await db.commit()
 

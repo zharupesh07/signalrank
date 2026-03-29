@@ -96,6 +96,7 @@ class Run(Base):
     job_count: Mapped[int | None] = mapped_column(Integer)
     scrape_count: Mapped[int | None] = mapped_column(Integer)
     progress: Mapped[dict | None] = mapped_column(JSONB)
+    error: Mapped[str | None] = mapped_column(Text)
 
     user: Mapped["User"] = relationship(back_populates="runs")
     results: Mapped[list["JobResult"]] = relationship(back_populates="run")

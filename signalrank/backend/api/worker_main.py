@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 from api.config import worker_runtime_flags
-from api.database import AsyncSessionLocal
+from api.database import AsyncSessionLocal, ensure_runtime_schema_compatibility
 from api.deps_llm import get_llm_client
 
 logger = logging.getLogger(__name__)
@@ -38,6 +38,8 @@ async def main() -> None:
     tasks: list[asyncio.Task] = []
     llm = None
     runtime_flags = worker_runtime_flags()
+
+    await ensure_runtime_schema_compatibility()
 
     if runtime_flags["run_resume_worker"] or runtime_flags["run_archival_worker"]:
         llm = get_llm_client()

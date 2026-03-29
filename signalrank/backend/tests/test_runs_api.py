@@ -12,8 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 async def auth_token(client, db: AsyncSession):
     await client.post("/api/auth/register", json={"email": "runner@test.com", "password": "password123"})
     from api.models import Profile
-    from sqlalchemy import update
-    await db.execute(update(Profile).values(onboarding_complete=True))
+    user = (await db.execute(select(User).where(User.email == "runner@test.com"))).scalar_one()
+    profile = (await db.execute(select(Profile).where(Profile.user_id == user.id))).scalar_one_or_none()
+    if profile is None:
+        profile = Profile(user_id=user.id)
+        db.add(profile)
+    profile.onboarding_complete = True
     await db.commit()
     r = await client.post("/api/auth/login", json={"email": "runner@test.com", "password": "password123"})
     return r.json()["access_token"]
@@ -100,6 +104,19 @@ async def test_get_latest_run(client, auth_token):
         headers={"Authorization": f"Bearer {auth_token}"},
     )
     assert r.status_code == 200
+
+
+async def test_get_run_status_includes_error(client, auth_token, db: AsyncSession):
+    run = Run(user_id=(await db.execute(select(User).where(User.email == "runner@test.com"))).scalar_one().id, status="failed", error="ValueError: boom")
+    db.add(run)
+    await db.commit()
+
+    r = await client.get(
+        f"/api/runs/{run.id}/status",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert r.status_code == 200
+    assert r.json()["error"] == "ValueError: boom"
 
 
 async def test_stop_pending_run(client, auth_token):

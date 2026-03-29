@@ -17,6 +17,7 @@ type RunRecord = {
   scrape_count: number | null;
   started_at: string | null;
   finished_at: string | null;
+  error?: string | null;
 };
 
 const LIVE = ["pending", "running", "scraping", "ranking"];
@@ -127,6 +128,7 @@ export default function RunsPage() {
           scrape_count: newRun.scrape_count,
           started_at: newRun.started_at,
           finished_at: newRun.finished_at,
+          error: newRun.error,
         },
         ...prev.filter((run) => run.run_id !== newRun.id),
       ]);
@@ -245,7 +247,14 @@ export default function RunsPage() {
                         <span className="font-mono text-muted-foreground text-xs">{run.run_id.slice(0, 8)}…</span>
                       </td>
                       <td className="px-4 py-3">
-                        <StatusBadge status={run.status} />
+                        <div className="space-y-1">
+                          <StatusBadge status={run.status} />
+                          {run.status === "failed" && run.error && (
+                            <div className="text-[10px] text-destructive max-w-56 truncate" title={run.error}>
+                              {run.error}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-muted-foreground tabular-nums">{run.scrape_count ?? "—"}</span>

@@ -1,4 +1,7 @@
 import pytest
+from sqlalchemy import select
+
+from api.models import Application, JobRaw, JobResult, Run, User
 
 
 @pytest.fixture
@@ -84,3 +87,81 @@ async def test_create_application_invalid_status(client, auth_token):
         headers={"Authorization": f"Bearer {auth_token}"},
     )
     assert r.status_code == 422
+
+
+async def test_import_from_run_normalizes_scores_and_respects_fraction_threshold(client, auth_token, db):
+    user_result = await db.execute(select(User).where(User.email == "appuser@test.com"))
+    user = user_result.scalar_one()
+
+    run = Run(user_id=user.id, status="success")
+    db.add(run)
+    await db.flush()
+
+    low_job = JobRaw(job_url="https://example.com/jobs/low", title="Low Score", company="Acme")
+    high_job = JobRaw(job_url="https://example.com/jobs/high", title="High Score", company="Beta")
+    db.add_all([low_job, high_job])
+    await db.flush()
+
+    db.add_all(
+        [
+            JobResult(
+                run_id=run.id,
+                user_id=user.id,
+                job_id=low_job.id,
+                final_score=58.0,
+                semantic_score=0.41,
+            ),
+            JobResult(
+                run_id=run.id,
+                user_id=user.id,
+                job_id=high_job.id,
+                final_score=75.16,
+                semantic_score=0.67,
+            ),
+        ]
+    )
+    await db.commit()
+
+    response = await client.post(
+        "/api/applications/import-from-run",
+        json={"run_id": run.id, "min_score": 0.7, "limit": 20},
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 200
+    assert response.json() == {"created": 1, "skipped": 0}
+
+    apps_response = await client.get(
+        "/api/applications",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert apps_response.status_code == 200
+    apps = apps_response.json()["applications"]
+    assert len(apps) == 1
+    assert apps[0]["company"] == "Beta"
+    assert apps[0]["system_score"] == pytest.approx(0.7516)
+    assert apps[0]["resume_match_pct"] == pytest.approx(0.67)
+
+
+async def test_list_applications_normalizes_legacy_percent_scores(client, auth_token, db):
+    user_result = await db.execute(select(User).where(User.email == "appuser@test.com"))
+    user = user_result.scalar_one()
+
+    legacy_app = Application(
+        user_id=user.id,
+        company="LegacyCo",
+        title="Engineer",
+        status="interested",
+        system_score=75.16,
+        resume_match_pct=82.0,
+    )
+    db.add(legacy_app)
+    await db.commit()
+
+    response = await client.get(
+        "/api/applications",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 200
+    app = next(a for a in response.json()["applications"] if a["id"] == legacy_app.id)
+    assert app["system_score"] == pytest.approx(0.7516)
+    assert app["resume_match_pct"] == pytest.approx(0.82)

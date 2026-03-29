@@ -9,6 +9,7 @@ type CachedRunListItem = {
   started_at: string | null;
   finished_at: string | null;
   progress: Run["progress"];
+  error?: string | null;
 };
 
 export function makeQueuedRun(runId: string): Run {
@@ -20,6 +21,7 @@ export function makeQueuedRun(runId: string): Run {
     job_count: null,
     scrape_count: null,
     progress: null,
+    error: null,
   };
 }
 
@@ -35,6 +37,7 @@ export function upsertRunCaches(run: Run): void {
     started_at: run.started_at,
     finished_at: run.finished_at,
     progress: run.progress,
+    error: run.error,
   };
 
   const nextList = [nextItem, ...existing.filter((item) => item.run_id !== run.id)];

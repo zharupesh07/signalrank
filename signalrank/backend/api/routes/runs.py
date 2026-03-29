@@ -21,6 +21,7 @@ class RunResponse(BaseModel):
     job_count: int | None = None
     scrape_count: int | None = None
     progress: dict | None = None
+    error: str | None = None
     started_at: str | None = None
     finished_at: str | None = None
 
@@ -78,6 +79,7 @@ async def get_latest_run(
         job_count=run.job_count,
         scrape_count=run.scrape_count,
         progress=run.progress,
+        error=run.error,
         started_at=str(run.started_at) if run.started_at else None,
         finished_at=str(run.finished_at) if run.finished_at else None,
     )
@@ -102,6 +104,7 @@ async def list_runs(
             job_count=r.job_count,
             scrape_count=r.scrape_count,
             progress=r.progress,
+            error=r.error,
             started_at=str(r.started_at) if r.started_at else None,
             finished_at=str(r.finished_at) if r.finished_at else None,
         )
@@ -128,6 +131,7 @@ async def get_run_status(
         job_count=run.job_count,
         scrape_count=run.scrape_count,
         progress=run.progress,
+        error=run.error,
         started_at=str(run.started_at) if run.started_at else None,
         finished_at=str(run.finished_at) if run.finished_at else None,
     )
