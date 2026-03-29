@@ -269,6 +269,34 @@ def test_render_and_validate_resume_artifacts_for_special_chars_and_links():
     assert validation.ink_fill_pct is not None
 
 
+def test_validate_resume_artifacts_warns_on_fragmented_bullets():
+    content = TailoredContent(
+        name="Ayush Khandelwal",
+        experiences=[
+            {
+                "title": "Senior Information Technology Analyst",
+                "company": "Dow Chemical International Private Limited",
+                "dates": "09/2022 - Present",
+                "bullets": [
+                    "Working as a senior analyst in Dow's Enterprise",
+                    "segment aligned to the",
+                    "order to cash workstream.",
+                    "Configured delivery processing, shipping point, output",
+                    "determination and storage location determination.",
+                    "Consignment and scheduling agreement support.",
+                ],
+            }
+        ],
+    )
+
+    with patch("llm.resume_tailor._pdf_annotation_links", return_value=[]), \
+         patch("llm.resume_tailor._render_first_page_png", return_value=None), \
+         patch("llm.resume_tailor.check_page_count", return_value=1):
+        validation = validate_resume_artifacts(content, "#typst", b"%PDF-1.4 fake")
+
+    assert "Resume contains fragmented bullet lines that should be merged before rendering" in validation.warnings
+
+
 def test_apply_resume_facts_restores_name_and_current_employer():
     resume_text = """Ayush Khandelwal
 helloayushkh@gmail.com

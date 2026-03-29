@@ -130,3 +130,65 @@ async def test_download_uses_profile_default_template_when_query_missing():
 
         assert r.status_code == 200
         assert mock_render.call_args.args[1] == "minimal"
+
+
+@pytest.mark.asyncio
+async def test_preview_renders_pdf_from_supplied_resume_editor():
+    profile = MagicMock()
+    profile.resume_text = "Existing resume"
+    profile.config_overrides = {"resume": {"template": "modern"}}
+    profile_found = MagicMock()
+    profile_found.scalar_one_or_none.return_value = profile
+
+    db = AsyncMock(spec=AsyncSession)
+    db.execute = AsyncMock(side_effect=[profile_found])
+
+    with patch("llm.resume_tailor.render_typst", return_value="#typst") as mock_render, \
+         patch("llm.resume_tailor.compile_pdf", return_value=b"%PDF-preview"):
+        async with _make_client(db) as client:
+            r = await client.post(
+                "/api/resume/preview",
+                json={
+                    "template": "minimal",
+                    "resume_editor": {
+                        "name": "Ayush Khandelwal",
+                        "email": "helloayushkh@gmail.com",
+                        "summary": "Enterprise systems engineer.",
+                        "experiences": [
+                            {
+                                "title": "Senior Information Technology Analyst",
+                                "company": "Dow Chemical International Private Limited",
+                                "dates": "09/2022 - Present",
+                                "location": "Mumbai, Maharashtra",
+                                "bullets": ["Configured delivery processing"],
+                            }
+                        ],
+                        "projects": [],
+                        "skills": [{"category": "General", "items": ["SAP SD", "Python"]}],
+                        "certifications": ["SAP Certified Application Associate - SAP S/4HANA Sales"],
+                    },
+                },
+            )
+
+        app.dependency_overrides.clear()
+
+        assert r.status_code == 200
+        assert r.headers["content-type"] == "application/pdf"
+        assert mock_render.call_args.args[1] == "minimal"
+        content = mock_render.call_args.args[0]
+        assert content.certifications == ["SAP Certified Application Associate - SAP S/4HANA Sales"]
+
+
+@pytest.mark.asyncio
+async def test_preview_requires_resume_source():
+    not_found = MagicMock()
+    not_found.scalar_one_or_none.return_value = None
+    db = AsyncMock(spec=AsyncSession)
+    db.execute = AsyncMock(side_effect=[not_found])
+
+    async with _make_client(db) as client:
+        r = await client.post("/api/resume/preview", json={})
+
+    app.dependency_overrides.clear()
+
+    assert r.status_code == 404

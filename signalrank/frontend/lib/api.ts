@@ -201,6 +201,27 @@ export const api = {
   resume: {
     templates: (token: string) =>
       request<{ templates: string[] }>("/api/resume/templates", { token }),
+    preview: async (
+      token: string,
+      data: {
+        template?: string;
+        resume_editor?: unknown;
+      }
+    ): Promise<void> => {
+      const res = await fetch(`${BASE_URL}/api/resume/preview`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+    },
     tailor: (token: string, data: { job_id: string; template?: string }) =>
       request<{ status: string; job_id: string; template: string; content: Record<string, unknown>; pdf_available: boolean }>(
         "/api/resume/tailor",

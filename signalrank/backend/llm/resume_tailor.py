@@ -640,6 +640,18 @@ def _png_fill_metrics(png_bytes: bytes) -> tuple[float, float]:
     return round(vertical_fill_pct, 2), round(ink_fill_pct, 2)
 
 
+def _has_fragmented_bullets(content: "TailoredContent") -> bool:
+    for exp in content.experiences:
+        bullets = [str(bullet or "").strip() for bullet in (exp.get("bullets") or []) if str(bullet or "").strip()]
+        if len(bullets) < 6:
+            continue
+        short_count = sum(1 for bullet in bullets if len(bullet) < 55)
+        lowercase_starts = sum(1 for bullet in bullets if bullet[:1].islower())
+        if short_count >= max(4, len(bullets) // 2) or lowercase_starts >= 2:
+            return True
+    return False
+
+
 def _render_first_page_png(typst_source: str) -> bytes | None:
     with tempfile.TemporaryDirectory() as tmpdir:
         src = Path(tmpdir) / "resume.typ"
@@ -666,6 +678,8 @@ def validate_resume_artifacts(content: TailoredContent, typst_source: str, pdf_b
     warnings: list[str] = []
     if missing_links:
         warnings.append("Some expected hyperlinks are missing from the rendered PDF")
+    if _has_fragmented_bullets(content):
+        warnings.append("Resume contains fragmented bullet lines that should be merged before rendering")
 
     vertical_fill_pct = None
     ink_fill_pct = None

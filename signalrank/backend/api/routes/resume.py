@@ -10,6 +10,8 @@ from api.database import get_db
 from api.deps import get_current_user
 from api.deps_llm import get_llm_client
 from api.models import JobRaw, Profile, TailoredResume, User
+from api.routes.profile import ResumeEditorInput
+from domain.resume_editor import editor_to_tailored_content, parse_resume_editor
 from llm.openrouter import OpenRouterClient
 
 logger = logging.getLogger(__name__)
@@ -27,6 +29,11 @@ class TailorRequest(BaseModel):
 class EmailRequest(BaseModel):
     job_id: str
     recruiter_name: str = "Hiring Manager"
+
+
+class PreviewRequest(BaseModel):
+    template: str | None = None
+    resume_editor: ResumeEditorInput | None = None
 
 
 def _preferred_resume_template(profile: Profile | None, requested: str | None = None) -> str:
@@ -235,6 +242,39 @@ async def generate_cold_email(
     )
 
     return {"subject": email.subject, "body": email.body}
+
+
+@router.post("/preview")
+async def preview_resume(
+    body: PreviewRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from llm.resume_tailor import compile_pdf, render_typst
+
+    if body.template is not None and body.template not in VALID_TEMPLATES:
+        raise HTTPException(status_code=422, detail=f"Template must be one of: {VALID_TEMPLATES}")
+
+    profile_res = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
+    profile = profile_res.scalar_one_or_none()
+    if not profile and body.resume_editor is None:
+        raise HTTPException(status_code=404, detail="Upload a resume first via /api/onboarding/resume")
+
+    editor_payload = body.resume_editor.model_dump() if body.resume_editor else parse_resume_editor(profile.resume_text if profile else None)
+    if not any(editor_payload.get(field) for field in ("name", "summary", "experiences", "projects", "skills", "certifications")):
+        raise HTTPException(status_code=404, detail="Upload a resume first via /api/onboarding/resume")
+
+    selected_template = _preferred_resume_template(profile, body.template)
+    content = editor_to_tailored_content(editor_payload)
+    typst_src = render_typst(content, selected_template)
+    pdf_bytes = compile_pdf(typst_src)
+
+    filename_root = (content.name or "resume_preview").lower().replace(" ", "_")
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{filename_root}.pdf"'},
+    )
 
 
 @router.post("/regenerate-all")

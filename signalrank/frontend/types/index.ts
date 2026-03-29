@@ -1,3 +1,38 @@
+export interface ResumeEditorExperience {
+  title: string;
+  company: string;
+  dates: string;
+  location: string;
+  bullets: string[];
+}
+
+export interface ResumeEditorProject {
+  name: string;
+  url: string;
+  description: string;
+}
+
+export interface ResumeEditorSkillGroup {
+  category: string;
+  items: string[];
+}
+
+export interface ResumeEditor {
+  name: string;
+  position: string;
+  email: string;
+  phone: string;
+  location: string;
+  linkedin: string;
+  github: string;
+  website: string;
+  summary: string;
+  experiences: ResumeEditorExperience[];
+  projects: ResumeEditorProject[];
+  skills: ResumeEditorSkillGroup[];
+  certifications: string[];
+}
+
 export interface User {
   id: string;
   email: string;
@@ -8,6 +43,7 @@ export interface Profile {
   email: string;
   is_admin: boolean;
   resume_text: string | null;
+  resume_editor: ResumeEditor;
   role_intent: string | null;
   min_salary: number | null;
   min_yoe: number | null;
