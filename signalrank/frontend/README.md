@@ -27,12 +27,14 @@ Open [http://localhost:3000](http://localhost:3000).
 | Route | Description |
 |---|---|
 | `/` | Landing / redirect |
-| `/onboarding` | First-run resume upload + preference setup |
+| `/onboarding` | First-run resume upload + auto-inferred role/location/preferences review |
 | `/jobs` | Ranked job feed — filters, page-size picker (50/100/200/All), sidebar detail |
 | `/tracker` | Application tracker + recruiter CRM; "+ Add Job" button to ingest via URL or paste |
 | `/dashboard` | Run history + score overview; "+ Add Job" button to ingest via URL or paste |
 | `/runs` | Scraper run management |
 | `/settings` | Profile, roles, locations, scoring preferences |
+
+The onboarding UI loads role/location options from the backend taxonomy, polls `/api/onboarding/parsed` after resume upload, and lets the user accept or override the resume-derived prefill before the first run is triggered.
 
 ## Key Env Vars
 

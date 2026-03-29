@@ -2,7 +2,7 @@
 
 > AI-powered job discovery and ranking — surfaces roles that actually match your profile, not just keywords.
 
-SignalRank scrapes job boards, embeds your resume, and ranks every listing against your skills, seniority, preferred companies, and location — so your job search feed looks like a curated shortlist, not a firehose.
+SignalRank scrapes job boards, embeds your resume, infers target roles from it, and ranks every listing against your skills, seniority, preferred companies, and location — so your job search feed looks like a curated shortlist, not a firehose.
 
 ---
 
@@ -113,19 +113,22 @@ flowchart TD
 | **Job Tracker** | Track applications, add recruiter contacts, generate cold-email drafts |
 | **Job Ingest** | Paste a URL or raw JD → LLM extracts title/company/location → validation card → add to tracker as "interested" with auto-priority |
 | **Resume Tailoring** | LLM-powered resume tailoring per job; Typst PDF with Awesome-CV-inspired layout |
-| **Background Resume Generation** | On boot and on track: resumes auto-generated for all tracked jobs (concurrency=3); cached in DB |
+| **Background Resume Generation** | On boot and on track: resumes auto-generated for tracked jobs; cached in DB with configurable worker concurrency |
 | **Template Switching** | Switch PDF template (classic/modern/minimal) without LLM re-call — re-renders from cache |
 | **Jobs Page Pagination** | Page-size picker (50 / 100 / 200 / All); fetches up to 5000 jobs |
 | **Onboarding** | Guided flow to distil resume → profile → preferences |
-| **Intent-aware Onboarding** | Resume parsing now sanitizes suggested roles, prioritizes enterprise/SAP intent, and tightens location/penalty lists before prefilling the web UI |
+| **Resume-grounded Onboarding** | Resume parsing now infers skills, recent titles, salary, locations, exclusions, and target roles, then normalizes them against the supported taxonomy before prefilling the UI |
+| **Profile-aware Ranking Rules** | Resume/profile archetypes tune title penalties and positive terms so adjacent-but-wrong domains do not dominate the feed |
 | **Dev Panel** | Hidden 5-click debug overlay: tweak roles, locations, scoring weights, trigger runs |
 | **Multi-source Scraping** | Indeed + LinkedIn (JobSpy), RapidAPI JSearch, Remotive, Himalayas, Jobicy, Google Jobs |
 
 ---
 
-## Onboarding Intent Guard
+## Resume-grounded Onboarding
 
-The onboarding pipeline now scrubs every LLM parse before it touches the UI. Suggested roles are normalized against the supported taxonomy, enterprise/SAP signals (SAP SD, S/4HANA, Sales & Distribution) get top priority, and suggested locations/penalty lists respect the same grounding logic. That makes the prefill and `target_roles` fields reliably reflect the resume even if the raw LLM guidance is noisy.
+The onboarding pipeline parses resume text in the background, then writes prefill data for `target_roles`, locations, exclusions, salary, and YOE into the profile. Suggested roles are normalized against the supported role taxonomy used by the UI and query builder, so the product is no longer hard-wired to its earlier ML/data-science framing.
+
+The current taxonomy is still bounded rather than open-ended: it spans AI/data roles, backend/frontend/mobile, platform/infra/security, product, QA, and a narrow SAP track. Enterprise/SAP heuristics still exist, but only as explicit resume-driven overrides when the resume contains matching signals. After onboarding, profile archetypes inferred from the resume feed into ranking rules that tighten penalties and positive terms for the candidate's domain.
 
 ### Running Onboarding Tests
 
@@ -170,6 +173,7 @@ signalrank/
 ├── backend/
 │   ├── api/
 │   │   ├── main.py            # FastAPI app + background worker startup
+│   │   ├── worker_main.py     # Dedicated worker entrypoint for queue/resume/archival tasks
 │   │   ├── models.py          # SQLAlchemy ORM models
 │   │   └── routes/            # auth, jobs, profile, runs, tracker, resume, ingest
 │   ├── batch/
@@ -186,7 +190,7 @@ signalrank/
 │   │   └── ...                  # skills, recency, seniority, gates
 │   ├── llm/
 │   │   ├── openrouter.py      # LLM client + retry
-│   │   ├── resume_parser.py   # Extract structured profile from resume
+│   │   ├── resume_parser.py   # Extract structured profile from resume and normalize supported roles/locations
 │   │   └── resume_tailor.py   # Tailor + compile resume to PDF (Typst)
 │   ├── templates/resume/      # Jinja2+Typst resume templates (classic, modern, minimal)
 │   └── data/
@@ -367,7 +371,7 @@ The `OpenRouterClient` applies three layers of protection:
 
 | Setting | Value | Rationale |
 |---|---|---|
-| `CONCURRENCY` | 3 | Tasks per poll cycle — LLM semaphore is the real throttle |
+| `CONCURRENCY` | Configurable (`1` in the low-memory profile) | Tasks per poll cycle — LLM semaphore is the real throttle |
 | `MAX_TASK_RETRIES` | 3 | Tasks that fail retry with exponential backoff via `next_retry_at` |
 | `POLL_INTERVAL` | 5s | Queue poll interval |
 
@@ -458,6 +462,9 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 | `NEXT_PUBLIC_API_URL` | frontend | Yes | Backend base URL |
 | `NEXTAUTH_URL` | frontend | Yes | Frontend base URL |
 | `RAPIDAPI_KEY` | backend | No | JSearch API for additional job sources |
+| `RUN_API_WORKER` | backend | No | Enable local scrape/rank queue processing in the API process |
+| `RUN_RESUME_WORKER` | backend | No | Enable local resume generation worker in the API process |
+| `RUN_ARCHIVAL_WORKER` | backend | No | Enable local archival worker in the API process |
 | `ALLOWED_ORIGINS` | backend | No | CORS origins (comma-separated) |
 | `SCRAPER_MAX_RESULTS` | backend | No | Results per query (default: 1000) |
 | `SCRAPER_HOURS_OLD` | backend | No | Job recency window in hours (default: 720) |

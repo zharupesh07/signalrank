@@ -1,8 +1,8 @@
 import logging
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from api.config import settings
 
@@ -10,15 +10,23 @@ logger = logging.getLogger(__name__)
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def _normalize_password(password: str) -> str:
+    return password[:72]
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    normalized = _normalize_password(password).encode("utf-8")
+    return bcrypt.hashpw(normalized, bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    try:
+        normalized = _normalize_password(plain).encode("utf-8")
+        return bcrypt.checkpw(normalized, hashed.encode("utf-8"))
+    except ValueError:
+        logger.warning("Password hash verification failed due to invalid hash format")
+        return False
 
 
 def create_access_token(user_id: str, email: str, *, is_admin: bool = False) -> str:

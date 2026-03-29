@@ -84,6 +84,14 @@ def _normalize_str_list(values: Iterable[str] | None) -> list[str]:
     return cleaned
 
 
+def _set_onboarding_parse_status(profile: Profile, status: str) -> None:
+    overrides = dict(profile.config_overrides or {})
+    onboarding = dict(overrides.get("onboarding") or {})
+    onboarding["parse_status"] = status
+    overrides["onboarding"] = onboarding
+    profile.config_overrides = overrides
+
+
 def _parse_salary_to_number(value: str | list[str]) -> int | None:
     text = " ".join(value) if isinstance(value, list) else str(value)
     normalized = text.strip().lower().replace(",", "")
@@ -236,6 +244,7 @@ async def _parse_and_update_profile(user_id: str, resume_text: str, llm: OpenRou
             if not profile:
                 return
             distilled_text = _apply_parsed_profile_updates(profile, parsed)
+            _set_onboarding_parse_status(profile, "done")
 
             await db.commit()
             logger.info(
@@ -245,6 +254,16 @@ async def _parse_and_update_profile(user_id: str, resume_text: str, llm: OpenRou
             )
     except Exception:
         logger.warning("Background resume parse failed for user=%s", user_id, exc_info=True)
+        try:
+            async with AsyncSessionLocal() as db:
+                result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+                profile = result.scalar_one_or_none()
+                if profile:
+                    _set_onboarding_parse_status(profile, "failed")
+                    await db.commit()
+        except Exception:
+            logger.warning("Failed to record parse failure for user=%s", user_id, exc_info=True)
+        return
 
     await _embed_resume(user_id, resume_text, distilled_text)
 
@@ -282,6 +301,7 @@ async def upload_resume(
         profile = Profile(user_id=current_user.id)
         db.add(profile)
     profile.resume_text = resume_text
+    _set_onboarding_parse_status(profile, "pending")
     await db.commit()
 
     # Parse LLM fields in background — don't block the response
@@ -305,10 +325,16 @@ async def onboarding_parsed(
     """Poll this after resume upload to get LLM-extracted pre-fill values."""
     result = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
     profile = result.scalar_one_or_none()
-    if not profile or not profile.skills:
+    if not profile or not profile.resume_text:
         return {"parsing": True, "prefill": {}}
 
     overrides = profile.config_overrides or {}
+    parse_status = (overrides.get("onboarding") or {}).get("parse_status")
+    if parse_status not in {"done", "failed"}:
+        return {"parsing": True, "prefill": {}}
+    if parse_status == "failed":
+        return {"parsing": False, "prefill": {}}
+
     return {
         "parsing": False,
         "prefill": {

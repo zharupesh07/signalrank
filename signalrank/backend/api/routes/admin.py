@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.config import settings
+from api.config import api_runtime_flags
 from api.database import get_db
 from api.deps import get_current_user
 from api.models import (
@@ -262,19 +262,6 @@ async def get_user_top_jobs(
         )
         for r in sorted(rows, key=lambda x: (x["final_score"] or 0), reverse=True)[:10]
     ]
-    return [
-        TopJob(
-            job_id=jr.job_id,
-            title=title,
-            company=company,
-            location=location,
-            final_score=jr.final_score,
-            semantic_score=jr.semantic_score,
-            skills_score=jr.skills_score,
-            job_url=job_url,
-        )
-        for jr, title, company, location, job_url in rows
-    ]
 
 
 class TriggerRunRequest(BaseModel):
@@ -300,7 +287,7 @@ async def trigger_run_for_user(
     db.add(run)
     await db.commit()
     await db.refresh(run)
-    if settings.run_api_worker:
+    if api_runtime_flags()["run_api_worker"]:
         queue = get_queue()
         await queue.put((run.id, user.id, "full", body.force_scrape))
     return {"run_id": run.id, "status": "pending", "user_email": user.email}

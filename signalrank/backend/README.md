@@ -23,6 +23,8 @@ uv run alembic upgrade head
 uv run uvicorn api.main:app --port 8000 --reload
 ```
 
+`api.main` now reads runtime worker flags directly from the environment. In practice that means the API process can run "API-only" with background workers disabled, while `api.worker_main` can run queue/resume/archival workers as a separate process.
+
 ## Low-Memory Railway Profile
 
 For a small deployment, start from:
@@ -44,6 +46,11 @@ Recommended split:
   - `RESUME_WORKER_CONCURRENCY=1`
   - `ARCHIVAL_WORKER_CONCURRENCY=1`
 
+This matches the runtime defaults in code:
+
+- `uvicorn api.main:app ...` defaults worker flags to `false` unless you explicitly set `RUN_*`.
+- `uv run python -m api.worker_main` defaults queue/resume/archival workers to `true`.
+
 Measured locally after the memory pass:
 
 - API import, workers disabled: about `105 MB`
@@ -60,6 +67,7 @@ OPENROUTER_API_KEY=sk-or-v1-...
 
 # Optional
 RAPIDAPI_KEY=                     # JSearch API — extra job sources
+HUNTER_API_KEY=                   # Optional recruiter/contact enrichment integrations
 ALLOWED_ORIGINS=http://localhost:3000
 DB_POOL_SIZE=2
 DB_MAX_OVERFLOW=1
@@ -70,6 +78,11 @@ SCRAPER_DEFAULT_COUNTRY=India
 LINKEDIN_MAX_QUERIES=0            # 0 = disabled (slow: ~80s/query)
 RANKER_MAX_CANDIDATES=2000
 RANKER_MAX_DESCRIPTION_CHARS=1200
+RUN_API_WORKER=false              # API entrypoint default
+RUN_RESUME_WORKER=false           # API entrypoint default
+RUN_ARCHIVAL_WORKER=false         # API entrypoint default
+RUN_BOOT_SCAN=false
+RUN_BOOT_EMBED=false
 RESUME_WORKER_CONCURRENCY=1
 ARCHIVAL_WORKER_CONCURRENCY=1
 ```
@@ -81,6 +94,7 @@ ARCHIVAL_WORKER_CONCURRENCY=1
 ```
 api/
   main.py              # FastAPI app + background worker startup
+  worker_main.py       # Dedicated worker entrypoint for queue/resume/archival tasks
   models.py            # SQLAlchemy ORM models
   database.py          # Async engine + session factory
   deps.py              # Auth dependencies
@@ -99,7 +113,7 @@ domain/
   skills.py            # Skills matching
 llm/
   openrouter.py        # LLM client: semaphore, retry, model fallback
-  resume_parser.py     # Extract structured profile from resume text
+  resume_parser.py     # Extract structured profile from resume text and normalize supported roles/locations
   resume_tailor.py     # Tailor resume JSON + compile Typst PDF
   email_generator.py   # Cold outreach email generation
 templates/resume/      # Jinja2+Typst templates (classic, modern, minimal)

@@ -1,4 +1,8 @@
 import pytest
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from api.models import Profile
 
 
 @pytest.fixture
@@ -13,6 +17,64 @@ async def test_onboarding_status_initial(client, auth_token):
     assert r.status_code == 200
     assert r.json()["onboarding_complete"] is False
     assert r.json()["has_resume"] is False
+
+
+async def test_onboarding_parsed_completes_when_parse_status_is_done_even_without_skills(client, auth_token):
+    await client.patch(
+        "/api/profile",
+        json={
+            "resume_text": "Experienced backend engineer",
+            "config_overrides": {
+                "onboarding": {"parse_status": "done"},
+                "profile_intent": {"roles": ["Backend Engineer"]},
+                "scraping": {"locations": ["Pune"]},
+            },
+            "target_lpa": 24,
+            "min_yoe": 4,
+            "max_yoe": 8,
+        },
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+
+    response = await client.get(
+        "/api/onboarding/parsed",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["parsing"] is False
+    assert payload["prefill"]["target_roles"] == ["Backend Engineer"]
+    assert payload["prefill"]["preferred_locations"] == ["Pune"]
+
+
+async def test_onboarding_parsed_returns_empty_prefill_when_parse_failed(
+    client,
+    auth_token,
+    db: AsyncSession,
+):
+    await client.patch(
+        "/api/profile",
+        json={
+            "resume_text": "Uploaded resume text",
+            "config_overrides": {
+                "onboarding": {"parse_status": "failed"},
+                "profile_intent": {"roles": ["Stale Role"]},
+            },
+        },
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    profile = (
+        await db.execute(select(Profile).where(Profile.user_id.is_not(None)))
+    ).scalar_one()
+    profile.skills = ["stale-skill"]
+    await db.commit()
+
+    response = await client.get(
+        "/api/onboarding/parsed",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 200
+    assert response.json() == {"parsing": False, "prefill": {}}
 
 
 async def test_upload_resume_txt(client, auth_token, monkeypatch):
