@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
@@ -171,7 +171,7 @@ export default function AdminPage() {
 
   return (
     <div className="pt-14 min-h-screen page-content">
-      <div className="max-w-5xl mx-auto px-6 py-8 space-y-7">
+      <div className="mx-auto w-full max-w-7xl px-6 py-8 space-y-7">
         <div className="space-y-1">
           <div className="section-label">admin</div>
           <h1 className="text-xl font-bold text-foreground tracking-tight">System Administration</h1>
@@ -179,7 +179,7 @@ export default function AdminPage() {
 
         {/* Stats */}
         {stats && (
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {[
               { label: "Users", value: stats.total_users, icon: Users },
               { label: "Jobs", value: stats.total_jobs, icon: BarChart2 },
@@ -215,151 +215,186 @@ export default function AdminPage() {
         {loading ? (
           <div className="text-center py-12 text-muted-foreground text-sm">Loading...</div>
         ) : tab === "users" ? (
-          <div className="space-y-px">
-            <div className="grid grid-cols-[1.5rem_2fr_1fr_1fr_1fr_1fr_auto] gap-3 px-4 py-2 text-[11px] text-muted-foreground uppercase tracking-widest">
-              <span></span>
-              <span>Email</span>
-              <span>Onboarding</span>
-              <span>Runs</span>
-              <span>Last Login</span>
-              <span>Role</span>
-              <span>Actions</span>
+          <div className="overflow-hidden border border-border bg-card">
+            <div className="overflow-x-auto">
+              <table className="min-w-[1100px] w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/20 text-[11px] uppercase tracking-widest text-muted-foreground">
+                    <th className="w-10 px-4 py-3 text-left font-normal"></th>
+                    <th className="px-4 py-3 text-left font-normal">Email</th>
+                    <th className="px-4 py-3 text-left font-normal">Onboarding</th>
+                    <th className="px-4 py-3 text-left font-normal">Runs</th>
+                    <th className="px-4 py-3 text-left font-normal">Last Login</th>
+                    <th className="px-4 py-3 text-left font-normal">Role</th>
+                    <th className="px-4 py-3 text-right font-normal">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <Fragment key={u.id}>
+                      <tr key={u.id} className="border-b border-border/70 align-middle">
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => toggleExpand(u.id)}
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                            title="View top jobs"
+                          >
+                            {expandedUser === u.id ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3 text-foreground">
+                          <div className="max-w-[320px] truncate">{u.email}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {u.onboarding_complete ? (
+                            <div className="inline-flex items-center gap-2 text-primary">
+                              <CheckCircle size={14} />
+                              <span className="text-xs uppercase tracking-[0.18em]">done</span>
+                            </div>
+                          ) : (
+                            <div className="inline-flex items-center gap-2 text-[var(--terminal-yellow)]">
+                              <XCircle size={14} />
+                              <span className="text-xs uppercase tracking-[0.18em]">pending</span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="tabular-nums text-foreground">{u.run_count}</span>
+                            {u.last_run_status && <StatusBadge status={u.last_run_status} />}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">
+                          {u.last_login ? new Date(u.last_login).toLocaleDateString([], { month: "short", day: "numeric" }) : "Never"}
+                        </td>
+                        <td className="px-4 py-3">
+                          {u.is_admin ? (
+                            <span className="text-[11px] text-primary border border-primary/30 px-1.5 py-0.5 leading-none uppercase">admin</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">user</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => triggerRun(u.id)}
+                              className="p-1.5 text-muted-foreground hover:text-primary transition-colors"
+                              title="Trigger run"
+                            >
+                              <Play size={12} />
+                            </button>
+                            <button
+                              onClick={() => triggerRun(u.id, true)}
+                              className="p-1.5 text-muted-foreground hover:text-blue-400 transition-colors"
+                              title="Force scrape + run"
+                            >
+                              <RefreshCw size={12} />
+                            </button>
+                            <button
+                              onClick={() => resetUserJobs(u.id, u.email)}
+                              className="p-1.5 text-muted-foreground hover:text-[var(--terminal-yellow)] transition-colors"
+                              title="Reset this user's ranked jobs and run history"
+                            >
+                              <RotateCcw size={12} />
+                            </button>
+                            <button
+                              onClick={() => toggleAdmin(u.id, u.is_admin)}
+                              className="p-1.5 text-muted-foreground hover:text-[var(--terminal-yellow)] transition-colors"
+                              title={u.is_admin ? "Revoke admin" : "Grant admin"}
+                            >
+                              {u.is_admin ? <ShieldOff size={12} /> : <Shield size={12} />}
+                            </button>
+                            <button
+                              onClick={() => deleteUser(u.id, u.email)}
+                              className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
+                              title="Delete user"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {expandedUser === u.id && (
+                        <tr className="border-b border-border/70 bg-muted/25">
+                          <td colSpan={7} className="px-6 py-4">
+                            {loadingJobs === u.id ? (
+                              <div className="text-xs text-muted-foreground py-2">Loading top jobs...</div>
+                            ) : topJobsCache[u.id]?.length ? (
+                              <div className="overflow-x-auto">
+                                <table className="min-w-[860px] w-full text-xs">
+                                  <thead>
+                                    <tr className="text-muted-foreground uppercase tracking-widest">
+                                      <th className="pb-2 pr-3 text-left font-normal w-[35%]">Title</th>
+                                      <th className="pb-2 pr-3 text-left font-normal w-[20%]">Company</th>
+                                      <th className="pb-2 pr-3 text-left font-normal w-[15%]">Location</th>
+                                      <th className="pb-2 text-right font-normal w-[10%]">Final</th>
+                                      <th className="pb-2 text-right font-normal w-[10%]">Semantic</th>
+                                      <th className="pb-2 text-right font-normal w-[10%]">Skills</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {topJobsCache[u.id].map((j) => (
+                                      <tr key={j.job_id} className="border-t border-border/50">
+                                        <td className="py-1.5 pr-3">
+                                          <a href={j.job_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 truncate text-foreground hover:text-primary">
+                                            {j.title ?? "—"}
+                                            <ExternalLink size={10} className="shrink-0 text-muted-foreground" />
+                                          </a>
+                                        </td>
+                                        <td className="py-1.5 pr-3 text-muted-foreground truncate">{j.company ?? "—"}</td>
+                                        <td className="py-1.5 pr-3 text-muted-foreground truncate">{j.location ?? "—"}</td>
+                                        <td className="py-1.5 text-right tabular-nums font-medium text-foreground">{j.final_score != null ? j.final_score.toFixed(2) : "—"}</td>
+                                        <td className="py-1.5 text-right tabular-nums text-muted-foreground">{j.semantic_score != null ? j.semantic_score.toFixed(2) : "—"}</td>
+                                        <td className="py-1.5 text-right tabular-nums text-muted-foreground">{j.skills_score != null ? j.skills_score.toFixed(2) : "—"}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            ) : (
+                              <div className="text-xs text-muted-foreground py-2">No job results yet.</div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            {users.map((u) => (
-              <div key={u.id} className="border border-border">
-                <div className="grid grid-cols-[1.5rem_2fr_1fr_1fr_1fr_1fr_auto] gap-3 items-center px-4 py-3 bg-card">
-                  <button
-                    onClick={() => toggleExpand(u.id)}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                    title="View top jobs"
-                  >
-                    {expandedUser === u.id ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                  </button>
-                  <span className="text-sm text-foreground truncate">{u.email}</span>
-                  <span>
-                    {u.onboarding_complete ? (
-                      <CheckCircle size={14} className="text-primary" />
-                    ) : (
-                      <XCircle size={14} className="text-[var(--terminal-yellow)]" />
-                    )}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm tabular-nums">{u.run_count}</span>
-                    {u.last_run_status && <StatusBadge status={u.last_run_status} />}
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {u.last_login ? new Date(u.last_login).toLocaleDateString([], { month: "short", day: "numeric" }) : "Never"}
-                  </span>
-                  <span>
-                    {u.is_admin && (
-                      <span className="text-[11px] text-primary border border-primary/30 px-1.5 py-0.5 leading-none uppercase">admin</span>
-                    )}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => triggerRun(u.id)}
-                      className="p-1.5 text-muted-foreground hover:text-primary transition-colors"
-                      title="Trigger run"
-                    >
-                      <Play size={12} />
-                    </button>
-                    <button
-                      onClick={() => triggerRun(u.id, true)}
-                      className="p-1.5 text-muted-foreground hover:text-blue-400 transition-colors"
-                      title="Force scrape + run"
-                    >
-                      <RefreshCw size={12} />
-                    </button>
-                    <button
-                      onClick={() => resetUserJobs(u.id, u.email)}
-                      className="p-1.5 text-muted-foreground hover:text-[var(--terminal-yellow)] transition-colors"
-                      title="Reset this user's ranked jobs and run history"
-                    >
-                      <RotateCcw size={12} />
-                    </button>
-                    <button
-                      onClick={() => toggleAdmin(u.id, u.is_admin)}
-                      className="p-1.5 text-muted-foreground hover:text-[var(--terminal-yellow)] transition-colors"
-                      title={u.is_admin ? "Revoke admin" : "Grant admin"}
-                    >
-                      {u.is_admin ? <ShieldOff size={12} /> : <Shield size={12} />}
-                    </button>
-                    <button
-                      onClick={() => deleteUser(u.id, u.email)}
-                      className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
-                      title="Delete user"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                </div>
-                {expandedUser === u.id && (
-                  <div className="bg-muted/30 border-t border-border px-6 py-3">
-                    {loadingJobs === u.id ? (
-                      <div className="text-xs text-muted-foreground py-2">Loading top jobs...</div>
-                    ) : topJobsCache[u.id]?.length ? (
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="text-muted-foreground uppercase tracking-widest">
-                            <th className="text-left pb-2 font-normal w-[35%]">Title</th>
-                            <th className="text-left pb-2 font-normal w-[20%]">Company</th>
-                            <th className="text-left pb-2 font-normal w-[15%]">Location</th>
-                            <th className="text-right pb-2 font-normal w-[10%]">Final</th>
-                            <th className="text-right pb-2 font-normal w-[10%]">Semantic</th>
-                            <th className="text-right pb-2 font-normal w-[10%]">Skills</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {topJobsCache[u.id].map((j) => (
-                            <tr key={j.job_id} className="border-t border-border/50">
-                              <td className="py-1.5 pr-3">
-                                <a href={j.job_url} target="_blank" rel="noopener noreferrer" className="text-foreground hover:text-primary flex items-center gap-1 truncate">
-                                  {j.title ?? "—"}
-                                  <ExternalLink size={10} className="shrink-0 text-muted-foreground" />
-                                </a>
-                              </td>
-                              <td className="py-1.5 pr-3 text-muted-foreground truncate">{j.company ?? "—"}</td>
-                              <td className="py-1.5 pr-3 text-muted-foreground truncate">{j.location ?? "—"}</td>
-                              <td className="py-1.5 text-right tabular-nums font-medium text-foreground">{j.final_score != null ? j.final_score.toFixed(2) : "—"}</td>
-                              <td className="py-1.5 text-right tabular-nums text-muted-foreground">{j.semantic_score != null ? j.semantic_score.toFixed(2) : "—"}</td>
-                              <td className="py-1.5 text-right tabular-nums text-muted-foreground">{j.skills_score != null ? j.skills_score.toFixed(2) : "—"}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    ) : (
-                      <div className="text-xs text-muted-foreground py-2">No job results yet.</div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
           </div>
         ) : (
-          <div className="space-y-px">
-            <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 px-4 py-2 text-[11px] text-muted-foreground uppercase tracking-widest">
-              <span>User</span>
-              <span>Status</span>
-              <span>Jobs</span>
-              <span>Started</span>
-              <span>Finished</span>
+          <div className="overflow-hidden border border-border bg-card">
+            <div className="overflow-x-auto">
+              <table className="min-w-[920px] w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/20 text-[11px] uppercase tracking-widest text-muted-foreground">
+                    <th className="px-4 py-3 text-left font-normal">User</th>
+                    <th className="px-4 py-3 text-left font-normal">Status</th>
+                    <th className="px-4 py-3 text-left font-normal">Jobs</th>
+                    <th className="px-4 py-3 text-left font-normal">Started</th>
+                    <th className="px-4 py-3 text-left font-normal">Finished</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {runs.map((r) => (
+                    <tr key={r.run_id} className="border-b border-border/70">
+                      <td className="px-4 py-3 text-foreground">
+                        <div className="max-w-[320px] truncate">{r.user_email}</div>
+                      </td>
+                      <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
+                      <td className="px-4 py-3 tabular-nums text-foreground">{r.job_count ?? "—"}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {r.started_at ? new Date(r.started_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {r.finished_at ? new Date(r.finished_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            {runs.map((r) => (
-              <div
-                key={r.run_id}
-                className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 items-center px-4 py-3 bg-card border border-border"
-              >
-                <span className="text-sm text-foreground truncate">{r.user_email}</span>
-                <StatusBadge status={r.status} />
-                <span className="text-sm tabular-nums">{r.job_count ?? "—"}</span>
-                <span className="text-xs text-muted-foreground">
-                  {r.started_at ? new Date(r.started_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {r.finished_at ? new Date(r.finished_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
-                </span>
-              </div>
-            ))}
             {runs.length === 0 && (
               <div className="text-center py-8 text-muted-foreground text-sm">No runs yet</div>
             )}

@@ -385,17 +385,17 @@ export default function SettingsPage() {
             <button
               onClick={triggerDeepScan}
               disabled={triggeringDeepScan || saving}
-              className="inline-flex items-center justify-center gap-2 border border-primary/50 px-4 py-2 text-[11px] uppercase tracking-wider text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+              className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 self-start border border-primary/40 px-3 text-[10px] uppercase tracking-[0.22em] text-primary transition-colors hover:bg-primary/8 disabled:opacity-50 sm:self-auto"
             >
               {triggeringDeepScan ? (
                 <>
-                  <RefreshCw size={10} className="animate-spin" />
-                  Queuing deep scan...
+                  <RefreshCw size={9} className="animate-spin" />
+                  Queuing...
                 </>
               ) : (
                 <>
-                  <Play size={10} />
-                  Run deep scan
+                  <Play size={9} />
+                  Deep scan
                 </>
               )}
             </button>
