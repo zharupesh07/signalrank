@@ -1,5 +1,8 @@
+import json
+from typing import Annotated
+
 from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -8,7 +11,7 @@ class Settings(BaseSettings):
     database_url: str
     nextauth_secret: str
     environment: str = "development"
-    allowed_origins: list[str] = ["http://localhost:3000"]
+    allowed_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
     openrouter_api_key: str = ""
     hunter_api_key: str = ""
     run_api_worker: bool = True
@@ -21,7 +24,15 @@ class Settings(BaseSettings):
     @classmethod
     def parse_origins(cls, v):
         if isinstance(v, str):
-            return [o.strip() for o in v.split(",") if o.strip()]
+            text = v.strip()
+            if text.startswith("["):
+                try:
+                    loaded = json.loads(text)
+                    if isinstance(loaded, list):
+                        return [str(o).strip() for o in loaded if str(o).strip()]
+                except json.JSONDecodeError:
+                    pass
+            return [o.strip() for o in text.split(",") if o.strip()]
         return v
 
 
