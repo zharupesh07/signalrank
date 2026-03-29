@@ -13,9 +13,11 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.pool import NullPool
 
 from api.config import settings
-from api.database import AsyncSessionLocal, engine
+from api.database import AsyncSessionLocal, _parse_url
 from api.deps_llm import get_llm_client
 from api.routes import admin, applications, auth, ingest, jobs, onboarding, profile, recruiters, resume, runs
 from batch.archival_worker import archival_worker_loop, recover_stuck_archival_tasks
@@ -178,8 +180,16 @@ async def health():
 @app.get("/ready")
 async def ready():
     try:
-        async with engine.connect() as conn:
+        db_url, connect_args = _parse_url(settings.database_url)
+        ready_engine = create_async_engine(
+            db_url,
+            echo=False,
+            connect_args=connect_args,
+            poolclass=NullPool,
+        )
+        async with ready_engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
+        await ready_engine.dispose()
         return {"status": "ok", "db": "ok"}
     except Exception:
         logger.exception("Health check DB ping failed")
