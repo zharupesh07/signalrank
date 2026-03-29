@@ -210,6 +210,9 @@ export const api = {
           preferred_locations: string[];
           exclusions: string[];
           salary_lpa: number | null;
+          min_yoe: number | null;
+          max_yoe: number | null;
+          role_intent: string | null;
         };
       }>("/api/onboarding/parsed", { token }),
     refine: (token: string, question_id: string, answer: string | string[]) =>

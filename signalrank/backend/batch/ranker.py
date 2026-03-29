@@ -25,6 +25,7 @@ from domain.embeddings import (
     build_resume_embedding_text,
     fingerprint_text,
 )
+from domain.profile_rules import enrich_config_with_profile_rules, title_rule_flags
 from domain.roles import (
     classify_functional_role,
     consulting_dampener,
@@ -85,6 +86,34 @@ async def load_jobs_dataframe(
     )
 
 
+async def load_jobs_by_ids_dataframe(
+    db: AsyncSession,
+    job_ids: list[str],
+) -> pd.DataFrame:
+    if not job_ids:
+        return pd.DataFrame(
+            columns=["id", "job_url", "title", "company", "description",
+                     "location", "site", "date_posted"]
+        )
+    stmt = select(
+        JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.company,
+        func.left(JobRaw.description, 2000).label("description"),
+        JobRaw.location, JobRaw.site, JobRaw.date_posted,
+    ).where(JobRaw.id.in_(job_ids))
+    result = await db.execute(stmt)
+    rows = result.all()
+    if not rows:
+        return pd.DataFrame(
+            columns=["id", "job_url", "title", "company", "description",
+                     "location", "site", "date_posted"]
+        )
+    return pd.DataFrame(
+        rows,
+        columns=["id", "job_url", "title", "company", "description",
+                 "location", "site", "date_posted"],
+    )
+
+
 def _apply_pre_filters(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     mask = pd.Series(True, index=df.index)
     blocklist = cfg.get("title_blocklist", [])
@@ -111,6 +140,33 @@ def _apply_semantic_gates(df: pd.DataFrame, cfg: dict, role_intent: str) -> pd.D
     thresholds = ranking.get("role_semantic_thresholds", {})
     min_sem = thresholds.get(role_intent, ranking.get("min_semantic_score", 0.20))
     mask &= df["semantic_score"] >= min_sem
+
+    title_rule_cfg = ranking.get("profile_title_rule_scoring", {})
+    strong_cfg = title_rule_cfg.get("strong", {})
+    adjacent_cfg = title_rule_cfg.get("adjacent", {})
+    hybrid_cfg = title_rule_cfg.get("hybrid", {})
+
+    if "strong_title_penalty" in df:
+        strong_mask = df["strong_title_penalty"].fillna(False)
+        mask &= ~(
+            strong_mask
+            & (df["semantic_score"] < strong_cfg.get("semantic_floor", 0.56))
+            & (df["skill_overlap"] < strong_cfg.get("min_skill_overlap", 2))
+        )
+    if "adjacent_title" in df:
+        adjacent_mask = df["adjacent_title"].fillna(False) & ~df["strong_title_penalty"].fillna(False)
+        mask &= ~(
+            adjacent_mask
+            & (df["semantic_score"] < adjacent_cfg.get("semantic_floor", 0.50))
+            & (df["skill_overlap"] < adjacent_cfg.get("min_skill_overlap", 2))
+        )
+    if "hybrid_title" in df:
+        hybrid_mask = df["hybrid_title"].fillna(False) & ~df["strong_title_penalty"].fillna(False)
+        mask &= ~(
+            hybrid_mask
+            & (df["semantic_score"] < hybrid_cfg.get("semantic_floor", 0.52))
+            & (df["skill_overlap"] < hybrid_cfg.get("min_skill_overlap", 3))
+        )
 
     out = df.loc[mask].reset_index(drop=True)
     out["description_quality"] = desc_quality.loc[mask].values
@@ -168,6 +224,30 @@ def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
         + df["location_score"] * w.get("location", 0.15)
         + df["recency_score"] * w.get("recency", 0.10)
     ).fillna(0.0)
+
+    title_rule_cfg = cfg.get("ranking", {}).get("profile_title_rule_scoring", {})
+    strong_cfg = title_rule_cfg.get("strong", {})
+    adjacent_cfg = title_rule_cfg.get("adjacent", {})
+    hybrid_cfg = title_rule_cfg.get("hybrid", {})
+
+    if "strong_title_penalty" in df:
+        df.loc[df["strong_title_penalty"], "final_score"] *= strong_cfg.get("multiplier", 0.72)
+
+    if "adjacent_title" in df:
+        adjacent_mask = df["adjacent_title"] & ~df["strong_title_penalty"]
+        adjacent_keep = (
+            (df["semantic_score"] >= adjacent_cfg.get("keep_semantic_floor", 0.58))
+            & (df["role_skill_score"] >= adjacent_cfg.get("keep_role_skill_score", 1.12))
+        )
+        df.loc[adjacent_mask & ~adjacent_keep, "final_score"] *= adjacent_cfg.get("multiplier", 0.88)
+
+    if "hybrid_title" in df:
+        hybrid_mask = df["hybrid_title"] & ~df["strong_title_penalty"]
+        hybrid_keep = (
+            (df["semantic_score"] >= hybrid_cfg.get("keep_semantic_floor", 0.60))
+            & (df["role_skill_score"] >= hybrid_cfg.get("keep_role_skill_score", 1.15))
+        )
+        df.loc[hybrid_mask & ~hybrid_keep, "final_score"] *= hybrid_cfg.get("multiplier", 0.82)
 
     # Contract penalty — vectorized
     contract_penalty = cfg.get("ranking", {}).get("contract_penalty", 0.9)
@@ -284,15 +364,69 @@ async def score_jobs_for_user(
     distilled_text: str | None = None,
 ) -> pd.DataFrame:
     from domain.role_clusters import roles_to_clusters
+    ctx = build_context(user_id, resume_text, config_overrides)
+    profile_roles = ctx.config.get("profile_intent", {}).get("roles", [])
+    clusters = roles_to_clusters(profile_roles) if profile_roles else None
+    df = await load_jobs_dataframe(db, role_clusters=clusters)
+    return await _score_loaded_jobs_dataframe(
+        db=db,
+        df=df,
+        user_id=user_id,
+        resume_text=resume_text,
+        config_overrides=config_overrides,
+        distilled_text=distilled_text,
+    )
 
+
+async def score_job_ids_for_user(
+    db: AsyncSession,
+    user_id: str,
+    resume_text: str,
+    job_ids: list[str],
+    config_overrides: dict | None,
+    distilled_text: str | None = None,
+) -> pd.DataFrame:
+    df = await load_jobs_by_ids_dataframe(db, job_ids)
+    return await _score_loaded_jobs_dataframe(
+        db=db,
+        df=df,
+        user_id=user_id,
+        resume_text=resume_text,
+        config_overrides=config_overrides,
+        distilled_text=distilled_text,
+    )
+
+
+async def _score_loaded_jobs_dataframe(
+    db: AsyncSession,
+    df: pd.DataFrame,
+    user_id: str,
+    resume_text: str,
+    config_overrides: dict | None,
+    distilled_text: str | None = None,
+) -> pd.DataFrame:
     t_total = time.monotonic()
     ctx = build_context(user_id, resume_text, config_overrides)
     cfg = ctx.config
 
     profile_roles = cfg.get("profile_intent", {}).get("roles", [])
-    clusters = roles_to_clusters(profile_roles) if profile_roles else None
+    cfg = enrich_config_with_profile_rules(
+        cfg,
+        resume_text=resume_text,
+        profile_roles=profile_roles,
+    )
+    logger.info(
+        "Profile title rules",
+        extra={
+            "user_id": user_id,
+            "archetypes": cfg.get("ranking", {}).get("profile_archetypes", []),
+            "rule_counts": {
+                name: len(patterns)
+                for name, patterns in (cfg.get("ranking", {}).get("profile_title_rules", {}) or {}).items()
+            },
+        },
+    )
 
-    df = await load_jobs_dataframe(db, role_clusters=clusters)
     if df.empty:
         return pd.DataFrame(columns=["final_score"])
 
@@ -313,6 +447,10 @@ async def score_jobs_for_user(
         return pd.DataFrame(columns=["final_score"])
 
     df["semantic_score"] *= df["skill_overlap"].apply(bounded_skill_boost)
+    title_flags = df["title"].fillna("").astype(str).apply(lambda t: title_rule_flags(t, cfg))
+    df["strong_title_penalty"] = title_flags.apply(lambda x: x["strong"])
+    df["adjacent_title"] = title_flags.apply(lambda x: x["adjacent"])
+    df["hybrid_title"] = title_flags.apply(lambda x: x["hybrid"])
 
     df["functional_role"] = df.apply(
         lambda r: classify_functional_role(r["title"] or "", r["description"] or "", cfg),

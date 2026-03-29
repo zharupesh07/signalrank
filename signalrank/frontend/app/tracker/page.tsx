@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
 import { swr, setCache } from "@/lib/cache";
-import type { Application, ApplicationStatus, TrackerStats, Run } from "@/types";
+import type { Application, ApplicationStatus, TrackerStats } from "@/types";
 import { useToast } from "@/components/toast";
 import AddJobModal from "@/components/add-job-modal";
 import {
@@ -20,7 +20,6 @@ import {
   DollarSign,
   Search,
   Copy,
-  FileText,
   Loader2,
   Sparkles,
 } from "lucide-react";
@@ -35,8 +34,6 @@ const STATUSES: ApplicationStatus[] = [
   "rejected",
   "archived",
 ];
-
-const PRIORITIES = ["P1", "P2", "P3"] as const;
 
 const STATUS_STYLE: Record<ApplicationStatus, { dot: string; label: string; border: string; bar: string }> = {
   interested:   { dot: "bg-muted-foreground",  label: "text-secondary-foreground", border: "border-border",                      bar: "var(--muted-foreground)" },
@@ -74,10 +71,6 @@ function isValidEmail(email: string): boolean {
 
 function gmailComposeUrl(to: string, subject: string, body: string) {
   return `https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-}
-
-function mailtoUrl(to: string, subject: string, body: string) {
-  return `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 function linkedinRecruiterSearchUrl(company: string) {
@@ -243,11 +236,6 @@ export default function TrackerPage() {
     } catch (e) {
       toast(`Failed to save recruiter: ${e instanceof Error ? e.message : "unknown error"}`, "error");
     }
-  }
-
-  async function applyToJob(app: Application) {
-    if (app.job_url) window.open(app.job_url, "_blank");
-    await updateStatus(app.id, "applied");
   }
 
   async function mailAllRecruiters(app: Application) {

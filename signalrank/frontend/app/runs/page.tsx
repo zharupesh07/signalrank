@@ -18,6 +18,8 @@ type RunRecord = {
   finished_at: string | null;
 };
 
+const LIVE = ["pending", "running", "scraping", "ranking"];
+
 function StatusBadge({ status }: { status: string }) {
   if (status === "success" || status === "done") {
     return (
@@ -93,8 +95,6 @@ export default function RunsPage() {
   const [triggering, setTriggering] = useState(false);
   const [stoppingRunId, setStoppingRunId] = useState<string | null>(null);
   const [activeRun, setActiveRun] = useState<Run | null>(null);
-
-  const LIVE = ["pending", "running", "scraping", "ranking"];
 
   async function refreshList() {
     const r = await api.runs.list(token);

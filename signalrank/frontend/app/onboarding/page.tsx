@@ -97,6 +97,8 @@ export default function OnboardingPage() {
   const [locations, setLocations] = useState<string[]>([]);
   const [exclusions, setExclusions] = useState("");
   const [salaryLpa, setSalaryLpa] = useState("");
+  const [minYoe, setMinYoe] = useState("");
+  const [maxYoe, setMaxYoe] = useState("");
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -122,6 +124,8 @@ export default function OnboardingPage() {
           if (p.preferred_locations?.length) setLocations(p.preferred_locations);
           if (p.exclusions?.length) setExclusions(p.exclusions.join(", "));
           if (p.salary_lpa) setSalaryLpa(String(p.salary_lpa));
+          if (p.min_yoe != null) setMinYoe(String(p.min_yoe));
+          if (p.max_yoe != null) setMaxYoe(String(p.max_yoe));
         }
       } catch {
         // ignore transient errors
@@ -163,6 +167,12 @@ export default function OnboardingPage() {
         );
       if (salaryLpa.trim())
         await api.onboarding.refine(token, "salary_expectations", salaryLpa);
+      if (minYoe.trim() || maxYoe.trim()) {
+        await api.profile.patch(token, {
+          min_yoe: minYoe.trim() ? Number(minYoe) : null,
+          max_yoe: maxYoe.trim() ? Number(maxYoe) : null,
+        });
+      }
       await api.onboarding.refine(token, "onboarding_complete", "true");
       await api.runs.trigger(token);
       router.push("/dashboard");
@@ -218,7 +228,7 @@ export default function OnboardingPage() {
           {step === "upload" ? (
             <form onSubmit={handleUpload} className="space-y-5">
               <div className="text-[10px] text-[#52525b] uppercase tracking-widest">
-                // [1/2] UPLOAD RESUME
+                {"// [1/2] UPLOAD RESUME"}
               </div>
 
               <label
@@ -279,7 +289,7 @@ export default function OnboardingPage() {
             <form onSubmit={handleFinish} className="space-y-5">
               <div className="flex items-center justify-between">
                 <div className="text-[10px] text-[#52525b] uppercase tracking-widest">
-                  // [2/2] PREFERENCES
+                  {"// [2/2] PREFERENCES"}
                 </div>
                 {parsing && (
                   <div className="text-[10px] text-[#a3e635] animate-pulse uppercase tracking-widest">
@@ -314,6 +324,37 @@ export default function OnboardingPage() {
                     className="flex-1 bg-transparent px-2 py-2.5 text-sm text-[#e4e4e7] outline-none placeholder:text-[#3f3f46]"
                     placeholder="e.g. 30"
                   />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-[#71717a] uppercase tracking-wider">
+                  Experience range
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center border border-[#3f3f46] bg-[#0a0a0a] focus-within:border-[#22c55e] transition-colors">
+                    <span className="text-[#22c55e] text-xs pl-3 select-none">&gt;</span>
+                    <input
+                      value={minYoe}
+                      onChange={(e) => setMinYoe(e.target.value)}
+                      className="flex-1 bg-transparent px-2 py-2.5 text-sm text-[#e4e4e7] outline-none placeholder:text-[#3f3f46]"
+                      placeholder="Min YOE"
+                      inputMode="numeric"
+                    />
+                  </div>
+                  <div className="flex items-center border border-[#3f3f46] bg-[#0a0a0a] focus-within:border-[#22c55e] transition-colors">
+                    <span className="text-[#22c55e] text-xs pl-3 select-none">&gt;</span>
+                    <input
+                      value={maxYoe}
+                      onChange={(e) => setMaxYoe(e.target.value)}
+                      className="flex-1 bg-transparent px-2 py-2.5 text-sm text-[#e4e4e7] outline-none placeholder:text-[#3f3f46]"
+                      placeholder="Max YOE"
+                      inputMode="numeric"
+                    />
+                  </div>
+                </div>
+                <div className="text-[10px] text-[#71717a] leading-relaxed">
+                  We prefill role and experience from your resume. You can fine-tune both anytime in Settings after setup.
                 </div>
               </div>
 

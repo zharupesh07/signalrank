@@ -32,10 +32,6 @@ export function TagInput({ label, value, onChange, placeholder, suggestions = []
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    setHighlightIndex(-1);
-  }, [input]);
-
   function addTag(raw: string) {
     const tag = raw.trim();
     if (!tag || value.includes(tag)) return;
@@ -50,6 +46,7 @@ export function TagInput({ label, value, onChange, placeholder, suggestions = []
     addTag(s);
     setInput("");
     setShowSuggestions(false);
+    setHighlightIndex(-1);
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -87,8 +84,10 @@ export function TagInput({ label, value, onChange, placeholder, suggestions = []
       addTag(raw.slice(0, -1));
       setInput("");
       setShowSuggestions(false);
+      setHighlightIndex(-1);
     } else {
       setInput(raw);
+      setHighlightIndex(-1);
       if (suggestions.length > 0) setShowSuggestions(true);
     }
   }

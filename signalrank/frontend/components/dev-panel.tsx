@@ -159,7 +159,7 @@ export default function DevPanel() {
       })
       .catch(() => toast("Failed to load profile", "error"))
       .finally(() => setLoading(false));
-  }, [isDevPanelOpen, token]);
+  }, [isDevPanelOpen, token, toast]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {

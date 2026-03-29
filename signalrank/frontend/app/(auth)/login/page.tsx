@@ -41,7 +41,7 @@ export default function LoginPage() {
 
         <div className="border border-[#2a2a2e] bg-[#111113] p-6 space-y-5 stat-card">
           <div className="text-[10px] text-[#52525b] uppercase tracking-widest">
-            // AUTHENTICATE
+            {"// AUTHENTICATE"}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">

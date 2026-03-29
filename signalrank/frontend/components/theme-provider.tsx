@@ -10,14 +10,14 @@ const ThemeContext = createContext<{
 }>({ theme: "dark", toggleTheme: () => {} });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "dark";
+    return (localStorage.getItem("signalrank-theme") as Theme | null) ?? "dark";
+  });
 
   useEffect(() => {
-    const stored = localStorage.getItem("signalrank-theme") as Theme | null;
-    const initial = stored ?? "dark";
-    setTheme(initial);
-    document.documentElement.setAttribute("data-theme", initial);
-  }, []);
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   function toggleTheme() {
     const next: Theme = theme === "dark" ? "light" : "dark";

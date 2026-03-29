@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LogOut, Terminal, Sun, Moon, Code2, Shield } from "lucide-react";
+import { LogOut, Terminal, Sun, Moon, Code2 } from "lucide-react";
 import { useTheme } from "./theme-provider";
 import { useDevMode } from "./dev-mode-provider";
 

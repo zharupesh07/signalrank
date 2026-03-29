@@ -94,7 +94,7 @@ export default function AdminPage() {
     ])
       .catch(() => toast("Failed to load admin data", "error"))
       .finally(() => setLoading(false));
-  }, [token, isAdmin]);
+  }, [token, isAdmin, toast]);
 
   async function toggleAdmin(userId: string, current: boolean) {
     await api.admin.updateUser(token, userId, { is_admin: !current });

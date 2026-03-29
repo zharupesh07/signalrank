@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
 import { swr } from "@/lib/cache";
-import type { Job, Profile, Run } from "@/types";
+import type { Job, Run } from "@/types";
 import { useToast } from "@/components/toast";
 import RunProgress from "@/components/run-progress";
 import { JobCardSkeleton, StatCardSkeleton } from "@/components/skeleton";

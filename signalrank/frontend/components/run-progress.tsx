@@ -22,7 +22,7 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
   const token = (session as { accessToken?: string })?.accessToken ?? "";
   const { toast } = useToast();
 
-  const [run, setRun] = useState(initialRun);
+  const [runOverride, setRunOverride] = useState<Run | null>(null);
   const [tick, setTick] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -34,9 +34,10 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
   });
 
   useEffect(() => {
-    setRun(initialRun);
     completedRef.current = false;
   }, [initialRun.id]);
+
+  const run = runOverride && runOverride.id === initialRun.id ? runOverride : initialRun;
 
   const isLiveStatus = (s: string) =>
     s === "pending" || s === "running" || s === "scraping" || s === "ranking";
@@ -62,7 +63,7 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
       pollRef.current = setTimeout(async () => {
         try {
           const updated = await api.runs.status(token, run.id);
-          setRun(updated);
+          setRunOverride(updated);
           if (updated.status === "done" && !completedRef.current) {
             completedRef.current = true;
             toast(`Run complete — ${updated.job_count ?? 0} jobs ranked`, "success");

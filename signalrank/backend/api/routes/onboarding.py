@@ -20,6 +20,62 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
 
 
+def _infer_yoe_range(years_of_experience: int | None) -> tuple[int | None, int | None]:
+    if years_of_experience is None:
+        return None, None
+    yoe = max(0, int(years_of_experience))
+    min_yoe = max(0, yoe - 2)
+    max_yoe = min(30, yoe + 2)
+    return min_yoe, max_yoe
+
+
+def _apply_parsed_profile_updates(profile: Profile, parsed: ResumeParseResult) -> str | None:
+    profile.skills = parsed.skills
+    if parsed.suggested_roles and not profile.target_roles:
+        profile.target_roles = parsed.suggested_roles
+    elif parsed.recent_titles and not profile.target_roles:
+        profile.target_roles = parsed.recent_titles
+    if parsed.suggested_roles and not profile.role_intent:
+        profile.role_intent = parsed.suggested_roles[0]
+
+    parts = []
+    if parsed.recent_titles:
+        parts.append("Recent roles: " + ", ".join(parsed.recent_titles))
+    if parsed.skills:
+        parts.append("Skills: " + ", ".join(parsed.skills))
+    if parsed.years_of_experience:
+        parts.append(f"Experience: {parsed.years_of_experience} years")
+
+    distilled_text = "\n".join(parts) if parts else None
+    if distilled_text:
+        profile.distilled_text = distilled_text
+
+    overrides = dict(profile.config_overrides or {})
+
+    if parsed.suggested_roles and not overrides.get("profile_intent", {}).get("roles"):
+        overrides.setdefault("profile_intent", {})["roles"] = parsed.suggested_roles
+
+    if parsed.suggested_locations and not overrides.get("scraping", {}).get("locations"):
+        overrides.setdefault("scraping", {})["locations"] = parsed.suggested_locations
+
+    if parsed.suggested_exclusions and not overrides.get("title_blocklist"):
+        overrides["title_blocklist"] = parsed.suggested_exclusions
+
+    if overrides != (profile.config_overrides or {}):
+        profile.config_overrides = overrides
+
+    if parsed.salary_lpa and not profile.target_lpa:
+        profile.target_lpa = float(parsed.salary_lpa)
+
+    inferred_min_yoe, inferred_max_yoe = _infer_yoe_range(parsed.years_of_experience)
+    if inferred_min_yoe is not None and profile.min_yoe is None:
+        profile.min_yoe = inferred_min_yoe
+    if inferred_max_yoe is not None and profile.max_yoe is None:
+        profile.max_yoe = inferred_max_yoe
+
+    return distilled_text
+
+
 def _extract_text_from_pdf(content: bytes) -> str:
     try:
         import pypdf
@@ -85,39 +141,7 @@ async def _parse_and_update_profile(user_id: str, resume_text: str, llm: OpenRou
             profile = result.scalar_one_or_none()
             if not profile:
                 return
-
-            profile.skills = parsed.skills
-            if parsed.recent_titles and not profile.target_roles:
-                profile.target_roles = parsed.recent_titles
-
-            parts = []
-            if parsed.recent_titles:
-                parts.append("Recent roles: " + ", ".join(parsed.recent_titles))
-            if parsed.skills:
-                parts.append("Skills: " + ", ".join(parsed.skills))
-            if parsed.years_of_experience:
-                parts.append(f"Experience: {parsed.years_of_experience} years")
-            if parts:
-                distilled_text = "\n".join(parts)
-                profile.distilled_text = distilled_text
-
-            # Auto-populate config_overrides from LLM extractions (only if not already set by user)
-            overrides = dict(profile.config_overrides or {})
-
-            if parsed.suggested_roles and not overrides.get("profile_intent", {}).get("roles"):
-                overrides.setdefault("profile_intent", {})["roles"] = parsed.suggested_roles
-
-            if parsed.suggested_locations and not overrides.get("scraping", {}).get("locations"):
-                overrides.setdefault("scraping", {})["locations"] = parsed.suggested_locations
-
-            if parsed.suggested_exclusions and not overrides.get("title_blocklist"):
-                overrides["title_blocklist"] = parsed.suggested_exclusions
-
-            if overrides != (profile.config_overrides or {}):
-                profile.config_overrides = overrides
-
-            if parsed.salary_lpa and not profile.target_lpa:
-                profile.target_lpa = float(parsed.salary_lpa)
+            distilled_text = _apply_parsed_profile_updates(profile, parsed)
 
             await db.commit()
             logger.info(
@@ -198,6 +222,9 @@ async def onboarding_parsed(
             "preferred_locations": overrides.get("scraping", {}).get("locations", []),
             "exclusions": overrides.get("title_blocklist", []),
             "salary_lpa": int(profile.target_lpa) if profile.target_lpa else None,
+            "min_yoe": profile.min_yoe,
+            "max_yoe": profile.max_yoe,
+            "role_intent": profile.role_intent,
         },
     }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { swr } from "@/lib/cache";
 import {
@@ -274,7 +274,7 @@ export default function JobsPage() {
     });
   }
 
-  async function trackJob(job: Job) {
+  const trackJob = useCallback(async (job: Job) => {
     try {
       await api.applications.create(token, { job_id: job.id, company: job.company, title: job.title, status: "interested", system_score: job.final_score, resume_match_pct: job.semantic_score });
       setTracked((prev) => new Set(prev).add(job.id));
@@ -288,7 +288,7 @@ export default function JobsPage() {
         toast(msg || "Failed to track job", "error");
       }
     }
-  }
+  }, [token, toast]);
 
   async function triggerArchive() {
     setArchiving(true);
@@ -303,7 +303,7 @@ export default function JobsPage() {
     }
   }
 
-  function pollArchiveStatus() {
+  const pollArchiveStatus = useCallback(() => {
     let delay = 3000;
     const MAX_DELAY = 30000;
     const timeoutRef = { current: undefined as ReturnType<typeof setTimeout> | undefined };
@@ -326,7 +326,7 @@ export default function JobsPage() {
     }
 
     schedule();
-  }
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;
@@ -334,7 +334,7 @@ export default function JobsPage() {
       setArchiveStatus(s);
       if (s.pending > 0 || s.running > 0) pollArchiveStatus();
     }).catch(() => null);
-  }, [token]);
+  }, [token, pollArchiveStatus]);
 
   const availableSites = useMemo(() => {
     const sites = new Set(allJobs.map((j) => j.site ?? "").filter(Boolean));
@@ -381,7 +381,7 @@ export default function JobsPage() {
         );
       },
     }),
-  ], [tracked]);
+  ], [tracked, trackJob]);
 
   const table = useReactTable({
     data: pageJobs,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
 import { swr } from "@/lib/cache";
@@ -19,6 +19,8 @@ type Analytics = {
   sites: { site: string; count: number }[];
   total: number;
 };
+
+const EMPTY_APPLICATIONS: Application[] = [];
 
 const STATUS_COLORS: Record<string, string> = {
   interested: "var(--muted-foreground)",
@@ -76,7 +78,6 @@ function SankeyDiagram({
     const total = applications.length;
     const nodeGap = 14;
     const minNodeH = 18;
-    const nodeW = 10;
     const padTop = 10;
     const padBot = 10;
     const leftLabelW = 90;
@@ -413,14 +414,7 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!token) {
-      setAnalytics(null);
-      setStats(null);
-      setApplications([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
+    if (!token) return;
     Promise.all([
       swr("analytics", () => api.jobs.analytics(token), setAnalytics),
       swr("stats", () => api.applications.stats(token), setStats),
@@ -428,21 +422,26 @@ export default function AnalyticsPage() {
     ]).finally(() => setLoading(false));
   }, [token]);
 
+  const effectiveAnalytics = token ? analytics : null;
+  const effectiveStats = token ? stats : null;
+  const effectiveApplications = token ? applications : EMPTY_APPLICATIONS;
+  const effectiveLoading = token ? loading : false;
+
   const conversionRate = useMemo(() => {
-    if (!stats || stats.total === 0) return null;
-    const applied = Object.entries(stats.by_status)
+    if (!effectiveStats || effectiveStats.total === 0) return null;
+    const applied = Object.entries(effectiveStats.by_status)
       .filter(([s]) => s !== "interested")
       .reduce((a, [, c]) => a + c, 0);
-    return Math.round((applied / stats.total) * 100);
-  }, [stats]);
+    return Math.round((applied / effectiveStats.total) * 100);
+  }, [effectiveStats]);
 
   const avgScore = useMemo(() => {
-    const scored = applications.filter((a) => a.system_score != null);
+    const scored = effectiveApplications.filter((a) => a.system_score != null);
     if (scored.length === 0) return null;
     return Math.round(
       scored.reduce((a, b) => a + (b.system_score ?? 0), 0) / scored.length
     );
-  }, [applications]);
+  }, [effectiveApplications]);
 
   return (
     <div className="pt-14 min-h-screen page-content">
@@ -454,7 +453,7 @@ export default function AnalyticsPage() {
           </h1>
         </div>
 
-        {loading ? (
+        {effectiveLoading ? (
           <div className="grid grid-cols-4 gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="border border-border bg-card p-5 space-y-3">
@@ -470,15 +469,15 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-4 gap-3">
               <StatCard
                 label="Total Jobs"
-                value={analytics?.total ?? 0}
+                value={effectiveAnalytics?.total ?? 0}
                 sub="across all sources"
                 icon={Layers}
                 accent
               />
               <StatCard
                 label="Tracked"
-                value={stats?.total ?? 0}
-                sub={`${stats?.offers_count ?? 0} offer${(stats?.offers_count ?? 0) !== 1 ? "s" : ""}`}
+                value={effectiveStats?.total ?? 0}
+                sub={`${effectiveStats?.offers_count ?? 0} offer${(effectiveStats?.offers_count ?? 0) !== 1 ? "s" : ""}`}
                 icon={Target}
               />
               <StatCard
@@ -505,12 +504,12 @@ export default function AnalyticsPage() {
                   </span>
                   <GitBranch size={12} className="text-muted-foreground" />
                 </div>
-                <SankeyDiagram applications={applications} />
+                <SankeyDiagram applications={effectiveApplications} />
               </div>
             </div>
 
             {/* Score & Companies side by side */}
-            {analytics && analytics.total > 0 && (
+            {effectiveAnalytics && effectiveAnalytics.total > 0 && (
               <div>
                 <div className="section-label mb-3">job market</div>
                 <div className="grid grid-cols-2 gap-3">
@@ -525,12 +524,12 @@ export default function AnalyticsPage() {
                       />
                     </div>
                     <MiniBarChart
-                      data={analytics.score_distribution.map((d) => ({
+                      data={effectiveAnalytics.score_distribution.map((d) => ({
                         label: d.range,
                         count: d.count,
                       }))}
                       maxVal={Math.max(
-                        ...analytics.score_distribution.map((d) => d.count),
+                        ...effectiveAnalytics.score_distribution.map((d) => d.count),
                         1
                       )}
                     />
@@ -546,11 +545,11 @@ export default function AnalyticsPage() {
                       />
                     </div>
                     <MiniBarChart
-                      data={analytics.top_companies
+                      data={effectiveAnalytics.top_companies
                         .slice(0, 8)
                         .map((d) => ({ label: d.company, count: d.count }))}
                       maxVal={Math.max(
-                        ...analytics.top_companies.map((d) => d.count),
+                        ...effectiveAnalytics.top_companies.map((d) => d.count),
                         1
                       )}
                       color="var(--terminal-green-bright)"
@@ -571,11 +570,11 @@ export default function AnalyticsPage() {
                     </span>
                     <Layers size={12} className="text-muted-foreground" />
                   </div>
-                  <TierBreakdown applications={applications} />
+                  <TierBreakdown applications={effectiveApplications} />
                 </div>
               </div>
 
-              {analytics && analytics.sites.length > 0 && (
+              {effectiveAnalytics && effectiveAnalytics.sites.length > 0 && (
                 <div>
                   <div className="section-label mb-3">sources</div>
                   <div className="stat-card border border-border bg-card p-5 space-y-4">
@@ -589,12 +588,12 @@ export default function AnalyticsPage() {
                       />
                     </div>
                     <MiniBarChart
-                      data={analytics.sites.map((s) => ({
+                      data={effectiveAnalytics.sites.map((s) => ({
                         label: s.site,
                         count: s.count,
                       }))}
                       maxVal={Math.max(
-                        ...analytics.sites.map((s) => s.count),
+                        ...effectiveAnalytics.sites.map((s) => s.count),
                         1
                       )}
                       color="var(--chart-3)"
@@ -605,15 +604,15 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Pipeline status breakdown */}
-            {stats && stats.total > 0 && (
+            {effectiveStats && effectiveStats.total > 0 && (
               <div>
                 <div className="section-label mb-3">pipeline</div>
                 <div className="stat-card border border-border bg-card px-5 py-4 space-y-3">
-                  {Object.entries(stats.by_status)
+                  {Object.entries(effectiveStats.by_status)
                     .filter(([, c]) => c > 0)
                     .sort((a, b) => b[1] - a[1])
                     .map(([status, count]) => {
-                      const pct = (count / stats.total) * 100;
+                      const pct = (count / effectiveStats.total) * 100;
                       const color =
                         STATUS_COLORS[status] ?? "var(--border)";
                       return (
