@@ -7,6 +7,8 @@ import pytest
 
 from llm.resume_tailor import (
     TailoredContent,
+    _apply_resume_facts,
+    _normalize_tailored_content,
     _fit_to_one_page,
     _typst_bold,
     check_page_count,
@@ -14,6 +16,8 @@ from llm.resume_tailor import (
     render_typst,
     resume_yaml_to_text,
     tailor_and_compile,
+    validate_resume_artifacts,
+    compile_pdf,
 )
 
 SAMPLE_RESUME_DATA = {
@@ -173,6 +177,133 @@ def test_render_typst_runs():
     src = render_typst(content)
     assert "Test" in src and "User" in src
     assert "Engineer" in src
+
+
+def test_normalize_tailored_content_normalizes_handles_and_homepage():
+    content = TailoredContent(
+        email=" hello@test.com ",
+        linkedin="https://www.linkedin.com/in/test-user/",
+        github="github.com/test-user/",
+        homepage="https://www.test-user.dev/",
+    )
+
+    normalized = _normalize_tailored_content(content)
+    assert normalized.email == "hello@test.com"
+    assert normalized.linkedin == "test-user"
+    assert normalized.github == "test-user"
+    assert normalized.homepage == "test-user.dev"
+
+
+def test_normalize_tailored_content_dedupes_skills_projects_and_certifications():
+    content = TailoredContent(
+        skills=[
+            {"category": "Programming", "items": ["Python", "SQL", "Python"]},
+            {"category": "programming", "items": ["SQL", "Go"]},
+            {"category": "Cloud", "items": ["AWS", "AWS"]},
+        ],
+        projects=[
+            {"name": "Toolkit", "url": "github.com/test/toolkit", "description": "One"},
+            {"name": "Toolkit", "url": "https://github.com/test/toolkit", "description": "Duplicate"},
+        ],
+        certifications=[
+            {"name": "AWS SAA", "url": "https://example.com/aws"},
+            {"name": "AWS SAA", "url": "https://example.com/aws"},
+            "CKA",
+            "CKA",
+        ],
+    )
+
+    normalized = _normalize_tailored_content(content)
+    assert normalized.skills == [
+        {"category": "Programming", "items": ["Python", "SQL", "Go"]},
+        {"category": "Cloud", "items": ["AWS"]},
+    ]
+    assert len(normalized.projects) == 1
+    assert len(normalized.certifications) == 2
+
+
+def test_render_and_validate_resume_artifacts_for_special_chars_and_links():
+    content = TailoredContent(
+        name="Ayush Khandelwal",
+        email="helloayushkh@gmail.com",
+        phone="+91 9044781514",
+        location="Kanpur, India",
+        linkedin="https://www.linkedin.com/in/ayushhkhandelwal/",
+        github="github.com/ayushhkhandelwal",
+        homepage="ayush.dev",
+        position="Senior Information Technology Analyst",
+        summary="Senior enterprise applications analyst with SAP SD and OTC experience.",
+        skills=[
+            {"category": "Programming", "items": ["C#", "JavaScript", "SQL", "Oracle"]},
+            {"category": "Platforms", "items": ["SAP S/4HANA", "SAP SD", "Order to Cash"]},
+        ],
+        experiences=[
+            {
+                "title": "Senior Information Technology Analyst",
+                "company": "Dow Chemical International Private Limited",
+                "company_url": "www.dow.com",
+                "location": "Mumbai, Maharashtra",
+                "dates": "09/2022 - Present",
+                "tech": "SAP SD, OTC, S/4HANA",
+                "bullets": [
+                    "Configured OTC process improvements across enterprise workflows.",
+                    "Supported customer service and planning workstreams for Dow.",
+                    "Collaborated with cross-functional teams on SAP enhancements.",
+                ],
+            }
+        ],
+        projects=[{"name": "Automation Toolkit", "url": "github.com/ayushhkhandelwal/automation-toolkit", "description": "Internal tooling"}],
+        certifications=[{"name": "SAP Certified Application Associate - SAP S/4HANA Sales", "url": "https://www.credly.com/badges/example"}],
+    )
+
+    src = render_typst(content)
+    pdf = compile_pdf(src)
+    validation = validate_resume_artifacts(content, src, pdf)
+
+    assert check_page_count(pdf) == 1
+    assert validation.page_count == 1
+    assert validation.missing_links == []
+    assert "mailto:helloayushkh@gmail.com" in validation.pdf_links
+    assert "https://www.linkedin.com/in/ayushhkhandelwal" in validation.pdf_links
+    assert validation.vertical_fill_pct is not None
+    assert validation.ink_fill_pct is not None
+
+
+def test_apply_resume_facts_restores_name_and_current_employer():
+    resume_text = """Ayush Khandelwal
+helloayushkh@gmail.com
++91 9044781514
+Kanpur, India
+linkedin.com/in/ayushhkhandelwal
+WORK EXPERIENCE
+Senior Information Technology Analyst
+Dow Chemical International Private Limited
+09/2022 - Present
+Mumbai, Maharashtra
+Application Development Associate - SAP SD Consultant
+Accenture
+08/2018 - 09/2022
+"""
+    content = TailoredContent(
+        name="",
+        email="helloayushkh@gmail.com",
+        experiences=[
+            {
+                "title": "Senior SAP SD Consultant",
+                "company": "SAP",
+                "dates": "Sep 2022 - Present",
+                "location": "Bangalore",
+                "bullets": ["Did things"],
+            }
+        ],
+    )
+
+    updated = _apply_resume_facts(content, resume_text)
+    assert updated.name == "Ayush Khandelwal"
+    assert updated.phone == "+91 9044781514"
+    assert updated.experiences[0]["title"] == "Senior Information Technology Analyst"
+    assert updated.experiences[0]["company"] == "Dow Chemical International Private Limited"
+    assert updated.experiences[0]["dates"] == "09/2022 - Present"
 
 
 @pytest.mark.asyncio

@@ -73,6 +73,58 @@ async def test_process_generation_task_creates_tailored_resume():
 
 
 @pytest.mark.asyncio
+async def test_process_generation_task_uses_profile_resume_template():
+    from batch.resume_worker import process_generation_task
+
+    task = MagicMock()
+    task.user_id = "user-1"
+    task.job_id = "job-1"
+    task.id = "task-1"
+
+    mock_content = MagicMock()
+    mock_content.name = "Test User"
+    mock_content.position = "Engineer"
+    mock_content.email = ""
+    mock_content.phone = ""
+    mock_content.homepage = ""
+    mock_content.linkedin = ""
+    mock_content.github = ""
+    mock_content.location = ""
+    mock_content.summary = "Summary."
+    mock_content.skills = []
+    mock_content.experiences = []
+    mock_content.education = []
+    mock_content.projects = []
+    mock_content.certifications = []
+
+    mock_profile = MagicMock()
+    mock_profile.resume_text = "resume text"
+    mock_profile.config_overrides = {"resume": {"template": "modern"}}
+
+    mock_job = MagicMock()
+    mock_job.title = "ML Engineer"
+    mock_job.description = "Job desc"
+
+    db = AsyncMock(spec=AsyncSession)
+    db.execute = AsyncMock(side_effect=[
+        MagicMock(**{"scalar_one_or_none.return_value": None}),
+        MagicMock(**{"scalar_one_or_none.return_value": mock_profile}),
+        MagicMock(**{"scalar_one_or_none.return_value": mock_job}),
+        MagicMock(),
+    ])
+    db.commit = AsyncMock()
+    db.add = MagicMock()
+
+    with patch("batch.resume_worker.tailor_resume", AsyncMock(return_value=mock_content)), \
+         patch("batch.resume_worker.render_typst", return_value="#set page()"), \
+         patch("batch.resume_worker.compile_pdf", return_value=b"%PDF-1.4"):
+        await process_generation_task(task, db, MagicMock())
+
+    added = db.add.call_args.args[0]
+    assert added.template == "modern"
+
+
+@pytest.mark.asyncio
 async def test_process_generation_task_skips_if_resume_exists():
     """Worker skips task if TailoredResume already exists."""
     from batch.resume_worker import process_generation_task

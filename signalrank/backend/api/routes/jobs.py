@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.database import get_db
 from api.deps import get_current_user
 from api.models import ArchivalQueue, JobRaw, JobResult, Run, User
+from api.routes.admin import require_admin
 
 ARCHIVAL_TIERS = {"tier_ss", "tier_s", "tier_a"}
 
@@ -144,7 +145,7 @@ async def list_jobs(
 
 @router.post("/archive-unsuitable", status_code=200)
 async def archive_unsuitable(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """Enqueue all unevaluated SS/S/A tier JobResults for LLM archival evaluation."""
@@ -187,7 +188,7 @@ async def archive_unsuitable(
 
 @router.get("/archive-status")
 async def archive_status(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """Return progress of archival evaluation for the current user."""

@@ -21,12 +21,38 @@ VALID_TEMPLATES = {"classic", "modern", "minimal"}
 
 class TailorRequest(BaseModel):
     job_id: str
-    template: str = "classic"
+    template: str | None = None
 
 
 class EmailRequest(BaseModel):
     job_id: str
     recruiter_name: str = "Hiring Manager"
+
+
+def _preferred_resume_template(profile: Profile | None, requested: str | None = None) -> str:
+    candidate = requested
+    if not candidate and profile and isinstance(profile.config_overrides, dict):
+        resume_cfg = profile.config_overrides.get("resume")
+        if isinstance(resume_cfg, dict):
+            maybe_template = resume_cfg.get("template")
+            if isinstance(maybe_template, str):
+                candidate = maybe_template
+    candidate = candidate or "classic"
+    if candidate not in VALID_TEMPLATES:
+        return "classic"
+    return candidate
+
+
+def _profile_resume_template(profile: Profile | None) -> str | None:
+    if not profile or not isinstance(profile.config_overrides, dict):
+        return None
+    resume_cfg = profile.config_overrides.get("resume")
+    if not isinstance(resume_cfg, dict):
+        return None
+    template = resume_cfg.get("template")
+    if isinstance(template, str) and template in VALID_TEMPLATES:
+        return template
+    return None
 
 
 @router.post("/tailor")
@@ -36,15 +62,16 @@ async def tailor(
     db: AsyncSession = Depends(get_db),
     llm: OpenRouterClient = Depends(get_llm_client),
 ):
-    from llm.resume_tailor import compile_pdf, render_typst, tailor_resume
+    from llm.resume_tailor import compile_pdf, render_typst, tailor_resume, validate_resume_artifacts
 
-    if body.template not in VALID_TEMPLATES:
+    if body.template is not None and body.template not in VALID_TEMPLATES:
         raise HTTPException(status_code=422, detail=f"Template must be one of: {VALID_TEMPLATES}")
 
     profile_res = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
     profile = profile_res.scalar_one_or_none()
     if not profile or not profile.resume_text:
         raise HTTPException(status_code=404, detail="Upload a resume first via /api/onboarding/resume")
+    selected_template = _preferred_resume_template(profile, body.template)
 
     job_res = await db.execute(select(JobRaw).where(JobRaw.id == body.job_id))
     job = job_res.scalar_one_or_none()
@@ -69,11 +96,13 @@ async def tailor(
     )
 
     try:
-        typst_src = render_typst(content, body.template)
+        typst_src = render_typst(content, selected_template)
         pdf_bytes = compile_pdf(typst_src)
+        validation = validate_resume_artifacts(content, typst_src, pdf_bytes)
     except Exception as e:
         logger.warning("PDF compile failed: %s", e)
         pdf_bytes = None
+        validation = None
 
     content_dict = {
         "name": content.name, "position": content.position,
@@ -89,7 +118,7 @@ async def tailor(
 
     if existing:
         existing.content_json = content_dict
-        existing.template = body.template
+        existing.template = selected_template
         existing.pdf_path = None
     else:
         db.add(
@@ -97,7 +126,7 @@ async def tailor(
                 user_id=current_user.id,
                 job_id=body.job_id,
                 content_json=content_dict,
-                template=body.template,
+                template=selected_template,
             )
         )
     await db.commit()
@@ -105,21 +134,24 @@ async def tailor(
     return {
         "status": "ok",
         "job_id": body.job_id,
-        "template": body.template,
+        "template": selected_template,
         "content": content_dict,
         "pdf_available": pdf_bytes is not None,
+        "validation": validation.__dict__ if validation else None,
     }
 
 
 @router.get("/tailor/{job_id}")
 async def download_tailored(
     job_id: str,
-    template: str = Query("classic"),
+    template: str | None = Query(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     from llm.resume_tailor import TailoredContent, compile_pdf, render_typst
 
+    profile_res = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
+    profile = profile_res.scalar_one_or_none()
     res = await db.execute(
         select(TailoredResume).where(
             TailoredResume.user_id == current_user.id,
@@ -129,15 +161,16 @@ async def download_tailored(
     tailored = res.scalar_one_or_none()
     if not tailored:
         return JSONResponse(status_code=202, content={"status": "pending", "job_id": str(job_id)})
+    selected_template = template or _profile_resume_template(profile) or tailored.template or "classic"
 
     content = None
-    if tailored.pdf_bytes and template == (tailored.template or "classic"):
+    if tailored.pdf_bytes and selected_template == (tailored.template or "classic"):
         pdf_bytes = tailored.pdf_bytes
     else:
         if not tailored.content_json:
             return JSONResponse(status_code=202, content={"status": "pending", "job_id": str(job_id)})
         content = TailoredContent(**tailored.content_json)
-        typst_src = render_typst(content, template)
+        typst_src = render_typst(content, selected_template)
         pdf_bytes = compile_pdf(typst_src)
 
     job_res = await db.execute(select(JobRaw).where(JobRaw.id == job_id))

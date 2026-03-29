@@ -38,6 +38,7 @@ function serializeSettingsSnapshot(input: {
   maxYoe: string;
   scraperHoursOld: string;
   scraperMaxTerms: string;
+  resumeTemplate: string;
 }) {
   return JSON.stringify(input);
 }
@@ -64,6 +65,8 @@ export default function SettingsPage() {
   const [maxYoe, setMaxYoe] = useState("");
   const [scraperHoursOld, setScraperHoursOld] = useState("");
   const [scraperMaxTerms, setScraperMaxTerms] = useState("");
+  const [resumeTemplate, setResumeTemplate] = useState("classic");
+  const [resumeTemplates, setResumeTemplates] = useState<string[]>(["classic", "minimal", "modern"]);
 
   const loaded = useRef(false);
   const snapshotRef = useRef("");
@@ -87,6 +90,7 @@ export default function SettingsPage() {
     setMaxYoe(p.max_yoe != null ? String(p.max_yoe) : "");
     setScraperHoursOld(p.scraper_hours_old != null ? String(p.scraper_hours_old) : "");
     setScraperMaxTerms(p.scraper_max_terms != null ? String(p.scraper_max_terms) : "");
+    setResumeTemplate(p.resume_template ?? "classic");
     snapshotRef.current = serializeSettingsSnapshot({
       targetRoles: p.target_roles ?? [],
       locations: p.preferred_locations ?? [],
@@ -96,6 +100,7 @@ export default function SettingsPage() {
       maxYoe: p.max_yoe != null ? String(p.max_yoe) : "",
       scraperHoursOld: p.scraper_hours_old != null ? String(p.scraper_hours_old) : "",
       scraperMaxTerms: p.scraper_max_terms != null ? String(p.scraper_max_terms) : "",
+      resumeTemplate: p.resume_template ?? "classic",
     });
     setDirty(false);
     loaded.current = true;
@@ -118,6 +123,9 @@ export default function SettingsPage() {
       setRoleOptions(options.role_options);
       setLocationOptions(options.location_options);
     });
+    api.resume.templates(token)
+      .then((res) => setResumeTemplates(res.templates))
+      .catch(() => null);
   }, [token]);
 
   useEffect(() => {
@@ -139,8 +147,9 @@ export default function SettingsPage() {
         maxYoe,
         scraperHoursOld,
         scraperMaxTerms,
+        resumeTemplate,
       }),
-    [targetRoles, locations, customQueries, targetLpa, minYoe, maxYoe, scraperHoursOld, scraperMaxTerms]
+    [targetRoles, locations, customQueries, targetLpa, minYoe, maxYoe, scraperHoursOld, scraperMaxTerms, resumeTemplate]
   );
 
   useEffect(() => {
@@ -161,6 +170,7 @@ export default function SettingsPage() {
         max_yoe: maxYoe ? Number(maxYoe) : null,
         scraper_hours_old: scraperHoursOld ? Number(scraperHoursOld) : null,
         scraper_max_terms: scraperMaxTerms ? Number(scraperMaxTerms) : null,
+        config_overrides: { resume: { template: resumeTemplate } },
       });
       snapshotRef.current = currentSnapshot;
       toast("Settings saved", "success");
@@ -284,6 +294,27 @@ export default function SettingsPage() {
                 </div>
               </div>
             ))}
+          </div>
+
+          <div>
+            <label className="block text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">
+              Resume Theme
+            </label>
+            <select
+              value={resumeTemplate}
+              onChange={(e) => setResumeTemplate(e.target.value)}
+              suppressHydrationWarning
+              className="w-full text-xs bg-input border border-border text-foreground px-3 py-2 focus:border-primary focus:outline-none transition-colors"
+            >
+              {resumeTemplates.map((template) => (
+                <option key={template} value={template}>
+                  {template}
+                </option>
+              ))}
+            </select>
+            <div className="mt-1 text-[10px] text-muted-foreground/80 leading-relaxed">
+              New tailored resumes and background-generated PDFs will use this template by default.
+            </div>
           </div>
         </div>
 

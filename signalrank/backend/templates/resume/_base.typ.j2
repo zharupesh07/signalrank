@@ -66,7 +66,7 @@
   #text(size: 8.8pt, fill: gray)[{{ position | typst_escape }}]
   #v(1.5pt)
   #text(size: 8pt, fill: light)[
-    {% if email %}#fa(0xf0e0) #link("mailto:{{ email }}")[{{ email | typst_escape }}]{% endif %}{% if phone %} #h(5pt)#sym.bar.v#h(5pt) #fa(0xf095) {{ phone }}{% endif %}{% if linkedin %} #h(5pt)#sym.bar.v#h(5pt) #fa(0xf08c) #link("https://linkedin.com/in/{{ linkedin }}")[{{ linkedin }}]{% endif %}{% if github %} #h(5pt)#sym.bar.v#h(5pt) #fa(0xf09b) #link("https://github.com/{{ github }}")[{{ github }}]{% endif %}{% if homepage %} #h(5pt)#sym.bar.v#h(5pt) #fa(0xf0ac) #link("https://{{ homepage }}")[{{ homepage }}]{% endif %}
+    {% if email %}#fa(0xf0e0) #link("mailto:{{ email }}")[{{ email | typst_escape }}]{% endif %}{% if phone %} #h(5pt)#sym.bar.v#h(5pt) #fa(0xf095) {{ phone | typst_escape }}{% endif %}{% if linkedin %} #h(5pt)#sym.bar.v#h(5pt) #fa(0xf08c) #link("https://www.linkedin.com/in/{{ linkedin }}")[{{ linkedin | typst_escape }}]{% endif %}{% if github %} #h(5pt)#sym.bar.v#h(5pt) #fa(0xf09b) #link("https://github.com/{{ github }}")[{{ github | typst_escape }}]{% endif %}{% if homepage %} #h(5pt)#sym.bar.v#h(5pt) #fa(0xf0ac) #link("https://{{ homepage }}")[{{ homepage | typst_escape }}]{% endif %}{% if location %} #h(5pt)#sym.bar.v#h(5pt) {{ location | typst_escape }}{% endif %}
   ]
 ]
 
@@ -105,14 +105,15 @@
 
 {% if skills %}
 #section("Technical Skills")
-{% set all_skill_rows = skills | list %}
 {% if skills is iterable and skills | first is mapping %}
-#grid(columns: (1fr, 1fr), row-gutter: 5pt,
+#grid(columns: (auto, 1fr), column-gutter: 5pt, row-gutter: 2.5pt,
 {% for cat in skills %}
-  [#text(weight: "bold", size: 8.5pt)[{{ cat.category }}:] #text(size: 8.5pt, fill: gray)[{{ cat['items'] | join(", ") | typst_escape }}]]{% if not loop.last or certifications %},{% endif %}
+  [#text(weight: "bold", size: 8.5pt)[{{ cat.category | typst_escape }}:]],
+  [#text(size: 8.5pt, fill: gray)[{{ cat['items'] | join(", ") | typst_escape }}]]{% if not loop.last or certifications %},{% endif %}
 {% endfor %}
 {% if certifications %}
-  [#text(weight: "bold", size: 8.5pt)[Certifications:] #text(size: 8.5pt, fill: gray)[{% for cert in certifications %}{% if cert is mapping %}{% if cert.url %}#link("{{ cert.url }}")[{{ cert.name | typst_escape }}]{% else %}{{ cert.name | typst_escape }}{% endif %}{% else %}{{ cert | typst_escape }}{% endif %}{% if not loop.last %}  ·  {% endif %}{% endfor %}]]
+  [#text(weight: "bold", size: 8.5pt)[Certifications:]],
+  [#text(size: 8.5pt, fill: gray)[{% for cert in certifications %}{% if cert is mapping %}{% if cert.url %}#link("{{ cert.url }}")[{{ cert.name | typst_escape }}]{% else %}{{ cert.name | typst_escape }}{% endif %}{% else %}{{ cert | typst_escape }}{% endif %}{% if not loop.last %}  ·  {% endif %}{% endfor %}]]
 {% endif %}
 )
 {% else %}

@@ -1,10 +1,23 @@
 import pytest
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from api.models import ArchivalQueue, JobRaw, JobResult, Run, User
 
 
 @pytest.fixture
 async def auth_token(client):
     await client.post("/api/auth/register", json={"email": "jobuser@test.com", "password": "password123"})
     r = await client.post("/api/auth/login", json={"email": "jobuser@test.com", "password": "password123"})
+    return r.json()["access_token"]
+
+
+@pytest.fixture
+async def admin_token(client, db: AsyncSession):
+    await client.post("/api/auth/register", json={"email": "jobadmin@test.com", "password": "password123"})
+    await db.execute(update(User).where(User.email == "jobadmin@test.com").values(is_admin=True))
+    await db.commit()
+    r = await client.post("/api/auth/login", json={"email": "jobadmin@test.com", "password": "password123"})
     return r.json()["access_token"]
 
 
@@ -38,3 +51,48 @@ async def test_get_job_not_found(client, auth_token):
         headers={"Authorization": f"Bearer {auth_token}"},
     )
     assert r.status_code == 404
+
+
+async def test_archive_unsuitable_requires_admin(client, auth_token):
+    response = await client.post(
+        "/api/jobs/archive-unsuitable",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 403
+
+
+async def test_archive_unsuitable_admin_queues_background_tasks(client, admin_token, db: AsyncSession):
+    me = await client.get("/api/profile", headers={"Authorization": f"Bearer {admin_token}"})
+    user_id = me.json()["user_id"]
+
+    run = Run(user_id=user_id, status="success")
+    job = JobRaw(
+        job_url="https://example.com/jobs/archivable",
+        title="Senior Engineer",
+        company="Example Corp",
+        description="Role",
+        location="Remote",
+        site="manual",
+    )
+    db.add_all([run, job])
+    await db.flush()
+    db.add(
+        JobResult(
+            run_id=run.id,
+            user_id=user_id,
+            job_id=job.id,
+            final_score=82.0,
+            company_tier="tier_s",
+        )
+    )
+    await db.commit()
+
+    response = await client.post(
+        "/api/jobs/archive-unsuitable",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert response.status_code == 200
+    assert response.json()["queued"] == 1
+
+    queued = (await db.execute(select(ArchivalQueue))).scalars().all()
+    assert len(queued) == 1

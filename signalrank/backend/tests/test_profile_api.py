@@ -17,22 +17,23 @@ async def test_get_profile_contains_nested_and_flat_fields(client, auth_token):
     # Top-level identity fields
     assert "user_id" in data
     assert "email" in data
+    assert "is_admin" in data
 
     # Nested profile object
     assert "profile" in data
     nested = data["profile"]
-    for field in ("onboarding_complete", "role_intent", "min_salary"):
+    for field in ("onboarding_complete", "role_intent", "min_salary", "resume_template"):
         assert field in nested, f"Missing nested field: {field}"
 
     # Root-level convenience copy of profile fields
-    for field in ("onboarding_complete", "role_intent", "min_salary"):
+    for field in ("onboarding_complete", "role_intent", "min_salary", "resume_template"):
         assert field in data, f"Missing root field: {field}"
 
 
 async def test_update_profile_persists(client, auth_token):
     r = await client.patch(
         "/api/profile",
-        json={"role_intent": "ml_engineer", "min_salary": 120000},
+        json={"role_intent": "ml_engineer", "min_salary": 120000, "config_overrides": {"resume": {"template": "modern"}}},
         headers={"Authorization": f"Bearer {auth_token}"},
     )
     assert r.status_code == 200
@@ -41,9 +42,11 @@ async def test_update_profile_persists(client, auth_token):
     data = r.json()
     assert data["role_intent"] == "ml_engineer"
     assert data["min_salary"] == 120000
+    assert data["resume_template"] == "modern"
     # Should be consistent between root and nested
     assert data["profile"]["role_intent"] == data["role_intent"]
     assert data["profile"]["min_salary"] == data["min_salary"]
+    assert data["profile"]["resume_template"] == data["resume_template"]
 
 
 async def test_profile_options_exposes_shared_taxonomy(client, auth_token):

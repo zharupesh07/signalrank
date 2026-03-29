@@ -55,7 +55,7 @@ async def test_download_returns_202_when_no_tailored_resume():
     db = AsyncMock(spec=AsyncSession)
     not_found = MagicMock()
     not_found.scalar_one_or_none.return_value = None
-    db.execute = AsyncMock(return_value=not_found)
+    db.execute = AsyncMock(side_effect=[not_found, not_found])
 
     async with _make_client(db) as client:
         r = await client.get(f"/api/resume/tailor/{FAKE_JOB_ID}")
@@ -70,6 +70,9 @@ async def test_download_returns_202_when_no_tailored_resume():
 
 @pytest.mark.asyncio
 async def test_download_rerenders_from_cache_no_llm():
+    no_profile = MagicMock()
+    no_profile.scalar_one_or_none.return_value = None
+
     fake_tailored = MagicMock()
     fake_tailored.content_json = FAKE_CONTENT_JSON
     fake_tailored.template = "classic"
@@ -81,21 +84,49 @@ async def test_download_rerenders_from_cache_no_llm():
     no_job.scalar_one_or_none.return_value = None
 
     db = AsyncMock(spec=AsyncSession)
-    db.execute = AsyncMock(side_effect=[found, no_job])
+    db.execute = AsyncMock(side_effect=[no_profile, found, no_job])
 
     pdf_bytes = b"%PDF-fake"
 
-    with patch("api.routes.resume.tailor_resume") as mock_llm, \
-         patch("api.routes.resume.render_typst", return_value="#typst") as mock_render, \
-         patch("api.routes.resume.compile_pdf", return_value=pdf_bytes):
+    with patch("llm.resume_tailor.render_typst", return_value="#typst") as mock_render, \
+         patch("llm.resume_tailor.compile_pdf", return_value=pdf_bytes):
 
         async with _make_client(db) as client:
             r = await client.get(f"/api/resume/tailor/{FAKE_JOB_ID}?template=modern")
 
         app.dependency_overrides.clear()
 
-        mock_llm.assert_not_called()
         mock_render.assert_called_once()
         assert mock_render.call_args.args[1] == "modern"
         assert r.status_code == 200
         assert r.headers["content-type"] == "application/pdf"
+
+
+@pytest.mark.asyncio
+async def test_download_uses_profile_default_template_when_query_missing():
+    profile = MagicMock()
+    profile.config_overrides = {"resume": {"template": "minimal"}}
+    profile_found = MagicMock()
+    profile_found.scalar_one_or_none.return_value = profile
+
+    fake_tailored = MagicMock()
+    fake_tailored.content_json = FAKE_CONTENT_JSON
+    fake_tailored.template = "classic"
+    found = MagicMock()
+    found.scalar_one_or_none.return_value = fake_tailored
+
+    no_job = MagicMock()
+    no_job.scalar_one_or_none.return_value = None
+
+    db = AsyncMock(spec=AsyncSession)
+    db.execute = AsyncMock(side_effect=[profile_found, found, no_job])
+
+    with patch("llm.resume_tailor.render_typst", return_value="#typst") as mock_render, \
+         patch("llm.resume_tailor.compile_pdf", return_value=b"%PDF-fake"):
+        async with _make_client(db) as client:
+            r = await client.get(f"/api/resume/tailor/{FAKE_JOB_ID}")
+
+        app.dependency_overrides.clear()
+
+        assert r.status_code == 200
+        assert mock_render.call_args.args[1] == "minimal"

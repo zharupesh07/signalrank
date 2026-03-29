@@ -190,6 +190,7 @@ function toggleItem<T>(arr: T[], item: T): T[] {
 export default function JobsPage() {
   const { data: session } = useSession();
   const token = (session as { accessToken?: string })?.accessToken ?? "";
+  const isAdmin = Boolean((session as { isAdmin?: boolean })?.isAdmin);
   const { toast } = useToast();
 
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -298,6 +299,7 @@ export default function JobsPage() {
   }, [token, toast]);
 
   async function triggerArchive() {
+    if (!isAdmin) return;
     setArchiving(true);
     try {
       const res = await api.jobs.archiveUnsuitable(token);
@@ -311,6 +313,7 @@ export default function JobsPage() {
   }
 
   const pollArchiveStatus = useCallback(() => {
+    if (!isAdmin) return;
     let delay = 5000;
     const MAX_DELAY = 60000;
     const timeoutRef = { current: undefined as ReturnType<typeof setTimeout> | undefined };
@@ -334,15 +337,18 @@ export default function JobsPage() {
     }
 
     schedule();
-  }, [token, loadJobs]);
+  }, [isAdmin, token, loadJobs]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || !isAdmin) {
+      setArchiveStatus(null);
+      return;
+    }
     api.jobs.archiveStatus(token).then((s) => {
       setArchiveStatus(s);
       if (s.pending > 0 || s.running > 0) pollArchiveStatus();
     }).catch(() => null);
-  }, [token, pollArchiveStatus]);
+  }, [token, isAdmin, pollArchiveStatus]);
 
   const totalPages = Math.ceil(total / pageSize) || 1;
   const activeFilterCount = countActiveFilters(filters);
@@ -394,17 +400,20 @@ export default function JobsPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={triggerArchive}
-              disabled={archiving || (archiveStatus !== null && (archiveStatus.pending > 0 || archiveStatus.running > 0))}
-              className="flex items-center gap-1.5 text-[11px] border border-border px-3 py-2 hover:border-primary hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-wider"
-            >
-              {archiving || (archiveStatus && (archiveStatus.pending > 0 || archiveStatus.running > 0)) ? (
-                <><Loader2 size={11} className="animate-spin" />archiving {archiveStatus ? `${archiveStatus.done}/${archiveStatus.total}` : ""}</>
-              ) : (
-                <><Archive size={11} />archive unsuitable</>
-              )}
-            </button>
+            {isAdmin && (
+              <button
+                onClick={triggerArchive}
+                disabled={archiving || (archiveStatus !== null && (archiveStatus.pending > 0 || archiveStatus.running > 0))}
+                className="flex items-center gap-1.5 text-[11px] border border-border px-3 py-2 hover:border-primary hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-wider"
+                title="Queue archival evaluation in the background for the current successful run"
+              >
+                {archiving || (archiveStatus && (archiveStatus.pending > 0 || archiveStatus.running > 0)) ? (
+                  <><Loader2 size={11} className="animate-spin" />archiving {archiveStatus ? `${archiveStatus.done}/${archiveStatus.total}` : ""}</>
+                ) : (
+                  <><Archive size={11} />manual archive run</>
+                )}
+              </button>
+            )}
           </div>
           <div className="flex items-center border border-border bg-input focus-within:border-primary transition-colors w-64">
             <Search size={11} className="text-muted-foreground ml-3 shrink-0" />

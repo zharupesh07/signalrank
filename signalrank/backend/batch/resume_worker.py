@@ -20,6 +20,16 @@ MAX_TASK_RETRIES = 3   # retry failed tasks up to this many times
 POLL_INTERVAL = 5      # seconds between queue polls
 
 
+def _preferred_resume_template(profile: Profile | None) -> str:
+    if profile and isinstance(profile.config_overrides, dict):
+        resume_cfg = profile.config_overrides.get("resume")
+        if isinstance(resume_cfg, dict):
+            template = resume_cfg.get("template")
+            if template in {"classic", "modern", "minimal"}:
+                return template
+    return "classic"
+
+
 async def process_generation_task(
     task: GenerationQueue,
     db: AsyncSession,
@@ -54,6 +64,7 @@ async def process_generation_task(
         )
         await db.commit()
         return
+    selected_template = _preferred_resume_template(profile)
 
     job_res = await db.execute(select(JobRaw).where(JobRaw.id == task.job_id))
     job = job_res.scalar_one_or_none()
@@ -67,14 +78,15 @@ async def process_generation_task(
         return
 
     try:
-        if existing and existing.pdf_bytes:
+        if existing and existing.email_body and existing.pdf_bytes and (existing.template or "classic") == selected_template:
             tailored = existing
-        elif existing and existing.content_json and not existing.pdf_bytes:
-            # content already generated but PDF missing — recompile from existing JSON
+        elif existing and existing.content_json:
+            # content already generated but PDF missing or stale template — recompile from cached JSON
             from llm.resume_tailor import TailoredContent
             content_obj = TailoredContent(**existing.content_json)
-            typst_src = render_typst(content_obj, "classic")
+            typst_src = render_typst(content_obj, selected_template)
             existing.pdf_bytes = compile_pdf(typst_src)
+            existing.template = selected_template
             tailored = existing
         else:
             content = await tailor_resume(
@@ -92,11 +104,11 @@ async def process_generation_task(
                 "experiences": content.experiences, "education": content.education,
                 "projects": content.projects, "certifications": content.certifications,
             }
-            typst_src = render_typst(content, "classic")
+            typst_src = render_typst(content, selected_template)
             pdf = compile_pdf(typst_src)
             if existing:
                 existing.content_json = content_dict
-                existing.template = "classic"
+                existing.template = selected_template
                 existing.pdf_bytes = pdf
                 tailored = existing
             else:
@@ -104,7 +116,7 @@ async def process_generation_task(
                     user_id=task.user_id,
                     job_id=task.job_id,
                     content_json=content_dict,
-                    template="classic",
+                    template=selected_template,
                     pdf_bytes=pdf,
                 )
                 db.add(tailored)

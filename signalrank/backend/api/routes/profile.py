@@ -25,6 +25,16 @@ def _deep_merge_dict(base: dict | None, incoming: dict | None) -> dict | None:
     return merged
 
 
+def _profile_resume_template(profile: Profile | None) -> str | None:
+    if not profile or not isinstance(profile.config_overrides, dict):
+        return None
+    resume_cfg = profile.config_overrides.get("resume")
+    if not isinstance(resume_cfg, dict):
+        return None
+    template = resume_cfg.get("template")
+    return template if isinstance(template, str) else None
+
+
 class ProfileUpdate(BaseModel):
     resume_text: str | None = None
     distilled_text: str | None = None
@@ -58,6 +68,7 @@ async def get_profile(current_user: User = Depends(get_current_user), db: AsyncS
         "preferred_locations": p.preferred_locations if p else None,
         "custom_search_queries": p.custom_search_queries if p else None,
         "config_overrides": p.config_overrides if p else None,
+        "resume_template": _profile_resume_template(p),
         "scraper_hours_old": p.scraper_hours_old if p else None,
         "scraper_max_terms": p.scraper_max_terms if p else None,
         "onboarding_complete": p.onboarding_complete if p else False,
@@ -66,6 +77,7 @@ async def get_profile(current_user: User = Depends(get_current_user), db: AsyncS
     return {
         "user_id": current_user.id,
         "email": current_user.email,
+        "is_admin": current_user.is_admin,
         "profile": profile_data,
         **profile_data,
     }

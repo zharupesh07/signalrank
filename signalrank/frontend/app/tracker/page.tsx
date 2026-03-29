@@ -61,8 +61,24 @@ function scoreColor(score: number) {
 }
 
 function buildSignature(name: string | null | undefined, email: string | null | undefined) {
-  const displayName = name || email || "";
-  return displayName ? `\n\n--\n${displayName}` : "";
+  const parts = [name?.trim(), email?.trim()].filter(Boolean);
+  return parts.length ? `\n\n--\n${parts.join("\n")}` : "";
+}
+
+function extractResumeIdentityFromResumeText(resumeText: string | null | undefined): { name: string | null; email: string | null } {
+  if (!resumeText) return { name: null, email: null };
+  const lines = resumeText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const name = lines.find((line) => {
+    if (line.includes("@")) return false;
+    if (/\d/.test(line)) return false;
+    const words = line.split(/\s+/);
+    return words.length >= 2 && words.length <= 5 && words.every((word) => /^[A-Za-z][A-Za-z'.-]*$/.test(word));
+  });
+  const email = lines.find((line) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(line)) ?? null;
+  return { name: name ?? null, email };
 }
 
 function isValidEmail(email: string): boolean {
@@ -116,7 +132,7 @@ export default function TrackerPage() {
   const { data: session } = useSession();
   const token = (session as { accessToken?: string })?.accessToken ?? "";
   const { toast } = useToast();
-  const MY_SIGNATURE = buildSignature(session?.user?.name, session?.user?.email);
+  const [mySignature, setMySignature] = useState("");
 
   const [applications, setApplications] = useState<Application[]>([]);
   const [stats, setStats] = useState<TrackerStats | null>(null);
@@ -159,6 +175,22 @@ export default function TrackerPage() {
       swr("tracker:apps", () => api.applications.list(token), setApplications),
       swr("tracker:stats", () => api.applications.stats(token), setStats),
     ]);
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      setMySignature("");
+      return;
+    }
+
+    api.profile.get(token)
+      .then((profile) => {
+        const identity = extractResumeIdentityFromResumeText(profile.resume_text);
+        setMySignature(buildSignature(identity?.name, identity?.email));
+      })
+      .catch(() => {
+        setMySignature("");
+      });
   }, [token]);
 
   useEffect(() => {
@@ -244,7 +276,7 @@ export default function TrackerPage() {
     const emails = recs.filter((r: { email: string }) => isValidEmail(r.email)).map((r: { email: string }) => r.email);
     if (!emails.length) { toast("No emails found for this company", "info"); return; }
     const to = emails.join(",");
-    const { subject, body } = emailTemplate(app, recs[0]?.name ?? "Recruiter", MY_SIGNATURE);
+    const { subject, body } = emailTemplate(app, recs[0]?.name ?? "Recruiter", mySignature);
     window.open(gmailComposeUrl(to, subject, body), "_blank");
   }
 
@@ -278,10 +310,10 @@ export default function TrackerPage() {
 
       if (email.body) {
         const recEmails = recs.filter((r: { email: string }) => isValidEmail(r.email)).map((r: { email: string }) => r.email);
-        const to = recEmails.length ? recEmails[0] : (app.recruiter?.email && isValidEmail(app.recruiter.email) ? app.recruiter.email : "");
-        // Only show Gmail button if we have a real recipient
-        if (to) {
-          setGmailLinks((prev) => new Map(prev).set(app.id, gmailComposeUrl(to, email.subject, email.body + MY_SIGNATURE)));
+          const to = recEmails.length ? recEmails[0] : (app.recruiter?.email && isValidEmail(app.recruiter.email) ? app.recruiter.email : "");
+          // Only show Gmail button if we have a real recipient
+          if (to) {
+          setGmailLinks((prev) => new Map(prev).set(app.id, gmailComposeUrl(to, email.subject, email.body + mySignature)));
         }
       }
 
@@ -654,8 +686,8 @@ export default function TrackerPage() {
                             <a
                               href={gmailLinks.get(app.id) ?? gmailComposeUrl(
                                 app.recruiter.email,
-                                emailTemplate(app, app.recruiter.name ?? "Recruiter", MY_SIGNATURE).subject,
-                                emailTemplate(app, app.recruiter.name ?? "Recruiter", MY_SIGNATURE).body,
+                                emailTemplate(app, app.recruiter.name ?? "Recruiter", mySignature).subject,
+                                emailTemplate(app, app.recruiter.name ?? "Recruiter", mySignature).body,
                               )}
                               target="_blank"
                               rel="noreferrer"
@@ -786,7 +818,7 @@ export default function TrackerPage() {
                         </button>
                         <button
                           onClick={() => {
-                            const { subject, body } = emailTemplate(app, app.recruiter?.name ?? "Recruiter", MY_SIGNATURE);
+                            const { subject, body } = emailTemplate(app, app.recruiter?.name ?? "Recruiter", mySignature);
                             const llmLink = gmailLinks.get(app.id);
                             const text = llmLink
                               ? llmLink
