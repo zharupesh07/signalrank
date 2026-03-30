@@ -324,11 +324,12 @@ export const api = {
   },
 
   dev: {
-    getDb: () =>
-      request<{ target: string; railway_available: boolean; db_host: string }>("/api/dev/db"),
-    switchDb: (target: string) =>
+    getDb: (token: string) =>
+      request<{ target: string; railway_available: boolean; db_host: string }>("/api/dev/db", { token }),
+    switchDb: (token: string, target: string) =>
       request<{ target: string; railway_available: boolean; db_host: string }>("/api/dev/db/switch", {
         method: "POST",
+        token,
         body: JSON.stringify({ target }),
       }),
   },

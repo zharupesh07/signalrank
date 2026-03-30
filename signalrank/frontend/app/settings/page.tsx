@@ -235,6 +235,8 @@ function MetaListCard({
 export default function SettingsPage() {
   const { data: session } = useSession();
   const token = (session as { accessToken?: string })?.accessToken ?? "";
+  const isAdmin = (session as { isAdmin?: boolean })?.isAdmin ?? false;
+  const isDev = process.env.NODE_ENV === "development" && isAdmin;
   const { toast } = useToast();
 
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -468,7 +470,7 @@ export default function SettingsPage() {
 
   async function loadDbInfo() {
     try {
-      const info = await api.dev.getDb();
+      const info = await api.dev.getDb(token);
       setDbInfo(info);
     } catch {
       // Not in dev mode or endpoint unavailable
@@ -478,7 +480,7 @@ export default function SettingsPage() {
   async function handleSwitchDb(target: string) {
     setSwitchingDb(true);
     try {
-      const info = await api.dev.switchDb(target);
+      const info = await api.dev.switchDb(token, target);
       setDbInfo(info);
       toast(`Switched to ${target} DB (${info.db_host})`, "success");
     } catch (e) {
@@ -527,7 +529,7 @@ export default function SettingsPage() {
   }
 
   useEffect(() => {
-    if (activeSection === "developer" && process.env.NODE_ENV === "development") {
+    if (activeSection === "developer" && isDev) {
       loadDbInfo();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -542,7 +544,7 @@ export default function SettingsPage() {
     { id: "resume", label: "Resume", icon: FileText },
     { id: "search", label: "Search", icon: Target },
     { id: "recruiters", label: "Recruiters", icon: Briefcase },
-    ...(process.env.NODE_ENV === "development"
+    ...(isDev
       ? [{ id: "developer" as SettingsSection, label: "Developer", icon: Database }]
       : []),
   ];
@@ -711,6 +713,7 @@ export default function SettingsPage() {
                     type="file"
                     accept=".pdf,.doc,.docx,.txt"
                     className="hidden"
+                    suppressHydrationWarning
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) handleResumeUpload(file);
@@ -1335,7 +1338,7 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {activeSection === "developer" && process.env.NODE_ENV === "development" && (
+            {activeSection === "developer" && isDev && (
               <div className="space-y-4">
                 <div className="stat-card border border-border bg-card p-5 space-y-4">
                   <div className="flex items-center gap-2">
