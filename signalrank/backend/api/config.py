@@ -15,8 +15,8 @@ class Settings(BaseSettings):
     allowed_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
     openrouter_api_key: str = ""
     hunter_api_key: str = ""
-    db_pool_size: int = 5
-    db_max_overflow: int = 5
+    db_pool_size: int = 2
+    db_max_overflow: int = 2
     db_pool_timeout: int = 30
     resume_worker_concurrency: int = 1
     archival_worker_concurrency: int = 1
