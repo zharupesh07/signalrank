@@ -13,13 +13,14 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 from sqlalchemy import text
+from sqlalchemy.exc import TimeoutError as SATimeoutError
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
 
 from api.config import api_runtime_flags, settings
 from api.database import AsyncSessionLocal, _parse_url, ensure_runtime_schema_compatibility
 from api.deps_llm import get_llm_client
-from api.routes import admin, applications, auth, ingest, jobs, onboarding, profile, recruiters, resume, runs
+from api.routes import admin, applications, auth, dev, ingest, jobs, onboarding, profile, recruiters, resume, runs
 
 # --- Structured JSON logging ---
 _handler = logging.StreamHandler()
@@ -168,6 +169,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(admin.router)
+app.include_router(dev.router)
 app.include_router(profile.router)
 app.include_router(runs.router)
 app.include_router(jobs.router)
@@ -184,6 +186,16 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"detail": "Internal server error"},
+    )
+
+
+@app.exception_handler(SATimeoutError)
+async def db_timeout_exception_handler(request: Request, exc: SATimeoutError) -> JSONResponse:
+    logger.warning("Database pool timeout on %s %s: %s", request.method, request.url.path, exc)
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"detail": "Database busy, retry shortly"},
+        headers={"Retry-After": "2"},
     )
 
 

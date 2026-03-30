@@ -21,18 +21,34 @@ def _parse_url(url: str) -> tuple[str, dict]:
     return clean, connect_args
 
 
-_db_url, _connect_args = _parse_url(settings.database_url)
-engine = create_async_engine(
-    _db_url,
-    echo=False,
-    connect_args=_connect_args,
-    pool_size=settings.db_pool_size,
-    max_overflow=settings.db_max_overflow,
-    pool_timeout=settings.db_pool_timeout,
-    pool_pre_ping=True,
-    pool_use_lifo=True,
-)
-AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+def _url_host(url: str) -> str:
+    """Extract host:port from a DB URL for display purposes."""
+    m = re.search(r"@([^/?]+)", url)
+    return m.group(1) if m else "unknown"
+
+
+def _build_engine(url: str):
+    clean_url, connect_args = _parse_url(url)
+    eng = create_async_engine(
+        clean_url,
+        echo=False,
+        connect_args=connect_args,
+        pool_size=settings.db_pool_size,
+        max_overflow=settings.db_max_overflow,
+        pool_timeout=settings.db_pool_timeout,
+        pool_pre_ping=True,
+        pool_use_lifo=True,
+    )
+    factory = async_sessionmaker(eng, expire_on_commit=False)
+    return eng, factory
+
+
+engine, AsyncSessionLocal = _build_engine(settings.database_url)
+
+# Active engine/factory — swappable at runtime (dev only)
+_active_engine = engine
+_active_session_factory = AsyncSessionLocal
+_db_target: str = "local"
 _schema_compat_checked = False
 _schema_compat_lock = asyncio.Lock()
 
@@ -42,13 +58,46 @@ class Base(DeclarativeBase):
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    async with AsyncSessionLocal() as session:
+    async with _active_session_factory() as session:
         await ensure_session_schema_compatibility(session)
         yield session
 
 
+async def switch_database(target: str) -> None:
+    global _active_engine, _active_session_factory, _db_target, _schema_compat_checked
+
+    if target == "railway":
+        if not settings.database_url_railway:
+            raise ValueError("DATABASE_URL_RAILWAY is not configured")
+        url = settings.database_url_railway
+    else:
+        url = settings.database_url
+
+    new_engine, new_factory = _build_engine(url)
+    async with new_engine.connect() as conn:
+        await conn.execute(text("SELECT 1"))
+
+    old_engine = _active_engine
+    _active_engine = new_engine
+    _active_session_factory = new_factory
+    _db_target = target
+    _schema_compat_checked = False
+
+    await old_engine.dispose()
+
+
+def get_db_info() -> dict:
+    return {
+        "target": _db_target,
+        "railway_available": bool(settings.database_url_railway),
+        "db_host": _url_host(
+            settings.database_url_railway if _db_target == "railway" else settings.database_url
+        ),
+    }
+
+
 async def ensure_runtime_schema_compatibility(bind=None) -> None:
-    target = bind or engine
+    target = bind or _active_engine
     async with target.begin() as conn:
         await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS error TEXT"))
 

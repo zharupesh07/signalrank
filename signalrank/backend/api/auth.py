@@ -8,7 +8,6 @@ from api.config import settings
 
 logger = logging.getLogger(__name__)
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 4  # 4 hours
 
 
 def _normalize_password(password: str) -> str:
@@ -30,7 +29,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 def create_access_token(user_id: str, email: str, *, is_admin: bool = False) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
     return jwt.encode(
         {"sub": user_id, "email": email, "is_admin": is_admin, "exp": expire},
         settings.nextauth_secret,

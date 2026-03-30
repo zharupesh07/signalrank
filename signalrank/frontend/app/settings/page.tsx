@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import {
   Briefcase,
   CheckCircle,
+  Database,
   Eye,
   FileText,
   Info,
@@ -49,7 +50,7 @@ interface FoundRecruiter {
   confidence: string;
 }
 
-type SettingsSection = "profile" | "resume" | "search" | "recruiters";
+type SettingsSection = "profile" | "resume" | "search" | "recruiters" | "developer";
 
 const EMPTY_RESUME_EDITOR: ResumeEditor = {
   name: "",
@@ -270,6 +271,9 @@ export default function SettingsPage() {
   const [allRecruiters, setAllRecruiters] = useState<RecruiterRow[]>([]);
   const [recruiterCompanyFilter, setRecruiterCompanyFilter] = useState("");
 
+  const [dbInfo, setDbInfo] = useState<{ target: string; railway_available: boolean; db_host: string } | null>(null);
+  const [switchingDb, setSwitchingDb] = useState(false);
+
   const loaded = useRef(false);
   const snapshotRef = useRef("");
   const resumeUploadRef = useRef<HTMLInputElement | null>(null);
@@ -462,6 +466,28 @@ export default function SettingsPage() {
     }
   }
 
+  async function loadDbInfo() {
+    try {
+      const info = await api.dev.getDb();
+      setDbInfo(info);
+    } catch {
+      // Not in dev mode or endpoint unavailable
+    }
+  }
+
+  async function handleSwitchDb(target: string) {
+    setSwitchingDb(true);
+    try {
+      const info = await api.dev.switchDb(target);
+      setDbInfo(info);
+      toast(`Switched to ${target} DB (${info.db_host})`, "success");
+    } catch (e) {
+      toast(`Switch failed: ${e instanceof Error ? e.message : "unknown error"}`, "error");
+    } finally {
+      setSwitchingDb(false);
+    }
+  }
+
   async function triggerDeepScan() {
     if (!token) return;
     setTriggeringDeepScan(true);
@@ -500,6 +526,13 @@ export default function SettingsPage() {
     }
   }
 
+  useEffect(() => {
+    if (activeSection === "developer" && process.env.NODE_ENV === "development") {
+      loadDbInfo();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSection]);
+
   const filteredRecruiters = recruiterCompanyFilter
     ? allRecruiters.filter((r) => r.company?.toLowerCase().includes(recruiterCompanyFilter.toLowerCase()))
     : allRecruiters;
@@ -509,6 +542,9 @@ export default function SettingsPage() {
     { id: "resume", label: "Resume", icon: FileText },
     { id: "search", label: "Search", icon: Target },
     { id: "recruiters", label: "Recruiters", icon: Briefcase },
+    ...(process.env.NODE_ENV === "development"
+      ? [{ id: "developer" as SettingsSection, label: "Developer", icon: Database }]
+      : []),
   ];
 
   return (
@@ -1293,6 +1329,60 @@ export default function SettingsPage() {
                           )}
                         </div>
                       ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeSection === "developer" && process.env.NODE_ENV === "development" && (
+              <div className="space-y-4">
+                <div className="stat-card border border-border bg-card p-5 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Database size={13} className="text-primary" />
+                    <span className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">Database Target</span>
+                  </div>
+                  {dbInfo ? (
+                    <>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-muted-foreground">Active</span>
+                          <span className="text-[11px] font-medium text-foreground capitalize">{dbInfo.target}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-muted-foreground">Host</span>
+                          <span className="text-[11px] font-mono text-foreground truncate max-w-[220px]">{dbInfo.db_host}</span>
+                        </div>
+                        {!dbInfo.railway_available && (
+                          <p className="text-[10px] text-yellow-500 pt-1">DATABASE_URL_RAILWAY not configured</p>
+                        )}
+                      </div>
+                      <div className="flex gap-2 pt-1">
+                        {(["local", "railway"] as const).map((target) => (
+                          <button
+                            key={target}
+                            type="button"
+                            disabled={switchingDb || dbInfo.target === target || (target === "railway" && !dbInfo.railway_available)}
+                            onClick={() => handleSwitchDb(target)}
+                            className="flex items-center gap-1.5 border px-4 py-1.5 text-[11px] uppercase tracking-wider transition-all duration-150 disabled:opacity-40"
+                            style={{
+                              background: dbInfo.target === target ? "var(--primary)" : "transparent",
+                              borderColor: dbInfo.target === target ? "var(--primary)" : "color-mix(in srgb, var(--primary) 40%, transparent)",
+                              color: dbInfo.target === target ? "var(--primary-foreground)" : "var(--primary)",
+                            }}
+                          >
+                            {switchingDb && dbInfo.target !== target ? (
+                              <RefreshCw size={9} className="animate-spin" />
+                            ) : null}
+                            {target}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <RefreshCw size={10} className="animate-spin" />
+                      Loading...
                     </div>
                   )}
                 </div>

@@ -15,8 +15,8 @@ class Settings(BaseSettings):
     allowed_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
     openrouter_api_key: str = ""
     hunter_api_key: str = ""
-    db_pool_size: int = 2
-    db_max_overflow: int = 1
+    db_pool_size: int = 5
+    db_max_overflow: int = 5
     db_pool_timeout: int = 30
     resume_worker_concurrency: int = 1
     archival_worker_concurrency: int = 1
@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     run_archival_worker: bool = True
     run_boot_scan: bool = False
     run_boot_embed: bool = False
+    database_url_railway: str = ""
     rapidapi_key: str = ""
     scraper_max_results: int = 1500
     scraper_hours_old: int = 24
@@ -33,6 +34,7 @@ class Settings(BaseSettings):
     linkedin_max_queries: int = 0
     ranker_max_candidates: int = 2000
     ranker_max_description_chars: int = 1200
+    access_token_expire_minutes: int = 60 * 24 * 7  # 7 days
 
     @field_validator("allowed_origins", mode="before")
     @classmethod

@@ -41,6 +41,10 @@ async function request<T>(
 
   const res = await fetch(`${BASE_URL}${path}`, { ...init, headers });
   if (!res.ok) {
+    if (res.status === 401 && typeof window !== "undefined") {
+      const { signOut } = await import("next-auth/react");
+      signOut({ callbackUrl: "/login" });
+    }
     const detail = await res.text();
     throw new Error(`${res.status}: ${detail}`);
   }
@@ -317,6 +321,16 @@ export const api = {
       request<{ run_id: string; user_email: string; status: string; job_count: number | null; started_at: string | null; finished_at: string | null }[]>("/api/admin/runs", { token }),
     topJobs: (token: string, userId: string) =>
       request<{ job_id: string; title: string | null; company: string | null; location: string | null; final_score: number | null; semantic_score: number | null; skills_score: number | null; job_url: string }[]>(`/api/admin/users/${userId}/top-jobs`, { token }),
+  },
+
+  dev: {
+    getDb: () =>
+      request<{ target: string; railway_available: boolean; db_host: string }>("/api/dev/db"),
+    switchDb: (target: string) =>
+      request<{ target: string; railway_available: boolean; db_host: string }>("/api/dev/db/switch", {
+        method: "POST",
+        body: JSON.stringify({ target }),
+      }),
   },
 
   ingest: {

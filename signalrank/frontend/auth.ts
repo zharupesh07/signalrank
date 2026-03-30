@@ -10,6 +10,9 @@ function decodeJwtPayload(token: string): Record<string, unknown> {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  session: {
+    maxAge: 60 * 60 * 24 * 7, // 7 days — matches backend JWT TTL
+  },
   providers: [
     Credentials({
       credentials: {
