@@ -14,6 +14,7 @@ from llm.resume_tailor import (
     check_page_count,
     load_resume_yaml,
     render_typst,
+    render_and_compile_content,
     resume_yaml_to_text,
     tailor_and_compile,
     validate_resume_artifacts,
@@ -88,6 +89,23 @@ def test_fit_to_one_page_trims_summary():
     sentences = [s.strip() for s in content.summary.split(".") if s.strip()]
     assert len(sentences) <= 2
 
+
+def test_fit_to_one_page_tightens_leading_before_trimming_bullets():
+    content = TailoredContent(
+        summary="Short.",
+        experiences=[
+            {"title": "New", "company": "A", "dates": "2024", "bullets": ["a", "b", "c", "d"]},
+            {"title": "Old", "company": "B", "dates": "2020", "bullets": ["x", "y", "z", "w"]},
+        ],
+    )
+
+    trimmed = _fit_to_one_page(content, current_pages=2)
+
+    assert trimmed is True
+    assert content.par_leading == "0.48em"
+    assert len(content.experiences[1]["bullets"]) == 4
+
+
 def test_certifications_field_default_empty():
     c = TailoredContent()
     assert c.certifications == []
@@ -95,6 +113,8 @@ def test_certifications_field_default_empty():
 def test_fit_to_one_page_trims_bullets():
     content = TailoredContent(
         summary="Short.",
+        par_leading="0.48em",
+        list_spacing="0.25em",
         experiences=[
             {"title": "New", "company": "A", "dates": "2024", "bullets": ["a", "b", "c", "d"]},
             {"title": "Old", "company": "B", "dates": "2020", "bullets": ["x", "y", "z", "w"]},
@@ -107,6 +127,8 @@ def test_fit_to_one_page_trims_bullets():
 def test_fit_to_one_page_stops_at_floor():
     content = TailoredContent(
         summary="Short.",
+        par_leading="0.48em",
+        list_spacing="0.25em",
         experiences=[{"title": "X", "company": "Y", "dates": "2024", "bullets": ["a", "b"]}],
     )
     result = _fit_to_one_page(content, current_pages=2)
@@ -117,6 +139,8 @@ def test_fit_to_one_page_trims_oldest_role_first():
     """Oldest role (last in list) should lose bullets before newer roles."""
     content = TailoredContent(
         summary="Short summary.",
+        par_leading="0.48em",
+        list_spacing="0.25em",
         experiences=[
             {"title": "New Role", "company": "A", "dates": "2024", "bullets": ["a", "b", "c", "d", "e"]},
             {"title": "Old Role", "company": "B", "dates": "2020", "bullets": ["x", "y", "z", "w"]},
@@ -132,12 +156,50 @@ def test_fit_to_one_page_protects_newest_role():
     """Newest role (index 0) must keep at least 3 bullets."""
     content = TailoredContent(
         summary="Short.",
+        par_leading="0.48em",
+        list_spacing="0.25em",
         experiences=[
             {"title": "New", "company": "A", "dates": "2024", "bullets": ["a", "b", "c"]},
         ],
     )
     trimmed = _fit_to_one_page(content, current_pages=2)
     assert len(content.experiences[0]["bullets"]) == 3  # floor respected
+
+
+def test_fit_to_one_page_tightens_list_spacing_before_trimming_bullets():
+    content = TailoredContent(
+        summary="Short.",
+        par_leading="0.48em",
+        experiences=[
+            {"title": "New", "company": "A", "dates": "2024", "bullets": ["a", "b", "c", "d"]},
+            {"title": "Old", "company": "B", "dates": "2020", "bullets": ["x", "y", "z", "w"]},
+        ],
+    )
+
+    trimmed = _fit_to_one_page(content, current_pages=2)
+
+    assert trimmed is True
+    assert content.list_spacing == "0.25em"
+    assert len(content.experiences[1]["bullets"]) == 4
+
+
+def test_fit_to_one_page_drops_oldest_role_as_last_resort():
+    content = TailoredContent(
+        summary="Short.",
+        par_leading="0.48em",
+        list_spacing="0.25em",
+        experiences=[
+            {"title": "Newest", "company": "A", "dates": "2024", "bullets": ["a", "b", "c"]},
+            {"title": "Middle", "company": "B", "dates": "2022", "bullets": ["d", "e"]},
+            {"title": "Older", "company": "C", "dates": "2020", "bullets": ["f", "g"]},
+            {"title": "Oldest", "company": "D", "dates": "2018", "bullets": ["h", "i"]},
+        ],
+    )
+
+    trimmed = _fit_to_one_page(content, current_pages=2)
+
+    assert trimmed is True
+    assert [exp["title"] for exp in content.experiences] == ["Newest", "Middle", "Older"]
 
 
 def test_check_page_count_single_page():
@@ -177,6 +239,24 @@ def test_render_typst_runs():
     src = render_typst(content)
     assert "Test" in src and "User" in src
     assert "Engineer" in src
+
+
+def test_render_and_compile_content_fits_to_one_page():
+    content = TailoredContent(
+        summary="Long summary. Another sentence. Third sentence. Fourth sentence.",
+        experiences=[{"title": "Engineer", "company": "Acme", "dates": "2024", "bullets": ["a", "b", "c", "d"]}],
+    )
+
+    with patch("llm.resume_tailor.render_typst", side_effect=["#typst-1", "#typst-2"]) as mock_render, \
+         patch("llm.resume_tailor.compile_pdf", side_effect=[b"%PDF-two-pages", b"%PDF-one-page"]) as mock_compile, \
+         patch("llm.resume_tailor.check_page_count", side_effect=[2, 1]):
+        typst_src, pdf = render_and_compile_content(content, template="minimal")
+
+    assert typst_src == "#typst-2"
+    assert pdf == b"%PDF-one-page"
+    assert mock_render.call_count == 2
+    assert mock_compile.call_count == 2
+    assert content.summary == "Long summary. Another sentence."
 
 
 def test_normalize_tailored_content_normalizes_handles_and_homepage():
@@ -220,6 +300,26 @@ def test_normalize_tailored_content_dedupes_skills_projects_and_certifications()
     ]
     assert len(normalized.projects) == 1
     assert len(normalized.certifications) == 2
+
+
+def test_normalize_tailored_content_cleans_bullets():
+    content = TailoredContent(
+        experiences=[
+            {
+                "title": "Engineer",
+                "company": "Acme",
+                "dates": "2024",
+                "bullets": ["  built   workflows\nacross teams  ", "improved deploys for300 users"],
+            }
+        ],
+    )
+
+    normalized = _normalize_tailored_content(content)
+
+    assert normalized.experiences[0]["bullets"] == [
+        "Built workflows across teams",
+        "Improved deploys for 300 users",
+    ]
 
 
 def test_render_and_validate_resume_artifacts_for_special_chars_and_links():

@@ -88,16 +88,15 @@ async def test_download_rerenders_from_cache_no_llm():
 
     pdf_bytes = b"%PDF-fake"
 
-    with patch("llm.resume_tailor.render_typst", return_value="#typst") as mock_render, \
-         patch("llm.resume_tailor.compile_pdf", return_value=pdf_bytes):
+    with patch("llm.resume_tailor.render_and_compile_content", return_value=("#typst", pdf_bytes)) as mock_render_compile:
 
         async with _make_client(db) as client:
             r = await client.get(f"/api/resume/tailor/{FAKE_JOB_ID}?template=modern")
 
         app.dependency_overrides.clear()
 
-        mock_render.assert_called_once()
-        assert mock_render.call_args.args[1] == "modern"
+        mock_render_compile.assert_called_once()
+        assert mock_render_compile.call_args.args[1] == "modern"
         assert r.status_code == 200
         assert r.headers["content-type"] == "application/pdf"
 
@@ -121,15 +120,14 @@ async def test_download_uses_profile_default_template_when_query_missing():
     db = AsyncMock(spec=AsyncSession)
     db.execute = AsyncMock(side_effect=[profile_found, found, no_job])
 
-    with patch("llm.resume_tailor.render_typst", return_value="#typst") as mock_render, \
-         patch("llm.resume_tailor.compile_pdf", return_value=b"%PDF-fake"):
+    with patch("llm.resume_tailor.render_and_compile_content", return_value=("#typst", b"%PDF-fake")) as mock_render_compile:
         async with _make_client(db) as client:
             r = await client.get(f"/api/resume/tailor/{FAKE_JOB_ID}")
 
         app.dependency_overrides.clear()
 
         assert r.status_code == 200
-        assert mock_render.call_args.args[1] == "minimal"
+        assert mock_render_compile.call_args.args[1] == "minimal"
 
 
 @pytest.mark.asyncio
@@ -143,8 +141,7 @@ async def test_preview_renders_pdf_from_supplied_resume_editor():
     db = AsyncMock(spec=AsyncSession)
     db.execute = AsyncMock(side_effect=[profile_found])
 
-    with patch("llm.resume_tailor.render_typst", return_value="#typst") as mock_render, \
-         patch("llm.resume_tailor.compile_pdf", return_value=b"%PDF-preview"):
+    with patch("llm.resume_tailor.render_and_compile_content", return_value=("#typst", b"%PDF-preview")) as mock_render_compile:
         async with _make_client(db) as client:
             r = await client.post(
                 "/api/resume/preview",
@@ -174,9 +171,51 @@ async def test_preview_renders_pdf_from_supplied_resume_editor():
 
         assert r.status_code == 200
         assert r.headers["content-type"] == "application/pdf"
-        assert mock_render.call_args.args[1] == "minimal"
-        content = mock_render.call_args.args[0]
+        assert mock_render_compile.call_args.args[1] == "minimal"
+        content = mock_render_compile.call_args.args[0]
         assert content.certifications == ["SAP Certified Application Associate - SAP S/4HANA Sales"]
+
+
+@pytest.mark.asyncio
+async def test_preview_prefers_stored_resume_editor_when_no_body_editor():
+    profile = MagicMock()
+    profile.resume_text = "Legacy resume text that would parse badly"
+    profile.config_overrides = {
+        "resume": {"template": "modern"},
+        "resume_editor": {
+            "name": "Example Candidate",
+            "email": "examplecandidate@gmail.com",
+            "summary": "Senior AI platform engineer.",
+            "experiences": [
+                {
+                    "title": "Senior AI Platform Engineer",
+                    "company": "Fractal Analytics",
+                    "dates": "2024 - Present",
+                    "location": "Pune, India",
+                    "bullets": ["Built platform capabilities for production GenAI systems."],
+                }
+            ],
+            "projects": [],
+            "skills": [{"category": "MLOps", "items": ["Vertex AI", "LangGraph"]}],
+            "certifications": ["AppliedAI Course"],
+        },
+    }
+    profile_found = MagicMock()
+    profile_found.scalar_one_or_none.return_value = profile
+
+    db = AsyncMock(spec=AsyncSession)
+    db.execute = AsyncMock(side_effect=[profile_found])
+
+    with patch("llm.resume_tailor.render_and_compile_content", return_value=("#typst", b"%PDF-preview")) as mock_render_compile:
+        async with _make_client(db) as client:
+            r = await client.post("/api/resume/preview", json={})
+
+        app.dependency_overrides.clear()
+
+        assert r.status_code == 200
+        content = mock_render_compile.call_args.args[0]
+        assert content.name == "Example Candidate"
+        assert content.experiences[0]["company"] == "Fractal Analytics"
 
 
 @pytest.mark.asyncio
