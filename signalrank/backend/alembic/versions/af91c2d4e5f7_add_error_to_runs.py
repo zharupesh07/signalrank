@@ -19,7 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("runs", sa.Column("error", sa.Text(), nullable=True))
+    op.execute("ALTER TABLE runs ADD COLUMN IF NOT EXISTS error TEXT")
 
 
 def downgrade() -> None:
