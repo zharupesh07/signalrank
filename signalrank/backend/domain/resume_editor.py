@@ -2,7 +2,7 @@ import re
 
 
 _EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)
-_PHONE_RE = re.compile(r"(\+?\d[\d\s().-]{7,}\d)")
+_PHONE_RE = re.compile(r"(\(?\+?\d[\d\s().-]{7,}\d)")
 _DATE_LINE_RE = re.compile(
     r"(?i)\b(?:\d{1,2}/\d{4}|[A-Za-z]{3,9}\s+\d{4}|\d{4})\b.*(?:present|\d{4})"
 )
@@ -55,8 +55,28 @@ def _looks_like_position_line(line: str) -> bool:
         return False
     if cleaned.endswith("."):
         return False
+    if re.fullmatch(r"[|·\-–—,/\s]+", cleaned):
+        return False
+    if _looks_like_location(cleaned):
+        return False
     words = cleaned.split()
-    return len(cleaned) <= 80 and 1 <= len(words) <= 8
+    return len(cleaned) <= 80 and 2 <= len(words) <= 12
+
+
+def _looks_like_location(line: str) -> bool:
+    cleaned = _clean_line(line)
+    if not cleaned:
+        return False
+    lower = cleaned.lower()
+    location_indicators = ("india", "usa", "uk", "remote", "hybrid", "bengaluru", "bangalore",
+                           "mumbai", "pune", "delhi", "hyderabad", "chennai", "kolkata", "noida",
+                           "gurugram", "gurgaon", "new york", "san francisco", "london")
+    if any(loc in lower for loc in location_indicators):
+        if len(cleaned.split()) <= 5:
+            return True
+    if "·" in cleaned and len(cleaned.split()) <= 5:
+        return True
+    return False
 
 
 def _looks_like_certification_line(line: str) -> bool:
@@ -186,11 +206,12 @@ def _looks_like_date_line(line: str) -> bool:
 
 
 def _strip_bullet_marker(line: str) -> str:
-    return _clean_line((line or "").lstrip("-*• ").strip())
+    stripped = re.sub(r"^\s*[•\-*]\s*", "", line or "")
+    return _clean_line(stripped)
 
 
 def _has_bullet_marker(line: str) -> bool:
-    return bool(re.match(r"^\s*[-*•]\s+", line or ""))
+    return bool(re.match(r"^\s*[•]\s*\S", line or "") or re.match(r"^\s*[-*]\s+", line or ""))
 
 
 def _ends_bullet_sentence(text: str) -> bool:
@@ -471,6 +492,134 @@ def _empty_resume_editor() -> dict:
         "skills": [],
         "certifications": [],
     }
+
+
+def _merge_experience_rows(preferred_rows: list[dict], fallback_rows: list[dict]) -> list[dict]:
+    merged: list[dict] = []
+    index_by_key: dict[tuple[str, str, str], int] = {}
+
+    def exp_key(exp: dict) -> tuple[str, str, str]:
+        return (
+            _clean_line(str(exp.get("title", "") or "")).lower(),
+            _clean_line(str(exp.get("company", "") or "")).lower(),
+            _clean_line(str(exp.get("dates", "") or "")).lower(),
+        )
+
+    for row in preferred_rows + fallback_rows:
+        if not isinstance(row, dict):
+            continue
+        cleaned = {
+            "title": _clean_line(str(row.get("title", "") or "")),
+            "company": _clean_line(str(row.get("company", "") or "")),
+            "dates": _clean_line(str(row.get("dates", "") or "")),
+            "location": _clean_line(str(row.get("location", "") or "")),
+            "bullets": _dedupe_preserve([str(bullet or "") for bullet in (row.get("bullets", []) or [])]),
+        }
+        if not any(cleaned.get(field) for field in ("title", "company", "dates", "location", "bullets")):
+            continue
+        key = exp_key(cleaned)
+        if key in index_by_key and any(key):
+            target = merged[index_by_key[key]]
+            for field in ("title", "company", "dates", "location"):
+                if not target[field] and cleaned[field]:
+                    target[field] = cleaned[field]
+            target["bullets"] = _dedupe_preserve([*target.get("bullets", []), *cleaned.get("bullets", [])])
+            continue
+        index_by_key[key] = len(merged)
+        merged.append(cleaned)
+
+    return merged
+
+
+def _merge_project_rows(preferred_rows: list[dict], fallback_rows: list[dict]) -> list[dict]:
+    merged: list[dict] = []
+    index_by_key: dict[tuple[str, str], int] = {}
+
+    def project_key(project: dict) -> tuple[str, str]:
+        return (
+            _clean_line(str(project.get("name", "") or "")).lower(),
+            _clean_line(str(project.get("url", "") or "")).lower(),
+        )
+
+    for row in preferred_rows + fallback_rows:
+        if not isinstance(row, dict):
+            continue
+        cleaned = {
+            "name": _clean_line(str(row.get("name", "") or "")),
+            "url": _clean_line(str(row.get("url", "") or "")),
+            "description": str(row.get("description", "") or "").strip(),
+        }
+        if not any(cleaned.get(field) for field in ("name", "url", "description")):
+            continue
+        key = project_key(cleaned)
+        if key in index_by_key and any(key):
+            target = merged[index_by_key[key]]
+            if not target["url"] and cleaned["url"]:
+                target["url"] = cleaned["url"]
+            if not target["description"] and cleaned["description"]:
+                target["description"] = cleaned["description"]
+            continue
+        index_by_key[key] = len(merged)
+        merged.append(cleaned)
+
+    return merged
+
+
+def _merge_skill_rows(preferred_rows: list[dict], fallback_rows: list[dict]) -> list[dict]:
+    merged: list[dict] = []
+    category_index: dict[str, int] = {}
+
+    for row in preferred_rows + fallback_rows:
+        if not isinstance(row, dict):
+            continue
+        category = _clean_line(str(row.get("category", "") or ""))
+        items = _dedupe_preserve([str(item or "") for item in (row.get("items", []) or [])])
+        if not category and not items:
+            continue
+        key = category.lower() or "general"
+        normalized = {"category": category or "General", "items": items}
+        if key in category_index:
+            target = merged[category_index[key]]
+            target["items"] = _dedupe_preserve([*target.get("items", []), *normalized["items"]])
+            continue
+        category_index[key] = len(merged)
+        merged.append(normalized)
+
+    return merged
+
+
+def merge_resume_editor(preferred: dict | None, fallback: dict | None = None) -> dict:
+    merged = _empty_resume_editor()
+    for source in (fallback or {}, preferred or {}):
+        for field in ("name", "position", "email", "phone", "location", "linkedin", "github", "website", "summary"):
+            value = _clean_line(str(source.get(field, "") or "")) if field != "summary" else str(source.get(field, "") or "").strip()
+            if value:
+                merged[field] = value
+    merged["experiences"] = _merge_experience_rows(
+        list((preferred or {}).get("experiences") or []),
+        list((fallback or {}).get("experiences") or []),
+    )
+    merged["projects"] = _merge_project_rows(
+        list((preferred or {}).get("projects") or []),
+        list((fallback or {}).get("projects") or []),
+    )
+    merged["skills"] = _merge_skill_rows(
+        list((preferred or {}).get("skills") or []),
+        list((fallback or {}).get("skills") or []),
+    )
+    merged["certifications"] = _dedupe_preserve(
+        [
+            *[str(item or "") for item in ((preferred or {}).get("certifications") or [])],
+            *[str(item or "") for item in ((fallback or {}).get("certifications") or [])],
+        ]
+    )
+    return merged
+
+
+def has_resume_editor_content(editor: dict | None) -> bool:
+    if not isinstance(editor, dict):
+        return False
+    return any(editor.get(field) for field in ("name", "position", "email", "phone", "summary", "experiences", "projects", "skills", "certifications"))
 
 
 def parse_resume_editor(resume_text: str | None) -> dict:

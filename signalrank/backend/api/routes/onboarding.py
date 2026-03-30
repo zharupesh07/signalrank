@@ -14,9 +14,10 @@ from api.database import AsyncSessionLocal, get_db
 from api.deps import get_current_user
 from api.deps_llm import get_llm_client
 from api.models import Profile, User
+from domain.resume_editor import has_resume_editor_content, merge_resume_editor, parse_resume_editor
 from llm.onboarding import generate_onboarding_questions
 from llm.openrouter import OpenRouterClient
-from llm.resume_parser import ResumeParseResult, detect_enterprise_role_from_text, parse_resume
+from llm.resume_parser import ResumeParseResult, detect_enterprise_role_from_text, parse_resume, parse_resume_structure
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,13 @@ def _set_onboarding_parse_status(profile: Profile, status: str) -> None:
     onboarding["parse_status"] = status
     overrides["onboarding"] = onboarding
     profile.config_overrides = overrides
+
+
+def _clear_stored_resume_editor(profile: Profile) -> None:
+    overrides = dict(profile.config_overrides or {})
+    if "resume_editor" in overrides:
+        overrides.pop("resume_editor", None)
+    profile.config_overrides = overrides or None
 
 
 def _parse_salary_to_number(value: str | list[str]) -> int | None:
@@ -180,12 +188,56 @@ def _apply_parsed_profile_updates(profile: Profile, parsed: ResumeParseResult) -
 
 def _extract_text_from_pdf(content: bytes) -> str:
     try:
-        import pypdf
-        reader = pypdf.PdfReader(io.BytesIO(content))
-        return "\n".join(p.extract_text() or "" for p in reader.pages)
+        import fitz
+        doc = fitz.open(stream=content, filetype="pdf")
+        all_lines: list[str] = []
+        for page in doc:
+            blocks = page.get_text("blocks")
+            text_blocks = [b for b in blocks if b[6] == 0]
+            if not text_blocks:
+                continue
+            mid_x = page.rect.width / 2
+            wide = [b for b in text_blocks if b[0] < mid_x - 20 and b[2] > mid_x + 20]
+            narrow = [b for b in text_blocks if b not in wide]
+            left = [b for b in narrow if b[2] <= mid_x + 20]
+            right = [b for b in narrow if b[0] >= mid_x - 20]
+            is_two_col = bool(left) and bool(right) and len(left) >= 3 and len(right) >= 3
+            if is_two_col:
+                wide.sort(key=lambda b: (b[1], b[0]))
+                for b in wide:
+                    for line in b[4].splitlines():
+                        cleaned = _strip_icon_chars(line).strip()
+                        if cleaned:
+                            all_lines.append(cleaned)
+                for col in (left, right):
+                    col.sort(key=lambda b: (b[1], b[0]))
+                    for b in col:
+                        for line in b[4].splitlines():
+                            cleaned = _strip_icon_chars(line).strip()
+                            if cleaned:
+                                all_lines.append(cleaned)
+            else:
+                text_blocks.sort(key=lambda b: (b[1], b[0]))
+                for b in text_blocks:
+                    for line in b[4].splitlines():
+                        cleaned = _strip_icon_chars(line).strip()
+                        if cleaned:
+                            all_lines.append(cleaned)
+        doc.close()
+        return "\n".join(all_lines)
     except Exception as e:
-        logger.warning("PDF extraction failed: %s", e)
-        return ""
+        logger.warning("PyMuPDF extraction failed, falling back to pypdf: %s", e)
+        try:
+            import pypdf
+            reader = pypdf.PdfReader(io.BytesIO(content))
+            return "\n".join(p.extract_text() or "" for p in reader.pages)
+        except Exception:
+            return ""
+
+
+def _strip_icon_chars(text: str) -> str:
+    import re
+    return re.sub(r"[\ue000-\uf8ff]", "", text)
 
 
 def _extract_text_from_docx(content: bytes) -> str:
@@ -244,20 +296,32 @@ async def _parse_and_update_profile(user_id: str, resume_text: str, llm: OpenRou
     """Background task: parse resume with LLM and auto-populate profile + config_overrides."""
     distilled_text = None
     try:
-        parsed = await asyncio.wait_for(parse_resume(resume_text, llm), timeout=60)
+        parsed_result, structure_result = await asyncio.gather(
+            asyncio.wait_for(parse_resume(resume_text, llm), timeout=60),
+            asyncio.wait_for(parse_resume_structure(resume_text, llm), timeout=90),
+            return_exceptions=True,
+        )
+        parsed = parsed_result if isinstance(parsed_result, ResumeParseResult) else ResumeParseResult()
+        llm_editor = structure_result if isinstance(structure_result, dict) else {}
+        merged_editor = merge_resume_editor(llm_editor, parse_resume_editor(resume_text))
         async with AsyncSessionLocal() as db:
             result = await db.execute(select(Profile).where(Profile.user_id == user_id))
             profile = result.scalar_one_or_none()
             if not profile:
                 return
             distilled_text = _apply_parsed_profile_updates(profile, parsed)
+            overrides = dict(profile.config_overrides or {})
+            if has_resume_editor_content(merged_editor):
+                overrides["resume_editor"] = merged_editor
+                profile.config_overrides = overrides
             _set_onboarding_parse_status(profile, "done")
 
             await db.commit()
             logger.info(
-                "Background parse complete for user=%s (%d skills, roles=%s, locs=%s)",
+                "Background parse complete for user=%s (%d skills, roles=%s, locs=%s, editor=%s)",
                 user_id, len(parsed.skills or []),
                 parsed.suggested_roles, parsed.suggested_locations,
+                has_resume_editor_content(merged_editor),
             )
     except Exception:
         logger.warning("Background resume parse failed for user=%s", user_id, exc_info=True)
@@ -312,6 +376,7 @@ async def upload_resume(
         await db.flush()
     profile.resume_text = resume_text
     profile.resume_embedding = None
+    _clear_stored_resume_editor(profile)
     _set_onboarding_parse_status(profile, "pending")
     await db.commit()
 

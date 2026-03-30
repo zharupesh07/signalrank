@@ -76,6 +76,35 @@ def _massage_parsed_data(data: dict, resume_text: str) -> dict:
         data.pop("suggested_roles", None)
     return data
 
+
+def _normalize_link_handle(value: object, *, kind: str) -> str:
+    cleaned = str(value or "").strip()
+    if not cleaned:
+        return ""
+    cleaned = cleaned.removeprefix("https://").removeprefix("http://").strip().strip("/")
+    lower = cleaned.lower()
+    if kind == "linkedin":
+        for prefix in ("www.linkedin.com/", "linkedin.com/"):
+            if lower.startswith(prefix):
+                cleaned = cleaned[len(prefix):]
+                lower = cleaned.lower()
+        if lower.startswith("in/"):
+            cleaned = cleaned[3:]
+    elif kind == "github":
+        for prefix in ("www.github.com/", "github.com/"):
+            if lower.startswith(prefix):
+                cleaned = cleaned[len(prefix):]
+                break
+    return cleaned.strip("/")
+
+
+def _normalize_website(value: object) -> str:
+    cleaned = str(value or "").strip()
+    if not cleaned:
+        return ""
+    cleaned = cleaned.removeprefix("https://").removeprefix("http://").strip().strip("/")
+    return cleaned.removeprefix("www.")
+
 _PROMPT_TEMPLATE = """Extract structured job search data from this resume. Return a single JSON object only.
 
 Available role options (pick best matches): {role_options}
@@ -157,6 +186,138 @@ def _validate_extraction(data: dict) -> ResumeParseResult:
         salary_lpa=to_int(data.get("salary_lpa")),
         suggested_exclusions=to_list(data.get("suggested_exclusions")),
     )
+
+
+_STRUCTURE_PROMPT = """Extract the complete structured content from this resume. Return a single JSON object.
+
+Rules:
+- Extract EVERY piece of information — do not summarize or omit details.
+- Each experience MUST include ALL bullet points from the original resume, word-for-word.
+- Preserve original formatting of dates exactly as written.
+- If a field is not present in the resume, use an empty string or empty list.
+- For skills, group by category if categories are apparent; otherwise use "General".
+- For certifications, include only the certification name (not descriptions).
+- linkedin and github should be just the handle/username, not the full URL.
+
+Keys:
+- name: full name (string)
+- email: email address (string)
+- phone: phone number with country code (string)
+- location: city, state/country (string)
+- linkedin: LinkedIn handle only, e.g. "john-doe" (string)
+- github: GitHub username only (string)
+- website: personal website domain (string)
+- position: current job title or professional headline (string)
+- summary: professional summary paragraph (string)
+- experiences: list of objects with keys: title, company, dates, location, bullets (list of strings)
+- skills: list of objects with keys: category (string), items (list of strings)
+- projects: list of objects with keys: name, url, description
+- education: list of objects with keys: degree, institution, year
+- certifications: list of certification name strings
+
+Return JSON only. No explanations.
+
+RESUME:
+{resume_text}"""
+
+
+async def parse_resume_structure(
+    resume_text: str,
+    llm_client: OpenRouterClient,
+) -> dict:
+    if not (resume_text or "").strip():
+        return {}
+    prompt = _STRUCTURE_PROMPT.format(resume_text=resume_text[:12000])
+    try:
+        data = await llm_client.llm_json(prompt, max_tokens=3000)
+        if "_error" in data:
+            logger.warning("LLM structure parse failed: %s", data.get("_details"))
+            return {}
+        return _validate_structure(data)
+    except Exception:
+        logger.exception("Resume structure parse failed")
+        return {}
+
+
+def _validate_structure(data: dict) -> dict:
+    if not isinstance(data, dict):
+        return {}
+
+    def to_str(val) -> str:
+        return str(val).strip() if val else ""
+
+    def to_list(val) -> list:
+        if val is None:
+            return []
+        if isinstance(val, list):
+            return val
+        if isinstance(val, (dict, str)):
+            return [val]
+        return []
+
+    experiences = []
+    for exp in to_list(data.get("experiences")):
+        if isinstance(exp, dict):
+            cleaned = {
+                "title": to_str(exp.get("title")),
+                "company": to_str(exp.get("company")),
+                "dates": to_str(exp.get("dates")),
+                "location": to_str(exp.get("location")),
+                "bullets": [to_str(b) for b in to_list(exp.get("bullets")) if to_str(b)],
+            }
+            if any(cleaned.get(field) for field in ("title", "company", "dates", "location", "bullets")):
+                experiences.append(cleaned)
+
+    skills = []
+    for skill in to_list(data.get("skills")):
+        if isinstance(skill, dict):
+            items = [to_str(i) for i in to_list(skill.get("items")) if to_str(i)]
+            if items:
+                skills.append({
+                    "category": to_str(skill.get("category")) or "General",
+                    "items": items,
+                })
+
+    projects = []
+    for proj in to_list(data.get("projects")):
+        if isinstance(proj, dict):
+            cleaned = {
+                "name": to_str(proj.get("name")),
+                "url": to_str(proj.get("url")),
+                "description": to_str(proj.get("description")),
+            }
+            if any(cleaned.get(field) for field in ("name", "url", "description")):
+                projects.append(cleaned)
+
+    education = []
+    for edu in to_list(data.get("education")):
+        if isinstance(edu, dict):
+            cleaned = {
+                "degree": to_str(edu.get("degree")),
+                "institution": to_str(edu.get("institution")),
+                "year": to_str(edu.get("year")),
+            }
+            if any(cleaned.get(field) for field in ("degree", "institution", "year")):
+                education.append(cleaned)
+
+    certifications = [to_str(c) for c in to_list(data.get("certifications")) if to_str(c)]
+
+    return {
+        "name": to_str(data.get("name")),
+        "email": to_str(data.get("email")),
+        "phone": to_str(data.get("phone")),
+        "location": to_str(data.get("location")),
+        "linkedin": _normalize_link_handle(data.get("linkedin"), kind="linkedin"),
+        "github": _normalize_link_handle(data.get("github"), kind="github"),
+        "website": _normalize_website(data.get("website")),
+        "position": to_str(data.get("position")),
+        "summary": to_str(data.get("summary")),
+        "experiences": experiences,
+        "skills": skills,
+        "projects": projects,
+        "education": education,
+        "certifications": certifications,
+    }
 
 
 async def parse_resume(
