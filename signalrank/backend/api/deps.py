@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import decode_token
 from api.database import get_db
-from api.models import User
+from api.models import Profile, User
 
 bearer = HTTPBearer()
 
@@ -23,3 +23,11 @@ async def get_current_user(
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     return user
+
+
+async def get_user_profile(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Profile | None:
+    result = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
+    return result.scalar_one_or_none()

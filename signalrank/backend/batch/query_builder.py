@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 
+from api.config import settings
 from domain.role_taxonomy import ROLE_QUERY_EXPANSIONS
 
 
@@ -46,7 +46,7 @@ def build_queries(profile, *, max_terms: int | None = None) -> list[SearchQuery]
     if not locations and profile.config_overrides:
         locations = (profile.config_overrides.get("scraping") or {}).get("locations")
 
-    default_country = os.environ.get("SCRAPER_DEFAULT_COUNTRY", "India")
+    default_country = settings.scraper_default_country
     if not locations:
         locations = [default_country]
 
@@ -54,7 +54,7 @@ def build_queries(profile, *, max_terms: int | None = None) -> list[SearchQuery]
     # searches country-wide. City-level entries (Pune, Bangalore) pass as city.
     _country_like = {default_country.lower(), "remote", "india", "worldwide"}
 
-    limit = max_terms or int(os.environ.get("SCRAPER_MAX_TERMS", "1"))
+    limit = max_terms or settings.scraper_max_terms
     terms = terms[:limit]
 
     queries: list[SearchQuery] = []

@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from api.models import JobRaw, JobResult, Profile, Run
-from batch.context import build_context
+from batch.context import build_context, get_batch, get_retry
 from batch.embedding_cache import PgEmbeddingCache, store_job_embeddings
 
 logger = logging.getLogger(__name__)
@@ -24,9 +24,6 @@ class RunRequest:
     force_scrape: bool = False
 
 
-_EMBED_CHUNK_SIZE = 4
-_EMBED_MAX_RETRIES = 3
-_EMBED_BACKOFF_BASE = 2
 
 
 def _format_run_error(exc: Exception) -> str:
@@ -87,7 +84,11 @@ async def _embed_new_jobs(
     ]
     job_fps = [fingerprint_text(t) for t in job_texts]
 
-    for attempt in range(1, _EMBED_MAX_RETRIES + 1):
+    embed_max_retries = get_retry(cfg, "embed_max", 3)
+    embed_chunk_size = get_batch(cfg, "embed_chunk_size", 4)
+    embed_backoff_base = get_retry(cfg, "embed_backoff_base", 2)
+
+    for attempt in range(1, embed_max_retries + 1):
         try:
             cached = await cache.fetch(job_fps)
             cached_job_rows = [
@@ -105,7 +106,7 @@ async def _embed_new_jobs(
 
             logger.info(
                 "[EMBED] %d cache hits, %d misses (attempt %d/%d)",
-                len(job_fps) - len(misses), len(misses), attempt, _EMBED_MAX_RETRIES,
+                len(job_fps) - len(misses), len(misses), attempt, embed_max_retries,
             )
 
             engine = EmbeddingEngine(cfg)
@@ -115,8 +116,8 @@ async def _embed_new_jobs(
             embedded = 0
             cache_rows: list[tuple[str, list[float]]] = []
             job_embedding_rows: list[tuple[str, list[float]]] = []
-            for chunk_start in range(0, total, _EMBED_CHUNK_SIZE):
-                chunk_end = min(chunk_start + _EMBED_CHUNK_SIZE, total)
+            for chunk_start in range(0, total, embed_chunk_size):
+                chunk_end = min(chunk_start + embed_chunk_size, total)
                 chunk_texts = miss_texts[chunk_start:chunk_end]
                 chunk_indices = misses[chunk_start:chunk_end]
 
@@ -149,15 +150,15 @@ async def _embed_new_jobs(
 
         except Exception:
             logger.warning(
-                "[EMBED] Attempt %d/%d failed", attempt, _EMBED_MAX_RETRIES,
+                "[EMBED] Attempt %d/%d failed", attempt, embed_max_retries,
                 exc_info=True,
             )
-            if attempt < _EMBED_MAX_RETRIES:
-                delay = _EMBED_BACKOFF_BASE ** attempt
+            if attempt < embed_max_retries:
+                delay = embed_backoff_base ** attempt
                 logger.info("[EMBED] Retrying in %ds...", delay)
                 await asyncio.sleep(delay)
             else:
-                logger.error("[EMBED] All %d attempts failed, continuing without full cache", _EMBED_MAX_RETRIES)
+                logger.error("[EMBED] All %d attempts failed, continuing without full cache", embed_max_retries)
     try:
         unload_embedding_engine()
     except Exception:

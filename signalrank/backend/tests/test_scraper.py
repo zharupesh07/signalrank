@@ -88,8 +88,9 @@ async def test_scrape_blocklist(queries):
 
 
 def test_config_from_env(monkeypatch):
-    monkeypatch.setenv("RAPIDAPI_KEY", "test-key")
-    monkeypatch.setenv("SCRAPER_MAX_RESULTS", "10")
+    import api.config as _cfg_mod
+    monkeypatch.setattr(_cfg_mod.settings, "rapidapi_key", "test-key")
+    monkeypatch.setattr(_cfg_mod.settings, "scraper_max_results", 10)
     cfg = ScraperConfig.from_env(title_blocklist=["qa"])
     assert cfg.rapidapi_key == "test-key"
     assert cfg.max_results_per_query == 10

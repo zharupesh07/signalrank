@@ -4,6 +4,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+pytestmark = pytest.mark.unit
+
 from domain.additive_scoring import (
     apply_company_semantic_floor,
     apply_hidden_gem_bonus,

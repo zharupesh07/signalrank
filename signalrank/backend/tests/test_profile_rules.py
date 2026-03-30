@@ -1,4 +1,8 @@
+import pytest
+
 from batch.context import load_base_config
+
+pytestmark = pytest.mark.unit
 from domain.profile_rules import (
     build_profile_positive_terms,
     build_profile_title_rules,

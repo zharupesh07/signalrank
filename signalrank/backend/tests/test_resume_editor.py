@@ -1,4 +1,8 @@
+import pytest
+
 from domain.resume_editor import editor_to_tailored_content, parse_resume_editor, serialize_resume_editor
+
+pytestmark = pytest.mark.unit
 
 
 def test_serialize_resume_editor_emits_structured_resume_text():

@@ -18,13 +18,15 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from api.config import settings
 from api.models import ArchivalQueue, JobRaw, JobResult, Profile
+from batch.context import load_base_config
 from llm.openrouter import OpenRouterClient
 
 logger = logging.getLogger(__name__)
 
 CONCURRENCY = max(1, settings.archival_worker_concurrency)
-MAX_TASK_RETRIES = 3
-POLL_INTERVAL = 5
+_cfg = load_base_config()
+MAX_TASK_RETRIES = _cfg.get("retry", {}).get("archival_task_max", 3)
+POLL_INTERVAL = _cfg.get("batch", {}).get("worker_poll_interval", 5)
 
 SYSTEM_PROMPT = """You evaluate whether a job posting is suitable for a candidate.
 Return ONLY valid JSON: {"suitable": true/false, "reason": "brief 1-sentence explanation"}

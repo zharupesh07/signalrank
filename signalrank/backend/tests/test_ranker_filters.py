@@ -1,4 +1,8 @@
+import pytest
+
 from batch.ranker import matches_requested_clusters_for_row
+
+pytestmark = pytest.mark.unit
 
 
 def test_runtime_filter_ignores_polluted_stored_cluster_when_text_disagrees() -> None:

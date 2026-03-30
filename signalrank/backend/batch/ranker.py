@@ -1,7 +1,6 @@
 import asyncio
 import gc
 import logging
-import os
 import re
 import time
 import uuid
@@ -13,7 +12,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models import JobRaw, Profile
-from batch.context import build_context
+from api.config import settings
+from batch.context import build_context, get_batch, load_base_config
 from batch.embedding_cache import PgEmbeddingCache, store_job_embeddings
 from domain.additive_scoring import (
     detect_contract_type,
@@ -50,9 +50,9 @@ logger = logging.getLogger(__name__)
 
 
 
-_JOB_WINDOW_DAYS = 15
-_RANK_MAX_CANDIDATES = int(os.environ.get("RANKER_MAX_CANDIDATES", "2000"))
-_RANK_DESCRIPTION_CHARS = int(os.environ.get("RANKER_MAX_DESCRIPTION_CHARS", "1200"))
+_JOB_WINDOW_DAYS = load_base_config().get("batch", {}).get("job_window_days", 15)
+_RANK_MAX_CANDIDATES = settings.ranker_max_candidates
+_RANK_DESCRIPTION_CHARS = settings.ranker_max_description_chars
 
 
 def _is_uuid_like(value: str) -> bool:
@@ -345,9 +345,6 @@ _SENIORITY_SUFFIXES = re.compile(
 )
 
 
-_RANK_EMBED_CHUNK = 4
-
-
 async def _compute_embeddings(
     df: pd.DataFrame,
     cfg: dict,
@@ -408,8 +405,9 @@ async def _compute_embeddings(
         total = len(misses)
         cache_rows: list[tuple[str, list[float]]] = []
         job_embedding_rows: list[tuple[str, list[float]]] = []
-        for chunk_start in range(0, total, _RANK_EMBED_CHUNK):
-            chunk_end = min(chunk_start + _RANK_EMBED_CHUNK, total)
+        rank_embed_chunk = get_batch(cfg, "rank_embed_chunk", 4)
+        for chunk_start in range(0, total, rank_embed_chunk):
+            chunk_end = min(chunk_start + rank_embed_chunk, total)
             chunk = misses[chunk_start:chunk_end]
             chunk_texts = [miss_text_by_row_idx[row_idx] for row_idx, _ in chunk]
 

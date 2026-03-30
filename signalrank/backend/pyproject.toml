@@ -52,6 +52,9 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 markers = [
     "live: real network calls — skip by default, run with -m live",
+    "unit: pure unit tests with no DB or HTTP dependencies (safe for -n auto)",
+    "db: tests requiring database access",
+    "client: tests requiring HTTP test client",
 ]
 addopts = "-m 'not live'"
 
@@ -60,4 +63,5 @@ dev = [
     "httpx>=0.28.1",
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
+    "pytest-xdist>=3.8.0",
 ]

@@ -1,6 +1,9 @@
+import pytest
 from unittest.mock import MagicMock
 
 from batch.query_builder import build_queries
+
+pytestmark = pytest.mark.unit
 
 
 def _mock_profile(**kwargs):

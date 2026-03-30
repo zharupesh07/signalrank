@@ -1,4 +1,8 @@
+import pytest
+
 from domain.role_clusters import infer_clusters_from_job_text, roles_to_clusters
+
+pytestmark = pytest.mark.unit
 
 
 def test_roles_to_clusters_maps_sap_role():

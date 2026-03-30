@@ -8,7 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.dialects.postgresql import insert
 
 from api.config import settings
+from api.helpers import get_resume_template
 from api.models import Application, GenerationQueue, JobRaw, Profile, TailoredResume
+from batch.context import load_base_config
 from llm.email_generator import generate_email
 from llm.openrouter import OpenRouterClient
 from llm.resume_tailor import compile_pdf, render_typst, tailor_resume
@@ -16,18 +18,10 @@ from llm.resume_tailor import compile_pdf, render_typst, tailor_resume
 logger = logging.getLogger(__name__)
 
 CONCURRENCY = max(1, settings.resume_worker_concurrency)
-MAX_TASK_RETRIES = 3   # retry failed tasks up to this many times
-POLL_INTERVAL = 5      # seconds between queue polls
+_cfg = load_base_config()
+MAX_TASK_RETRIES = _cfg.get("retry", {}).get("resume_task_max", 3)
+POLL_INTERVAL = _cfg.get("batch", {}).get("worker_poll_interval", 5)
 
-
-def _preferred_resume_template(profile: Profile | None) -> str:
-    if profile and isinstance(profile.config_overrides, dict):
-        resume_cfg = profile.config_overrides.get("resume")
-        if isinstance(resume_cfg, dict):
-            template = resume_cfg.get("template")
-            if template in {"classic", "modern", "minimal"}:
-                return template
-    return "classic"
 
 
 async def process_generation_task(
@@ -64,7 +58,7 @@ async def process_generation_task(
         )
         await db.commit()
         return
-    selected_template = _preferred_resume_template(profile)
+    selected_template = get_resume_template(profile)
 
     job_res = await db.execute(select(JobRaw).where(JobRaw.id == task.job_id))
     job = job_res.scalar_one_or_none()

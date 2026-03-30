@@ -7,8 +7,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.database import get_db
-from api.deps import get_current_user
+from api.deps import get_current_user, get_user_profile
 from api.deps_llm import get_llm_client
+from api.helpers import VALID_TEMPLATES, get_resume_template
 from api.models import JobRaw, Profile, TailoredResume, User
 from api.routes.profile import ResumeEditorInput
 from domain.resume_editor import editor_to_tailored_content, parse_resume_editor
@@ -17,8 +18,6 @@ from llm.openrouter import OpenRouterClient
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/resume", tags=["resume"])
-
-VALID_TEMPLATES = {"classic", "modern", "minimal"}
 
 
 class TailorRequest(BaseModel):
@@ -36,36 +35,11 @@ class PreviewRequest(BaseModel):
     resume_editor: ResumeEditorInput | None = None
 
 
-def _preferred_resume_template(profile: Profile | None, requested: str | None = None) -> str:
-    candidate = requested
-    if not candidate and profile and isinstance(profile.config_overrides, dict):
-        resume_cfg = profile.config_overrides.get("resume")
-        if isinstance(resume_cfg, dict):
-            maybe_template = resume_cfg.get("template")
-            if isinstance(maybe_template, str):
-                candidate = maybe_template
-    candidate = candidate or "classic"
-    if candidate not in VALID_TEMPLATES:
-        return "classic"
-    return candidate
-
-
-def _profile_resume_template(profile: Profile | None) -> str | None:
-    if not profile or not isinstance(profile.config_overrides, dict):
-        return None
-    resume_cfg = profile.config_overrides.get("resume")
-    if not isinstance(resume_cfg, dict):
-        return None
-    template = resume_cfg.get("template")
-    if isinstance(template, str) and template in VALID_TEMPLATES:
-        return template
-    return None
-
 
 @router.post("/tailor")
 async def tailor(
     body: TailorRequest,
-    current_user: User = Depends(get_current_user),
+    profile: Profile | None = Depends(get_user_profile),
     db: AsyncSession = Depends(get_db),
     llm: OpenRouterClient = Depends(get_llm_client),
 ):
@@ -74,11 +48,9 @@ async def tailor(
     if body.template is not None and body.template not in VALID_TEMPLATES:
         raise HTTPException(status_code=422, detail=f"Template must be one of: {VALID_TEMPLATES}")
 
-    profile_res = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
-    profile = profile_res.scalar_one_or_none()
     if not profile or not profile.resume_text:
         raise HTTPException(status_code=404, detail="Upload a resume first via /api/onboarding/resume")
-    selected_template = _preferred_resume_template(profile, body.template)
+    selected_template = get_resume_template(profile, body.template)
 
     job_res = await db.execute(select(JobRaw).where(JobRaw.id == body.job_id))
     job = job_res.scalar_one_or_none()
@@ -89,7 +61,7 @@ async def tailor(
 
     existing_res = await db.execute(
         select(TailoredResume).where(
-            TailoredResume.user_id == current_user.id,
+            TailoredResume.user_id == profile.user_id,
             TailoredResume.job_id == body.job_id,
         )
     )
@@ -130,7 +102,7 @@ async def tailor(
     else:
         db.add(
             TailoredResume(
-                user_id=current_user.id,
+                user_id=profile.user_id,
                 job_id=body.job_id,
                 content_json=content_dict,
                 template=selected_template,
@@ -152,23 +124,21 @@ async def tailor(
 async def download_tailored(
     job_id: str,
     template: str | None = Query(None),
-    current_user: User = Depends(get_current_user),
+    profile: Profile | None = Depends(get_user_profile),
     db: AsyncSession = Depends(get_db),
 ):
     from llm.resume_tailor import TailoredContent, compile_pdf, render_typst
 
-    profile_res = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
-    profile = profile_res.scalar_one_or_none()
     res = await db.execute(
         select(TailoredResume).where(
-            TailoredResume.user_id == current_user.id,
+            TailoredResume.user_id == (profile.user_id if profile else None),
             TailoredResume.job_id == job_id,
         )
     )
     tailored = res.scalar_one_or_none()
     if not tailored:
         return JSONResponse(status_code=202, content={"status": "pending", "job_id": str(job_id)})
-    selected_template = template or _profile_resume_template(profile) or tailored.template or "classic"
+    selected_template = get_resume_template(profile, template) if (template or profile) else (tailored.template or "classic")
 
     content = None
     if tailored.pdf_bytes and selected_template == (tailored.template or "classic"):
@@ -199,7 +169,7 @@ async def download_tailored(
 @router.post("/email")
 async def generate_cold_email(
     body: EmailRequest,
-    current_user: User = Depends(get_current_user),
+    profile: Profile | None = Depends(get_user_profile),
     db: AsyncSession = Depends(get_db),
     llm: OpenRouterClient = Depends(get_llm_client),
 ):
@@ -212,7 +182,7 @@ async def generate_cold_email(
 
     tailored_res = await db.execute(
         select(TailoredResume).where(
-            TailoredResume.user_id == current_user.id,
+            TailoredResume.user_id == (profile.user_id if profile else None),
             TailoredResume.job_id == body.job_id,
         )
     )
@@ -225,11 +195,8 @@ async def generate_cold_email(
     if tailored and tailored.content_json:
         for exp in tailored.content_json.get("experiences", [])[:2]:
             bullets.extend(exp.get("bullets", [])[:3])
-    if not bullets:
-        profile_res = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
-        profile = profile_res.scalar_one_or_none()
-        if profile and profile.resume_text:
-            bullets = [line.strip("- ") for line in profile.resume_text.split("\n") if line.strip().startswith("-")][:5]
+    if not bullets and profile and profile.resume_text:
+        bullets = [line.strip("- ") for line in profile.resume_text.split("\n") if line.strip().startswith("-")][:5]
 
     email = await generate_email(
         jd=job.description or "",
@@ -247,7 +214,7 @@ async def generate_cold_email(
 @router.post("/preview")
 async def preview_resume(
     body: PreviewRequest,
-    current_user: User = Depends(get_current_user),
+    profile: Profile | None = Depends(get_user_profile),
     db: AsyncSession = Depends(get_db),
 ):
     from llm.resume_tailor import compile_pdf, render_typst
@@ -255,8 +222,6 @@ async def preview_resume(
     if body.template is not None and body.template not in VALID_TEMPLATES:
         raise HTTPException(status_code=422, detail=f"Template must be one of: {VALID_TEMPLATES}")
 
-    profile_res = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
-    profile = profile_res.scalar_one_or_none()
     if not profile and body.resume_editor is None:
         raise HTTPException(status_code=404, detail="Upload a resume first via /api/onboarding/resume")
 
@@ -264,7 +229,7 @@ async def preview_resume(
     if not any(editor_payload.get(field) for field in ("name", "summary", "experiences", "projects", "skills", "certifications")):
         raise HTTPException(status_code=404, detail="Upload a resume first via /api/onboarding/resume")
 
-    selected_template = _preferred_resume_template(profile, body.template)
+    selected_template = get_resume_template(profile, body.template)
     content = editor_to_tailored_content(editor_payload)
     typst_src = render_typst(content, selected_template)
     pdf_bytes = compile_pdf(typst_src)

@@ -48,6 +48,7 @@ class EmbeddingEngine:
         self._tokenizer.enable_truncation(max_length=_MAX_SEQ_LEN)
         self._tokenizer.enable_padding(length=_MAX_SEQ_LEN)
 
+        self._batch_size = cfg.get("batch", {}).get("embed_batch_size", _EMBED_BATCH_SIZE)
         logger.info("[EMBED] ONNX model loaded from %s", model_repo)
 
     def __new__(cls, cfg):
@@ -94,8 +95,8 @@ class EmbeddingEngine:
         logger.info("[EMBED] Encoding %d texts via ONNX (%s)", len(texts), self._model_repo)
 
         all_vecs = []
-        for i in range(0, len(texts), _EMBED_BATCH_SIZE):
-            batch = texts[i : i + _EMBED_BATCH_SIZE]
+        for i in range(0, len(texts), self._batch_size):
+            batch = texts[i : i + self._batch_size]
             all_vecs.append(self._embed_batch(batch))
 
         return np.concatenate(all_vecs, axis=0).astype("float32")
@@ -108,10 +109,10 @@ class EmbeddingEngine:
 
         all_vecs = []
         total = len(texts)
-        for i in range(0, total, _EMBED_BATCH_SIZE):
-            batch = texts[i : i + _EMBED_BATCH_SIZE]
+        for i in range(0, total, self._batch_size):
+            batch = texts[i : i + self._batch_size]
             all_vecs.append(self._embed_batch(batch))
-            done = min(i + _EMBED_BATCH_SIZE, total)
+            done = min(i + self._batch_size, total)
             if on_progress:
                 on_progress(done, total)
 

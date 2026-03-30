@@ -51,6 +51,18 @@ def reset_base_config() -> None:
     _BASE_CONFIG = None
 
 
+def get_timeout(cfg: dict, key: str, default: int = 60) -> int:
+    return int(cfg.get("timeouts", {}).get(key, default))
+
+
+def get_retry(cfg: dict, key: str, default: int = 3) -> int:
+    return int(cfg.get("retry", {}).get(key, default))
+
+
+def get_batch(cfg: dict, key: str, default: int = 4) -> int:
+    return int(cfg.get("batch", {}).get(key, default))
+
+
 def build_context(
     user_id: str, resume_text: str, config_overrides: dict | None = None
 ) -> SaaSContext:

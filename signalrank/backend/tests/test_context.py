@@ -1,4 +1,8 @@
+import pytest
+
 from batch.context import SaaSContext, build_context, deep_merge, load_base_config
+
+pytestmark = pytest.mark.unit
 
 
 def test_deep_merge_overrides():

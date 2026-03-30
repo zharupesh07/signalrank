@@ -25,6 +25,14 @@ class Settings(BaseSettings):
     run_archival_worker: bool = True
     run_boot_scan: bool = False
     run_boot_embed: bool = False
+    rapidapi_key: str = ""
+    scraper_max_results: int = 1500
+    scraper_hours_old: int = 24
+    scraper_default_country: str = "India"
+    scraper_max_terms: int = 1
+    linkedin_max_queries: int = 0
+    ranker_max_candidates: int = 2000
+    ranker_max_description_chars: int = 1200
 
     @field_validator("allowed_origins", mode="before")
     @classmethod
@@ -52,21 +60,20 @@ def _env_truthy(name: str, default: bool) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
-def api_runtime_flags() -> dict[str, bool]:
+def runtime_flags(mode: str = "api") -> dict[str, bool]:
+    is_worker = mode == "worker"
     return {
-        "run_api_worker": _env_truthy("RUN_API_WORKER", False),
-        "run_resume_worker": _env_truthy("RUN_RESUME_WORKER", False),
-        "run_archival_worker": _env_truthy("RUN_ARCHIVAL_WORKER", False),
+        "run_api_worker": _env_truthy("RUN_API_WORKER", is_worker),
+        "run_resume_worker": _env_truthy("RUN_RESUME_WORKER", is_worker),
+        "run_archival_worker": _env_truthy("RUN_ARCHIVAL_WORKER", is_worker),
         "run_boot_scan": _env_truthy("RUN_BOOT_SCAN", False),
         "run_boot_embed": _env_truthy("RUN_BOOT_EMBED", False),
     }
+
+
+def api_runtime_flags() -> dict[str, bool]:
+    return runtime_flags("api")
 
 
 def worker_runtime_flags() -> dict[str, bool]:
-    return {
-        "run_api_worker": _env_truthy("RUN_API_WORKER", True),
-        "run_resume_worker": _env_truthy("RUN_RESUME_WORKER", True),
-        "run_archival_worker": _env_truthy("RUN_ARCHIVAL_WORKER", True),
-        "run_boot_scan": _env_truthy("RUN_BOOT_SCAN", False),
-        "run_boot_embed": _env_truthy("RUN_BOOT_EMBED", False),
-    }
+    return runtime_flags("worker")

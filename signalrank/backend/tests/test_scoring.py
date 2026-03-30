@@ -4,6 +4,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+pytestmark = pytest.mark.unit
+
 from domain.scoring import (
     calculate_role_and_skill_match_score,
     calculate_seniority_score,

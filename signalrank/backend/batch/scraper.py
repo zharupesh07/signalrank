@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Callable
 
+from api.config import settings
 from batch.query_builder import SearchQuery
 
 logger = logging.getLogger(__name__)
@@ -48,15 +48,17 @@ class ScraperConfig:
     linkedin_max_queries: int = 0
     default_country: str = "India"
     sources: list[str] | None = None  # None = all; e.g. ["indeed"] for quick run
+    jobspy_timeout: int = 300
+    total_timeout: int = 900
 
     @classmethod
     def from_env(cls, title_blocklist: list[str] | None = None) -> ScraperConfig:
         return cls(
-            rapidapi_key=os.environ.get("RAPIDAPI_KEY"),
-            max_results_per_query=int(os.environ.get("SCRAPER_MAX_RESULTS", "1500")),
-            hours_old=int(os.environ.get("SCRAPER_HOURS_OLD", "24")),
-            linkedin_max_queries=int(os.environ.get("LINKEDIN_MAX_QUERIES", "0")),
-            default_country=os.environ.get("SCRAPER_DEFAULT_COUNTRY", "India"),
+            rapidapi_key=settings.rapidapi_key or None,
+            max_results_per_query=settings.scraper_max_results,
+            hours_old=settings.scraper_hours_old,
+            linkedin_max_queries=settings.linkedin_max_queries,
+            default_country=settings.scraper_default_country,
             title_blocklist=title_blocklist or [],
         )
 
@@ -108,7 +110,7 @@ async def scrape(
                     jobs_found=0, message="Scanning Indeed...",
                 )
             try:
-                results = await asyncio.wait_for(search_jobspy(queries, config, site="indeed"), timeout=300)
+                results = await asyncio.wait_for(search_jobspy(queries, config, site="indeed"), timeout=config.jobspy_timeout)
                 logger.info("Phase jobspy/indeed: %d jobs", len(results))
                 await _persist_phase(results)
             except asyncio.TimeoutError:
@@ -125,7 +127,7 @@ async def scrape(
                     jobs_found=len(all_jobs), message="Scanning LinkedIn...",
                 )
             try:
-                results = await asyncio.wait_for(search_jobspy(linkedin_queries, config, site="linkedin"), timeout=300)
+                results = await asyncio.wait_for(search_jobspy(linkedin_queries, config, site="linkedin"), timeout=config.jobspy_timeout)
                 logger.info("Phase jobspy/linkedin: %d jobs", len(results))
                 await _persist_phase(results)
             except asyncio.TimeoutError:
@@ -161,7 +163,7 @@ async def scrape(
             logger.info("Phase parallel: skipped (source filter)")
 
     try:
-        await asyncio.wait_for(_run(), timeout=900)
+        await asyncio.wait_for(_run(), timeout=config.total_timeout)
     except asyncio.TimeoutError:
         logger.warning("Scrape timed out after 900s, returning %d jobs", len(all_jobs))
 
