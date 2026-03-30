@@ -8,7 +8,7 @@ from api.deps import get_current_user
 from api.models import Profile, User
 from batch.context import load_base_config
 from domain.profile_rules import enrich_config_with_profile_rules
-from domain.resume_editor import parse_resume_editor, serialize_resume_editor
+from domain.resume_editor import merge_resume_editor, parse_resume_editor, serialize_resume_editor
 from domain.role_taxonomy import CANONICAL_ROLE_OPTIONS, LOCATION_OPTIONS, ROLE_UI_OPTIONS, TIER_OPTIONS
 
 router = APIRouter(prefix="/api", tags=["profile"])
@@ -43,8 +43,17 @@ def _profile_resume_editor(profile: Profile | None) -> dict:
     if profile and isinstance(profile.config_overrides, dict):
         editor = profile.config_overrides.get("resume_editor")
         if isinstance(editor, dict):
-            return {**derived, **editor}
+            return merge_resume_editor(editor, derived)
     return derived
+
+
+def _drop_stored_resume_editor(profile: Profile) -> None:
+    if not isinstance(profile.config_overrides, dict):
+        return
+    overrides = dict(profile.config_overrides)
+    if "resume_editor" in overrides:
+        overrides.pop("resume_editor", None)
+        profile.config_overrides = overrides or None
 
 
 def _looks_like_public_url(value: str) -> bool:
@@ -312,6 +321,8 @@ async def update_profile(
             continue
         if field in {"resume_text", "distilled_text"}:
             profile.resume_embedding = None
+        if field == "resume_text":
+            _drop_stored_resume_editor(profile)
         setattr(profile, field, value)
 
     await db.commit()

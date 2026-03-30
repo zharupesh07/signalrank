@@ -12,12 +12,19 @@ from api.deps_llm import get_llm_client
 from api.helpers import VALID_TEMPLATES, get_resume_template
 from api.models import JobRaw, Profile, TailoredResume, User
 from api.routes.profile import ResumeEditorInput
-from domain.resume_editor import editor_to_tailored_content, parse_resume_editor
+from domain.resume_editor import editor_to_tailored_content, merge_resume_editor, parse_resume_editor
 from llm.openrouter import OpenRouterClient
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/resume", tags=["resume"])
+
+
+def _stored_resume_editor(profile: Profile | None) -> dict | None:
+    if not profile or not isinstance(profile.config_overrides, dict):
+        return None
+    editor = profile.config_overrides.get("resume_editor")
+    return editor if isinstance(editor, dict) else None
 
 
 class TailorRequest(BaseModel):
@@ -43,7 +50,7 @@ async def tailor(
     db: AsyncSession = Depends(get_db),
     llm: OpenRouterClient = Depends(get_llm_client),
 ):
-    from llm.resume_tailor import compile_pdf, render_typst, tailor_resume, validate_resume_artifacts
+    from llm.resume_tailor import render_and_compile_content, tailor_resume, validate_resume_artifacts
 
     if body.template is not None and body.template not in VALID_TEMPLATES:
         raise HTTPException(status_code=422, detail=f"Template must be one of: {VALID_TEMPLATES}")
@@ -75,8 +82,7 @@ async def tailor(
     )
 
     try:
-        typst_src = render_typst(content, selected_template)
-        pdf_bytes = compile_pdf(typst_src)
+        typst_src, pdf_bytes = render_and_compile_content(content, selected_template)
         validation = validate_resume_artifacts(content, typst_src, pdf_bytes)
     except Exception as e:
         logger.warning("PDF compile failed: %s", e)
@@ -127,7 +133,7 @@ async def download_tailored(
     profile: Profile | None = Depends(get_user_profile),
     db: AsyncSession = Depends(get_db),
 ):
-    from llm.resume_tailor import TailoredContent, compile_pdf, render_typst
+    from llm.resume_tailor import TailoredContent, render_and_compile_content
 
     res = await db.execute(
         select(TailoredResume).where(
@@ -147,8 +153,7 @@ async def download_tailored(
         if not tailored.content_json:
             return JSONResponse(status_code=202, content={"status": "pending", "job_id": str(job_id)})
         content = TailoredContent(**tailored.content_json)
-        typst_src = render_typst(content, selected_template)
-        pdf_bytes = compile_pdf(typst_src)
+        _, pdf_bytes = render_and_compile_content(content, selected_template)
 
     job_res = await db.execute(select(JobRaw).where(JobRaw.id == job_id))
     job = job_res.scalar_one_or_none()
@@ -217,7 +222,7 @@ async def preview_resume(
     profile: Profile | None = Depends(get_user_profile),
     db: AsyncSession = Depends(get_db),
 ):
-    from llm.resume_tailor import compile_pdf, render_typst
+    from llm.resume_tailor import render_and_compile_content
 
     if body.template is not None and body.template not in VALID_TEMPLATES:
         raise HTTPException(status_code=422, detail=f"Template must be one of: {VALID_TEMPLATES}")
@@ -225,14 +230,17 @@ async def preview_resume(
     if not profile and body.resume_editor is None:
         raise HTTPException(status_code=404, detail="Upload a resume first via /api/onboarding/resume")
 
-    editor_payload = body.resume_editor.model_dump() if body.resume_editor else parse_resume_editor(profile.resume_text if profile else None)
+    editor_payload = (
+        body.resume_editor.model_dump()
+        if body.resume_editor
+        else merge_resume_editor(_stored_resume_editor(profile), parse_resume_editor(profile.resume_text if profile else None))
+    )
     if not any(editor_payload.get(field) for field in ("name", "summary", "experiences", "projects", "skills", "certifications")):
         raise HTTPException(status_code=404, detail="Upload a resume first via /api/onboarding/resume")
 
     selected_template = get_resume_template(profile, body.template)
     content = editor_to_tailored_content(editor_payload)
-    typst_src = render_typst(content, selected_template)
-    pdf_bytes = compile_pdf(typst_src)
+    _, pdf_bytes = render_and_compile_content(content, selected_template)
 
     filename_root = (content.name or "resume_preview").lower().replace(" ", "_")
     return Response(
