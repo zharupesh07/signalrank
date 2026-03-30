@@ -314,9 +314,7 @@ def _normalize_tailored_content(content: "TailoredContent") -> "TailoredContent"
 def _clean_bullet(text: str) -> str:
     """Normalize a bullet string for safe Typst string literal insertion."""
     # Collapse all whitespace/newlines to single space (newlines break Typst strings)
-    cleaned = re.sub(r"[\r\n]+", " ", str(text or "")).strip()
-    # Collapse multiple spaces (LLM sometimes drops word boundaries)
-    cleaned = re.sub(r"  +", " ", cleaned)
+    cleaned = re.sub(r"\s+", " ", str(text or "")).strip()
     # Add missing space between lowercase letter and uppercase (camelCase artifact)
     # but skip known acronyms pattern like "MLOps", "DevOps", "LangGraph"
     cleaned = re.sub(r"([a-z]{2,})([A-Z][a-z])", r"\1 \2", cleaned)
@@ -326,6 +324,7 @@ def _clean_bullet(text: str) -> str:
     cleaned = re.sub(r"(\d)([a-zA-Z])", r"\1 \2", cleaned)
     # Curly/smart quotes → straight quotes (for Typst string safety)
     cleaned = cleaned.replace("\u201c", '"').replace("\u201d", '"').replace("\u2018", "'").replace("\u2019", "'")
+    cleaned = re.sub(r"^([a-z])", lambda match: match.group(1).upper(), cleaned)
     return cleaned
 
 
@@ -381,6 +380,8 @@ class TailoredContent:
     projects: list[dict] = field(default_factory=list)
     education: list[dict] = field(default_factory=list)
     certifications: list[str] = field(default_factory=list)
+    par_leading: str = "0.52em"
+    list_spacing: str = "0.4em"
 
 
 @dataclass
@@ -481,8 +482,10 @@ def _fit_to_one_page(content: TailoredContent, current_pages: int = 2) -> bool:
 
     Priority (least destructive first):
     1. Truncate summary to 2 sentences if > 3
-    2. Trim bullets from oldest non-intern role (reversed list = oldest first)
-    3. Trim bullets from newest role only as last resort (floor: 3 bullets)
+    2. Tighten paragraph leading slightly
+    3. Tighten list spacing slightly
+    4. Trim bullets from oldest non-intern role (reversed list = oldest first)
+    5. Drop oldest role entirely as a last resort when there are many roles
     """
     if current_pages <= 1:
         return False
@@ -493,7 +496,17 @@ def _fit_to_one_page(content: TailoredContent, current_pages: int = 2) -> bool:
         content.summary = ". ".join(sentences[:2]) + "."
         return True
 
-    # Step 2: trim oldest non-intern role first (reversed = oldest first)
+    # Step 2: tighten line spacing before removing content
+    if content.par_leading != "0.48em":
+        content.par_leading = "0.48em"
+        return True
+
+    # Step 3: tighten list spacing before removing content
+    if content.list_spacing != "0.25em":
+        content.list_spacing = "0.25em"
+        return True
+
+    # Step 4: trim oldest non-intern role first (reversed = oldest first)
     non_intern = [e for e in reversed(content.experiences) if e.get("bullets")]
     for exp in non_intern:
         bullets = exp.get("bullets", [])
@@ -502,6 +515,11 @@ def _fit_to_one_page(content: TailoredContent, current_pages: int = 2) -> bool:
         if len(bullets) > floor:
             exp["bullets"] = bullets[:-1]
             return True
+
+    # Step 5: if still too long, drop the oldest role entirely.
+    if len(content.experiences) > 3:
+        content.experiences.pop()
+        return True
 
     return False
 
@@ -741,6 +759,28 @@ def compile_pdf(typst_source: str) -> bytes:
         return out.read_bytes()
 
 
+def render_and_compile_content(
+    content: TailoredContent,
+    template: str = "classic",
+    max_pages: int = 1,
+) -> tuple[str, bytes]:
+    typst_src = render_typst(content, template)
+    pdf = compile_pdf(typst_src)
+
+    for _ in range(10):
+        page_count = check_page_count(pdf)
+        if page_count <= max_pages:
+            break
+        if not _fit_to_one_page(content, current_pages=page_count):
+            break
+        typst_src = render_typst(content, template)
+        pdf = compile_pdf(typst_src)
+    else:
+        logger.warning("_fit_to_one_page exhausted iterations, returning best-effort PDF")
+
+    return typst_src, pdf
+
+
 async def tailor_and_compile(
     resume_data: dict,
     job_title: str,
@@ -769,17 +809,5 @@ async def tailor_and_compile(
     if not content.certifications:
         content.certifications = resume_data.get("certifications", [])
 
-    typst_src = render_typst(content, template)
-    pdf = compile_pdf(typst_src)
-
-    for _ in range(5):
-        if check_page_count(pdf) <= max_pages:
-            break
-        if not _fit_to_one_page(content, current_pages=check_page_count(pdf)):
-            break
-        typst_src = render_typst(content, template)
-        pdf = compile_pdf(typst_src)
-    else:
-        logger.warning("_fit_to_one_page exhausted iterations, returning best-effort PDF")
-
+    typst_src, pdf = render_and_compile_content(content, template=template, max_pages=max_pages)
     return content, pdf

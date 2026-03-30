@@ -2,13 +2,13 @@
 // Variables set by including template: accent, bar_color_old
 #set page(paper: "a4", margin: (x: 1.1cm, top: 0.45cm, bottom: 0.45cm))
 #set text(font: "Roboto", size: 8.8pt, lang: "en")
-#set par(leading: 0.28em, justify: false)
-#set list(indent: 0.2em, body-indent: 0.35em, spacing: 0.5em)
+#set par(leading: {{ par_leading | default("0.52em") }}, justify: false)
+#set list(indent: 0.2em, body-indent: 0.5em, spacing: {{ list_spacing | default("0.4em") }})
 
 #let accent_clr = rgb("{{ accent }}")
 #let bar_old_clr = rgb("{{ bar_color_old }}")
-#let gray   = rgb("#666666")
-#let light  = rgb("#999999")
+#let gray   = rgb("666666")
+#let light  = rgb("999999")
 #let link_clr = accent_clr
 
 #let fa(code) = text(font: "FontAwesome", size: 8pt)[#str.from-unicode(code)]
@@ -16,13 +16,13 @@
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 #let section(title) = {
-  v(4pt)
-  grid(columns: (auto, 1fr), gutter: 4pt,
-    text(size: 8pt, weight: "bold", fill: accent_clr, tracking: 0.8pt)[#upper(title)],
-    align(horizon, line(length: 100%,
-      stroke: gradient.linear(accent_clr, rgb("#eeeeee"))))
-  )
-  v(1pt)
+  block(above: 0.7em, below: 0.3em)[
+    grid(columns: (auto, 1fr), gutter: 4pt,
+      text(size: 8pt, weight: "bold", fill: accent_clr, tracking: 0.8pt)[#upper(title)],
+      align(horizon, line(length: 100%,
+        stroke: gradient.linear(accent_clr, rgb("eeeeee"))))
+    )
+  ]
 }
 
 #let cv_entry(bar_clr, role, company, company_url, loc, dates, tech, bullets) = {
