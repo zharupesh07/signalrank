@@ -71,6 +71,8 @@ Measured locally after the memory pass:
 - Worker-like process after ranker import: about `108 MB`
 - Worker-like process during embedding inference: about `385 MB`
 
+The older `DB_POOL_SIZE=2` / `DB_MAX_OVERFLOW=1` profile is too small for normal authenticated page loads. The frontend routinely issues several requests in parallel, and an active scrape can briefly need extra checkouts for progress updates and batch writes. Use a `5/5` pool as the baseline unless you have a stricter database connection cap.
+
 ## Environment Variables
 
 ```bash
@@ -83,8 +85,8 @@ OPENROUTER_API_KEY=sk-or-v1-...
 RAPIDAPI_KEY=                     # JSearch API — extra job sources
 HUNTER_API_KEY=                   # Optional recruiter/contact enrichment integrations
 ALLOWED_ORIGINS=http://localhost:3000
-DB_POOL_SIZE=2
-DB_MAX_OVERFLOW=1
+DB_POOL_SIZE=5
+DB_MAX_OVERFLOW=5
 DB_POOL_TIMEOUT=30
 SCRAPER_MAX_RESULTS=1500
 SCRAPER_HOURS_OLD=720             # 30-day lookback
