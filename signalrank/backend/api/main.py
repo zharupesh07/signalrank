@@ -71,6 +71,7 @@ async def lifespan(app: FastAPI):
     global _worker_task, _resume_worker_task, _archival_worker_task, _boot_tasks
     _boot_tasks = []
     runtime_flags = api_runtime_flags()
+    logger.info("API startup — runtime flags: %s", runtime_flags)
 
     try:
         await ensure_runtime_schema_compatibility()
@@ -201,7 +202,11 @@ async def db_timeout_exception_handler(request: Request, exc: SATimeoutError) ->
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    flags = api_runtime_flags()
+    return {
+        "status": "ok",
+        "workers": {k: v for k, v in flags.items() if v},
+    }
 
 
 @app.get("/ready")

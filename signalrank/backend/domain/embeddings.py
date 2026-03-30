@@ -41,6 +41,8 @@ class EmbeddingEngine:
         sess_opts = ort.SessionOptions()
         sess_opts.inter_op_num_threads = 1
         sess_opts.intra_op_num_threads = 1
+        sess_opts.enable_mem_pattern = False       # reduces peak RSS
+        sess_opts.enable_cpu_mem_arena = False     # don't pre-allocate arena
         self._session = ort.InferenceSession(
             model_path, sess_opts, providers=["CPUExecutionProvider"]
         )
