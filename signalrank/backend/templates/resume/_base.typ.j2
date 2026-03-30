@@ -90,7 +90,7 @@
   "{{ (exp.location | default('')) | replace('"', "'") | typst_escape }}",
   "{{ (exp.dates | default('')) | replace('"', "'") }}",
   "{{ (exp.tech | default('')) | replace('"', "'") | typst_escape }}",
-  ({% for b in bullets_list %}"{{ b | replace('"', "'") | replace('#', '\\#') | typst_bold }}",{% endfor %})
+  ({% for b in bullets_list %}"{{ b | replace('"', "'") | typst_escape | typst_bold }}",{% endfor %})
 )
 {% else %}
 #compact_entry(

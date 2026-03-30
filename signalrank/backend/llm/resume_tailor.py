@@ -306,7 +306,27 @@ def _normalize_tailored_content(content: "TailoredContent") -> "TailoredContent"
     for exp in content.experiences:
         if exp.get("company_url"):
             exp["company_url"] = _normalize_public_url(exp.get("company_url"))
+        if "bullets" in exp:
+            exp["bullets"] = [_clean_bullet(b) for b in exp["bullets"] if _clean_bullet(b)]
     return content
+
+
+def _clean_bullet(text: str) -> str:
+    """Normalize a bullet string for safe Typst string literal insertion."""
+    # Collapse all whitespace/newlines to single space (newlines break Typst strings)
+    cleaned = re.sub(r"[\r\n]+", " ", str(text or "")).strip()
+    # Collapse multiple spaces (LLM sometimes drops word boundaries)
+    cleaned = re.sub(r"  +", " ", cleaned)
+    # Add missing space between lowercase letter and uppercase (camelCase artifact)
+    # but skip known acronyms pattern like "MLOps", "DevOps", "LangGraph"
+    cleaned = re.sub(r"([a-z]{2,})([A-Z][a-z])", r"\1 \2", cleaned)
+    # Add missing space between word and number: "for300" → "for 300"
+    cleaned = re.sub(r"([a-zA-Z]{2,})(\d)", r"\1 \2", cleaned)
+    # Add missing space between number and letter: "14,000deployments" → "14,000 deployments"
+    cleaned = re.sub(r"(\d)([a-zA-Z])", r"\1 \2", cleaned)
+    # Curly/smart quotes → straight quotes (for Typst string safety)
+    cleaned = cleaned.replace("\u201c", '"').replace("\u201d", '"').replace("\u2018", "'").replace("\u2019", "'")
+    return cleaned
 
 
 def _typst_bold(s: str) -> str:

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.config import api_runtime_flags
 from api.database import get_db
 from api.deps import get_current_user
+from batch.resume_worker import force_regenerate_all
 from api.models import (
     Application, ArchivalQueue, GenerationQueue, JobRaw, JobResult,
     Profile, RecruiterRefreshTask, Run, TailoredResume, User,
@@ -316,3 +317,14 @@ async def list_all_runs(
         )
         for r, email in rows
     ]
+
+
+@router.post("/users/{user_id}/force-regenerate-resumes", status_code=202)
+async def force_regenerate_resumes_for_user(
+    user_id: str,
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    count = await force_regenerate_all(db, user_id)
+    return {"queued": count, "user_id": user_id}
+

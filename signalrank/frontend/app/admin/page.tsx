@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/toast";
-import { Users, Activity, BarChart2, Play, Trash2, Shield, ShieldOff, CheckCircle, XCircle, ChevronDown, ChevronRight, ExternalLink, RefreshCw, RotateCcw } from "lucide-react";
+import { Users, Activity, BarChart2, Play, Trash2, Shield, ShieldOff, CheckCircle, XCircle, ChevronDown, ChevronRight, ExternalLink, RefreshCw, RotateCcw, FileText } from "lucide-react";
 
 type AdminUser = {
   id: string;
@@ -167,6 +167,12 @@ export default function AdminPage() {
     setRuns(updated);
   }
 
+  async function forceRegenerateResumes(userId: string, email: string) {
+    if (!confirm(`Force regenerate all tailored resumes for ${email}? Existing cached PDFs will be cleared.`)) return;
+    const res = await api.admin.forceRegenerateResumes(token, userId);
+    toast(`Queued ${res.queued} resume generation task(s) for ${email}`, "success");
+  }
+
   if (!isAdmin) return null;
 
   return (
@@ -289,6 +295,13 @@ export default function AdminPage() {
                               title="Force scrape + run"
                             >
                               <RefreshCw size={12} />
+                            </button>
+                            <button
+                              onClick={() => forceRegenerateResumes(u.id, u.email)}
+                              className="p-1.5 text-muted-foreground hover:text-green-400 transition-colors"
+                              title="Force regenerate all tailored resumes"
+                            >
+                              <FileText size={12} />
                             </button>
                             <button
                               onClick={() => resetUserJobs(u.id, u.email)}
