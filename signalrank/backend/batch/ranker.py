@@ -362,6 +362,16 @@ async def _compute_embeddings(
 ) -> pd.DataFrame:
     t_emb = time.monotonic()
 
+    # Pop the embedding column immediately and convert each Python list → float32 ndarray.
+    # This frees ~7.7KB of Python object overhead per row (384 floats × 24 bytes) before
+    # any subsequent DataFrame operations, reducing peak RSS by ~3.8MB per 500-row chunk.
+    emb_series = df.pop("embedding")
+    stored_embeddings = [
+        np.array(e, dtype="float32") if e is not None else None
+        for e in emb_series
+    ]
+    del emb_series
+
     # Use __base__ cfg_fp for job embeddings so pre-embed cache is reusable
     base_ctx = build_context(user_id="__base__", resume_text="")
     job_cache = PgEmbeddingCache(db, base_ctx.config_fp)
@@ -378,14 +388,15 @@ async def _compute_embeddings(
     stored_hits = 0
     miss_specs: list[tuple[int, str, str]] = []
     for i, (t, d, cs, stored_embedding) in enumerate(
-        zip(df["title"], df["description"], df["canonical_skills"], df["embedding"])
+        zip(df["title"], df["description"], df["canonical_skills"], stored_embeddings)
     ):
         if stored_embedding is not None:
-            vectors[i] = np.array(stored_embedding, dtype="float32")
+            vectors[i] = stored_embedding
             stored_hits += 1
             continue
         job_text = build_job_embedding_text(title=t, description=d, canonical_skills=cs, cfg=cfg)
         miss_specs.append((i, fingerprint_text(job_text), job_text))
+    del stored_embeddings
 
     cached = await job_cache.fetch([text_fp for _, text_fp, _ in miss_specs])
     misses: list[tuple[int, str]] = []
@@ -403,7 +414,6 @@ async def _compute_embeddings(
         "Embedding cache: %d stored hits, %d cache hits, %d misses out of %d jobs",
         stored_hits, len(cached), len(misses), len(df),
     )
-    df = df.drop(columns=["embedding"], errors="ignore")
     log_rss(logger, "rank_embed_prepare", jobs=len(df), cache_misses=len(misses))
 
     engine = None

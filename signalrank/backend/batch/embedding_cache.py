@@ -1,6 +1,7 @@
 import math
 from collections.abc import Sequence
 
+import numpy as np
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,7 +11,8 @@ from batch.context import load_base_config
 
 # Process-level LRU cache keyed by (cfg_fp, text_fp) — avoids re-fetching
 # vectors from Neon on repeated ranking runs within the same process lifetime.
-_VECTOR_CACHE: dict[tuple[str, str], list[float]] = {}
+# Values are float32 ndarrays (~1.5KB each) instead of Python list[float] (~9.2KB each).
+_VECTOR_CACHE: dict[tuple[str, str], np.ndarray] = {}
 _VECTOR_CACHE_MAX = load_base_config().get("caching", {}).get("vector_cache_max", 2_000)
 
 
@@ -25,7 +27,9 @@ def _remember_vector(key: tuple[str, str], vector: Sequence[float]) -> None:
         return
     if len(_VECTOR_CACHE) >= _VECTOR_CACHE_MAX:
         _VECTOR_CACHE.pop(next(iter(_VECTOR_CACHE)))
-    _VECTOR_CACHE[key] = _clean_vector(vector)
+    arr = np.array(vector, dtype="float32")
+    arr[~np.isfinite(arr)] = 0.0
+    _VECTOR_CACHE[key] = arr
 
 
 class PgEmbeddingCache:

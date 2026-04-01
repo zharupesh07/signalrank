@@ -82,6 +82,7 @@ async def _embed_new_jobs(
     embed_chunk_size = get_batch(cfg, "embed_chunk_size", 4)
     embed_backoff_base = get_retry(cfg, "embed_backoff_base", 2)
     total_jobs = len(job_urls)
+    canon = SkillCanonicalizer(cfg)
 
     for attempt in range(1, embed_max_retries + 1):
         try:
@@ -108,7 +109,6 @@ async def _embed_new_jobs(
                 ordered_rows = [rows_by_url[url] for url in chunk_urls if url in rows_by_url]
                 descriptions = [row.description or "" for row in ordered_rows]
                 raw_skills_list = extract_skills_from_texts(descriptions, cfg)
-                canon = SkillCanonicalizer(cfg)
                 chunk_specs: list[tuple[str, str, str]] = []
                 for row, raw_skills in zip(ordered_rows, raw_skills_list):
                     canonical_skills = sorted(canon.canonicalize(raw_skills))
@@ -163,7 +163,7 @@ async def _embed_new_jobs(
                         jobs_found=total_jobs,
                         message=f"Embedding jobs: {processed}/{total_jobs}",
                     )
-                del rows, ordered_rows, rows_by_url, descriptions, raw_skills_list, canon, chunk_specs
+                del rows, ordered_rows, rows_by_url, descriptions, raw_skills_list, chunk_specs
                 if "vecs" in locals():
                     del vecs
                 gc.collect()
