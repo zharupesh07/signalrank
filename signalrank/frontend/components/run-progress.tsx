@@ -53,6 +53,7 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
 
   useEffect(() => {
     if (!token || !run.id) return;
+    if (run.id.startsWith("local-")) return;
     if (!isLiveStatus(run.status)) return;
     if (completedRef.current) return;
 

@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select, or_
+from sqlalchemy import func, select, or_, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -229,56 +229,100 @@ async def get_analytics(
     if not run:
         return {"score_distribution": [], "top_companies": [], "sites": []}
 
-    from sqlalchemy import case, literal_column
-
-    base = [JobResult.run_id == run.id, JobResult.user_id == current_user.id]
-
-    score_q = await db.execute(
-        select(
-            case(
-                (JobResult.final_score < 40, literal_column("'0-40'")),
-                (JobResult.final_score < 60, literal_column("'40-60'")),
-                (JobResult.final_score < 70, literal_column("'60-70'")),
-                (JobResult.final_score < 80, literal_column("'70-80'")),
-                (JobResult.final_score < 90, literal_column("'80-90'")),
-                else_=literal_column("'90-100'"),
-            ).label("bucket"),
-            func.count().label("cnt"),
-        ).where(*base).group_by("bucket")
-    )
-    bucket_rows = {r.bucket: r.cnt for r in score_q.all()}
-    score_distribution = [
-        {"range": k, "count": bucket_rows.get(k, 0)}
-        for k in ("0-40", "40-60", "60-70", "70-80", "80-90", "90-100")
-    ]
-
-    company_q = await db.execute(
-        select(JobRaw.company, func.count().label("cnt"))
-        .join(JobResult, JobResult.job_id == JobRaw.id)
-        .where(*base, JobRaw.company.isnot(None))
-        .group_by(JobRaw.company)
-        .order_by(func.count().desc())
-        .limit(10)
-    )
-    top_companies = [{"company": r.company, "count": r.cnt} for r in company_q.all()]
-
-    site_q = await db.execute(
-        select(JobRaw.site, func.count().label("cnt"))
-        .join(JobResult, JobResult.job_id == JobRaw.id)
-        .where(*base, JobRaw.site.isnot(None))
-        .group_by(JobRaw.site)
-        .order_by(func.count().desc())
-    )
-    sites = [{"site": r.site, "count": r.cnt} for r in site_q.all()]
-
-    total_q = await db.execute(select(func.count()).where(*base))
-    total_jobs = total_q.scalar() or 0
+    analytics = (
+        await db.execute(
+            text(
+                """
+                WITH filtered AS (
+                    SELECT jr.final_score, j.company, j.site
+                    FROM job_results jr
+                    JOIN jobs_raw j ON j.id = jr.job_id
+                    WHERE jr.run_id = :run_id AND jr.user_id = :user_id
+                ),
+                buckets(bucket, ord) AS (
+                    VALUES
+                        ('0-40', 1),
+                        ('40-60', 2),
+                        ('60-70', 3),
+                        ('70-80', 4),
+                        ('80-90', 5),
+                        ('90-100', 6)
+                ),
+                score_counts AS (
+                    SELECT
+                        b.bucket,
+                        b.ord,
+                        COUNT(f.final_score) AS cnt
+                    FROM buckets b
+                    LEFT JOIN filtered f
+                        ON (
+                            (b.bucket = '0-40' AND f.final_score < 40) OR
+                            (b.bucket = '40-60' AND f.final_score >= 40 AND f.final_score < 60) OR
+                            (b.bucket = '60-70' AND f.final_score >= 60 AND f.final_score < 70) OR
+                            (b.bucket = '70-80' AND f.final_score >= 70 AND f.final_score < 80) OR
+                            (b.bucket = '80-90' AND f.final_score >= 80 AND f.final_score < 90) OR
+                            (b.bucket = '90-100' AND f.final_score >= 90)
+                        )
+                    GROUP BY b.bucket, b.ord
+                ),
+                company_counts AS (
+                    SELECT company, COUNT(*) AS cnt
+                    FROM filtered
+                    WHERE company IS NOT NULL
+                    GROUP BY company
+                    ORDER BY cnt DESC, company
+                    LIMIT 10
+                ),
+                site_counts AS (
+                    SELECT site, COUNT(*) AS cnt
+                    FROM filtered
+                    WHERE site IS NOT NULL
+                    GROUP BY site
+                    ORDER BY cnt DESC, site
+                )
+                SELECT
+                    COALESCE(
+                        (
+                            SELECT json_agg(
+                                json_build_object('range', bucket, 'count', cnt)
+                                ORDER BY ord
+                            )
+                            FROM score_counts
+                        ),
+                        '[]'::json
+                    ) AS score_distribution,
+                    COALESCE(
+                        (
+                            SELECT json_agg(
+                                json_build_object('company', company, 'count', cnt)
+                                ORDER BY cnt DESC, company
+                            )
+                            FROM company_counts
+                        ),
+                        '[]'::json
+                    ) AS top_companies,
+                    COALESCE(
+                        (
+                            SELECT json_agg(
+                                json_build_object('site', site, 'count', cnt)
+                                ORDER BY cnt DESC, site
+                            )
+                            FROM site_counts
+                        ),
+                        '[]'::json
+                    ) AS sites,
+                    (SELECT COUNT(*) FROM filtered) AS total
+                """
+            ),
+            {"run_id": run.id, "user_id": current_user.id},
+        )
+    ).mappings().one()
 
     return {
-        "score_distribution": score_distribution,
-        "top_companies": top_companies,
-        "sites": sites,
-        "total": total_jobs,
+        "score_distribution": analytics["score_distribution"] or [],
+        "top_companies": analytics["top_companies"] or [],
+        "sites": analytics["sites"] or [],
+        "total": analytics["total"] or 0,
     }
 
 

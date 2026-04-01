@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
@@ -70,11 +70,11 @@ export default function OnboardingPage() {
   const [minYoe, setMinYoe] = useState("");
   const [maxYoe, setMaxYoe] = useState("");
 
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function stopPolling() {
     if (pollRef.current) {
-      clearInterval(pollRef.current);
+      clearTimeout(pollRef.current);
       pollRef.current = null;
     }
   }
@@ -89,27 +89,37 @@ export default function OnboardingPage() {
     });
   }, [token]);
 
-  function startPolling() {
+  const startPolling = useCallback(() => {
     stopPolling();
-    pollRef.current = setInterval(async () => {
-      try {
-        const res = await api.onboarding.parsed(token);
-        if (!res.parsing) {
-          stopPolling();
-          setParsing(false);
-          const p = res.prefill;
-          if (p.target_roles?.length) setTargetRoles(p.target_roles);
-          if (p.preferred_locations?.length) setLocations(p.preferred_locations);
-          if (p.exclusions?.length) setExclusions(p.exclusions.join(", "));
-          if (p.salary_lpa) setSalaryLpa(String(p.salary_lpa));
-          if (p.min_yoe != null) setMinYoe(String(p.min_yoe));
-          if (p.max_yoe != null) setMaxYoe(String(p.max_yoe));
+    let delay = 2500;
+    const maxDelay = 30000;
+
+    const schedule = () => {
+      pollRef.current = setTimeout(async () => {
+        try {
+          const res = await api.onboarding.parsed(token);
+          if (!res.parsing) {
+            stopPolling();
+            setParsing(false);
+            const p = res.prefill;
+            if (p.target_roles?.length) setTargetRoles(p.target_roles);
+            if (p.preferred_locations?.length) setLocations(p.preferred_locations);
+            if (p.exclusions?.length) setExclusions(p.exclusions.join(", "));
+            if (p.salary_lpa) setSalaryLpa(String(p.salary_lpa));
+            if (p.min_yoe != null) setMinYoe(String(p.min_yoe));
+            if (p.max_yoe != null) setMaxYoe(String(p.max_yoe));
+            return;
+          }
+        } catch {
+          // ignore transient errors
         }
-      } catch {
-        // ignore transient errors
-      }
-    }, 2500);
-  }
+        delay = Math.min(delay * 2, maxDelay);
+        schedule();
+      }, delay);
+    };
+
+    schedule();
+  }, [token]);
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();

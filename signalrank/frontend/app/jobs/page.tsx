@@ -253,11 +253,13 @@ export default function JobsPage() {
   const [page, setPage] = useState(1);
   const [sorting, setSorting] = useState<SortingState>([{ id: "final_score", desc: true }]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [tracked, setTracked] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [selectedJobLoading, setSelectedJobLoading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [pageSize, setPageSize] = useState(50);
   const [showArchived, setShowArchived] = useState(true);
@@ -301,7 +303,12 @@ export default function JobsPage() {
 
   const loadJobs = useCallback(async () => {
     if (!token) return;
-    setLoading(true);
+    const hasJobs = jobs.length > 0;
+    if (hasJobs) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     try {
       const { sort, sortDir } = getApiSort(sorting);
       const response = await api.jobs.list(token, {
@@ -321,14 +328,45 @@ export default function JobsPage() {
       setTotal(response.total);
       setRunTotal(response.run_total);
       setAvailableSites(response.available_sites);
+      setSelectedJob((current) => {
+        if (!current) return null;
+        const updated = response.jobs.find((job) => job.id === current.id);
+        return updated ? { ...current, ...updated } : current;
+      });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, [token, page, pageSize, debouncedSearch, showArchived, filters, sorting]);
+  }, [token, page, pageSize, debouncedSearch, showArchived, filters, sorting, jobs.length]);
 
   useEffect(() => {
     loadJobs().catch(() => null);
   }, [loadJobs]);
+
+  const toggleSelectedJob = useCallback(async (job: Job) => {
+    const isSelected = selectedJob?.id === job.id;
+    if (isSelected) {
+      setSelectedJob(null);
+      setSelectedJobLoading(false);
+      return;
+    }
+
+    setSelectedJob(job);
+    if (job.description !== undefined) {
+      setSelectedJobLoading(false);
+      return;
+    }
+
+    setSelectedJobLoading(true);
+    try {
+      const detail = await api.jobs.get(token, job.id);
+      setSelectedJob((current) => (current?.id === job.id ? { ...current, ...detail } : current));
+    } catch {
+      toast("Failed to load job details", "error");
+    } finally {
+      setSelectedJobLoading(false);
+    }
+  }, [selectedJob?.id, toast, token]);
 
   function toggleCollapsed() {
     setCollapsed((prev) => {
@@ -652,7 +690,10 @@ export default function JobsPage() {
           {/* Main content + detail panel */}
           <div className="flex-1 min-w-0 flex gap-4">
           <div className={`space-y-5 ${selectedJob ? "flex-1 min-w-0" : "w-full"}`}>
-            <div className="border border-border overflow-x-auto">
+            <div className="border border-border overflow-x-auto relative">
+              {refreshing && (
+                <div className="absolute inset-0 z-10 bg-background/35 pointer-events-none" />
+              )}
               <table className="jobs-table w-full text-xs border-collapse min-w-[900px]">
                 <colgroup>
                   <col style={{ width: 260 }} />
@@ -713,11 +754,12 @@ export default function JobsPage() {
                       return (
                         <tr
                           key={row.id}
-                          onClick={() => setSelectedJob(isSelected ? null : job)}
+                          onClick={() => { toggleSelectedJob(job).catch(() => null); }}
                           className="job-row-item border-b border-border bg-card"
                           style={{
                             ...(isSelected ? { boxShadow: "inset 2px 0 0 var(--primary)", background: "color-mix(in srgb, var(--primary) 5%, transparent)" } : {}),
                             ...(job.archived_by_llm ? { opacity: 0.45 } : {}),
+                            ...(refreshing ? { opacity: 0.7 } : {}),
                           }}
                         >
                           {row.getVisibleCells().map((cell) => (
@@ -867,7 +909,19 @@ export default function JobsPage() {
                 )}
               </div>
 
-              {selectedJob.description && (
+              {selectedJobLoading && (
+                <div className="pt-1 border-t border-border space-y-2">
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Description</div>
+                  <div className="space-y-2">
+                    <div className="skeleton h-3 rounded w-full" />
+                    <div className="skeleton h-3 rounded w-[92%]" />
+                    <div className="skeleton h-3 rounded w-[88%]" />
+                    <div className="skeleton h-3 rounded w-[76%]" />
+                  </div>
+                </div>
+              )}
+
+              {selectedJob.description && !selectedJobLoading && (
                 <div className="pt-1 border-t border-border">
                   <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Description</div>
                   <p className="text-[11px] text-secondary-foreground leading-relaxed whitespace-pre-wrap">

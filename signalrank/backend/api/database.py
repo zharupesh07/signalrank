@@ -83,6 +83,7 @@ _db_target: str = "local"
 _schema_compat_checked = False
 _schema_compat_lock = asyncio.Lock()
 _RUNS_ERROR_SCHEMA_LOCK_KEY = 1_947_017_465
+_RUNS_MODE_SCHEMA_LOCK_KEY = 1_947_017_466
 
 
 class Base(DeclarativeBase):
@@ -135,28 +136,8 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
     global _schema_compat_checked
     target = bind or _active_engine
     async with target.begin() as conn:
-        result = await conn.execute(
-            text(
-                """
-                SELECT 1
-                FROM information_schema.columns
-                WHERE table_schema = current_schema()
-                  AND table_name = 'runs'
-                  AND column_name = 'error'
-                """
-            )
-        )
-        if result.scalar() == 1:
-            if target is _active_engine:
-                _schema_compat_checked = True
-            return
-        if conn.dialect.name == "postgresql":
-            # Serialize the one-time repair across API/worker processes during deploys.
+        error_exists = (
             await conn.execute(
-                text("SELECT pg_advisory_xact_lock(:lock_key)"),
-                {"lock_key": _RUNS_ERROR_SCHEMA_LOCK_KEY},
-            )
-            result = await conn.execute(
                 text(
                     """
                     SELECT 1
@@ -167,11 +148,76 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
                     """
                 )
             )
-            if result.scalar() == 1:
-                if target is _active_engine:
-                    _schema_compat_checked = True
-                return
-        await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS error TEXT"))
+        ).scalar() == 1
+        mode_exists = (
+            await conn.execute(
+                text(
+                    """
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = current_schema()
+                      AND table_name = 'runs'
+                      AND column_name = 'mode'
+                    """
+                )
+            )
+        ).scalar() == 1
+        if error_exists and mode_exists:
+            if target is _active_engine:
+                _schema_compat_checked = True
+            return
+        if conn.dialect.name == "postgresql":
+            if not error_exists:
+                await conn.execute(
+                    text("SELECT pg_advisory_xact_lock(:lock_key)"),
+                    {"lock_key": _RUNS_ERROR_SCHEMA_LOCK_KEY},
+                )
+                error_exists = (
+                    await conn.execute(
+                        text(
+                            """
+                            SELECT 1
+                            FROM information_schema.columns
+                            WHERE table_schema = current_schema()
+                              AND table_name = 'runs'
+                              AND column_name = 'error'
+                            """
+                        )
+                    )
+                ).scalar() == 1
+            if not mode_exists:
+                await conn.execute(
+                    text("SELECT pg_advisory_xact_lock(:lock_key)"),
+                    {"lock_key": _RUNS_MODE_SCHEMA_LOCK_KEY},
+                )
+                mode_exists = (
+                    await conn.execute(
+                        text(
+                            """
+                            SELECT 1
+                            FROM information_schema.columns
+                            WHERE table_schema = current_schema()
+                              AND table_name = 'runs'
+                              AND column_name = 'mode'
+                            """
+                        )
+                    )
+                ).scalar() == 1
+        if not error_exists:
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS error TEXT"))
+        if not mode_exists:
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS mode VARCHAR(20)"))
+            await conn.execute(
+                text(
+                    """
+                    UPDATE runs
+                    SET mode = COALESCE(NULLIF(progress->>'requested_mode', ''), 'quick')
+                    WHERE mode IS NULL
+                    """
+                )
+            )
+            await conn.execute(text("ALTER TABLE runs ALTER COLUMN mode SET DEFAULT 'quick'"))
+            await conn.execute(text("ALTER TABLE runs ALTER COLUMN mode SET NOT NULL"))
     if target is _active_engine:
         _schema_compat_checked = True
 

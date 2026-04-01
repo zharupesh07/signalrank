@@ -134,6 +134,8 @@ export default function DashboardPage() {
 
   async function triggerRun() {
     setTriggering(true);
+    const optimisticRun = makeQueuedRun(`local-${Date.now()}`);
+    setRun(optimisticRun);
     try {
       const res = await api.runs.trigger(token);
       const queuedRun = makeQueuedRun(res.run_id);
@@ -141,6 +143,7 @@ export default function DashboardPage() {
       upsertRunCaches(queuedRun);
       toast("Run queued", "info");
     } catch (err) {
+      setRun((current) => (current?.id === optimisticRun.id ? null : current));
       toast(err instanceof Error ? err.message : "Failed to trigger run", "error");
     } finally {
       setTriggering(false);

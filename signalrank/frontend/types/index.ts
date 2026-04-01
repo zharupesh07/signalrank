@@ -84,7 +84,7 @@ export interface Job {
   site: string | null;
   job_url: string;
   date_posted: string | null;
-  description: string | null;
+  description?: string | null;
   final_score: number | null;
   semantic_score: number | null;
   skills_score: number | null;

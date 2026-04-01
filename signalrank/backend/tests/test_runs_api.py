@@ -76,7 +76,21 @@ async def test_trigger_run_does_not_require_local_queue_when_api_worker_disabled
         await db.execute(select(Run).where(Run.id == run_id))
     ).scalar_one()
     assert run.status == "pending"
+    assert run.mode == "quick"
     assert run.progress == {"requested_mode": "quick", "force_scrape": False}
+
+
+async def test_trigger_full_run_persists_mode(client, auth_token, db: AsyncSession):
+    response = await client.post(
+        "/api/runs/trigger",
+        headers={"Authorization": f"Bearer {auth_token}"},
+        json={"mode": "full"},
+    )
+    assert response.status_code == 202
+    run = (
+        await db.execute(select(Run).where(Run.id == response.json()["run_id"]))
+    ).scalar_one()
+    assert run.mode == "full"
 
 
 async def test_get_run_status(client, auth_token):

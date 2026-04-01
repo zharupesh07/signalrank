@@ -51,6 +51,7 @@ async def trigger_run(
     run = Run(
         user_id=current_user.id,
         status="pending",
+        mode=requested_mode,
         progress={"requested_mode": requested_mode, "force_scrape": False},
     )
     db.add(run)

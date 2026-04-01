@@ -23,6 +23,18 @@ def _ensure_schema():
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
             await conn.run_sync(Base.metadata.create_all)
             await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS error TEXT"))
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS mode VARCHAR(20)"))
+            await conn.execute(
+                text(
+                    """
+                    UPDATE runs
+                    SET mode = COALESCE(NULLIF(progress->>'requested_mode', ''), 'quick')
+                    WHERE mode IS NULL
+                    """
+                )
+            )
+            await conn.execute(text("ALTER TABLE runs ALTER COLUMN mode SET DEFAULT 'quick'"))
+            await conn.execute(text("ALTER TABLE runs ALTER COLUMN mode SET NOT NULL"))
         await engine.dispose()
 
     asyncio.run(_create())

@@ -41,6 +41,7 @@ async def test_process_run_full_mode_skips_scrape_after_recent_deep_scan(
             Run(
                 user_id=user.id,
                 status="success",
+                mode="full",
                 scrape_count=25,
                 finished_at=now - timedelta(hours=2),
                 progress={"requested_mode": "full", "force_scrape": False, "scrape_executed": True},
@@ -48,6 +49,7 @@ async def test_process_run_full_mode_skips_scrape_after_recent_deep_scan(
             Run(
                 user_id=user.id,
                 status="success",
+                mode="quick",
                 scrape_count=18,
                 finished_at=now - timedelta(hours=4),
                 progress={"requested_mode": "quick", "force_scrape": False, "scrape_executed": True},
@@ -55,7 +57,7 @@ async def test_process_run_full_mode_skips_scrape_after_recent_deep_scan(
         ]
     )
 
-    current_run = Run(user_id=user.id, status="pending")
+    current_run = Run(user_id=user.id, status="pending", mode="full")
     db.add(current_run)
     await db.commit()
 
@@ -112,13 +114,14 @@ async def test_process_run_full_mode_does_not_skip_after_recent_quick_scan(
         Run(
             user_id=user.id,
             status="success",
+            mode="quick",
             scrape_count=12,
             finished_at=now - timedelta(hours=2),
             progress={"requested_mode": "quick", "force_scrape": False, "scrape_executed": True},
         )
     )
 
-    current_run = Run(user_id=user.id, status="pending")
+    current_run = Run(user_id=user.id, status="pending", mode="full")
     db.add(current_run)
     await db.commit()
 

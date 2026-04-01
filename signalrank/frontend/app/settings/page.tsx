@@ -581,15 +581,18 @@ export default function SettingsPage() {
   async function triggerDeepScan() {
     if (!token) return;
     setTriggeringDeepScan(true);
+    const optimisticRun = makeQueuedRun(`local-${Date.now()}`);
     try {
       const ok = dirty ? await save() : true;
       if (!ok) return;
+      setRun(optimisticRun);
       const res = await api.runs.trigger(token, "full");
       const queuedRun = makeQueuedRun(res.run_id);
       setRun(queuedRun);
       upsertRunCaches(queuedRun);
       toast("Deep scan queued", "success");
     } catch {
+      setRun((current) => (current?.id === optimisticRun.id ? null : current));
       toast("Failed to queue deep scan", "error");
     } finally {
       setTriggeringDeepScan(false);

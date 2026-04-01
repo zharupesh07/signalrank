@@ -135,6 +135,7 @@ async def test_list_jobs_returns_isoformatted_date_posted(client, auth_token, db
     jobs = response.json()["jobs"]
     assert len(jobs) == 1
     assert jobs[0]["date_posted"] == posted_at.isoformat()
+    assert "description" not in jobs[0]
 
 
 async def test_list_jobs_sorts_by_date_posted_desc(client, auth_token, db: AsyncSession):
@@ -177,3 +178,65 @@ async def test_list_jobs_sorts_by_date_posted_desc(client, auth_token, db: Async
     assert response.status_code == 200
     jobs = response.json()["jobs"]
     assert [job["title"] for job in jobs] == ["Newer Job", "Older Job"]
+
+
+async def test_jobs_analytics_returns_expected_aggregates(client, auth_token, db: AsyncSession):
+    me = await client.get("/api/profile", headers={"Authorization": f"Bearer {auth_token}"})
+    user_id = me.json()["user_id"]
+
+    run = Run(user_id=user_id, status="success", mode="quick")
+    jobs = [
+        JobRaw(
+            job_url="https://example.com/jobs/a",
+            title="A",
+            company="Acme",
+            description="Role A",
+            location="Remote",
+            site="manual",
+        ),
+        JobRaw(
+            job_url="https://example.com/jobs/b",
+            title="B",
+            company="Acme",
+            description="Role B",
+            location="Remote",
+            site="linkedin",
+        ),
+        JobRaw(
+            job_url="https://example.com/jobs/c",
+            title="C",
+            company="Beta",
+            description="Role C",
+            location="Remote",
+            site="manual",
+        ),
+    ]
+    db.add(run)
+    db.add_all(jobs)
+    await db.flush()
+    db.add_all(
+        [
+            JobResult(run_id=run.id, user_id=user_id, job_id=jobs[0].id, final_score=35.0),
+            JobResult(run_id=run.id, user_id=user_id, job_id=jobs[1].id, final_score=75.0),
+            JobResult(run_id=run.id, user_id=user_id, job_id=jobs[2].id, final_score=95.0),
+        ]
+    )
+    await db.commit()
+
+    response = await client.get(
+        "/api/jobs/analytics",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 3
+    assert payload["score_distribution"] == [
+        {"range": "0-40", "count": 1},
+        {"range": "40-60", "count": 0},
+        {"range": "60-70", "count": 0},
+        {"range": "70-80", "count": 1},
+        {"range": "80-90", "count": 0},
+        {"range": "90-100", "count": 1},
+    ]
+    assert payload["top_companies"][0] == {"company": "Acme", "count": 2}
+    assert {"site": "manual", "count": 2} in payload["sites"]

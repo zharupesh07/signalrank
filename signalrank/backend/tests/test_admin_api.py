@@ -230,4 +230,5 @@ async def test_admin_trigger_run_does_not_require_local_queue_when_api_worker_di
         await db.execute(select(Run).where(Run.id == payload["run_id"]))
     ).scalar_one()
     assert run.status == "pending"
+    assert run.mode == "full"
     assert run.progress == {"requested_mode": "full", "force_scrape": True}

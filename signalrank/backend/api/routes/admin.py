@@ -72,12 +72,21 @@ async def get_stats(
     _: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    users = (await db.execute(func.count(User.id))).scalar() or 0
-    jobs = (await db.execute(func.count(JobRaw.id))).scalar() or 0
-    runs = (await db.execute(func.count(Run.id))).scalar() or 0
-    apps = (await db.execute(func.count(Application.id))).scalar() or 0
+    stats = (
+        await db.execute(
+            select(
+                select(func.count(User.id)).scalar_subquery().label("total_users"),
+                select(func.count(JobRaw.id)).scalar_subquery().label("total_jobs"),
+                select(func.count(Run.id)).scalar_subquery().label("total_runs"),
+                select(func.count(Application.id)).scalar_subquery().label("total_applications"),
+            )
+        )
+    ).one()
     return AdminStatsResponse(
-        total_users=users, total_jobs=jobs, total_runs=runs, total_applications=apps
+        total_users=stats.total_users or 0,
+        total_jobs=stats.total_jobs or 0,
+        total_runs=stats.total_runs or 0,
+        total_applications=stats.total_applications or 0,
     )
 
 
@@ -284,6 +293,7 @@ async def trigger_run_for_user(
     run = Run(
         user_id=user.id,
         status="pending",
+        mode="full",
         progress={"requested_mode": "full", "force_scrape": body.force_scrape},
     )
     db.add(run)
@@ -385,4 +395,3 @@ async def reparse_all_resumes(
             _parse_and_update_profile, user_id, resume_text, llm
         )
     return {"queued": len(rows)}
-

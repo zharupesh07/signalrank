@@ -116,6 +116,21 @@ export default function RunsPage() {
 
   async function triggerRun() {
     setTriggering(true);
+    const optimisticRun = makeQueuedRun(`local-${Date.now()}`);
+    setActiveRun(optimisticRun);
+    setRuns((prev) => [
+      {
+        run_id: optimisticRun.id,
+        status: optimisticRun.status,
+        job_count: optimisticRun.job_count,
+        scrape_count: optimisticRun.scrape_count,
+        started_at: optimisticRun.started_at,
+        finished_at: optimisticRun.finished_at,
+        progress: optimisticRun.progress,
+        error: optimisticRun.error,
+      },
+      ...prev.filter((run) => run.run_id !== optimisticRun.id),
+    ]);
     try {
       const res = await api.runs.trigger(token);
       const newRun = makeQueuedRun(res.run_id);
@@ -135,6 +150,8 @@ export default function RunsPage() {
       upsertRunCaches(newRun);
       toast("Run queued", "info");
     } catch {
+      setActiveRun((current) => (current?.id === optimisticRun.id ? null : current));
+      setRuns((prev) => prev.filter((run) => run.run_id !== optimisticRun.id));
       toast("Failed to trigger run", "error");
     } finally {
       setTriggering(false);

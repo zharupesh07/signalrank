@@ -87,10 +87,16 @@ class JobRaw(Base):
 
 class Run(Base):
     __tablename__ = "runs"
+    __table_args__ = (
+        Index("ix_runs_user_started", "user_id", "started_at"),
+        Index("ix_runs_status", "status"),
+        Index("ix_runs_status_mode_started", "status", "mode", "started_at"),
+    )
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="pending")
+    mode: Mapped[str] = mapped_column(String(20), default="quick", server_default="quick", nullable=False)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     job_count: Mapped[int | None] = mapped_column(Integer)

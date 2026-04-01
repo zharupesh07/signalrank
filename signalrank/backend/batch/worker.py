@@ -271,8 +271,8 @@ async def process_run(
                     )
                     recent_runs = recent_runs_result.scalars().all()
                     skip_scrape = any(
-                        isinstance(recent_run.progress, dict)
-                        and recent_run.progress.get("requested_mode") == "full"
+                        recent_run.mode == "full"
+                        and isinstance(recent_run.progress, dict)
                         and recent_run.progress.get("scrape_executed") is True
                         for recent_run in recent_runs
                     )
@@ -637,7 +637,7 @@ async def _claim_pending_run(session_factory: async_sessionmaker, mode: str) -> 
         active_count = await db.scalar(
             select(func.count(Run.id)).where(
                 Run.status.in_(["scraping", "ranking", "embedding", "running"]),
-                Run.progress["requested_mode"].astext == mode,
+                Run.mode == mode,
             )
         )
         if active_count:
@@ -649,7 +649,7 @@ async def _claim_pending_run(session_factory: async_sessionmaker, mode: str) -> 
             quick_pending = await db.scalar(
                 select(func.count(Run.id)).where(
                     Run.status == "pending",
-                    Run.progress["requested_mode"].astext == "quick",
+                    Run.mode == "quick",
                 )
             )
             if quick_pending:
@@ -660,7 +660,7 @@ async def _claim_pending_run(session_factory: async_sessionmaker, mode: str) -> 
             select(Run)
             .where(
                 Run.status == "pending",
-                Run.progress["requested_mode"].astext == mode,
+                Run.mode == mode,
             )
             .order_by(Run.started_at.asc())
             .limit(1)
