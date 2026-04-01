@@ -203,7 +203,7 @@ export default function DashboardPage() {
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-7">
 
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
             <div className="section-label">matches workspace</div>
             <h1 className="text-xl font-bold text-foreground tracking-tight">Command Center</h1>
@@ -211,30 +211,28 @@ export default function DashboardPage() {
               Start scans, watch progress, review the strongest signals, and move the best roles into your tracker from one place.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-[148px] shrink-0 flex-col items-stretch gap-2">
             <button
               onClick={() => setAddJobOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded hover:opacity-90"
+              className="inline-flex items-center justify-center gap-1.5 border border-border bg-card px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-foreground transition-all hover:border-primary/40 hover:text-primary"
             >
-              <Plus size={14} />
+              <Plus size={10} />
               Add Job
             </button>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={triggerRun}
-                disabled={triggering || isRunActive || onboardingComplete === false}
-                title={onboardingComplete === false ? "Complete onboarding first" : undefined}
-                className="flex items-center gap-2 px-4 py-2.5 text-xs border border-primary/50 text-primary hover:bg-primary hover:text-background hover:border-primary transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-widest font-bold"
-              >
-                <RefreshCw size={11} className={triggering || isRunActive ? "spin-slow" : ""} />
-                {triggering ? "Queuing..." : isRunActive ? "Scanning..." : "Scan Jobs"}
-              </button>
-              {run?.started_at && !isRunActive && (
-                <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                  {new Date(run.started_at).toLocaleDateString([], { month: "short", day: "numeric" })}
-                </span>
-              )}
-            </div>
+            <button
+              onClick={triggerRun}
+              disabled={triggering || isRunActive || onboardingComplete === false}
+              title={onboardingComplete === false ? "Complete onboarding first" : undefined}
+              className="inline-flex items-center justify-center gap-1.5 border border-primary/40 bg-primary/8 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary transition-all duration-150 hover:bg-primary hover:text-background hover:border-primary disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <RefreshCw size={10} className={triggering || isRunActive ? "spin-slow" : ""} />
+              {triggering ? "Queuing..." : isRunActive ? "Scanning..." : "Scan Jobs"}
+            </button>
+            {run?.started_at && !isRunActive && (
+              <span className="text-[10px] text-right text-muted-foreground whitespace-nowrap">
+                Last run {new Date(run.started_at).toLocaleDateString([], { month: "short", day: "numeric" })}
+              </span>
+            )}
           </div>
         </div>
 

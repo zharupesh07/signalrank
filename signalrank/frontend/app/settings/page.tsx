@@ -5,6 +5,8 @@ import { useSession } from "next-auth/react";
 import {
   Briefcase,
   CheckCircle,
+  ChevronDown,
+  ChevronUp,
   Database,
   Eye,
   FileText,
@@ -249,6 +251,48 @@ function MetaListCard({
   );
 }
 
+type ResumeWorkspaceSection = "basics" | "summary" | "experience" | "projects" | "skills" | "certifications";
+
+function ResumeSection({
+  title,
+  description,
+  open,
+  onToggle,
+  actions,
+  children,
+}: {
+  title: string;
+  description?: string;
+  open: boolean;
+  onToggle: () => void;
+  actions?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="border-t border-border pt-4 first:border-t-0 first:pt-0">
+      <div className="flex items-start justify-between gap-3">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex flex-1 items-start justify-between gap-3 text-left"
+        >
+          <div>
+            <div className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">{title}</div>
+            {description ? (
+              <div className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{description}</div>
+            ) : null}
+          </div>
+          <span className="mt-0.5 text-muted-foreground">
+            {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </span>
+        </button>
+        {actions ? <div className="shrink-0">{actions}</div> : null}
+      </div>
+      {open ? <div className="mt-4 space-y-3">{children}</div> : null}
+    </section>
+  );
+}
+
 export default function SettingsPage() {
   const { data: session } = useSession();
   const token = (session as { accessToken?: string })?.accessToken ?? "";
@@ -278,6 +322,14 @@ export default function SettingsPage() {
   const [resumeTemplate, setResumeTemplate] = useState("classic");
   const [resumeTemplates, setResumeTemplates] = useState<string[]>(["classic", "minimal", "modern"]);
   const [resumeEditor, setResumeEditor] = useState<ResumeEditor>(EMPTY_RESUME_EDITOR);
+  const [resumeSections, setResumeSections] = useState<Record<ResumeWorkspaceSection, boolean>>({
+    basics: true,
+    summary: true,
+    experience: true,
+    projects: false,
+    skills: false,
+    certifications: false,
+  });
 
   const [roleOptions, setRoleOptions] = useState<string[]>(PROFILE_OPTIONS_FALLBACK.role_options);
   const [locationOptions, setLocationOptions] = useState<string[]>(PROFILE_OPTIONS_FALLBACK.location_options);
@@ -305,6 +357,10 @@ export default function SettingsPage() {
   const loaded = useRef(false);
   const snapshotRef = useRef("");
   const resumeUploadRef = useRef<HTMLInputElement | null>(null);
+
+  function toggleResumeSection(section: ResumeWorkspaceSection) {
+    setResumeSections((current) => ({ ...current, [section]: !current[section] }));
+  }
 
   const loadRecruiters = useCallback(async () => {
     if (!token) return;
@@ -777,80 +833,67 @@ export default function SettingsPage() {
 
             {activeSection === "resume" && (
               <div className="space-y-6">
-                <div className="stat-card card-hover space-y-5 border border-border bg-card p-5">
-                  <div className="flex items-center gap-2">
-                    <FileText size={13} className="text-primary" />
-                    <span className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">Resume Content</span>
+                <div className="border border-border bg-card">
+                  <div className="sticky top-14 z-10 border-b border-border bg-card/95 px-5 py-4 backdrop-blur-sm">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <FileText size={13} className="text-primary" />
+                          <span className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">Resume Workspace</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Edit the document in one place. Open only the sections you need, then preview when the content materially changes.
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="min-w-[132px]">
+                          <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted-foreground">
+                            Theme
+                          </label>
+                          <select
+                            value={resumeTemplate}
+                            onChange={(e) => setResumeTemplate(e.target.value)}
+                            suppressHydrationWarning
+                            className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors focus:border-primary focus:outline-none"
+                          >
+                            {resumeTemplates.map((template) => (
+                              <option key={template} value={template}>
+                                {template}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => resumeUploadRef.current?.click()}
+                          disabled={uploadingResume}
+                          className="inline-flex h-9 items-center gap-2 border border-primary/40 px-3 text-[10px] uppercase tracking-[0.22em] text-primary transition-colors hover:bg-primary/8 disabled:opacity-50"
+                        >
+                          {uploadingResume ? <RefreshCw size={10} className="animate-spin" /> : <Upload size={10} />}
+                          {uploadingResume ? "Uploading..." : "Upload Resume"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handlePreviewResume}
+                          disabled={previewingResume}
+                          className="inline-flex h-9 items-center gap-2 border border-border px-3 text-[10px] uppercase tracking-[0.22em] text-foreground transition-colors hover:border-primary/30 hover:bg-primary/8 disabled:opacity-50"
+                        >
+                          {previewingResume ? <RefreshCw size={10} className="animate-spin" /> : <Eye size={10} />}
+                          {previewingResume ? "Opening..." : "Preview"}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                      <span>Preview opens in a new tab.</span>
+                      <span>Pages: <span className="text-foreground tabular-nums">{resumePreviewMeta?.pageCount ?? "—"}</span></span>
+                      <span>Warnings: <span className="text-foreground tabular-nums">{resumePreviewMeta?.warnings.length ?? 0}</span></span>
+                      <span>Fit actions: <span className="text-foreground tabular-nums">{resumePreviewMeta?.fitActions.length ?? 0}</span></span>
+                      {resumePreviewMeta ? (
+                        <span>Last preview {new Date(resumePreviewMeta.openedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                      ) : null}
+                    </div>
                   </div>
 
-                  <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-                    <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">
-                        Resume Theme
-                      </label>
-                      <select
-                        value={resumeTemplate}
-                        onChange={(e) => setResumeTemplate(e.target.value)}
-                        suppressHydrationWarning
-                        className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors focus:border-primary focus:outline-none"
-                      >
-                        {resumeTemplates.map((template) => (
-                          <option key={template} value={template}>
-                            {template}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => resumeUploadRef.current?.click()}
-                        disabled={uploadingResume}
-                        className="inline-flex h-9 items-center gap-2 border border-primary/40 px-3 text-[10px] uppercase tracking-[0.22em] text-primary transition-colors hover:bg-primary/8 disabled:opacity-50"
-                      >
-                        {uploadingResume ? <RefreshCw size={10} className="animate-spin" /> : <Upload size={10} />}
-                        {uploadingResume ? "Uploading..." : "Upload New Resume"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handlePreviewResume}
-                        disabled={previewingResume}
-                        className="inline-flex h-9 items-center gap-2 border border-border px-3 text-[10px] uppercase tracking-[0.22em] text-foreground transition-colors hover:border-primary/30 hover:bg-primary/8 disabled:opacity-50"
-                      >
-                        {previewingResume ? <RefreshCw size={10} className="animate-spin" /> : <Eye size={10} />}
-                        {previewingResume ? "Opening..." : "Preview Resume"}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
-                    <div className="border border-border bg-background/40 p-3 text-[11px] text-muted-foreground leading-relaxed">
-                      Preview opens in a new tab and uses the cached backend render path. Re-open it after major edits to confirm page count and link coverage.
-                    </div>
-                    <div className="border border-border bg-background/40 p-3 min-w-[220px]">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">Preview Status</div>
-                      {resumePreviewMeta ? (
-                        <div className="space-y-1.5 text-[11px]">
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-muted-foreground">Pages</span>
-                            <span className="text-foreground tabular-nums">{resumePreviewMeta.pageCount}</span>
-                          </div>
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-muted-foreground">Warnings</span>
-                            <span className="text-foreground tabular-nums">{resumePreviewMeta.warnings.length}</span>
-                          </div>
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-muted-foreground">Fit actions</span>
-                            <span className="text-foreground tabular-nums">{resumePreviewMeta.fitActions.length}</span>
-                          </div>
-                          <div className="pt-1 text-muted-foreground">
-                            Opened {new Date(resumePreviewMeta.openedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-[11px] text-muted-foreground">No preview opened yet in this session.</div>
-                      )}
-                    </div>
-                  </div>
                   <input
                     ref={resumeUploadRef}
                     type="file"
@@ -862,91 +905,195 @@ export default function SettingsPage() {
                       if (file) handleResumeUpload(file);
                     }}
                   />
+                  <div className="space-y-5 px-5 py-5">
+                    <ResumeSection
+                      title="Basics"
+                      description="Identity, headline, and public profile links."
+                      open={resumeSections.basics}
+                      onToggle={() => toggleResumeSection("basics")}
+                    >
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {[
+                          ["Full Name", "name"],
+                          ["Headline", "position"],
+                          ["Email", "email"],
+                          ["Phone", "phone"],
+                          ["Location", "location"],
+                          ["LinkedIn", "linkedin"],
+                          ["GitHub", "github"],
+                          ["Website", "website"],
+                        ].map(([label, key]) => (
+                          <div key={key}>
+                            <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">{label}</label>
+                            <input
+                              type="text"
+                              value={resumeEditor[key as keyof ResumeEditor] as string}
+                              onChange={(e) =>
+                                setResumeEditor((current) => ({
+                                  ...current,
+                                  [key]: e.target.value,
+                                }))
+                              }
+                              suppressHydrationWarning
+                              className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </ResumeSection>
 
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {[
-                      ["Full Name", "name"],
-                      ["Headline", "position"],
-                      ["Email", "email"],
-                      ["Phone", "phone"],
-                      ["Location", "location"],
-                      ["LinkedIn", "linkedin"],
-                      ["GitHub", "github"],
-                      ["Website", "website"],
-                    ].map(([label, key]) => (
-                      <div key={key}>
-                        <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">{label}</label>
-                        <input
-                          type="text"
-                          value={resumeEditor[key as keyof ResumeEditor] as string}
-                          onChange={(e) =>
-                            setResumeEditor((current) => ({
-                              ...current,
-                              [key]: e.target.value,
-                            }))
-                          }
+                    <ResumeSection
+                      title="Summary"
+                      description="Keep this tight. The preview will tell you whether there is room for more."
+                      open={resumeSections.summary}
+                      onToggle={() => toggleResumeSection("summary")}
+                    >
+                      <div>
+                        <textarea
+                          rows={4}
+                          value={resumeEditor.summary}
+                          onChange={(e) => setResumeEditor((current) => ({ ...current, summary: e.target.value }))}
                           suppressHydrationWarning
                           className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none"
                         />
+                        <div className="mt-1 text-[10px] leading-relaxed text-muted-foreground/80">
+                          Use `**bold**` for emphasis.
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    </ResumeSection>
 
-                  <div>
-                    <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">Summary</label>
-                    <textarea
-                      rows={4}
-                      value={resumeEditor.summary}
-                      onChange={(e) => setResumeEditor((current) => ({ ...current, summary: e.target.value }))}
-                      suppressHydrationWarning
-                      className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none"
-                    />
-                    <div className="mt-1 text-[10px] leading-relaxed text-muted-foreground/80">
-                      Use `**bold**` for emphasis. Keep this tight; the preview will show whether the page has room for more later.
-                    </div>
-                  </div>
+                    <ResumeSection
+                      title="Experience"
+                      description="Your core content. Keep this open most of the time."
+                      open={resumeSections.experience}
+                      onToggle={() => toggleResumeSection("experience")}
+                      actions={(
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setResumeEditor((current) => ({
+                              ...current,
+                              experiences: [
+                                ...current.experiences,
+                                { title: "", company: "", dates: "", location: "", bullets: [""] },
+                              ],
+                            }))
+                          }
+                          className="text-[10px] uppercase tracking-[0.18em] text-primary"
+                        >
+                          Add Experience
+                        </button>
+                      )}
+                    >
+                      {resumeEditor.experiences.length === 0 && (
+                        <div className="text-[11px] text-muted-foreground">No experience rows yet. Upload a resume or add one manually.</div>
+                      )}
+                      {resumeEditor.experiences.map((experience, index) => (
+                        <div key={`exp-${index}`} className="space-y-3 border border-border p-4">
+                          <div className="grid gap-3 md:grid-cols-2">
+                            {[
+                              ["Title", "title"],
+                              ["Company", "company"],
+                              ["Dates", "dates"],
+                              ["Location", "location"],
+                            ].map(([label, key]) => (
+                              <div key={key}>
+                                <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">{label}</label>
+                                <input
+                                  type="text"
+                                  value={experience[key as keyof ResumeEditorExperience] as string}
+                                  onChange={(e) =>
+                                    setResumeEditor((current) => ({
+                                      ...current,
+                                      experiences: current.experiences.map((item, itemIndex) =>
+                                        itemIndex === index ? { ...item, [key]: e.target.value } : item
+                                      ),
+                                    }))
+                                  }
+                                  suppressHydrationWarning
+                                  className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors focus:border-primary focus:outline-none"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          <div>
+                            <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">
+                              Bullets
+                            </label>
+                            <textarea
+                              rows={5}
+                              value={experience.bullets.join("\n")}
+                              onChange={(e) =>
+                                setResumeEditor((current) => ({
+                                  ...current,
+                                  experiences: current.experiences.map((item, itemIndex) =>
+                                    itemIndex === index
+                                      ? { ...item, bullets: e.target.value.split("\n") }
+                                      : item
+                                  ),
+                                }))
+                              }
+                              suppressHydrationWarning
+                              className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors focus:border-primary focus:outline-none"
+                            />
+                          </div>
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setResumeEditor((current) => ({
+                                  ...current,
+                                  experiences: current.experiences.filter((_, itemIndex) => itemIndex !== index),
+                                }))
+                              }
+                              className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </ResumeSection>
 
-                  <div className="space-y-3 border-t border-border pt-4">
-                    <div className="flex items-center justify-between">
-                      <div className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">Experience</div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setResumeEditor((current) => ({
-                            ...current,
-                            experiences: [
-                              ...current.experiences,
-                              { title: "", company: "", dates: "", location: "", bullets: [""] },
-                            ],
-                          }))
-                        }
-                        className="text-[10px] uppercase tracking-[0.18em] text-primary"
-                      >
-                        Add Experience
-                      </button>
-                    </div>
-                    {resumeEditor.experiences.length === 0 && (
-                      <div className="text-[11px] text-muted-foreground">No experience rows yet. Upload a resume or add one manually.</div>
-                    )}
-                    {resumeEditor.experiences.map((experience, index) => (
-                      <div key={`exp-${index}`} className="space-y-3 border border-border p-4">
-                        <div className="grid gap-3 md:grid-cols-2">
-                          {[
-                            ["Title", "title"],
-                            ["Company", "company"],
-                            ["Dates", "dates"],
-                            ["Location", "location"],
-                          ].map(([label, key]) => (
-                            <div key={key}>
-                              <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">{label}</label>
+                    <ResumeSection
+                      title="Projects"
+                      description="Keep project links valid so the exported PDF retains them."
+                      open={resumeSections.projects}
+                      onToggle={() => toggleResumeSection("projects")}
+                      actions={(
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setResumeEditor((current) => ({
+                              ...current,
+                              projects: [...current.projects, { name: "", url: "", description: "" }],
+                            }))
+                          }
+                          className="text-[10px] uppercase tracking-[0.18em] text-primary"
+                        >
+                          Add Project
+                        </button>
+                      )}
+                    >
+                      {resumeEditor.projects.map((project, index) => (
+                        <div key={`project-${index}`} className="space-y-3 border border-border p-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Project {index + 1}</div>
+                            <span className={`border px-2 py-1 text-[10px] uppercase tracking-[0.18em] ${getProjectLinkStatus(project).tone}`}>
+                              {getProjectLinkStatus(project).label}
+                            </span>
+                          </div>
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <div>
+                              <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">Name</label>
                               <input
                                 type="text"
-                                value={experience[key as keyof ResumeEditorExperience] as string}
+                                value={project.name}
                                 onChange={(e) =>
                                   setResumeEditor((current) => ({
                                     ...current,
-                                    experiences: current.experiences.map((item, itemIndex) =>
-                                      itemIndex === index ? { ...item, [key]: e.target.value } : item
+                                    projects: current.projects.map((item, itemIndex) =>
+                                      itemIndex === index ? { ...item, name: e.target.value } : item
                                     ),
                                   }))
                                 }
@@ -954,240 +1101,163 @@ export default function SettingsPage() {
                                 className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors focus:border-primary focus:outline-none"
                               />
                             </div>
-                          ))}
-                        </div>
-                        <div>
-                          <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">
-                            Bullets
-                          </label>
-                          <textarea
-                            rows={5}
-                            value={experience.bullets.join("\n")}
-                            onChange={(e) =>
-                              setResumeEditor((current) => ({
-                                ...current,
-                                experiences: current.experiences.map((item, itemIndex) =>
-                                  itemIndex === index
-                                    ? { ...item, bullets: e.target.value.split("\n") }
-                                    : item
-                                ),
-                              }))
-                            }
-                            suppressHydrationWarning
-                            className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors focus:border-primary focus:outline-none"
-                          />
-                        </div>
-                        <div className="flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setResumeEditor((current) => ({
-                                ...current,
-                                experiences: current.experiences.filter((_, itemIndex) => itemIndex !== index),
-                              }))
-                            }
-                            className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="space-y-3 border-t border-border pt-4">
-                    <div className="flex items-center justify-between">
-                      <div className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">Projects</div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setResumeEditor((current) => ({
-                            ...current,
-                            projects: [...current.projects, { name: "", url: "", description: "" }],
-                          }))
-                        }
-                        className="text-[10px] uppercase tracking-[0.18em] text-primary"
-                      >
-                        Add Project
-                      </button>
-                    </div>
-                    {resumeEditor.projects.map((project, index) => (
-                      <div key={`project-${index}`} className="space-y-3 border border-border p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Project {index + 1}</div>
-                          <span className={`border px-2 py-1 text-[10px] uppercase tracking-[0.18em] ${getProjectLinkStatus(project).tone}`}>
-                            {getProjectLinkStatus(project).label}
-                          </span>
-                        </div>
-                        <div className="grid gap-3 md:grid-cols-2">
-                          <div>
-                            <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">Name</label>
-                            <input
-                              type="text"
-                              value={project.name}
-                              onChange={(e) =>
-                                setResumeEditor((current) => ({
-                                  ...current,
-                                  projects: current.projects.map((item, itemIndex) =>
-                                    itemIndex === index ? { ...item, name: e.target.value } : item
-                                  ),
-                                }))
-                              }
-                              suppressHydrationWarning
-                              className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors focus:border-primary focus:outline-none"
-                            />
-                          </div>
-                          <div>
-                            <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">URL</label>
-                            <input
-                              type="text"
-                              value={project.url}
-                              onChange={(e) =>
-                                setResumeEditor((current) => ({
-                                  ...current,
-                                  projects: current.projects.map((item, itemIndex) =>
-                                    itemIndex === index ? { ...item, url: e.target.value } : item
-                                  ),
-                                }))
-                              }
-                              suppressHydrationWarning
-                              className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors focus:border-primary focus:outline-none"
-                            />
-                            <div className="mt-1 text-[10px] text-muted-foreground">
-                              Add the public project URL here so the PDF can keep it clickable.
+                            <div>
+                              <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">URL</label>
+                              <input
+                                type="text"
+                                value={project.url}
+                                onChange={(e) =>
+                                  setResumeEditor((current) => ({
+                                    ...current,
+                                    projects: current.projects.map((item, itemIndex) =>
+                                      itemIndex === index ? { ...item, url: e.target.value } : item
+                                    ),
+                                  }))
+                                }
+                                suppressHydrationWarning
+                                className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors focus:border-primary focus:outline-none"
+                              />
+                              <div className="mt-1 text-[10px] text-muted-foreground">
+                                Add the public project URL here so the PDF can keep it clickable.
+                              </div>
                             </div>
                           </div>
+                          <div>
+                            <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">
+                              Description
+                            </label>
+                            <textarea
+                              rows={3}
+                              value={project.description}
+                              onChange={(e) =>
+                                setResumeEditor((current) => ({
+                                  ...current,
+                                  projects: current.projects.map((item, itemIndex) =>
+                                    itemIndex === index ? { ...item, description: e.target.value } : item
+                                  ),
+                                }))
+                              }
+                              suppressHydrationWarning
+                              className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors focus:border-primary focus:outline-none"
+                            />
+                          </div>
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setResumeEditor((current) => ({
+                                  ...current,
+                                  projects: current.projects.filter((_, itemIndex) => itemIndex !== index),
+                                }))
+                              }
+                              className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground"
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </div>
-                        <div>
-                          <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">
-                            Description
-                          </label>
-                          <textarea
-                            rows={3}
-                            value={project.description}
-                            onChange={(e) =>
-                              setResumeEditor((current) => ({
-                                ...current,
-                                projects: current.projects.map((item, itemIndex) =>
-                                  itemIndex === index ? { ...item, description: e.target.value } : item
-                                ),
-                              }))
-                            }
-                            suppressHydrationWarning
-                            className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors focus:border-primary focus:outline-none"
-                          />
-                        </div>
-                        <div className="flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setResumeEditor((current) => ({
-                                ...current,
-                                projects: current.projects.filter((_, itemIndex) => itemIndex !== index),
-                              }))
-                            }
-                            className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </ResumeSection>
 
-                  <div className="space-y-3 border-t border-border pt-4">
-                    <div className="flex items-center justify-between">
-                      <div className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">Skills</div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setResumeEditor((current) => ({
-                            ...current,
-                            skills: [...current.skills, { category: "", items: [""] }],
-                          }))
-                        }
-                        className="text-[10px] uppercase tracking-[0.18em] text-primary"
-                      >
-                        Add Skill Group
-                      </button>
-                    </div>
-                    {resumeEditor.skills.map((group, index) => (
-                      <div key={`skill-${index}`} className="space-y-3 border border-border p-4">
-                        <div>
-                          <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">Category</label>
-                          <input
-                            type="text"
-                            value={group.category}
-                            onChange={(e) =>
-                              setResumeEditor((current) => ({
-                                ...current,
-                                skills: current.skills.map((item, itemIndex) =>
-                                  itemIndex === index ? { ...item, category: e.target.value } : item
-                                ),
-                              }))
-                            }
-                            suppressHydrationWarning
-                            className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors focus:border-primary focus:outline-none"
-                          />
+                    <ResumeSection
+                      title="Skills"
+                      description="Collapsed by default because this section is usually edited less often."
+                      open={resumeSections.skills}
+                      onToggle={() => toggleResumeSection("skills")}
+                      actions={(
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setResumeEditor((current) => ({
+                              ...current,
+                              skills: [...current.skills, { category: "", items: [""] }],
+                            }))
+                          }
+                          className="text-[10px] uppercase tracking-[0.18em] text-primary"
+                        >
+                          Add Skill Group
+                        </button>
+                      )}
+                    >
+                      {resumeEditor.skills.map((group, index) => (
+                        <div key={`skill-${index}`} className="space-y-3 border border-border p-4">
+                          <div>
+                            <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">Category</label>
+                            <input
+                              type="text"
+                              value={group.category}
+                              onChange={(e) =>
+                                setResumeEditor((current) => ({
+                                  ...current,
+                                  skills: current.skills.map((item, itemIndex) =>
+                                    itemIndex === index ? { ...item, category: e.target.value } : item
+                                  ),
+                                }))
+                              }
+                              suppressHydrationWarning
+                              className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors focus:border-primary focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">
+                              Items
+                            </label>
+                            <textarea
+                              rows={3}
+                              value={group.items.join("\n")}
+                              onChange={(e) =>
+                                setResumeEditor((current) => ({
+                                  ...current,
+                                  skills: current.skills.map((item, itemIndex) =>
+                                    itemIndex === index
+                                      ? { ...item, items: e.target.value.split("\n") }
+                                      : item
+                                  ),
+                                }))
+                              }
+                              suppressHydrationWarning
+                              className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors focus:border-primary focus:outline-none"
+                            />
+                          </div>
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setResumeEditor((current) => ({
+                                  ...current,
+                                  skills: current.skills.filter((_, itemIndex) => itemIndex !== index),
+                                }))
+                              }
+                              className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground"
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </div>
-                        <div>
-                          <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">
-                            Items
-                          </label>
-                          <textarea
-                            rows={3}
-                            value={group.items.join("\n")}
-                            onChange={(e) =>
-                              setResumeEditor((current) => ({
-                                ...current,
-                                skills: current.skills.map((item, itemIndex) =>
-                                  itemIndex === index
-                                    ? { ...item, items: e.target.value.split("\n") }
-                                    : item
-                                ),
-                              }))
-                            }
-                            suppressHydrationWarning
-                            className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors focus:border-primary focus:outline-none"
-                          />
-                        </div>
-                        <div className="flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setResumeEditor((current) => ({
-                                ...current,
-                                skills: current.skills.filter((_, itemIndex) => itemIndex !== index),
-                              }))
-                            }
-                            className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </ResumeSection>
 
-                  <div className="border-t border-border pt-4">
-                    <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Certifications
-                    </label>
-                    <textarea
-                      rows={4}
-                      value={resumeEditor.certifications.join("\n")}
-                      onChange={(e) =>
-                        setResumeEditor((current) => ({
-                          ...current,
-                          certifications: e.target.value.split("\n"),
-                        }))
-                      }
-                      suppressHydrationWarning
-                      className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors focus:border-primary focus:outline-none"
-                    />
-                    <div className="mt-1 text-[10px] text-muted-foreground/80">
-                      Optional. Keep one certification per line.
-                    </div>
+                    <ResumeSection
+                      title="Certifications"
+                      description="Optional. Keep one certification per line."
+                      open={resumeSections.certifications}
+                      onToggle={() => toggleResumeSection("certifications")}
+                    >
+                      <div>
+                        <textarea
+                          rows={4}
+                          value={resumeEditor.certifications.join("\n")}
+                          onChange={(e) =>
+                            setResumeEditor((current) => ({
+                              ...current,
+                              certifications: e.target.value.split("\n"),
+                            }))
+                          }
+                          suppressHydrationWarning
+                          className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors focus:border-primary focus:outline-none"
+                        />
+                      </div>
+                    </ResumeSection>
                   </div>
                 </div>
               </div>
