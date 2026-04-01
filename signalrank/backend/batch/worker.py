@@ -11,8 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from api.models import JobRaw, JobResult, Profile, Run
 from batch.context import build_context, get_batch, get_retry
-from batch.embedding_cache import PgEmbeddingCache, store_job_embeddings
-from batch.memory import log_rss
+from batch.embedding_cache import PgEmbeddingCache, clear_vector_cache, store_job_embeddings
+from batch.memory import log_rss, release_memory
 
 logger = logging.getLogger(__name__)
 
@@ -174,7 +174,8 @@ async def _embed_new_jobs(
                 cache_misses,
             )
             unload_embedding_engine()
-            gc.collect()
+            clear_vector_cache()
+            release_memory(logger, "embed_release", total_jobs=total_jobs, cache_misses=cache_misses)
             return
 
         except Exception:
@@ -192,7 +193,8 @@ async def _embed_new_jobs(
         unload_embedding_engine()
     except Exception:
         logger.debug("[EMBED] Engine unload skipped", exc_info=True)
-    gc.collect()
+    clear_vector_cache()
+    release_memory(logger, "embed_release_error")
 
 _queues: dict[str, asyncio.Queue] = {}
 
@@ -376,7 +378,7 @@ async def process_run(
                                        "jobs": len(scraped_job_urls)})
                     log_rss(logger, "after_embed", run_id=run_id, jobs=len(scraped_job_urls))
                     del scraped_job_urls
-                    gc.collect()
+                    release_memory(logger, "after_embed_release", run_id=run_id)
 
             # Check cancellation before ranking
             run_check_result = await db.execute(select(Run).where(Run.id == run_id))
@@ -439,29 +441,46 @@ async def process_run(
                 logger.info("Run %s not found or cancelled before saving results", run_id)
                 return
 
-            result_rows = [
-                {
-                    "run_id": run_id,
-                    "user_id": user_id,
-                    "job_id": row["id"],
-                    "semantic_score": float(row.get("semantic_score", 0)),
-                    "skills_score": float(row.get("skills_score", 0)),
-                    "company_score": float(row.get("company_score", 0)),
-                    "seniority_score": float(row.get("seniority_score_dim", 0)),
-                    "location_score": float(row.get("location_score", 0)),
-                    "recency_score": float(row.get("recency_score", 0)),
-                    "final_score": float(row.get("final_score", 0)),
-                    "company_tier": str(row.get("company_tier", "")),
-                    "is_contract": bool(row.get("is_contract", False)),
-                }
-                for row in ranked_df.to_dict("records")
-            ]
-            for i in range(0, len(result_rows), 2000):
-                await db.execute(
-                    pg_insert(JobResult).values(result_rows[i:i + 2000])
+            row_iter = (
+                ranked_df.itertuples(index=False)
+                if hasattr(ranked_df, "itertuples")
+                else ranked_df.to_dict("records")
+            )
+            insert_batch: list[dict] = []
+            for row in row_iter:
+                row_id = row.id if hasattr(row, "id") else row["id"]
+                semantic_score = getattr(row, "semantic_score", None) if hasattr(row, "id") else row.get("semantic_score", 0)
+                skills_score = getattr(row, "skills_score", None) if hasattr(row, "id") else row.get("skills_score", 0)
+                company_score = getattr(row, "company_score", None) if hasattr(row, "id") else row.get("company_score", 0)
+                seniority_score = getattr(row, "seniority_score_dim", None) if hasattr(row, "id") else row.get("seniority_score_dim", 0)
+                location_score = getattr(row, "location_score", None) if hasattr(row, "id") else row.get("location_score", 0)
+                recency_score = getattr(row, "recency_score", None) if hasattr(row, "id") else row.get("recency_score", 0)
+                final_score = getattr(row, "final_score", None) if hasattr(row, "id") else row.get("final_score", 0)
+                company_tier = getattr(row, "company_tier", "") if hasattr(row, "id") else row.get("company_tier", "")
+                is_contract = getattr(row, "is_contract", False) if hasattr(row, "id") else row.get("is_contract", False)
+                insert_batch.append(
+                    {
+                        "run_id": run_id,
+                        "user_id": user_id,
+                        "job_id": row_id,
+                        "semantic_score": float(semantic_score or 0),
+                        "skills_score": float(skills_score or 0),
+                        "company_score": float(company_score or 0),
+                        "seniority_score": float(seniority_score or 0),
+                        "location_score": float(location_score or 0),
+                        "recency_score": float(recency_score or 0),
+                        "final_score": float(final_score or 0),
+                        "company_tier": str(company_tier or ""),
+                        "is_contract": bool(is_contract),
+                    }
                 )
-            del result_rows
-            gc.collect()
+                if len(insert_batch) >= 500:
+                    await db.execute(pg_insert(JobResult).values(insert_batch))
+                    insert_batch.clear()
+            if insert_batch:
+                await db.execute(pg_insert(JobResult).values(insert_batch))
+                insert_batch.clear()
+            release_memory(logger, "result_rows_release", run_id=run_id)
 
             await db.execute(
                 update(Run)
@@ -477,7 +496,8 @@ async def process_run(
             await db.commit()
             logger.info("Run %s (%s) completed: %d scraped, %d ranked", run_id, mode, scrape_count, len(ranked_df))
             del ranked_df
-            gc.collect()
+            clear_vector_cache()
+            release_memory(logger, "run_complete_release", run_id=run_id, mode=mode)
 
         except Exception as exc:
             logger.exception("Run %s failed", run_id)

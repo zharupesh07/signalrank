@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 import batch.embedding_cache as ec
-from batch.embedding_cache import _remember_vector
+from batch.embedding_cache import _remember_vector, clear_vector_cache
 
 
 # ---------------------------------------------------------------------------
@@ -159,6 +159,14 @@ def test_duplicate_key_not_overwritten():
     ec._VECTOR_CACHE.pop(key, None)
 
 
+def test_clear_vector_cache_empties_process_cache():
+    key = ("clear-cfg", "clear-fp")
+    _remember_vector(key, [0.1] * 384)
+    assert key in ec._VECTOR_CACHE
+    clear_vector_cache()
+    assert ec._VECTOR_CACHE == {}
+
+
 # ---------------------------------------------------------------------------
 # 3. _compute_embeddings pops embedding column immediately
 # ---------------------------------------------------------------------------
@@ -206,6 +214,14 @@ def test_embedding_column_converted_to_float32():
     assert converted.dtype == np.float32
     # float32 array should be ~6× smaller than the Python list
     assert converted.nbytes < sys.getsizeof(raw) // 2
+
+
+def test_embedding_engine_avoids_concatenate_accumulator():
+    import inspect
+    from domain.embeddings import EmbeddingEngine
+
+    src = inspect.getsource(EmbeddingEngine.embed)
+    assert "np.concatenate" not in src
 
 
 # ---------------------------------------------------------------------------

@@ -14,8 +14,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.models import JobRaw, Profile
 from api.config import settings
 from batch.context import build_context, get_batch, load_base_config
-from batch.embedding_cache import PgEmbeddingCache, store_job_embeddings
-from batch.memory import log_rss
+from batch.embedding_cache import PgEmbeddingCache, clear_vector_cache, store_job_embeddings
+from batch.memory import log_rss, release_memory
 from domain.additive_scoring import (
     detect_contract_type,
     recency_score_0_100,
@@ -495,7 +495,8 @@ async def _compute_embeddings(
     if "r_emb" in locals():
         del r_emb
     unload_embedding_engine()
-    gc.collect()
+    clear_vector_cache()
+    release_memory(logger, "rank_embed_release", jobs=len(df), cache_misses=len(misses))
     return df
 
 
@@ -576,13 +577,14 @@ async def score_jobs_for_user(
         )
         log_rss(logger, "rank_chunk_done", offset=offset, loaded=len(df), scored=len(scored))
         del df, scored
-        gc.collect()
+        release_memory(logger, "rank_chunk_release", offset=offset)
 
         if len(frames) > 1:
             merged = pd.concat(frames, ignore_index=True)
             merged = merged.sort_values("final_score", ascending=False).head(_RANK_MAX_CANDIDATES).reset_index(drop=True)
             frames = [merged]
             log_rss(logger, "rank_chunk_merge", rows=len(merged))
+            release_memory(logger, "rank_chunk_merge_release", rows=len(merged))
 
         if len(frames) == 1 and len(frames[0]) >= _RANK_MAX_CANDIDATES and offset + len(frames[0]) >= _RANK_MAX_CANDIDATES:
             break
@@ -751,7 +753,7 @@ def _finalize_ranked_dataframe(
     df = df.drop_duplicates(subset="_fuzzy_key", keep="first")
     df = df.drop(columns=["_dedup_key", "_fuzzy_key"], errors="ignore").reset_index(drop=True)
     df = df.drop(columns=["description", "role_clusters", "embedding"], errors="ignore")
-    gc.collect()
+    release_memory(logger, "rank_finalize_release", jobs=len(df))
 
     logger.info(
         "Ranking complete",

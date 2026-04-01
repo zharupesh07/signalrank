@@ -1,7 +1,19 @@
+import ctypes
+import gc
 import logging
 import os
 import resource
 import subprocess
+import sys
+
+_LIBC = None
+if sys.platform.startswith("linux"):
+    try:
+        _LIBC = ctypes.CDLL("libc.so.6")
+        _LIBC.malloc_trim.argtypes = [ctypes.c_size_t]
+        _LIBC.malloc_trim.restype = ctypes.c_int
+    except Exception:
+        _LIBC = None
 
 
 def rss_mb() -> float | None:
@@ -34,3 +46,35 @@ def log_rss(logger: logging.Logger, phase: str, **extra) -> None:
         return
     payload["rss_mb"] = rss
     logger.info("[MEM] phase=%s rss_mb=%.1f", phase, rss, extra=payload)
+
+
+def trim_process_memory() -> bool:
+    gc.collect()
+    if _LIBC is None:
+        return False
+    try:
+        return bool(_LIBC.malloc_trim(0))
+    except Exception:
+        return False
+
+
+def release_memory(logger: logging.Logger, phase: str, **extra) -> None:
+    before = rss_mb()
+    trimmed = trim_process_memory()
+    after = rss_mb()
+    payload = {"phase": phase, "trimmed": trimmed, **extra}
+    if before is not None:
+        payload["rss_mb_before"] = before
+    if after is not None:
+        payload["rss_mb_after"] = after
+    if before is not None and after is not None:
+        logger.info(
+            "[MEM] phase=%s trim=%s rss_mb_before=%.1f rss_mb_after=%.1f",
+            phase,
+            "yes" if trimmed else "no",
+            before,
+            after,
+            extra=payload,
+        )
+    else:
+        logger.info("[MEM] phase=%s trim=%s", phase, "yes" if trimmed else "no", extra=payload)

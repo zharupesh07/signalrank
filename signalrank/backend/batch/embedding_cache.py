@@ -1,4 +1,5 @@
 import math
+import os
 from collections.abc import Sequence
 
 import numpy as np
@@ -13,7 +14,7 @@ from batch.context import load_base_config
 # vectors from Neon on repeated ranking runs within the same process lifetime.
 # Values are float32 ndarrays (~1.5KB each) instead of Python list[float] (~9.2KB each).
 _VECTOR_CACHE: dict[tuple[str, str], np.ndarray] = {}
-_VECTOR_CACHE_MAX = load_base_config().get("caching", {}).get("vector_cache_max", 2_000)
+_VECTOR_CACHE_MAX = int(os.getenv("VECTOR_CACHE_MAX", load_base_config().get("caching", {}).get("vector_cache_max", 2_000)))
 
 
 def _clean_vector(vector: Sequence[float]) -> list[float]:
@@ -30,6 +31,10 @@ def _remember_vector(key: tuple[str, str], vector: Sequence[float]) -> None:
     arr = np.array(vector, dtype="float32")
     arr[~np.isfinite(arr)] = 0.0
     _VECTOR_CACHE[key] = arr
+
+
+def clear_vector_cache() -> None:
+    _VECTOR_CACHE.clear()
 
 
 class PgEmbeddingCache:

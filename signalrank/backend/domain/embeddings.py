@@ -95,30 +95,44 @@ class EmbeddingEngine:
             return np.zeros((0, 0), dtype="float32")
 
         logger.info("[EMBED] Encoding %d texts via ONNX (%s)", len(texts), self._model_repo)
+        first_end = min(self._batch_size, len(texts))
+        first_batch = self._embed_batch(texts[:first_end]).astype("float32", copy=False)
+        out = np.empty((len(texts), first_batch.shape[1]), dtype="float32")
+        out[:first_end] = first_batch
+        del first_batch
 
-        all_vecs = []
-        for i in range(0, len(texts), self._batch_size):
+        for i in range(first_end, len(texts), self._batch_size):
             batch = texts[i : i + self._batch_size]
-            all_vecs.append(self._embed_batch(batch))
+            batch_vecs = self._embed_batch(batch).astype("float32", copy=False)
+            out[i : i + len(batch)] = batch_vecs
+            del batch_vecs
 
-        return np.concatenate(all_vecs, axis=0).astype("float32")
+        return out
 
     def embed_chunked(self, texts: List[str], on_progress=None) -> np.ndarray:
         if not texts:
             return np.zeros((0, 0), dtype="float32")
 
         logger.info("[EMBED] Encoding %d texts via ONNX (%s)", len(texts), self._model_repo)
-
-        all_vecs = []
         total = len(texts)
-        for i in range(0, total, self._batch_size):
+        first_end = min(self._batch_size, total)
+        first_batch = self._embed_batch(texts[:first_end]).astype("float32", copy=False)
+        out = np.empty((total, first_batch.shape[1]), dtype="float32")
+        out[:first_end] = first_batch
+        del first_batch
+        if on_progress:
+            on_progress(first_end, total)
+
+        for i in range(first_end, total, self._batch_size):
             batch = texts[i : i + self._batch_size]
-            all_vecs.append(self._embed_batch(batch))
-            done = min(i + self._batch_size, total)
+            batch_vecs = self._embed_batch(batch).astype("float32", copy=False)
+            out[i : i + len(batch)] = batch_vecs
+            del batch_vecs
+            done = min(i + len(batch), total)
             if on_progress:
                 on_progress(done, total)
 
-        return np.concatenate(all_vecs, axis=0).astype("float32")
+        return out
 
     def unload(self):
         global _ENGINE
