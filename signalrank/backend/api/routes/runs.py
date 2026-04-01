@@ -58,7 +58,7 @@ async def trigger_run(
     await db.refresh(run)
 
     if api_runtime_flags()["run_api_worker"]:
-        queue = get_queue()
+        queue = get_queue(requested_mode)
         await queue.put(RunRequest(run.id, current_user.id, requested_mode, False))
         logger.info("Run %s queued in-process by API worker (mode=%s user_id=%s)", run.id, requested_mode, current_user.id)
     else:

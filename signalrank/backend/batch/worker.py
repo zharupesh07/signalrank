@@ -194,14 +194,13 @@ async def _embed_new_jobs(
         logger.debug("[EMBED] Engine unload skipped", exc_info=True)
     gc.collect()
 
-_queue: asyncio.Queue | None = None
+_queues: dict[str, asyncio.Queue] = {}
 
 
-def get_queue() -> asyncio.Queue:
-    global _queue
-    if _queue is None:
-        _queue = asyncio.Queue(maxsize=100)
-    return _queue
+def get_queue(mode: str = "quick") -> asyncio.Queue:
+    if mode not in _queues:
+        _queues[mode] = asyncio.Queue(maxsize=100)
+    return _queues[mode]
 
 
 async def process_run(
@@ -627,11 +626,30 @@ async def _cleanup_stale_runs(session_factory: async_sessionmaker) -> None:
         await db.commit()
 
 
-async def _claim_pending_run(session_factory: async_sessionmaker):
+async def _claim_pending_run(session_factory: async_sessionmaker, mode: str) -> RunRequest | None:
+    """Claim the oldest pending run of the given mode, only if no run of that mode is already active.
+
+    This enforces at most 1 quick scan and at most 1 full scan running at any time, globally across
+    all users and all worker processes.
+    """
     async with session_factory() as db:
+        # DB-level guard: don't claim if a run of this mode is already active.
+        active_count = await db.scalar(
+            select(func.count(Run.id)).where(
+                Run.status.in_(["scraping", "ranking", "embedding", "running"]),
+                Run.progress["requested_mode"].astext == mode,
+            )
+        )
+        if active_count:
+            await db.rollback()
+            return None
+
         result = await db.execute(
             select(Run)
-            .where(Run.status == "pending")
+            .where(
+                Run.status == "pending",
+                Run.progress["requested_mode"].astext == mode,
+            )
             .order_by(Run.started_at.asc())
             .limit(1)
             .with_for_update(skip_locked=True)
@@ -642,26 +660,27 @@ async def _claim_pending_run(session_factory: async_sessionmaker):
             return None
 
         progress = run.progress if isinstance(run.progress, dict) else {}
-        mode = str(progress.get("requested_mode") or "quick")
         force_scrape = bool(progress.get("force_scrape", False))
-
         run.status = "scraping"
         await db.commit()
         logger.info(
-            "Claimed pending run %s from DB poll (mode=%s user_id=%s force_scrape=%s)",
-            run.id,
-            mode,
-            run.user_id,
-            force_scrape,
+            "Claimed pending %s run %s from DB poll (user_id=%s force_scrape=%s)",
+            mode, run.id, run.user_id, force_scrape,
         )
         return RunRequest(str(run.id), str(run.user_id), mode, force_scrape)
 
 
-async def worker_loop(session_factory: async_sessionmaker) -> None:
-    queue = get_queue()
-    await _cleanup_stale_runs(session_factory)
-    logger.info("Background worker started")
-    log_rss(logger, "worker_loop_started")
+async def _worker_loop_for_mode(session_factory: async_sessionmaker, mode: str) -> None:
+    """Poll and process runs of a single mode serially.
+
+    At most one quick scan and one full scan can run at any time (enforced by
+    _claim_pending_run). Both mode loops run concurrently inside worker_loop,
+    so a quick scan and a full scan can execute in parallel, but two quick scans
+    or two full scans never overlap.
+    """
+    queue = get_queue(mode)
+    logger.info("Worker loop started for mode=%s", mode)
+    log_rss(logger, "worker_loop_started", mode=mode)
     while True:
         item = None
         from_queue = False
@@ -669,7 +688,7 @@ async def worker_loop(session_factory: async_sessionmaker) -> None:
             item = await asyncio.wait_for(queue.get(), timeout=5)
             from_queue = True
         except asyncio.TimeoutError:
-            item = await _claim_pending_run(session_factory)
+            item = await _claim_pending_run(session_factory, mode)
             if item is None:
                 continue
 
@@ -681,16 +700,24 @@ async def worker_loop(session_factory: async_sessionmaker) -> None:
             req = RunRequest(item[0], item[1], item[2])
         else:
             req = RunRequest(item[0], item[1])
+
         if from_queue:
             logger.info(
-                "Dequeued run %s from in-process queue (mode=%s user_id=%s force_scrape=%s)",
-                req.run_id,
-                req.mode,
-                req.user_id,
-                req.force_scrape,
+                "Dequeued %s run %s from in-process queue (user_id=%s force_scrape=%s)",
+                mode, req.run_id, req.user_id, req.force_scrape,
             )
         try:
             await process_run(req.run_id, req.user_id, session_factory, mode=req.mode, force_scrape=req.force_scrape)
         finally:
             if from_queue:
                 queue.task_done()
+
+
+async def worker_loop(session_factory: async_sessionmaker) -> None:
+    """Start one worker loop per scan mode and run them concurrently."""
+    await _cleanup_stale_runs(session_factory)
+    logger.info("Background worker started")
+    await asyncio.gather(
+        _worker_loop_for_mode(session_factory, "quick"),
+        _worker_loop_for_mode(session_factory, "full"),
+    )

@@ -290,7 +290,7 @@ async def trigger_run_for_user(
     await db.commit()
     await db.refresh(run)
     if api_runtime_flags()["run_api_worker"]:
-        queue = get_queue()
+        queue = get_queue("full")
         await queue.put(RunRequest(run.id, user.id, "full", body.force_scrape))
     return {"run_id": run.id, "status": "pending", "user_email": user.email}
 
