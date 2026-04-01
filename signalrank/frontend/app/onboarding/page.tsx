@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
 import { loadProfileOptions, PROFILE_OPTIONS_FALLBACK } from "@/lib/profile-options";
 import { makeQueuedRun, upsertRunCaches } from "@/lib/run-cache";
-import { Upload } from "lucide-react";
+import { Upload, Sparkles, CheckCircle2, Loader2 } from "lucide-react";
 
 type MultiSelectProps = {
   label: string;
@@ -52,7 +52,6 @@ export default function OnboardingPage() {
   const router = useRouter();
   const token = (session as { accessToken?: string })?.accessToken ?? "";
 
-  const [step, setStep] = useState<"upload" | "preferences">("upload");
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -129,7 +128,6 @@ export default function OnboardingPage() {
     try {
       await api.onboarding.uploadResume(token, file);
       setParsing(true);
-      setStep("preferences");
       startPolling();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
@@ -179,47 +177,66 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] px-4">
-      <div className="w-full max-w-lg space-y-6">
+      <div className="w-full max-w-3xl space-y-6 py-10">
 
         <div className="text-center space-y-1">
           <div className="text-2xl font-bold text-[#22c55e] text-glow-green tracking-widest">
             SIGNAL<span className="text-[#a3e635]">RANK</span>
           </div>
           <div className="text-[10px] text-[#52525b] uppercase tracking-widest">
-            Setup Wizard
+            Continuous Setup
           </div>
         </div>
 
-        <div className="flex items-center gap-0">
-          {["UPLOAD RESUME", "PREFERENCES"].map((label, i) => {
-            const currentStep = step === "upload" ? 0 : 1;
-            const active = i === currentStep;
-            const done = i < currentStep;
-            return (
-              <div key={i} className="flex items-center flex-1">
-                <div className={`flex items-center gap-2 text-[10px] uppercase tracking-wider ${
-                  active ? "text-[#22c55e]" : done ? "text-[#52525b]" : "text-[#3f3f46]"
-                }`}>
-                  <span className={`w-5 h-5 flex items-center justify-center border text-[9px] font-bold ${
-                    active ? "border-[#22c55e] text-[#22c55e]" : done ? "border-[#52525b] text-[#52525b]" : "border-[#3f3f46] text-[#3f3f46]"
-                  }`}>
-                    {done ? "✓" : i + 1}
-                  </span>
-                  {label}
-                </div>
-                {i < 1 && <div className={`flex-1 h-px mx-3 ${done ? "bg-[#52525b]" : "bg-[#27272a]"}`} />}
+        <div className="grid gap-3 md:grid-cols-3">
+          {[
+            {
+              title: "1. Upload resume",
+              state: file ? "ready" : "pending",
+              detail: file ? file.name : "Choose PDF, DOCX, or TXT",
+            },
+            {
+              title: "2. Parse signals",
+              state: parsing ? "active" : targetRoles.length || locations.length ? "ready" : "pending",
+              detail: parsing ? "Extracting roles, locations, and experience" : "Resume-derived fields appear inline below",
+            },
+            {
+              title: "3. Confirm preferences",
+              state: submitting ? "active" : "pending",
+              detail: "Adjust targets, then launch your first scan",
+            },
+          ].map((item) => (
+            <div key={item.title} className="border border-[#3f3f46] bg-[#18181b] p-4 space-y-2">
+              <div className={`text-[10px] uppercase tracking-[0.18em] ${
+                item.state === "active" ? "text-[#a3e635]" : item.state === "ready" ? "text-[#22c55e]" : "text-[#52525b]"
+              }`}>
+                {item.title}
               </div>
-            );
-          })}
+              <div className="text-xs text-[#a1a1aa] leading-relaxed">{item.detail}</div>
+            </div>
+          ))}
         </div>
 
-        <div className="border border-[#3f3f46] bg-[#18181b] p-6">
-          {step === "upload" ? (
-            <form onSubmit={handleUpload} className="space-y-5">
+        <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+          <div className="border border-[#3f3f46] bg-[#18181b] p-6 space-y-5">
+            <div className="flex items-center justify-between">
               <div className="text-[10px] text-[#52525b] uppercase tracking-widest">
-                {"// [1/2] UPLOAD RESUME"}
+                {"// upload + parse"}
               </div>
+              {parsing ? (
+                <div className="flex items-center gap-2 text-[10px] text-[#a3e635] uppercase tracking-widest">
+                  <Loader2 size={11} className="animate-spin" />
+                  analyzing
+                </div>
+              ) : targetRoles.length || locations.length ? (
+                <div className="flex items-center gap-2 text-[10px] text-[#22c55e] uppercase tracking-widest">
+                  <CheckCircle2 size={11} />
+                  parsed
+                </div>
+              ) : null}
+            </div>
 
+            <form onSubmit={handleUpload} className="space-y-5">
               <label
                 className={`block border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${
                   dragging
@@ -256,6 +273,10 @@ export default function OnboardingPage() {
                 </div>
               </label>
 
+              <div className="text-[11px] text-[#71717a] leading-relaxed">
+                Upload once, then keep editing the extracted preferences on the right. No step switching required.
+              </div>
+
               {error && (
                 <div className="text-[11px] text-[#ef4444]">&gt; ERR: {error}</div>
               )}
@@ -274,11 +295,61 @@ export default function OnboardingPage() {
                 ) : "Parse Resume"}
               </button>
             </form>
-          ) : (
+            <div className="border border-[#3f3f46] bg-[#0a0a0a] p-4 space-y-3">
+              <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-[#71717a]">
+                <Sparkles size={11} className="text-[#22c55e]" />
+                extracted signals
+              </div>
+              {parsing ? (
+                <div className="text-[11px] text-[#a1a1aa] leading-relaxed">
+                  Pulling out likely roles, preferred locations, and experience range from your resume. Preferences on the right will update automatically.
+                </div>
+              ) : (
+                <div className="space-y-3 text-[11px]">
+                  <div>
+                    <div className="text-[#71717a] uppercase tracking-[0.18em] text-[10px] mb-1">Roles</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {targetRoles.length ? targetRoles.map((role) => (
+                        <span key={role} className="border border-[#22c55e]/30 bg-[#22c55e]/10 px-2 py-1 text-[#22c55e]">
+                          {role}
+                        </span>
+                      )) : <span className="text-[#52525b]">Upload a resume to prefill this.</span>}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[#71717a] uppercase tracking-[0.18em] text-[10px] mb-1">Locations</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {locations.length ? locations.map((location) => (
+                        <span key={location} className="border border-[#3f3f46] px-2 py-1 text-[#a1a1aa]">
+                          {location}
+                        </span>
+                      )) : <span className="text-[#52525b]">No location signal yet.</span>}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="border border-[#27272a] p-3">
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-[#52525b]">Min YOE</div>
+                      <div className="mt-1 text-sm text-[#e4e4e7]">{minYoe || "—"}</div>
+                    </div>
+                    <div className="border border-[#27272a] p-3">
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-[#52525b]">Max YOE</div>
+                      <div className="mt-1 text-sm text-[#e4e4e7]">{maxYoe || "—"}</div>
+                    </div>
+                    <div className="border border-[#27272a] p-3">
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-[#52525b]">Salary</div>
+                      <div className="mt-1 text-sm text-[#e4e4e7]">{salaryLpa ? `${salaryLpa} LPA` : "—"}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="border border-[#3f3f46] bg-[#18181b] p-6">
             <form onSubmit={handleFinish} className="space-y-5">
               <div className="flex items-center justify-between">
                 <div className="text-[10px] text-[#52525b] uppercase tracking-widest">
-                  {"// [2/2] PREFERENCES"}
+                  {"// preferences + first run"}
                 </div>
                 {parsing && (
                   <div className="text-[10px] text-[#a3e635] animate-pulse uppercase tracking-widest">
@@ -368,13 +439,13 @@ export default function OnboardingPage() {
 
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || parsing}
                 className="w-full py-2.5 text-xs font-bold uppercase tracking-widest bg-[#22c55e] text-[#0a0a0a] hover:bg-[#a3e635] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {submitting ? "Setting up..." : "Finish Setup →"}
+                {submitting ? "Setting up..." : parsing ? "Finish after parsing..." : "Finish Setup →"}
               </button>
             </form>
-          )}
+          </div>
         </div>
       </div>
     </div>

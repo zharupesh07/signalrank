@@ -9,7 +9,7 @@ import type { Job, Run } from "@/types";
 import { useToast } from "@/components/toast";
 import RunProgress from "@/components/run-progress";
 import { JobCardSkeleton, StatCardSkeleton } from "@/components/skeleton";
-import { RefreshCw, ExternalLink, TrendingUp, Layers, Clock, BarChart2, Plus, AlertCircle } from "lucide-react";
+import { RefreshCw, ExternalLink, TrendingUp, Layers, Clock, BarChart2, Plus, AlertCircle, ArrowRight, BriefcaseBusiness, Sparkles, Radar, History } from "lucide-react";
 import Link from "next/link";
 import AddJobModal from "@/components/add-job-modal";
 
@@ -59,6 +59,18 @@ function ScoreDisplay({ score }: { score: number }) {
       </div>
     </div>
   );
+}
+
+function explainJob(job: Job): string[] {
+  const reasons: string[] = [];
+  if ((job.semantic_score ?? 0) >= 0.78) reasons.push("strong title fit");
+  if ((job.skills_score ?? 0) >= 0.65) reasons.push("skills align");
+  if ((job.location_score ?? 0) >= 0.7) reasons.push("location fit");
+  if ((job.company_score ?? 0) >= 0.65 || job.company_tier === "tier_ss" || job.company_tier === "tier_s") {
+    reasons.push("company signal");
+  }
+  if ((job.recency_score ?? 0) >= 0.7) reasons.push("fresh posting");
+  return reasons.slice(0, 3);
 }
 
 function StatCard({
@@ -178,6 +190,12 @@ export default function DashboardPage() {
     ? new Date(run.started_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     : null;
   const isRunActive = ["pending", "running", "scraping", "ranking"].includes(run?.status ?? "");
+  const topMatches = jobs.slice(0, 3);
+  const nextActionLabel = isRunActive
+    ? "A scan is in progress. Keep this page open for live status, then jump straight into the explorer."
+    : jobs.length > 0
+      ? "Review top matches first, then move the strongest ones into the tracker."
+      : "Run a scan to populate your first batch of ranked jobs.";
 
   return (
     <>
@@ -187,8 +205,11 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <div className="section-label">dashboard</div>
-            <h1 className="text-xl font-bold text-foreground tracking-tight">Top Matches</h1>
+            <div className="section-label">matches workspace</div>
+            <h1 className="text-xl font-bold text-foreground tracking-tight">Command Center</h1>
+            <p className="text-sm text-muted-foreground max-w-2xl">
+              Start scans, watch progress, review the strongest signals, and move the best roles into your tracker from one place.
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -206,7 +227,7 @@ export default function DashboardPage() {
                 className="flex items-center gap-2 px-4 py-2.5 text-xs border border-primary/50 text-primary hover:bg-primary hover:text-background hover:border-primary transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-widest font-bold"
               >
                 <RefreshCw size={11} className={triggering || isRunActive ? "spin-slow" : ""} />
-                {triggering ? "Queuing..." : isRunActive ? "Running..." : "Quick Scan"}
+                {triggering ? "Queuing..." : isRunActive ? "Scanning..." : "Scan Jobs"}
               </button>
               {run?.started_at && !isRunActive && (
                 <span className="text-[10px] text-muted-foreground whitespace-nowrap">
@@ -228,10 +249,61 @@ export default function DashboardPage() {
           </div>
         )}
 
+        <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-3">
+          <div className="stat-card border border-border bg-card p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[11px] text-muted-foreground uppercase tracking-[0.15em]">Primary Flow</div>
+                <h2 className="text-lg font-semibold text-foreground mt-1">Scan, review, track</h2>
+              </div>
+              <Radar size={14} className="text-primary" />
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {nextActionLabel}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/jobs" className="inline-flex items-center gap-1.5 px-3 py-2 text-xs border border-primary/40 text-primary hover:bg-primary hover:text-background transition-all uppercase tracking-wider font-bold">
+                Review All Matches
+                <ArrowRight size={11} />
+              </Link>
+              <Link href="/tracker" className="inline-flex items-center gap-1.5 px-3 py-2 text-xs border border-border text-foreground hover:border-primary hover:text-primary transition-all uppercase tracking-wider font-bold">
+                Open Tracker
+              </Link>
+              <Link href="/runs" className="inline-flex items-center gap-1.5 px-3 py-2 text-xs border border-border text-muted-foreground hover:border-primary hover:text-primary transition-all uppercase tracking-wider font-bold">
+                Run History
+              </Link>
+            </div>
+          </div>
+
+          <div className="stat-card border border-border bg-card p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[11px] text-muted-foreground uppercase tracking-[0.15em]">What Happens Next</div>
+                <h2 className="text-lg font-semibold text-foreground mt-1">Latest run summary</h2>
+              </div>
+              <History size={14} className="text-muted-foreground" />
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Jobs found</span>
+                <span className="text-foreground font-medium tabular-nums">{run?.scrape_count ?? analytics?.total ?? 0}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Top matches ranked</span>
+                <span className="text-foreground font-medium tabular-nums">{jobs.length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Already tracked</span>
+                <span className="text-foreground font-medium tabular-nums">{tracked.size}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Stat cards */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {loading ? (
-            <><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /></>
+            <><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /></>
           ) : (
             <>
               <StatCard label="Jobs Indexed" value={analytics?.total ?? 0} sub={run?.scrape_count != null ? `${run.scrape_count} scraped last run` : "run a scan to populate"} icon={Layers} accent />
@@ -246,6 +318,12 @@ export default function DashboardPage() {
                 value={lastRunTime ?? "Never"}
                 sub={run ? `${run.job_count ?? 0} jobs · ${run.status}` : "No runs yet"}
                 icon={Clock}
+              />
+              <StatCard
+                label="Tracked"
+                value={tracked.size}
+                sub={tracked.size > 0 ? "roles already moved forward" : "save promising jobs here"}
+                icon={BriefcaseBusiness}
               />
             </>
           )}
@@ -297,13 +375,21 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Job list */}
+        {/* Top match strip */}
         <div>
-          <div className="section-label mb-3">top 10 matches</div>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <div className="section-label">top matches</div>
+              <div className="text-sm text-muted-foreground mt-1">Start here before opening the full explorer.</div>
+            </div>
+            <Link href="/jobs" className="text-xs text-primary hover:text-[var(--terminal-green-bright)] transition-colors uppercase tracking-widest font-bold">
+              open explorer
+            </Link>
+          </div>
 
           {loading ? (
-            <div className="space-y-px">
-              {Array.from({ length: 5 }).map((_, i) => <JobCardSkeleton key={i} />)}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              {Array.from({ length: 3 }).map((_, i) => <JobCardSkeleton key={i} />)}
             </div>
           ) : jobs.length === 0 ? (
             <div className="border border-border bg-card p-12 text-center">
@@ -330,55 +416,90 @@ export default function DashboardPage() {
               </div>
             </div>
           ) : (
-            <div className="space-y-px">
-              {jobs.map((job, idx) => (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              {topMatches.map((job, idx) => {
+                const reasons = explainJob(job);
+                return (
                 <div
                   key={job.id}
-                  className="job-row flex items-center gap-4 px-4 py-3.5 bg-card border border-border animate-in"
+                  className="job-row bg-card border border-border p-4 space-y-4 animate-in"
                   style={{ animationDelay: `${idx * 35}ms` }}
                 >
-                  <span className="text-[11px] font-bold tabular-nums w-5 shrink-0 text-center" style={{ color: idx === 0 ? "var(--terminal-green-bright)" : idx < 3 ? "var(--primary)" : "var(--border)" }}>
-                    {String(idx + 1).padStart(2, "0")}
-                  </span>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[11px] font-bold tabular-nums px-2 py-1 border border-border" style={{ color: idx === 0 ? "var(--terminal-green-bright)" : "var(--primary)" }}>
+                          #{idx + 1}
+                        </span>
+                        {job.company_tier && (
+                          <span className="text-[11px] text-muted-foreground border border-border px-1.5 py-0.5 leading-none">
+                            {job.company_tier.replace("tier_", "").toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[15px] font-semibold text-foreground leading-snug">{job.title}</div>
+                      <div className="text-[12px] text-muted-foreground mt-1">
+                        {job.company}{job.location ? ` · ${job.location}` : ""}
+                      </div>
+                    </div>
+                    {job.final_score != null && <ScoreDisplay score={job.final_score} />}
+                  </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-medium text-foreground truncate">{job.title}</div>
-                    <div className="text-[11px] text-muted-foreground truncate mt-0.5">
-                      {job.company}{job.location ? ` · ${job.location}` : ""}
+                  <div className="space-y-2">
+                    <div className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">Why it matched</div>
+                    <div className="flex flex-wrap gap-2">
+                      {reasons.length > 0 ? reasons.map((reason) => (
+                        <span key={reason} className="text-[11px] px-2 py-1 border border-primary/20 text-primary/90 bg-primary/5">
+                          {reason}
+                        </span>
+                      )) : (
+                        <span className="text-[11px] text-muted-foreground">high blended score across title, skills, and recency</span>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    {job.company_tier && (
-                      <span className="text-[11px] text-muted-foreground border border-border px-1.5 py-0.5 leading-none">{job.company_tier.replace("tier_", "").toUpperCase()}</span>
-                    )}
-                    {job.is_contract && (
-                      <span className="text-[11px] text-[var(--terminal-yellow)] border border-[var(--terminal-yellow)]/20 px-1.5 py-0.5 leading-none">CONTRACT</span>
-                    )}
-                    {job.site && <span className="text-[11px] text-border hidden md:block">{job.site}</span>}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {job.site && <span className="text-[11px] text-border">{job.site}</span>}
+                      {job.is_contract && (
+                        <span className="text-[11px] text-[var(--terminal-yellow)] border border-[var(--terminal-yellow)]/20 px-1.5 py-0.5 leading-none">CONTRACT</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {tracked.has(job.id) ? (
+                        <span className="text-[11px] text-muted-foreground uppercase tracking-wider shrink-0">tracked</span>
+                      ) : (
+                        <button
+                          onClick={() => trackJob(job)}
+                          className="flex items-center gap-1 text-[11px] text-primary/70 border border-primary/20 px-2 py-1 hover:border-primary hover:text-primary transition-colors uppercase tracking-wider"
+                        >
+                          <Plus size={8} />
+                          track
+                        </button>
+                      )}
+                      <a href={job.job_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-muted-foreground border border-border px-2 py-1 hover:border-primary hover:text-primary transition-colors uppercase tracking-wider">
+                        open
+                        <ExternalLink size={11} />
+                      </a>
+                    </div>
                   </div>
-
-                  {job.final_score != null && <ScoreDisplay score={job.final_score} />}
-
-                  {tracked.has(job.id) ? (
-                    <span className="text-[11px] text-muted-foreground uppercase tracking-wider shrink-0">tracked</span>
-                  ) : (
-                    <button
-                      onClick={() => trackJob(job)}
-                      className="flex items-center gap-0.5 text-[11px] text-primary/60 border border-primary/20 px-1.5 py-0.5 hover:border-primary hover:text-primary transition-colors uppercase tracking-wider shrink-0"
-                    >
-                      <Plus size={8} />track
-                    </button>
-                  )}
-
-                  <a href={job.job_url} target="_blank" rel="noreferrer" className="text-border hover:text-primary transition-colors shrink-0">
-                    <ExternalLink size={13} />
-                  </a>
                 </div>
-              ))}
+              )})}
             </div>
           )}
         </div>
+
+        {jobs.length > topMatches.length && (
+          <div className="border border-border bg-card px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Sparkles size={14} className="text-primary" />
+              <span>{jobs.length - topMatches.length} more ranked jobs are ready in the explorer.</span>
+            </div>
+            <Link href="/jobs" className="text-xs text-primary border border-primary/40 px-3 py-1.5 hover:bg-primary hover:text-background transition-all uppercase tracking-widest font-bold">
+              Review All Jobs
+            </Link>
+          </div>
+        )}
       </div>
     </div>
     <AddJobModal

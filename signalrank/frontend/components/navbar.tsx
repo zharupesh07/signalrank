@@ -8,12 +8,9 @@ import { useTheme } from "./theme-provider";
 import { useDevMode } from "./dev-mode-provider";
 
 const NAV_LINKS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/jobs", label: "Jobs" },
+  { href: "/dashboard", label: "Matches" },
   { href: "/tracker", label: "Tracker" },
-  { href: "/analytics", label: "Analytics" },
-  { href: "/runs", label: "Runs" },
-  { href: "/settings", label: "Settings" },
+  { href: "/settings", label: "Resume" },
 ];
 
 export default function Navbar() {

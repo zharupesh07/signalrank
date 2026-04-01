@@ -226,6 +226,59 @@ const DEFAULT_FILTERS: Filters = {
   dateRange: "any",
 };
 
+const JOB_PRESETS = [
+  {
+    key: "best",
+    label: "Best Matches",
+    apply: () => ({
+      filters: { ...DEFAULT_FILTERS, minScore: 70 },
+      search: "",
+      sorting: [{ id: "final_score", desc: true }] as SortingState,
+      showArchived: true,
+    }),
+  },
+  {
+    key: "fresh",
+    label: "Fresh",
+    apply: () => ({
+      filters: { ...DEFAULT_FILTERS, dateRange: "week" as const },
+      search: "",
+      sorting: [{ id: "date_posted", desc: true }] as SortingState,
+      showArchived: true,
+    }),
+  },
+  {
+    key: "top-companies",
+    label: "Top Companies",
+    apply: () => ({
+      filters: { ...DEFAULT_FILTERS, tiers: ["tier_ss", "tier_s", "tier_a"] },
+      search: "",
+      sorting: [{ id: "final_score", desc: true }] as SortingState,
+      showArchived: true,
+    }),
+  },
+  {
+    key: "no-contract",
+    label: "No Contract",
+    apply: () => ({
+      filters: { ...DEFAULT_FILTERS, jobType: "fte" as const },
+      search: "",
+      sorting: [{ id: "final_score", desc: true }] as SortingState,
+      showArchived: true,
+    }),
+  },
+  {
+    key: "remote",
+    label: "Remote",
+    apply: () => ({
+      filters: { ...DEFAULT_FILTERS },
+      search: "remote",
+      sorting: [{ id: "final_score", desc: true }] as SortingState,
+      showArchived: true,
+    }),
+  },
+];
+
 function countActiveFilters(filters: Filters): number {
   let n = 0;
   if (filters.minScore > 0) n++;
@@ -268,6 +321,11 @@ export default function JobsPage() {
 
   useEffect(() => {
     const saved = localStorage.getItem("signalrank-sidebar-collapsed");
+    if (saved == null) {
+      setCollapsed(true);
+      localStorage.setItem("signalrank-sidebar-collapsed", "true");
+      return;
+    }
     if (saved === "true") setCollapsed(true);
   }, []);
 
@@ -374,6 +432,18 @@ export default function JobsPage() {
       localStorage.setItem("signalrank-sidebar-collapsed", String(next));
       return next;
     });
+  }
+
+  function applyPreset(key: string) {
+    const preset = JOB_PRESETS.find((item) => item.key === key);
+    if (!preset) return;
+    const next = preset.apply();
+    setFilters(next.filters);
+    setSearch(next.search);
+    setDebouncedSearch(next.search);
+    setSorting(next.sorting);
+    setShowArchived(next.showArchived);
+    setPage(1);
   }
 
   const trackJob = useCallback(async (job: Job) => {
@@ -484,9 +554,9 @@ export default function JobsPage() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex items-end justify-between gap-4 mb-5">
           <div>
-            <div className="section-label mb-1">job index</div>
+            <div className="section-label mb-1">match explorer</div>
             <div className="flex items-baseline gap-3">
-              <h1 className="text-xl font-bold text-foreground">All Jobs</h1>
+              <h1 className="text-xl font-bold text-foreground">All Matches</h1>
               <span className="text-primary text-sm tabular-nums text-glow-dim">{total}</span>
               {activeFilterCount > 0 && (
                 <span className="text-[11px] text-muted-foreground">of {runTotal}</span>
@@ -527,6 +597,48 @@ export default function JobsPage() {
           </div>
         </div>
 
+        <div className="border border-border bg-card p-4 mb-4 space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <div className="text-[11px] text-muted-foreground uppercase tracking-[0.15em]">Quick views</div>
+              <div className="text-sm text-muted-foreground mt-1">Start with a preset, then open advanced filters only if you need to narrow further.</div>
+            </div>
+            <button
+              onClick={toggleCollapsed}
+              className="inline-flex items-center gap-1.5 text-[11px] border border-border px-3 py-2 hover:border-primary hover:text-primary transition-colors uppercase tracking-wider"
+            >
+              <SlidersHorizontal size={11} />
+              {collapsed ? "Show Advanced Filters" : "Hide Advanced Filters"}
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {JOB_PRESETS.map((preset) => (
+              <button
+                key={preset.key}
+                onClick={() => applyPreset(preset.key)}
+                className="text-[11px] px-3 py-1.5 border border-border text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors uppercase tracking-wider"
+              >
+                {preset.label}
+              </button>
+            ))}
+            {activeFilterCount > 0 || search || !showArchived ? (
+              <button
+                onClick={() => {
+                  setFilters(DEFAULT_FILTERS);
+                  setSearch("");
+                  setDebouncedSearch("");
+                  setShowArchived(true);
+                  setSorting([{ id: "final_score", desc: true }]);
+                  setPage(1);
+                }}
+                className="text-[11px] px-3 py-1.5 border border-primary/30 text-primary hover:bg-primary hover:text-background transition-colors uppercase tracking-wider"
+              >
+                Reset View
+              </button>
+            ) : null}
+          </div>
+        </div>
+
         <div className="flex gap-4">
           {/* Sidebar */}
           <aside
@@ -537,7 +649,7 @@ export default function JobsPage() {
               <button
                 onClick={toggleCollapsed}
                 className="flex flex-col items-center gap-1 w-full pt-3 text-muted-foreground hover:text-primary transition-colors"
-                title={`Filters${activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}`}
+                title={`Advanced filters${activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}`}
               >
                 <SlidersHorizontal size={14} />
                 <ChevronRight size={12} />
@@ -548,7 +660,7 @@ export default function JobsPage() {
             ) : (
               <div className="border border-border bg-card p-3 space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-[var(--fg-muted,#71717a)] uppercase tracking-wide">Filters</span>
+                  <span className="text-xs font-semibold text-[var(--fg-muted,#71717a)] uppercase tracking-wide">Advanced Filters</span>
                   <button
                     onClick={toggleCollapsed}
                     className="text-muted-foreground hover:text-primary transition-colors"

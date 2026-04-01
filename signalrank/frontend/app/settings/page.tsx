@@ -131,6 +131,22 @@ function looksLikeUrl(value: string) {
   );
 }
 
+function getProjectLinkStatus(project: ResumeEditor["projects"][number]): {
+  label: string;
+  tone: string;
+} {
+  if (!project.name && !project.url && !project.description) {
+    return { label: "Empty", tone: "text-muted-foreground border-border" };
+  }
+  if (!project.url.trim()) {
+    return { label: "Missing link", tone: "text-[var(--terminal-yellow)] border-[var(--terminal-yellow)]/30" };
+  }
+  if (!looksLikeUrl(project.url)) {
+    return { label: "Check URL", tone: "text-destructive border-destructive/30" };
+  }
+  return { label: "Link detected", tone: "text-primary border-primary/30" };
+}
+
 function validateResumeEditor(editor: ResumeEditor): string | null {
   if (editor.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editor.email)) {
     return "Resume email must be valid.";
@@ -247,6 +263,7 @@ export default function SettingsPage() {
   const [dirty, setDirty] = useState(false);
   const [triggeringDeepScan, setTriggeringDeepScan] = useState(false);
   const [previewingResume, setPreviewingResume] = useState(false);
+  const [resumePreviewMeta, setResumePreviewMeta] = useState<{ pageCount: number; warnings: string[]; fitActions: string[]; openedAt: number } | null>(null);
   const [uploadingResume, setUploadingResume] = useState(false);
   const [activeSection, setActiveSection] = useState<SettingsSection>("resume");
 
@@ -525,6 +542,12 @@ export default function SettingsPage() {
         template: resumeTemplate,
         resume_editor: cleanedEditor,
       });
+      setResumePreviewMeta({
+        pageCount: preview.page_count,
+        warnings: preview.warnings,
+        fitActions: preview.fit_actions,
+        openedAt: Date.now(),
+      });
       const notices = [...preview.fit_actions, ...preview.warnings];
       if (notices.length > 0) {
         toast(`Preview opened with warnings: ${notices[0]}`, "info");
@@ -799,6 +822,35 @@ export default function SettingsPage() {
                       </button>
                     </div>
                   </div>
+                  <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
+                    <div className="border border-border bg-background/40 p-3 text-[11px] text-muted-foreground leading-relaxed">
+                      Preview opens in a new tab and uses the cached backend render path. Re-open it after major edits to confirm page count and link coverage.
+                    </div>
+                    <div className="border border-border bg-background/40 p-3 min-w-[220px]">
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">Preview Status</div>
+                      {resumePreviewMeta ? (
+                        <div className="space-y-1.5 text-[11px]">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-muted-foreground">Pages</span>
+                            <span className="text-foreground tabular-nums">{resumePreviewMeta.pageCount}</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-muted-foreground">Warnings</span>
+                            <span className="text-foreground tabular-nums">{resumePreviewMeta.warnings.length}</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-muted-foreground">Fit actions</span>
+                            <span className="text-foreground tabular-nums">{resumePreviewMeta.fitActions.length}</span>
+                          </div>
+                          <div className="pt-1 text-muted-foreground">
+                            Opened {new Date(resumePreviewMeta.openedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-[11px] text-muted-foreground">No preview opened yet in this session.</div>
+                      )}
+                    </div>
+                  </div>
                   <input
                     ref={resumeUploadRef}
                     type="file"
@@ -961,6 +1013,12 @@ export default function SettingsPage() {
                     </div>
                     {resumeEditor.projects.map((project, index) => (
                       <div key={`project-${index}`} className="space-y-3 border border-border p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Project {index + 1}</div>
+                          <span className={`border px-2 py-1 text-[10px] uppercase tracking-[0.18em] ${getProjectLinkStatus(project).tone}`}>
+                            {getProjectLinkStatus(project).label}
+                          </span>
+                        </div>
                         <div className="grid gap-3 md:grid-cols-2">
                           <div>
                             <label className="mb-1.5 block text-[10px] uppercase tracking-wider text-muted-foreground">Name</label>
@@ -995,6 +1053,9 @@ export default function SettingsPage() {
                               suppressHydrationWarning
                               className="w-full border border-border bg-input px-3 py-2 text-xs text-foreground transition-colors focus:border-primary focus:outline-none"
                             />
+                            <div className="mt-1 text-[10px] text-muted-foreground">
+                              Add the public project URL here so the PDF can keep it clickable.
+                            </div>
                           </div>
                         </div>
                         <div>
