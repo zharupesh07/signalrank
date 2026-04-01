@@ -774,7 +774,7 @@ export default function SettingsPage() {
             )}
 
             {activeSection === "profile" && (
-              <div className="space-y-6">
+              <div className="tab-enter space-y-6">
                 <div className="stat-card card-hover space-y-5 border border-border bg-card p-5">
                   <div className="flex items-center gap-2">
                     <User size={13} className="text-primary" />
@@ -832,7 +832,7 @@ export default function SettingsPage() {
             )}
 
             {activeSection === "resume" && (
-              <div className="space-y-6">
+              <div className="tab-enter space-y-6">
                 <div className="border border-border bg-card">
                   <div className="sticky top-14 z-10 border-b border-border bg-card/95 px-5 py-4 backdrop-blur-sm">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -1264,7 +1264,7 @@ export default function SettingsPage() {
             )}
 
             {activeSection === "search" && (
-              <div className="space-y-6">
+              <div className="tab-enter space-y-6">
                 <div className="stat-card card-hover space-y-5 border border-border bg-card p-5">
                   <div className="flex items-center gap-2">
                     <Target size={13} className="text-primary" />
@@ -1490,7 +1490,7 @@ export default function SettingsPage() {
             )}
 
             {activeSection === "recruiters" && (
-              <div className="space-y-6">
+              <div className="tab-enter space-y-6">
                 <div className="stat-card card-hover space-y-5 border border-border bg-card p-5">
                   <div className="flex items-center gap-2">
                     <Search size={13} className="text-primary" />
@@ -1627,7 +1627,7 @@ export default function SettingsPage() {
             )}
 
             {activeSection === "developer" && isDev && (
-              <div className="space-y-4">
+              <div className="tab-enter space-y-4">
                 <div className="stat-card border border-border bg-card p-5 space-y-4">
                   <div className="flex items-center gap-2">
                     <Database size={13} className="text-primary" />
