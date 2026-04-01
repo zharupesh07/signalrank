@@ -1,23 +1,36 @@
 import asyncio
 import logging
+import os
 
-from pythonjsonlogger import jsonlogger
+import uvicorn
+from fastapi import FastAPI
 
 from api.config import worker_runtime_flags
 from api.database import AsyncSessionLocal, ensure_runtime_schema_compatibility
 from api.deps_llm import get_llm_client
+from api.logging_setup import configure_logging
 
-
-def _configure_logging() -> None:
-    handler = logging.StreamHandler()
-    handler.setFormatter(jsonlogger.JsonFormatter("%(asctime)s %(name)s %(levelname)s %(message)s"))
-    logging.root.setLevel(logging.INFO)
-    logging.root.handlers = [handler]
-    logging.getLogger("passlib.handlers.bcrypt").setLevel(logging.ERROR)
-
-
-_configure_logging()
+configure_logging()
 logger = logging.getLogger(__name__)
+
+_health_app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+
+
+@_health_app.get("/healthz")
+async def healthz():
+    return {"status": "ok"}
+
+
+async def _serve_health(port: int) -> None:
+    config = uvicorn.Config(
+        _health_app,
+        host="0.0.0.0",
+        port=port,
+        log_level="warning",
+        access_log=False,
+    )
+    server = uvicorn.Server(config)
+    await server.serve()
 
 
 def _log_worker_runtime_role(runtime_flags: dict[str, bool]) -> None:
@@ -33,12 +46,12 @@ def _log_worker_runtime_role(runtime_flags: dict[str, bool]) -> None:
         logger.info("Queue worker enabled: this process will poll DB for pending runs")
 
 
-async def _resume_worker_watchdog(llm) -> None:
+async def _resume_worker_watchdog(session_factory, llm) -> None:
     from batch.resume_worker import resume_worker_loop
 
     while True:
         try:
-            await resume_worker_loop(AsyncSessionLocal, llm)
+            await resume_worker_loop(session_factory, llm)
         except asyncio.CancelledError:
             raise
         except Exception:
@@ -46,12 +59,12 @@ async def _resume_worker_watchdog(llm) -> None:
             await asyncio.sleep(10)
 
 
-async def _archival_worker_watchdog(llm) -> None:
+async def _archival_worker_watchdog(session_factory, llm) -> None:
     from batch.archival_worker import archival_worker_loop
 
     while True:
         try:
-            await archival_worker_loop(AsyncSessionLocal, llm)
+            await archival_worker_loop(session_factory, llm)
         except asyncio.CancelledError:
             raise
         except Exception:
@@ -65,6 +78,10 @@ async def main() -> None:
     runtime_flags = worker_runtime_flags()
     logger.info("Worker entrypoint starting with flags=%s", runtime_flags)
     _log_worker_runtime_role(runtime_flags)
+
+    health_port = int(os.environ.get("PORT", "8001"))
+    logger.info("Starting health server on port %d (enables Railway sleep-on-inactivity)", health_port)
+    tasks.append(asyncio.create_task(_serve_health(health_port)))
 
     await ensure_runtime_schema_compatibility()
 
@@ -83,7 +100,7 @@ async def main() -> None:
             if recovered:
                 logger.info("Recovered %d stuck generation task(s)", recovered)
         logger.info("Starting resume worker")
-        tasks.append(asyncio.create_task(_resume_worker_watchdog(llm)))
+        tasks.append(asyncio.create_task(_resume_worker_watchdog(AsyncSessionLocal, llm)))
 
     if runtime_flags["run_archival_worker"]:
         from batch.archival_worker import recover_stuck_archival_tasks
@@ -92,7 +109,7 @@ async def main() -> None:
             if recovered:
                 logger.info("Recovered %d stuck archival task(s)", recovered)
         logger.info("Starting archival worker")
-        tasks.append(asyncio.create_task(_archival_worker_watchdog(llm)))
+        tasks.append(asyncio.create_task(_archival_worker_watchdog(AsyncSessionLocal, llm)))
 
     if runtime_flags["run_boot_scan"]:
         from batch.resume_worker import boot_scan
@@ -102,10 +119,6 @@ async def main() -> None:
     if runtime_flags["run_boot_embed"]:
         from batch.worker import boot_embed_uncached_jobs
         await boot_embed_uncached_jobs(AsyncSessionLocal)
-
-    if not tasks:
-        logger.warning("No worker tasks enabled; exiting")
-        return
 
     await asyncio.gather(*tasks)
 
