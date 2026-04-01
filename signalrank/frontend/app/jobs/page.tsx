@@ -10,19 +10,13 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import { api } from "@/lib/api";
+import { scoreColor, parseApiDate, formatJobAge } from "@/lib/formatting";
 import type { Job } from "@/types";
 import { useToast } from "@/components/toast";
 import { TableRowSkeleton } from "@/components/skeleton";
 import { ExternalLink, ChevronUp, ChevronDown, Search, X, Plus, ChevronRight, ChevronLeft, SlidersHorizontal, XCircle, Archive, Loader2 } from "lucide-react";
 
 const col = createColumnHelper<Job>();
-
-function scoreColor(pct: number): string {
-  if (pct >= 75) return "var(--primary)";
-  if (pct >= 60) return "var(--terminal-green-bright)";
-  if (pct >= 45) return "var(--terminal-yellow)";
-  return "var(--destructive)";
-}
 
 const TIER_COLORS: Record<string, string> = {
   tier_ss: "var(--primary)",
@@ -32,30 +26,6 @@ const TIER_COLORS: Record<string, string> = {
   tier_c:  "#f97316",
   tier_d:  "var(--muted-foreground)",
 };
-
-function parseApiDate(value: string | null): Date | null {
-  if (!value) return null;
-  const normalized = value.includes("T") ? value : value.replace(" ", "T");
-  const parsed = new Date(normalized);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function formatJobAge(value: string | null): { label: string; color: string } | null {
-  const postedAt = parseApiDate(value);
-  if (!postedAt) return null;
-
-  const days = Math.max(0, Math.floor((Date.now() - postedAt.getTime()) / 86400000));
-  if (days === 0) {
-    return { label: "today", color: "var(--terminal-green-bright)" };
-  }
-  if (days < 14) {
-    return { label: `${days}d`, color: "var(--terminal-green-bright)" };
-  }
-  if (days < 60) {
-    return { label: `${Math.floor(days / 7)}w`, color: "var(--terminal-yellow)" };
-  }
-  return { label: `${Math.floor(days / 30)}mo`, color: "var(--muted-foreground)" };
-}
 
 function ScoreCell({ value }: { value: number | null }) {
   if (value == null) return <span className="text-muted-foreground">—</span>;

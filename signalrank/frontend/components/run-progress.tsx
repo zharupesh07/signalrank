@@ -3,18 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
+import { formatElapsed } from "@/lib/formatting";
 import type { Run } from "@/types";
 import { useToast } from "@/components/toast";
 
 interface RunProgressProps {
   run: Run;
   onComplete?: (run: Run) => void;
-}
-
-function elapsed(startedAt: string): string {
-  const secs = Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000);
-  if (secs < 60) return `${secs}s`;
-  return `${Math.floor(secs / 60)}m ${secs % 60}s`;
 }
 
 export default function RunProgress({ run: initialRun, onComplete }: RunProgressProps) {
@@ -142,8 +137,8 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
           {jobsFound != null && (
             <span className="text-primary tabular-nums">{jobsFound.toLocaleString()} jobs</span>
           )}
-          {isLive && run.started_at && <span key={tick}>{elapsed(run.started_at)}</span>}
-          {!isLive && run.finished_at && run.started_at && <span>{elapsed(run.started_at)} total</span>}
+          {isLive && run.started_at && <span key={tick}>{formatElapsed(run.started_at)}</span>}
+          {!isLive && run.finished_at && run.started_at && <span>{formatElapsed(run.started_at)} total</span>}
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
 import { swr } from "@/lib/cache";
+import { scoreColor } from "@/lib/formatting";
 import { makeQueuedRun, upsertRunCaches } from "@/lib/run-cache";
 import type { Job, Run } from "@/types";
 import { useToast } from "@/components/toast";
@@ -39,16 +40,9 @@ function MiniBarChart({ data, maxVal, color = "var(--primary)" }: { data: { labe
   );
 }
 
-function scoreColor(score: number) {
-  if (score >= 0.75) return "var(--primary)";
-  if (score >= 0.60) return "var(--terminal-green-bright)";
-  if (score >= 0.45) return "var(--terminal-yellow)";
-  return "var(--chart-4)";
-}
-
 function ScoreDisplay({ score }: { score: number }) {
   const pct = Math.round(score * 100);
-  const color = scoreColor(score);
+  const color = scoreColor(score * 100);
   return (
     <div className="flex flex-col items-end gap-1.5 shrink-0">
       <span className="text-base font-bold tabular-nums leading-none" style={{ color }}>
