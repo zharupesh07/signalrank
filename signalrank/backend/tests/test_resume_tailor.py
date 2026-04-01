@@ -7,9 +7,11 @@ import pytest
 
 from llm.resume_tailor import (
     TailoredContent,
+    _describe_fit_actions,
     _apply_resume_facts,
     _normalize_tailored_content,
     _fit_to_one_page,
+    _render_metrics,
     _typst_bold,
     check_page_count,
     load_resume_yaml,
@@ -202,6 +204,47 @@ def test_fit_to_one_page_drops_oldest_role_as_last_resort():
     assert [exp["title"] for exp in content.experiences] == ["Newest", "Middle", "Older"]
 
 
+def test_fit_actions_describe_layout_compression():
+    content = TailoredContent(
+        summary="Sentence one. Sentence two. Sentence three. Sentence four.",
+        experiences=[
+            {"title": "Newest", "company": "A", "dates": "2024", "bullets": ["a", "b", "c"]},
+            {"title": "Middle", "company": "B", "dates": "2022", "bullets": ["d", "e"]},
+            {"title": "Older", "company": "C", "dates": "2020", "bullets": ["f", "g"]},
+            {"title": "Oldest", "company": "D", "dates": "2018", "bullets": ["h", "i"]},
+        ],
+    )
+
+    before = _render_metrics(content)
+    assert _fit_to_one_page(content, current_pages=2) is True
+    actions = _describe_fit_actions(before, content)
+
+    assert "Summary was shortened to fit one page" in actions
+
+
+def test_fit_actions_report_dropped_roles_and_bullets():
+    content = TailoredContent(
+        summary="Short.",
+        par_leading="0.48em",
+        list_spacing="0.25em",
+        experiences=[
+            {"title": "Newest", "company": "A", "dates": "2024", "bullets": ["a", "b", "c"]},
+            {"title": "Middle", "company": "B", "dates": "2022", "bullets": ["d", "e"]},
+            {"title": "Older", "company": "C", "dates": "2020", "bullets": ["f", "g", "h"]},
+            {"title": "Oldest", "company": "D", "dates": "2018", "bullets": ["i", "j", "k"]},
+        ],
+    )
+
+    before = _render_metrics(content)
+    assert _fit_to_one_page(content, current_pages=2) is True
+    assert _fit_to_one_page(content, current_pages=2) is True
+    assert _fit_to_one_page(content, current_pages=2) is True
+    actions = _describe_fit_actions(before, content)
+
+    assert "4 bullet points were removed to fit one page" in actions
+    assert "1 older experience entry was removed to fit one page" in actions
+
+
 def test_check_page_count_single_page():
     try:
         import pypdf
@@ -324,36 +367,36 @@ def test_normalize_tailored_content_cleans_bullets():
 
 def test_render_and_validate_resume_artifacts_for_special_chars_and_links():
     content = TailoredContent(
-        name="Ayush Khandelwal",
-        email="helloayushkh@gmail.com",
+        name="Example Candidate",
+        email="candidate@example.com",
         phone="+91 9044781514",
-        location="Kanpur, India",
-        linkedin="https://www.linkedin.com/in/ayushhkhandelwal/",
-        github="github.com/ayushhkhandelwal",
-        homepage="ayush.dev",
-        position="Senior Information Technology Analyst",
-        summary="Senior enterprise applications analyst with SAP SD and OTC experience.",
+        location="Remote",
+        linkedin="https://www.linkedin.com/in/example-candidate/",
+        github="github.com/example-candidate",
+        homepage="candidate.dev",
+        position="Senior Technology Analyst",
+        summary="Senior enterprise applications analyst with ERP and order workflow experience.",
         skills=[
             {"category": "Programming", "items": ["C#", "JavaScript", "SQL", "Oracle"]},
-            {"category": "Platforms", "items": ["SAP S/4HANA", "SAP SD", "Order to Cash"]},
+            {"category": "Platforms", "items": ["ERP Suite", "Order to Cash", "Workflow Design"]},
         ],
         experiences=[
             {
-                "title": "Senior Information Technology Analyst",
-                "company": "Dow Chemical International Private Limited",
-                "company_url": "www.dow.com",
-                "location": "Mumbai, Maharashtra",
+                "title": "Senior Technology Analyst",
+                "company": "Example Enterprise",
+                "company_url": "www.example.com",
+                "location": "Remote",
                 "dates": "09/2022 - Present",
-                "tech": "SAP SD, OTC, S/4HANA",
+                "tech": "ERP Suite, OTC, Workflow Design",
                 "bullets": [
-                    "Configured OTC process improvements across enterprise workflows.",
-                    "Supported customer service and planning workstreams for Dow.",
-                    "Collaborated with cross-functional teams on SAP enhancements.",
+                    "Configured order workflow improvements across enterprise systems.",
+                    "Supported customer service and planning workstreams.",
+                    "Collaborated with cross-functional teams on platform enhancements.",
                 ],
             }
         ],
-        projects=[{"name": "Automation Toolkit", "url": "github.com/ayushhkhandelwal/automation-toolkit", "description": "Internal tooling"}],
-        certifications=[{"name": "SAP Certified Application Associate - SAP S/4HANA Sales", "url": "https://www.credly.com/badges/example"}],
+        projects=[{"name": "Automation Toolkit", "url": "github.com/example-candidate/automation-toolkit", "description": "Internal tooling"}],
+        certifications=[{"name": "Systems Certification", "url": "https://www.credly.com/badges/example"}],
     )
 
     src = render_typst(content)
@@ -363,22 +406,22 @@ def test_render_and_validate_resume_artifacts_for_special_chars_and_links():
     assert check_page_count(pdf) == 1
     assert validation.page_count == 1
     assert validation.missing_links == []
-    assert "mailto:helloayushkh@gmail.com" in validation.pdf_links
-    assert "https://www.linkedin.com/in/ayushhkhandelwal" in validation.pdf_links
+    assert "mailto:candidate@example.com" in validation.pdf_links
+    assert "https://www.linkedin.com/in/example-candidate" in validation.pdf_links
     assert validation.vertical_fill_pct is not None
     assert validation.ink_fill_pct is not None
 
 
 def test_validate_resume_artifacts_warns_on_fragmented_bullets():
     content = TailoredContent(
-        name="Ayush Khandelwal",
+        name="Example Candidate",
         experiences=[
             {
-                "title": "Senior Information Technology Analyst",
-                "company": "Dow Chemical International Private Limited",
+                "title": "Senior Technology Analyst",
+                "company": "Example Enterprise",
                 "dates": "09/2022 - Present",
                 "bullets": [
-                    "Working as a senior analyst in Dow's Enterprise",
+                    "Working as a senior analyst in the enterprise",
                     "segment aligned to the",
                     "order to cash workstream.",
                     "Configured delivery processing, shipping point, output",
@@ -398,23 +441,23 @@ def test_validate_resume_artifacts_warns_on_fragmented_bullets():
 
 
 def test_apply_resume_facts_restores_name_and_current_employer():
-    resume_text = """Ayush Khandelwal
-helloayushkh@gmail.com
+    resume_text = """Example Candidate
+candidate@example.com
 +91 9044781514
-Kanpur, India
-linkedin.com/in/ayushhkhandelwal
+Remote
+linkedin.com/in/example-candidate
 WORK EXPERIENCE
-Senior Information Technology Analyst
-Dow Chemical International Private Limited
+Senior Technology Analyst
+Example Enterprise
 09/2022 - Present
-Mumbai, Maharashtra
-Application Development Associate - SAP SD Consultant
-Accenture
+Remote
+Application Development Associate - Systems Consultant
+Example Consulting
 08/2018 - 09/2022
 """
     content = TailoredContent(
         name="",
-        email="helloayushkh@gmail.com",
+        email="candidate@example.com",
         experiences=[
             {
                 "title": "Senior SAP SD Consultant",
@@ -427,10 +470,10 @@ Accenture
     )
 
     updated = _apply_resume_facts(content, resume_text)
-    assert updated.name == "Ayush Khandelwal"
+    assert updated.name == "Example Candidate"
     assert updated.phone == "+91 9044781514"
-    assert updated.experiences[0]["title"] == "Senior Information Technology Analyst"
-    assert updated.experiences[0]["company"] == "Dow Chemical International Private Limited"
+    assert updated.experiences[0]["title"] == "Senior Technology Analyst"
+    assert updated.experiences[0]["company"] == "Example Enterprise"
     assert updated.experiences[0]["dates"] == "09/2022 - Present"
 
 

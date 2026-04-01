@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     database_url: str
+    database_private_url: str = ""
+    database_public_url: str = ""
     nextauth_secret: str
     environment: str = "development"
     allowed_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]

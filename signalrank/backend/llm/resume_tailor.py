@@ -382,6 +382,7 @@ class TailoredContent:
     certifications: list[str] = field(default_factory=list)
     par_leading: str = "0.52em"
     list_spacing: str = "0.4em"
+    base_font_size: str = "8.8pt"
 
 
 @dataclass
@@ -392,6 +393,7 @@ class ResumeValidationReport:
     vertical_fill_pct: float | None = None
     ink_fill_pct: float | None = None
     warnings: list[str] = field(default_factory=list)
+    fit_actions: list[str] = field(default_factory=list)
 
 
 def _parse_content(raw: dict) -> TailoredContent:
@@ -522,6 +524,70 @@ def _fit_to_one_page(content: TailoredContent, current_pages: int = 2) -> bool:
         return True
 
     return False
+
+
+def _expand_to_fill_page(content: TailoredContent, vertical_fill_pct: float) -> bool:
+    """Increase spacing/font when the page is underfilled. Inverse of _fit_to_one_page.
+
+    Returns True if any change was made (caller should re-render).
+    """
+    if vertical_fill_pct >= 65:
+        return False
+
+    if content.par_leading == "0.48em":
+        content.par_leading = "0.52em"
+        return True
+    if content.list_spacing == "0.25em":
+        content.list_spacing = "0.4em"
+        return True
+    if vertical_fill_pct < 60 and content.par_leading == "0.52em":
+        content.par_leading = "0.65em"
+        return True
+    if vertical_fill_pct < 60 and content.list_spacing == "0.4em":
+        content.list_spacing = "0.55em"
+        return True
+    if vertical_fill_pct < 50 and content.base_font_size == "8.8pt":
+        content.base_font_size = "9.2pt"
+        return True
+    if vertical_fill_pct < 45 and content.base_font_size == "9.2pt":
+        content.base_font_size = "9.5pt"
+        return True
+    return False
+
+
+def _render_metrics(content: TailoredContent) -> dict:
+    return {
+        "summary": (content.summary or "").strip(),
+        "par_leading": content.par_leading,
+        "list_spacing": content.list_spacing,
+        "experience_count": len(content.experiences),
+        "bullet_count": sum(len(exp.get("bullets", []) or []) for exp in content.experiences),
+    }
+
+
+def _describe_fit_actions(before: dict, after: TailoredContent) -> list[str]:
+    actions: list[str] = []
+    if before.get("summary") and (after.summary or "").strip() != before["summary"]:
+        if len((after.summary or "").strip()) < len(before["summary"]):
+            actions.append("Summary was shortened to fit one page")
+    if before.get("par_leading") != after.par_leading:
+        actions.append("Line spacing was tightened to fit one page")
+    if before.get("list_spacing") != after.list_spacing:
+        actions.append("Bullet spacing was tightened to fit one page")
+
+    bullet_delta = before.get("bullet_count", 0) - sum(len(exp.get("bullets", []) or []) for exp in after.experiences)
+    if bullet_delta > 0:
+        noun = "bullet point" if bullet_delta == 1 else "bullet points"
+        verb = "was" if bullet_delta == 1 else "were"
+        actions.append(f"{bullet_delta} {noun} {verb} removed to fit one page")
+
+    dropped_experiences = before.get("experience_count", 0) - len(after.experiences)
+    if dropped_experiences > 0:
+        noun = "older experience entry" if dropped_experiences == 1 else "older experience entries"
+        verb = "was" if dropped_experiences == 1 else "were"
+        actions.append(f"{dropped_experiences} {noun} {verb} removed to fit one page")
+
+    return actions
 
 
 def _expected_resume_links(content: TailoredContent) -> list[str]:
@@ -707,16 +773,27 @@ def _render_first_page_png(typst_source: str) -> bytes | None:
         return pages[0].read_bytes()
 
 
-def validate_resume_artifacts(content: TailoredContent, typst_source: str, pdf_bytes: bytes) -> ResumeValidationReport:
+def validate_resume_artifacts(
+    content: TailoredContent,
+    typst_source: str,
+    pdf_bytes: bytes,
+    *,
+    fit_actions: list[str] | None = None,
+) -> ResumeValidationReport:
     expected_links = _expected_resume_links(content)
     pdf_links = _pdf_annotation_links(pdf_bytes)
     missing_links = [link for link in expected_links if link not in pdf_links]
 
     warnings: list[str] = []
+    page_count = check_page_count(pdf_bytes)
+    if page_count > 1:
+        warnings.append(f"Resume still renders to {page_count} pages")
     if missing_links:
         warnings.append("Some expected hyperlinks are missing from the rendered PDF")
     if _has_fragmented_bullets(content):
         warnings.append("Resume contains fragmented bullet lines that should be merged before rendering")
+    if fit_actions:
+        warnings.append("Resume required layout compression to fit")
 
     vertical_fill_pct = None
     ink_fill_pct = None
@@ -727,12 +804,13 @@ def validate_resume_artifacts(content: TailoredContent, typst_source: str, pdf_b
             warnings.append("Resume leaves significant vertical space unused")
 
     return ResumeValidationReport(
-        page_count=check_page_count(pdf_bytes),
+        page_count=page_count,
         missing_links=missing_links,
         pdf_links=pdf_links,
         vertical_fill_pct=vertical_fill_pct,
         ink_fill_pct=ink_fill_pct,
         warnings=warnings,
+        fit_actions=fit_actions or [],
     )
 
 
@@ -779,6 +857,28 @@ def render_and_compile_content(
         logger.warning("_fit_to_one_page exhausted iterations, returning best-effort PDF")
 
     return typst_src, pdf
+
+
+def render_compile_validate_content(
+    content: TailoredContent,
+    template: str = "classic",
+    max_pages: int = 1,
+) -> tuple[str, bytes, ResumeValidationReport]:
+    before = _render_metrics(content)
+    typst_src, pdf = render_and_compile_content(content, template=template, max_pages=max_pages)
+    fit_actions = _describe_fit_actions(before, content)
+    validation = validate_resume_artifacts(content, typst_src, pdf, fit_actions=fit_actions)
+
+    if validation.vertical_fill_pct is not None and validation.vertical_fill_pct < 65:
+        for _ in range(4):
+            if not _expand_to_fill_page(content, validation.vertical_fill_pct):
+                break
+            typst_src, pdf = render_and_compile_content(content, template=template, max_pages=max_pages)
+            validation = validate_resume_artifacts(content, typst_src, pdf, fit_actions=fit_actions)
+            if validation.vertical_fill_pct is None or validation.vertical_fill_pct >= 65:
+                break
+
+    return typst_src, pdf, validation
 
 
 async def tailor_and_compile(

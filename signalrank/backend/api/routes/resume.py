@@ -1,4 +1,7 @@
 import logging
+import json
+from dataclasses import asdict
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse, Response
@@ -40,6 +43,7 @@ class EmailRequest(BaseModel):
 class PreviewRequest(BaseModel):
     template: str | None = None
     resume_editor: ResumeEditorInput | None = None
+    debug: bool = False
 
 
 
@@ -50,7 +54,7 @@ async def tailor(
     db: AsyncSession = Depends(get_db),
     llm: OpenRouterClient = Depends(get_llm_client),
 ):
-    from llm.resume_tailor import render_and_compile_content, tailor_resume, validate_resume_artifacts
+    from llm.resume_tailor import render_compile_validate_content, tailor_resume
 
     if body.template is not None and body.template not in VALID_TEMPLATES:
         raise HTTPException(status_code=422, detail=f"Template must be one of: {VALID_TEMPLATES}")
@@ -82,8 +86,7 @@ async def tailor(
     )
 
     try:
-        typst_src, pdf_bytes = render_and_compile_content(content, selected_template)
-        validation = validate_resume_artifacts(content, typst_src, pdf_bytes)
+        _, pdf_bytes, validation = render_compile_validate_content(content, selected_template)
     except Exception as e:
         logger.warning("PDF compile failed: %s", e)
         pdf_bytes = None
@@ -222,7 +225,7 @@ async def preview_resume(
     profile: Profile | None = Depends(get_user_profile),
     db: AsyncSession = Depends(get_db),
 ):
-    from llm.resume_tailor import render_and_compile_content
+    from llm.resume_tailor import render_compile_validate_content
 
     if body.template is not None and body.template not in VALID_TEMPLATES:
         raise HTTPException(status_code=422, detail=f"Template must be one of: {VALID_TEMPLATES}")
@@ -240,13 +243,46 @@ async def preview_resume(
 
     selected_template = get_resume_template(profile, body.template)
     content = editor_to_tailored_content(editor_payload)
-    _, pdf_bytes = render_and_compile_content(content, selected_template)
+    typst_src, pdf_bytes, validation = render_compile_validate_content(content, selected_template)
+
+    if body.debug:
+        return JSONResponse(
+            {
+                "content": {
+                    "name": content.name,
+                    "position": content.position,
+                    "email": content.email,
+                    "phone": content.phone,
+                    "homepage": content.homepage,
+                    "linkedin": content.linkedin,
+                    "github": content.github,
+                    "location": content.location,
+                    "summary": content.summary,
+                    "skills": content.skills,
+                    "experiences": content.experiences,
+                    "education": content.education,
+                    "projects": content.projects,
+                    "certifications": content.certifications,
+                    "par_leading": content.par_leading,
+                    "list_spacing": content.list_spacing,
+                },
+                "template": selected_template,
+                "validation": asdict(validation),
+                "typst_source": typst_src,
+                "pdf_size": len(pdf_bytes),
+            }
+        )
 
     filename_root = (content.name or "resume_preview").lower().replace(" ", "_")
+    validation_header = quote(json.dumps(asdict(validation), separators=(",", ":")))
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'inline; filename="{filename_root}.pdf"'},
+        headers={
+            "Content-Disposition": f'inline; filename="{filename_root}.pdf"',
+            "Access-Control-Expose-Headers": "X-Resume-Validation",
+            "X-Resume-Validation": validation_header,
+        },
     )
 
 

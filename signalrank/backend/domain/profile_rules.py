@@ -341,7 +341,18 @@ def enrich_config_with_profile_rules(
     ranking = dict(cfg.get("ranking", {}))
     archetypes = infer_profile_archetypes(resume_text, profile_roles, cfg)
     ranking["profile_archetypes"] = archetypes
-    ranking["profile_title_rules"] = build_profile_title_rules(archetypes)
+
+    # If the user has stored explicit overrides, use them instead of auto-generating.
+    user_override = ranking.get("profile_title_rules_override")
+    if user_override and isinstance(user_override, dict):
+        ranking["profile_title_rules"] = {
+            "strong": list(user_override.get("strong", [])),
+            "adjacent": list(user_override.get("adjacent", [])),
+            "hybrid": list(user_override.get("hybrid", [])),
+        }
+    else:
+        ranking["profile_title_rules"] = build_profile_title_rules(archetypes)
+
     ranking["profile_positive_terms"] = build_profile_positive_terms(archetypes)
     out = dict(cfg)
     out["ranking"] = ranking

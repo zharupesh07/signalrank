@@ -1,12 +1,16 @@
 import asyncio
+import logging
 import re
 from collections.abc import AsyncGenerator
+from urllib.parse import urlparse
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
 from api.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_url(url: str) -> tuple[str, dict]:
@@ -27,8 +31,29 @@ def _url_host(url: str) -> str:
     return m.group(1) if m else "unknown"
 
 
-def _build_engine(url: str):
+def _runtime_database_url() -> str:
+    return settings.database_private_url or settings.database_url
+
+
+def _looks_like_public_railway_proxy(url: str) -> bool:
+    host = (urlparse(url).hostname or "").lower()
+    return host.endswith("proxy.rlwy.net") or "tcp.proxy" in host
+
+
+def _log_url_guidance(label: str, url: str) -> None:
+    host = _url_host(url)
+    if _looks_like_public_railway_proxy(url):
+        logger.warning(
+            "Database URL for %s uses a Railway public TCP proxy host (%s). "
+            "Prefer DATABASE_PRIVATE_URL or another private Railway endpoint to reduce egress and latency.",
+            label,
+            host,
+        )
+
+
+def _build_engine(url: str, *, label: str = "runtime"):
     clean_url, connect_args = _parse_url(url)
+    _log_url_guidance(label, url)
     eng = create_async_engine(
         clean_url,
         echo=False,
@@ -43,7 +68,7 @@ def _build_engine(url: str):
     return eng, factory
 
 
-engine, AsyncSessionLocal = _build_engine(settings.database_url)
+engine, AsyncSessionLocal = _build_engine(_runtime_database_url())
 
 # Active engine/factory — swappable at runtime (dev only)
 _active_engine = engine
@@ -67,13 +92,13 @@ async def switch_database(target: str) -> None:
     global _active_engine, _active_session_factory, _db_target, _schema_compat_checked
 
     if target == "railway":
-        if not settings.database_url_railway:
-            raise ValueError("DATABASE_URL_RAILWAY is not configured")
-        url = settings.database_url_railway
+        url = settings.database_url_railway or settings.database_private_url
+        if not url:
+            raise ValueError("DATABASE_URL_RAILWAY or DATABASE_PRIVATE_URL is not configured")
     else:
         url = settings.database_url
 
-    new_engine, new_factory = _build_engine(url)
+    new_engine, new_factory = _build_engine(url, label=target)
     async with new_engine.connect() as conn:
         await conn.execute(text("SELECT 1"))
 
@@ -87,12 +112,15 @@ async def switch_database(target: str) -> None:
 
 
 def get_db_info() -> dict:
+    active_url = (
+        (settings.database_url_railway or settings.database_private_url)
+        if _db_target == "railway"
+        else settings.database_url
+    )
     return {
         "target": _db_target,
-        "railway_available": bool(settings.database_url_railway),
-        "db_host": _url_host(
-            settings.database_url_railway if _db_target == "railway" else settings.database_url
-        ),
+        "railway_available": bool(settings.database_url_railway or settings.database_private_url),
+        "db_host": _url_host(active_url),
     }
 
 

@@ -25,6 +25,36 @@ type JobsListParams = {
 };
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+type ResumePreviewValidation = {
+  page_count: number;
+  warnings: string[];
+  fit_actions: string[];
+};
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function retryDelayMs(res: Response, attempt: number) {
+  const retryAfter = res.headers.get("Retry-After");
+  const seconds = retryAfter ? Number(retryAfter) : NaN;
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return seconds * 1000;
+  }
+  return Math.min(500 * 2 ** attempt, 2000);
+}
+
+function parseHeaderJson<T>(res: Response, name: string, fallback: T): T {
+  const raw = res.headers.get(name);
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(decodeURIComponent(raw)) as T;
+  } catch {
+    return fallback;
+  }
+}
 
 async function request<T>(
   path: string,
@@ -39,8 +69,21 @@ async function request<T>(
     headers["Content-Type"] = "application/json";
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, { ...init, headers });
-  if (!res.ok) {
+  const method = (init.method ?? "GET").toUpperCase();
+  const shouldRetry = SAFE_METHODS.has(method);
+
+  for (let attempt = 0; ; attempt += 1) {
+    const res = await fetch(`${BASE_URL}${path}`, { ...init, headers });
+    if (res.ok) {
+      if (res.status === 204) return undefined as T;
+      return res.json();
+    }
+
+    if ((res.status === 503 || res.status === 429) && shouldRetry && attempt < 2) {
+      await sleep(retryDelayMs(res, attempt));
+      continue;
+    }
+
     if (res.status === 401 && typeof window !== "undefined") {
       const { signOut } = await import("next-auth/react");
       signOut({ callbackUrl: "/login" });
@@ -48,8 +91,6 @@ async function request<T>(
     const detail = await res.text();
     throw new Error(`${res.status}: ${detail}`);
   }
-  if (res.status === 204) return undefined as T;
-  return res.json();
 }
 
 export const api = {
@@ -217,7 +258,7 @@ export const api = {
         template?: string;
         resume_editor?: unknown;
       }
-    ): Promise<void> => {
+    ): Promise<ResumePreviewValidation> => {
       const res = await fetch(`${BASE_URL}/api/resume/preview`, {
         method: "POST",
         headers: {
@@ -227,10 +268,16 @@ export const api = {
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      const validation = parseHeaderJson<ResumePreviewValidation>(res, "X-Resume-Validation", {
+        page_count: 1,
+        warnings: [],
+        fit_actions: [],
+      });
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       window.open(url, "_blank", "noopener,noreferrer");
       setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+      return validation;
     },
     tailor: (token: string, data: { job_id: string; template?: string }) =>
       request<{ status: string; job_id: string; template: string; content: Record<string, unknown>; pdf_available: boolean }>(

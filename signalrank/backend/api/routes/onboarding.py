@@ -17,7 +17,7 @@ from api.models import Profile, User
 from domain.resume_editor import has_resume_editor_content, merge_resume_editor, parse_resume_editor
 from llm.onboarding import generate_onboarding_questions
 from llm.openrouter import OpenRouterClient
-from llm.resume_parser import ResumeParseResult, detect_enterprise_role_from_text, parse_resume, parse_resume_structure
+from llm.resume_parser import ResumeParseResult, detect_enterprise_role_from_text, parse_resume, parse_resume_from_images, parse_resume_structure
 
 logger = logging.getLogger(__name__)
 
@@ -203,6 +203,7 @@ def _extract_text_from_pdf(content: bytes) -> str:
             right = [b for b in narrow if b[0] >= mid_x - 20]
             is_two_col = bool(left) and bool(right) and len(left) >= 3 and len(right) >= 3
             if is_two_col:
+                # Header (full-width) blocks first, then left column, then right column
                 wide.sort(key=lambda b: (b[1], b[0]))
                 for b in wide:
                     for line in b[4].splitlines():
@@ -235,8 +236,28 @@ def _extract_text_from_pdf(content: bytes) -> str:
             return ""
 
 
+def _render_pdf_pages_as_images(content: bytes, dpi: int = 120) -> list[bytes]:
+    """Render each page of a PDF as a PNG image at the given DPI.
+
+    Returns a list of PNG bytes, one per page.  Used for vision-LLM parsing.
+    Falls back to empty list on any error so the caller can use text extraction.
+    """
+    try:
+        import fitz
+        doc = fitz.open(stream=content, filetype="pdf")
+        pages: list[bytes] = []
+        mat = fitz.Matrix(dpi / 72, dpi / 72)
+        for page in doc:
+            pix = page.get_pixmap(matrix=mat, alpha=False)
+            pages.append(pix.tobytes("png"))
+        doc.close()
+        return pages
+    except Exception as e:
+        logger.warning("PDF page render failed: %s", e)
+        return []
+
+
 def _strip_icon_chars(text: str) -> str:
-    import re
     return re.sub(r"[\ue000-\uf8ff]", "", text)
 
 
@@ -292,10 +313,23 @@ async def _embed_resume(user_id: str, resume_text: str, distilled_text: str | No
         logger.warning("Resume embedding pre-cache failed for user=%s", user_id, exc_info=True)
 
 
-async def _parse_and_update_profile(user_id: str, resume_text: str, llm: OpenRouterClient) -> None:
-    """Background task: parse resume with LLM and auto-populate profile + config_overrides."""
+async def _parse_and_update_profile(
+    user_id: str,
+    resume_text: str,
+    llm: OpenRouterClient,
+    *,
+    pdf_bytes: bytes | None = None,
+) -> None:
+    """Background task: parse resume with LLM and auto-populate profile + config_overrides.
+
+    If ``pdf_bytes`` is provided, attempts vision-based parsing first (renders
+    PDF pages as images and sends to a free vision model).  Falls back to
+    text-based LLM parsing if vision fails or is unavailable.
+    """
     distilled_text = None
     try:
+        # Step 1: Text-first — two parallel LLM calls on extracted text.
+        # No images, no hallucination risk. Fast (~2s each).
         parsed_result, structure_result = await asyncio.gather(
             asyncio.wait_for(parse_resume(resume_text, llm), timeout=60),
             asyncio.wait_for(parse_resume_structure(resume_text, llm), timeout=90),
@@ -303,6 +337,30 @@ async def _parse_and_update_profile(user_id: str, resume_text: str, llm: OpenRou
         )
         parsed = parsed_result if isinstance(parsed_result, ResumeParseResult) else ResumeParseResult()
         llm_editor = structure_result if isinstance(structure_result, dict) else {}
+
+        # Step 2: Vision fallback — only when text parse is weak.
+        # Triggers for image-heavy/scanned PDFs where text extraction fails.
+        text_has_content = (
+            len(llm_editor.get("experiences", [])) >= 2
+            and llm_editor.get("name")
+        )
+        if pdf_bytes and not text_has_content:
+            page_images = _render_pdf_pages_as_images(pdf_bytes)
+            if page_images:
+                logger.info("Text parse weak (exps=%d, name=%r) — trying vision fallback",
+                            len(llm_editor.get("experiences", [])), llm_editor.get("name"))
+                vision_editor = await asyncio.wait_for(
+                    parse_resume_from_images(
+                        page_images, llm,
+                        reference_text=resume_text,
+                    ),
+                    timeout=180,
+                )
+                if vision_editor and len(vision_editor.get("experiences", [])) > len(llm_editor.get("experiences", [])):
+                    llm_editor = vision_editor
+
+        from domain.resume_verifier import verify_against_reference
+        llm_editor = verify_against_reference(llm_editor, resume_text)
         merged_editor = merge_resume_editor(llm_editor, parse_resume_editor(resume_text))
         async with AsyncSessionLocal() as db:
             result = await db.execute(select(Profile).where(Profile.user_id == user_id))
@@ -353,7 +411,9 @@ async def upload_resume(
         raise HTTPException(status_code=413, detail="File too large — maximum 5MB")
     filename = (file.filename or "").lower()
 
+    pdf_bytes: bytes | None = None
     if filename.endswith(".pdf"):
+        pdf_bytes = content
         resume_text = _extract_text_from_pdf(content)
     elif filename.endswith(".docx"):
         resume_text = _extract_text_from_docx(content)
@@ -380,8 +440,11 @@ async def upload_resume(
     _set_onboarding_parse_status(profile, "pending")
     await db.commit()
 
-    # Parse LLM fields in background — don't block the response
-    background_tasks.add_task(_parse_and_update_profile, current_user.id, resume_text, llm)
+    # Parse LLM fields in background — don't block the response.
+    # Pass pdf_bytes so vision-LLM parsing can be attempted first.
+    background_tasks.add_task(
+        _parse_and_update_profile, current_user.id, resume_text, llm, pdf_bytes=pdf_bytes
+    )
 
     # Return static questions immediately (no LLM wait)
     empty = ResumeParseResult(skills=[], recent_titles=[], years_of_experience=None)

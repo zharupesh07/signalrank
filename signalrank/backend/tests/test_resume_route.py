@@ -10,6 +10,7 @@ from api.deps import get_current_user
 from api.deps_llm import get_llm_client
 from api.main import app
 from api.models import User
+from llm.resume_tailor import ResumeValidationReport
 
 
 FAKE_USER_ID = uuid.uuid4()
@@ -141,28 +142,32 @@ async def test_preview_renders_pdf_from_supplied_resume_editor():
     db = AsyncMock(spec=AsyncSession)
     db.execute = AsyncMock(side_effect=[profile_found])
 
-    with patch("llm.resume_tailor.render_and_compile_content", return_value=("#typst", b"%PDF-preview")) as mock_render_compile:
+    validation = ResumeValidationReport(page_count=1)
+    with patch(
+        "llm.resume_tailor.render_compile_validate_content",
+        return_value=("#typst", b"%PDF-preview", validation),
+    ) as mock_render_compile:
         async with _make_client(db) as client:
             r = await client.post(
                 "/api/resume/preview",
                 json={
                     "template": "minimal",
                     "resume_editor": {
-                        "name": "Ayush Khandelwal",
-                        "email": "helloayushkh@gmail.com",
+                        "name": "Preview Candidate",
+                        "email": "preview@example.com",
                         "summary": "Enterprise systems engineer.",
                         "experiences": [
                             {
-                                "title": "Senior Information Technology Analyst",
-                                "company": "Dow Chemical International Private Limited",
+                                "title": "Senior Technology Analyst",
+                                "company": "Example Enterprise",
                                 "dates": "09/2022 - Present",
-                                "location": "Mumbai, Maharashtra",
+                                "location": "Remote",
                                 "bullets": ["Configured delivery processing"],
                             }
                         ],
                         "projects": [],
-                        "skills": [{"category": "General", "items": ["SAP SD", "Python"]}],
-                        "certifications": ["SAP Certified Application Associate - SAP S/4HANA Sales"],
+                        "skills": [{"category": "General", "items": ["ERP", "Python"]}],
+                        "certifications": ["Systems Certification"],
                     },
                 },
             )
@@ -172,8 +177,9 @@ async def test_preview_renders_pdf_from_supplied_resume_editor():
         assert r.status_code == 200
         assert r.headers["content-type"] == "application/pdf"
         assert mock_render_compile.call_args.args[1] == "minimal"
+        assert "X-Resume-Validation" in r.headers
         content = mock_render_compile.call_args.args[0]
-        assert content.certifications == ["SAP Certified Application Associate - SAP S/4HANA Sales"]
+        assert content.certifications == ["Systems Certification"]
 
 
 @pytest.mark.asyncio
@@ -183,15 +189,15 @@ async def test_preview_prefers_stored_resume_editor_when_no_body_editor():
     profile.config_overrides = {
         "resume": {"template": "modern"},
         "resume_editor": {
-            "name": "Example Candidate",
-            "email": "examplecandidate@gmail.com",
+            "name": "Stored Candidate",
+            "email": "stored@example.com",
             "summary": "Senior AI platform engineer.",
             "experiences": [
                 {
-                    "title": "Senior AI Platform Engineer",
-                    "company": "Fractal Analytics",
+                    "title": "Senior Platform Engineer",
+                    "company": "Example Systems",
                     "dates": "2024 - Present",
-                    "location": "Pune, India",
+                    "location": "Remote",
                     "bullets": ["Built platform capabilities for production GenAI systems."],
                 }
             ],
@@ -206,7 +212,15 @@ async def test_preview_prefers_stored_resume_editor_when_no_body_editor():
     db = AsyncMock(spec=AsyncSession)
     db.execute = AsyncMock(side_effect=[profile_found])
 
-    with patch("llm.resume_tailor.render_and_compile_content", return_value=("#typst", b"%PDF-preview")) as mock_render_compile:
+    validation = ResumeValidationReport(
+        page_count=1,
+        warnings=["Resume required layout compression to fit"],
+        fit_actions=["1 older experience entry was removed to fit one page"],
+    )
+    with patch(
+        "llm.resume_tailor.render_compile_validate_content",
+        return_value=("#typst", b"%PDF-preview", validation),
+    ) as mock_render_compile:
         async with _make_client(db) as client:
             r = await client.post("/api/resume/preview", json={})
 
@@ -214,8 +228,59 @@ async def test_preview_prefers_stored_resume_editor_when_no_body_editor():
 
         assert r.status_code == 200
         content = mock_render_compile.call_args.args[0]
-        assert content.name == "Example Candidate"
-        assert content.experiences[0]["company"] == "Fractal Analytics"
+        assert content.name == "Stored Candidate"
+        assert content.experiences[0]["company"] == "Example Systems"
+        assert "X-Resume-Validation" in r.headers
+
+
+@pytest.mark.asyncio
+async def test_preview_debug_returns_validation_and_typst_source():
+    profile = MagicMock()
+    profile.resume_text = "Legacy resume text that would parse badly"
+    profile.config_overrides = {
+        "resume_editor": {
+            "name": "Stored Candidate",
+            "email": "stored@example.com",
+            "summary": "Senior AI platform engineer.",
+            "experiences": [
+                {
+                    "title": "Senior Platform Engineer",
+                    "company": "Example Systems",
+                    "dates": "2024 - Present",
+                    "location": "Remote",
+                    "bullets": ["Built platform capabilities for production GenAI systems."],
+                }
+            ],
+            "projects": [],
+            "skills": [{"category": "MLOps", "items": ["Vertex AI", "LangGraph"]}],
+            "certifications": ["AppliedAI Course"],
+        },
+    }
+    profile_found = MagicMock()
+    profile_found.scalar_one_or_none.return_value = profile
+
+    db = AsyncMock(spec=AsyncSession)
+    db.execute = AsyncMock(side_effect=[profile_found])
+
+    validation = ResumeValidationReport(
+        page_count=2,
+        warnings=["Resume still renders to 2 pages"],
+        fit_actions=["Bullet spacing was tightened to fit one page"],
+    )
+    with patch(
+        "llm.resume_tailor.render_compile_validate_content",
+        return_value=("#set page(width: 8.5in)", b"%PDF-preview", validation),
+    ):
+        async with _make_client(db) as client:
+            r = await client.post("/api/resume/preview", json={"debug": True})
+
+    app.dependency_overrides.clear()
+
+    assert r.status_code == 200
+    data = r.json()
+    assert data["validation"]["page_count"] == 2
+    assert data["validation"]["fit_actions"] == ["Bullet spacing was tightened to fit one page"]
+    assert data["typst_source"].startswith("#set page")
 
 
 @pytest.mark.asyncio

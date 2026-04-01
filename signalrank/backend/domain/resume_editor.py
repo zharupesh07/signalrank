@@ -476,6 +476,48 @@ def _parse_certifications(lines: list[str]) -> list[str]:
     return _dedupe_preserve(certifications)
 
 
+def _parse_education(lines: list[str]) -> list[dict]:
+    """Extract education entries from section lines."""
+    entries: list[dict] = []
+    i = 0
+    while i < len(lines):
+        raw = _strip_bullet_marker(lines[i]).strip()
+        if not raw or _looks_like_date_line(raw):
+            i += 1
+            continue
+        # Skip pure date lines and short noise
+        if len(raw) < 4:
+            i += 1
+            continue
+        degree = raw
+        institution = ""
+        year = ""
+        # Peek at next lines for institution / year
+        if i + 1 < len(lines):
+            next_raw = _strip_bullet_marker(lines[i + 1]).strip()
+            if next_raw and not _looks_like_date_line(next_raw):
+                # Could be institution
+                institution = next_raw
+                i += 1
+        if i + 1 < len(lines):
+            next_raw = _strip_bullet_marker(lines[i + 1]).strip()
+            if next_raw and (_looks_like_date_line(next_raw) or re.fullmatch(r"\d{4}", next_raw.strip())):
+                year = next_raw
+                i += 1
+        # Also handle "Degree — Institution" on one line
+        if " – " in degree or " — " in degree or " - " in degree:
+            for sep in (" – ", " — ", " - "):
+                if sep in degree:
+                    parts = degree.split(sep, 1)
+                    degree = parts[0].strip()
+                    if not institution:
+                        institution = parts[1].strip()
+                    break
+        entries.append({"degree": degree, "institution": institution, "year": year})
+        i += 1
+    return entries
+
+
 def _empty_resume_editor() -> dict:
     return {
         "name": "",
@@ -491,6 +533,7 @@ def _empty_resume_editor() -> dict:
         "projects": [],
         "skills": [],
         "certifications": [],
+        "education": [],
     }
 
 
@@ -513,6 +556,7 @@ def _merge_experience_rows(preferred_rows: list[dict], fallback_rows: list[dict]
             "company": _clean_line(str(row.get("company", "") or "")),
             "dates": _clean_line(str(row.get("dates", "") or "")),
             "location": _clean_line(str(row.get("location", "") or "")),
+            "tech": _clean_line(str(row.get("tech", "") or "")),
             "bullets": _dedupe_preserve([str(bullet or "") for bullet in (row.get("bullets", []) or [])]),
         }
         if not any(cleaned.get(field) for field in ("title", "company", "dates", "location", "bullets")):
@@ -520,7 +564,7 @@ def _merge_experience_rows(preferred_rows: list[dict], fallback_rows: list[dict]
         key = exp_key(cleaned)
         if key in index_by_key and any(key):
             target = merged[index_by_key[key]]
-            for field in ("title", "company", "dates", "location"):
+            for field in ("title", "company", "dates", "location", "tech"):
                 if not target[field] and cleaned[field]:
                     target[field] = cleaned[field]
             target["bullets"] = _dedupe_preserve([*target.get("bullets", []), *cleaned.get("bullets", [])])
@@ -595,24 +639,27 @@ def merge_resume_editor(preferred: dict | None, fallback: dict | None = None) ->
             value = _clean_line(str(source.get(field, "") or "")) if field != "summary" else str(source.get(field, "") or "").strip()
             if value:
                 merged[field] = value
-    merged["experiences"] = _merge_experience_rows(
-        list((preferred or {}).get("experiences") or []),
-        list((fallback or {}).get("experiences") or []),
-    )
-    merged["projects"] = _merge_project_rows(
-        list((preferred or {}).get("projects") or []),
-        list((fallback or {}).get("projects") or []),
-    )
+
+    pref_experiences = list((preferred or {}).get("experiences") or [])
+    fall_experiences = list((fallback or {}).get("experiences") or []) if not pref_experiences else []
+    merged["experiences"] = _merge_experience_rows(pref_experiences, fall_experiences)
+
+    pref_projects = list((preferred or {}).get("projects") or [])
+    fall_projects = list((fallback or {}).get("projects") or []) if not pref_projects else []
+    merged["projects"] = _merge_project_rows(pref_projects, fall_projects)
+
     merged["skills"] = _merge_skill_rows(
         list((preferred or {}).get("skills") or []),
         list((fallback or {}).get("skills") or []),
     )
-    merged["certifications"] = _dedupe_preserve(
-        [
-            *[str(item or "") for item in ((preferred or {}).get("certifications") or [])],
-            *[str(item or "") for item in ((fallback or {}).get("certifications") or [])],
-        ]
-    )
+
+    pref_certs = [str(item or "") for item in ((preferred or {}).get("certifications") or [])]
+    fall_certs = [str(item or "") for item in ((fallback or {}).get("certifications") or [])] if not pref_certs else []
+    merged["certifications"] = _dedupe_preserve([*pref_certs, *fall_certs])
+
+    pref_edu = list((preferred or {}).get("education") or [])
+    fall_edu = list((fallback or {}).get("education") or []) if not pref_edu else []
+    merged["education"] = pref_edu or fall_edu
     return merged
 
 
@@ -642,6 +689,7 @@ def parse_resume_editor(resume_text: str | None) -> dict:
         "projects": _parse_projects(sections.get("projects", [])),
         "skills": _parse_skills(sections.get("skills", [])),
         "certifications": certifications,
+        "education": _parse_education(sections.get("education", [])),
     }
 
 
@@ -672,6 +720,7 @@ def editor_to_tailored_content(editor: dict):
                 "company": _clean_line(str(exp.get("company", "") or "")),
                 "location": _clean_line(str(exp.get("location", "") or "")),
                 "dates": _clean_line(str(exp.get("dates", "") or "")),
+                "tech": _clean_line(str(exp.get("tech", "") or "")),
                 "bullets": _dedupe_preserve([str(bullet or "") for bullet in (exp.get("bullets", []) or [])]),
             }
             for exp in (editor.get("experiences", []) or [])
@@ -687,6 +736,15 @@ def editor_to_tailored_content(editor: dict):
             if any(_clean_line(str(project.get(key, "") or "")) for key in ("name", "url", "description"))
         ],
         certifications=_dedupe_preserve([str(item or "") for item in (editor.get("certifications", []) or [])]),
+        education=[
+            {
+                "degree": _clean_line(str(edu.get("degree", "") or "")),
+                "institution": _clean_line(str(edu.get("institution", "") or "")),
+                "year": _clean_line(str(edu.get("year", "") or "")),
+            }
+            for edu in (editor.get("education", []) or [])
+            if _clean_line(str(edu.get("degree", "") or "")) or _clean_line(str(edu.get("institution", "") or ""))
+        ],
     )
     return _normalize_tailored_content(content)
 

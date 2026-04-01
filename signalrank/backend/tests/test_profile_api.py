@@ -56,23 +56,23 @@ async def test_update_profile_resume_editor_updates_resume_text_and_roundtrips(c
             "resume_editor": {
                 "name": "Example Candidate",
                 "position": "Senior Software Engineer",
-                "email": "example@example.com",
+                "email": "candidate@example.com",
                 "phone": "+91 90000 00000",
-                "location": "Bengaluru, India",
-                "linkedin": "https://linkedin.com/in/example",
-                "github": "https://github.com/example",
-                "website": "https://example.dev",
+                "location": "Remote",
+                "linkedin": "https://linkedin.com/in/example-candidate",
+                "github": "https://github.com/example-candidate",
+                "website": "https://candidate.dev",
                 "summary": "Platform engineer with **Python** experience.",
                 "experiences": [
                     {
                         "title": "Senior Engineer",
-                        "company": "Dow Chemical International Private Limited",
+                        "company": "Example Enterprise",
                         "dates": "Jan 2024 - Present",
-                        "location": "Bengaluru, India",
+                        "location": "Remote",
                         "bullets": ["Built internal tools", "Reduced latency by 35%"],
                     }
                 ],
-                "projects": [{"name": "SignalRank", "url": "https://github.com/example/signalrank", "description": "Job search copilot"}],
+                "projects": [{"name": "Example Project", "url": "https://github.com/example-candidate/example-project", "description": "Job search copilot"}],
                 "skills": [{"category": "Programming", "items": ["Python", "SQL"]}],
                 "certifications": ["AWS Certified Developer"],
             }
@@ -84,32 +84,32 @@ async def test_update_profile_resume_editor_updates_resume_text_and_roundtrips(c
     response = await client.get("/api/profile", headers={"Authorization": f"Bearer {auth_token}"})
     assert response.status_code == 200
     payload = response.json()
-    assert "Dow Chemical International Private Limited" in payload["resume_text"]
-    assert payload["resume_editor"]["experiences"][0]["company"] == "Dow Chemical International Private Limited"
-    assert payload["resume_editor"]["email"] == "example@example.com"
+    assert "Example Enterprise" in payload["resume_text"]
+    assert payload["resume_editor"]["experiences"][0]["company"] == "Example Enterprise"
+    assert payload["resume_editor"]["email"] == "candidate@example.com"
     assert payload["resume_editor"]["certifications"] == ["AWS Certified Developer"]
 
 
 async def test_get_profile_derives_resume_editor_from_resume_text_without_certifications(client, auth_token):
-    resume_text = """Ayush Khandelwal
-Senior Information Technology Analyst
-Dynamic SAP and enterprise systems consultant with 7 years of experience across SD and MM implementations.
-helloayushkh@gmail.com
+    resume_text = """Example Candidate
+Senior Technology Analyst
+Dynamic enterprise systems consultant with 7 years of experience across delivery and process implementations.
+candidate@example.com
 +91 9044781514
-Kanpur, India
-linkedin.com/in/ayushhkhandelwal
+Remote
+linkedin.com/in/example-candidate
 
 WORK EXPERIENCE
-Senior Information Technology Analyst
-Dow Chemical International Private Limited
+Senior Technology Analyst
+Example Enterprise
 09/2022 - Present
-Mumbai, Maharashtra
+Remote
 Configured delivery processing, shipping point, and storage location determination.
 Led issue resolution with business stakeholders and functional teams.
 
 SKILLS AND ABILITIES
-SAP SD
-SAP MM
+ERP Delivery
+Process Design
 Python
 """
 
@@ -124,15 +124,15 @@ Python
     assert response.status_code == 200
     payload = response.json()["resume_editor"]
 
-    assert payload["name"] == "Ayush Khandelwal"
-    assert payload["email"] == "helloayushkh@gmail.com"
-    assert payload["summary"].startswith("Dynamic SAP and enterprise systems consultant")
-    assert payload["experiences"][0]["company"] == "Dow Chemical International Private Limited"
+    assert payload["name"] == "Example Candidate"
+    assert payload["email"] == "candidate@example.com"
+    assert payload["summary"].startswith("Dynamic enterprise systems consultant")
+    assert payload["experiences"][0]["company"] == "Example Enterprise"
     assert payload["experiences"][0]["bullets"] == [
         "Configured delivery processing, shipping point, and storage location determination.",
         "Led issue resolution with business stakeholders and functional teams.",
     ]
-    assert payload["skills"][0]["items"] == ["SAP SD", "SAP MM", "Python"]
+    assert payload["skills"][0]["items"] == ["ERP Delivery", "Process Design", "Python"]
     assert payload["certifications"] == []
 
 

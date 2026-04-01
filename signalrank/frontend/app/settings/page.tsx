@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import { TagInput } from "@/components/tag-input";
+import { DraggableTagList } from "@/components/draggable-tag-list";
 import { useToast } from "@/components/toast";
 import RunProgress from "@/components/run-progress";
 import { api } from "@/lib/api";
@@ -266,6 +267,14 @@ export default function SettingsPage() {
   const [titlePenaltyRules, setTitlePenaltyRules] = useState(PROFILE_OPTIONS_FALLBACK.title_penalty_rules);
   const [companyTierLists, setCompanyTierLists] = useState(PROFILE_OPTIONS_FALLBACK.company_tier_lists);
 
+  // Editable copies for drag-drop UI
+  const [editTierSS, setEditTierSS] = useState<string[]>([]);
+  const [editTierS, setEditTierS] = useState<string[]>([]);
+  const [editPenaltyStrong, setEditPenaltyStrong] = useState<string[]>([]);
+  const [editPenaltyAdjacent, setEditPenaltyAdjacent] = useState<string[]>([]);
+  const [editPenaltyHybrid, setEditPenaltyHybrid] = useState<string[]>([]);
+  const [savingRankingConfig, setSavingRankingConfig] = useState(false);
+
   const [findCompany, setFindCompany] = useState("");
   const [findDomain, setFindDomain] = useState("");
   const [finding, setFinding] = useState(false);
@@ -318,22 +327,64 @@ export default function SettingsPage() {
   }, [token]);
 
   useEffect(() => {
-    load();
-    loadRecruiters();
-  }, [load, loadRecruiters]);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        await load();
+      } catch (error) {
+        if (!cancelled) {
+          toast(error instanceof Error ? error.message : "Failed to load settings", "error");
+        }
+      }
+
+      try {
+        await loadRecruiters();
+      } catch {
+        if (!cancelled) {
+          toast("Failed to load recruiters", "error");
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [load, loadRecruiters, toast]);
 
   useEffect(() => {
+    let cancelled = false;
     if (!token) return;
-    loadProfileOptions(token).then((options) => {
-      setRoleOptions(options.role_options);
-      setLocationOptions(options.location_options);
-      setTitlePenaltyRules(options.title_penalty_rules);
-      setCompanyTierLists(options.company_tier_lists);
-    });
+    loadProfileOptions(token)
+      .then((options) => {
+        if (cancelled) return;
+        setRoleOptions(options.role_options);
+        setLocationOptions(options.location_options);
+        setTitlePenaltyRules(options.title_penalty_rules);
+        setCompanyTierLists(options.company_tier_lists);
+        setEditTierSS(options.company_tier_lists.tier_ss);
+        setEditTierS(options.company_tier_lists.tier_s);
+        setEditPenaltyStrong(options.title_penalty_rules.strong.map(formatPenaltyPattern));
+        setEditPenaltyAdjacent(options.title_penalty_rules.adjacent.map(formatPenaltyPattern));
+        setEditPenaltyHybrid(options.title_penalty_rules.hybrid.map(formatPenaltyPattern));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          toast("Failed to load profile options", "error");
+        }
+      });
     api.resume.templates(token)
-      .then((res) => setResumeTemplates(res.templates))
+      .then((res) => {
+        if (!cancelled) {
+          setResumeTemplates(res.templates);
+        }
+      })
       .catch(() => null);
-  }, [token]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, toast]);
 
   useEffect(() => {
     if (!token) {
@@ -428,6 +479,38 @@ export default function SettingsPage() {
     }
   }
 
+  function toRegexPattern(plain: string): string {
+    const escaped = plain.trim().replace(/\s+/g, "\\s+");
+    return `\\b${escaped}\\b`;
+  }
+
+  async function saveRankingConfig() {
+    if (!token) return;
+    setSavingRankingConfig(true);
+    try {
+      await api.profile.patch(token, {
+        config_overrides: {
+          company_scoring: {
+            tier_ss: editTierSS,
+            tier_s: editTierS,
+          },
+          ranking: {
+            profile_title_rules_override: {
+              strong: editPenaltyStrong.map(toRegexPattern),
+              adjacent: editPenaltyAdjacent.map(toRegexPattern),
+              hybrid: editPenaltyHybrid.map(toRegexPattern),
+            },
+          },
+        },
+      });
+      toast("Ranking config saved", "success");
+    } catch {
+      toast("Save failed", "error");
+    } finally {
+      setSavingRankingConfig(false);
+    }
+  }
+
   async function handlePreviewResume() {
     if (!token) return;
     const cleanedEditor = sanitizeResumeEditor(resumeEditor);
@@ -438,11 +521,16 @@ export default function SettingsPage() {
     }
     setPreviewingResume(true);
     try {
-      await api.resume.preview(token, {
+      const preview = await api.resume.preview(token, {
         template: resumeTemplate,
         resume_editor: cleanedEditor,
       });
-      toast("Resume preview opened", "success");
+      const notices = [...preview.fit_actions, ...preview.warnings];
+      if (notices.length > 0) {
+        toast(`Preview opened with warnings: ${notices[0]}`, "info");
+      } else {
+        toast("Resume preview opened", "success");
+      }
     } catch {
       toast("Preview failed", "error");
     } finally {
@@ -1146,55 +1234,106 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="stat-card card-hover space-y-5 border border-border bg-card p-5">
-                  <div className="flex items-center gap-2">
-                    <Info size={13} className="text-primary" />
-                    <span className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">Title Penalties</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Info size={13} className="text-primary" />
+                      <span className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">Title Penalties</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={saveRankingConfig}
+                      disabled={savingRankingConfig}
+                      className="flex items-center gap-1.5 px-3 py-1 text-[11px] border border-primary/30 text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+                    >
+                      <Save size={10} />
+                      {savingRankingConfig ? "Saving…" : "Save"}
+                    </button>
                   </div>
                   <p className="border-l-2 border-primary/20 pl-3 text-[10px] leading-relaxed text-muted-foreground">
-                    These title-pattern penalties are currently active for your profile. Strong matches are heavily downranked, adjacent matches are softened, and hybrid matches are mildly penalized.
+                    Drag patterns between severity buckets or type to add new ones. Strong = heavily downranked, Adjacent = softened, Hybrid = mild penalty.
                   </p>
                   <div className="grid gap-3 xl:grid-cols-3">
-                    <MetaListCard
+                    <DraggableTagList
+                      listId="strong"
                       title="Strong"
                       tone="text-destructive"
-                      items={titlePenaltyRules.strong.map(formatPenaltyPattern)}
-                      emptyLabel="No strong title penalties active."
+                      items={editPenaltyStrong}
+                      onChange={setEditPenaltyStrong}
+                      onReceiveDrop={(item, src) => {
+                        if (src === "adjacent") setEditPenaltyAdjacent((p) => p.filter((x) => x !== item));
+                        if (src === "hybrid") setEditPenaltyHybrid((p) => p.filter((x) => x !== item));
+                      }}
+                      emptyLabel="No strong penalties."
+                      placeholder="e.g. support, tester"
                     />
-                    <MetaListCard
+                    <DraggableTagList
+                      listId="adjacent"
                       title="Adjacent"
                       tone="text-[var(--terminal-yellow)]"
-                      items={titlePenaltyRules.adjacent.map(formatPenaltyPattern)}
-                      emptyLabel="No adjacent title penalties active."
+                      items={editPenaltyAdjacent}
+                      onChange={setEditPenaltyAdjacent}
+                      onReceiveDrop={(item, src) => {
+                        if (src === "strong") setEditPenaltyStrong((p) => p.filter((x) => x !== item));
+                        if (src === "hybrid") setEditPenaltyHybrid((p) => p.filter((x) => x !== item));
+                      }}
+                      emptyLabel="No adjacent penalties."
+                      placeholder="e.g. devops, architect"
                     />
-                    <MetaListCard
+                    <DraggableTagList
+                      listId="hybrid"
                       title="Hybrid"
                       tone="text-primary"
-                      items={titlePenaltyRules.hybrid.map(formatPenaltyPattern)}
-                      emptyLabel="No hybrid title penalties active."
+                      items={editPenaltyHybrid}
+                      onChange={setEditPenaltyHybrid}
+                      onReceiveDrop={(item, src) => {
+                        if (src === "strong") setEditPenaltyStrong((p) => p.filter((x) => x !== item));
+                        if (src === "adjacent") setEditPenaltyAdjacent((p) => p.filter((x) => x !== item));
+                      }}
+                      emptyLabel="No hybrid penalties."
+                      placeholder="e.g. backend, java"
                     />
                   </div>
                 </div>
 
                 <div className="stat-card card-hover space-y-5 border border-border bg-card p-5">
-                  <div className="flex items-center gap-2">
-                    <Briefcase size={13} className="text-primary" />
-                    <span className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">Top Company Tiers</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Briefcase size={13} className="text-primary" />
+                      <span className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">Top Company Tiers</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={saveRankingConfig}
+                      disabled={savingRankingConfig}
+                      className="flex items-center gap-1.5 px-3 py-1 text-[11px] border border-primary/30 text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+                    >
+                      <Save size={10} />
+                      {savingRankingConfig ? "Saving…" : "Save"}
+                    </button>
                   </div>
                   <p className="border-l-2 border-primary/20 pl-3 text-[10px] leading-relaxed text-muted-foreground">
-                    These are the current dream-company lists used by company scoring. SS gets the strongest boost, followed by S.
+                    Drag companies between tiers or type to add. SS gets the strongest score boost (+60%), S gets +50%.
                   </p>
                   <div className="grid gap-3 xl:grid-cols-2">
-                    <MetaListCard
+                    <DraggableTagList
+                      listId="tier_ss"
                       title="Tier SS"
                       tone="text-primary"
-                      items={companyTierLists.tier_ss}
-                      emptyLabel="No Tier SS companies configured."
+                      items={editTierSS}
+                      onChange={setEditTierSS}
+                      onReceiveDrop={(item) => setEditTierS((p) => p.filter((x) => x !== item))}
+                      emptyLabel="No Tier SS companies."
+                      placeholder="e.g. Atlassian, Google"
                     />
-                    <MetaListCard
+                    <DraggableTagList
+                      listId="tier_s"
                       title="Tier S"
                       tone="text-[var(--terminal-green-bright)]"
-                      items={companyTierLists.tier_s}
-                      emptyLabel="No Tier S companies configured."
+                      items={editTierS}
+                      onChange={setEditTierS}
+                      onReceiveDrop={(item) => setEditTierSS((p) => p.filter((x) => x !== item))}
+                      emptyLabel="No Tier S companies."
+                      placeholder="e.g. Microsoft, Stripe"
                     />
                   </div>
                 </div>

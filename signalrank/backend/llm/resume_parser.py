@@ -188,32 +188,88 @@ def _validate_extraction(data: dict) -> ResumeParseResult:
     )
 
 
+_VISION_STRUCTURE_PROMPT = """You are looking at a resume image. Extract ALL structured content and return a single JSON object.
+
+CRITICAL RULES — follow exactly:
+1. Copy names, emails, phone numbers, and company names CHARACTER-FOR-CHARACTER from the image. Do NOT autocorrect spelling or substitute what you think it should be.
+2. If you cannot read a company name clearly, write exactly what is visible — do NOT substitute a well-known company name from your training data.
+3. Count every work experience section before writing the JSON — all of them must appear in `experiences`.
+4. Education entries (B.Tech, M.S., Master of …, Bachelor of …) go ONLY in `education`. NEVER put them in `experiences`.
+5. `experiences` contains only paid work / internships. A work entry has a job title (Engineer, Analyst, Manager, etc.) and a company name.
+6. Extract ALL bullet points from each experience, word-for-word. Do not summarize or drop any.
+7. Certifications = course/certification names only. Do NOT add project names or tech stack lines here.
+8. Contact icons are stripped in the image — infer link type by pattern:
+   - ends in ".github.io" → website
+   - contains "/" or looks like "first-last" → linkedin handle
+   - plain username without hyphens → github username
+9. Lines labelled "TECH:" before bullets in a work entry → `tech` field, not a bullet.
+10. NEVER invent or guess any information not visible in the image. If a field is unclear, use an empty string.
+
+Keys:
+- name: full name exactly as printed (string)
+- email: email address exactly as printed (string)
+- phone: phone number with country code (string)
+- location: city/country where candidate is currently based (string)
+- linkedin: handle only, e.g. "john-doe" (string)
+- github: username only (string)
+- website: domain only, e.g. "john.dev" (string)
+- position: current job title or headline (string)
+- summary: professional summary paragraph (string)
+- experiences: list of {title, company, dates, location, tech, bullets}
+- skills: list of {category, items}
+- projects: list of {name, url, description}
+- education: list of {degree, institution, year}
+- certifications: list of strings
+
+Return JSON only. No explanations."""
+
+
+_SKILL_CATEGORIES = [
+    "Programming Languages",
+    "Frameworks & Libraries",
+    "Cloud & Infrastructure",
+    "Data & ML",
+    "Databases",
+    "Tools & DevOps",
+    "Soft Skills",
+    "Domain Knowledge",
+    "Hardware",
+    "Other",
+]
+
 _STRUCTURE_PROMPT = """Extract the complete structured content from this resume. Return a single JSON object.
 
-Rules:
-- Extract EVERY piece of information — do not summarize or omit details.
-- Each experience MUST include ALL bullet points from the original resume, word-for-word.
-- Preserve original formatting of dates exactly as written.
-- If a field is not present in the resume, use an empty string or empty list.
-- For skills, group by category if categories are apparent; otherwise use "General".
-- For certifications, include only the certification name (not descriptions).
-- linkedin and github should be just the handle/username, not the full URL.
+CRITICAL RULES — follow exactly:
+1. Copy names, emails, phone numbers, company names, and certification titles CHARACTER-FOR-CHARACTER from the text. Do NOT autocorrect, rephrase, or substitute from your training knowledge.
+2. If a field is not present in the resume, use an empty string or empty list — do NOT invent or guess.
+3. Each experience MUST include ALL bullet points from the original resume, word-for-word. Do not summarize or drop any.
+4. Education entries (B.Tech, M.S., Master of …, Bachelor of …, Diploma, Ph.D.) go ONLY in `education`. NEVER put them in `experiences`.
+5. `experiences` contains only paid work / internships with a job title (Engineer, Analyst, Manager, etc.) and a company name.
+6. Certifications = course/certification names ONLY — exactly as written. Do NOT add project names, tech stack lines, or anything not in a certifications/courses section.
+7. For skills, assign each skill to one of these categories exactly: {skill_categories}. Do NOT create any other category name.
+8. Preserve original formatting of dates exactly as written.
+9. linkedin and github should be just the handle/username, not the full URL.
+   - ends in ".github.io" → website field
+   - contains "linkedin.com" or looks like "first-last" → linkedin handle
+   - contains "github.com" or looks like a plain username → github handle
+10. Lines starting with "TECH:" before bullets in a work entry → `tech` field, not a bullet.
+11. "Open Source & Projects" section → projects list (not certifications).
 
 Keys:
 - name: full name (string)
 - email: email address (string)
 - phone: phone number with country code (string)
-- location: city, state/country (string)
+- location: city, state/country where candidate is based (string)
 - linkedin: LinkedIn handle only, e.g. "john-doe" (string)
 - github: GitHub username only (string)
 - website: personal website domain (string)
 - position: current job title or professional headline (string)
 - summary: professional summary paragraph (string)
-- experiences: list of objects with keys: title, company, dates, location, bullets (list of strings)
+- experiences: list of objects with keys: title, company, dates, location, tech, bullets (list of strings)
 - skills: list of objects with keys: category (string), items (list of strings)
 - projects: list of objects with keys: name, url, description
 - education: list of objects with keys: degree, institution, year
-- certifications: list of certification name strings
+- certifications: list of certification/course name strings only
 
 Return JSON only. No explanations.
 
@@ -227,15 +283,82 @@ async def parse_resume_structure(
 ) -> dict:
     if not (resume_text or "").strip():
         return {}
-    prompt = _STRUCTURE_PROMPT.format(resume_text=resume_text[:12000])
+    prompt = _STRUCTURE_PROMPT.format(
+        skill_categories=", ".join(f'"{c}"' for c in _SKILL_CATEGORIES),
+        resume_text=resume_text[:12000],
+    )
     try:
         data = await llm_client.llm_json(prompt, max_tokens=3000)
         if "_error" in data:
             logger.warning("LLM structure parse failed: %s", data.get("_details"))
             return {}
-        return _validate_structure(data)
+        result = _validate_structure(data)
+        if resume_text.strip():
+            from domain.resume_verifier import verify_against_reference
+
+            result = verify_against_reference(result, resume_text)
+        return result
     except Exception:
         logger.exception("Resume structure parse failed")
+        return {}
+
+
+async def parse_resume_from_images(
+    page_images: list[bytes],
+    llm_client,
+    *,
+    vision_models: list[str] | None = None,
+    max_tokens: int = 4096,
+    reference_text: str = "",
+    request_timeout: float | None = None,
+    max_retries: int | None = None,
+) -> dict:
+    """Parse a resume from PNG page images using a free vision LLM.
+
+    When ``reference_text`` (PyMuPDF-extracted text) is provided it is appended
+    to the prompt so the model can use the exact text to verify names, emails,
+    and company names rather than guessing from the image alone.  This prevents
+    hallucinations without any post-processing.
+
+    Returns a validated editor dict, or ``{}`` on failure.
+    """
+    if not page_images:
+        return {}
+
+    # Build hybrid prompt: image structure + text accuracy
+    prompt = _VISION_STRUCTURE_PROMPT
+    if reference_text.strip():
+        prompt = (
+            prompt
+            + "\n\nRAW TEXT EXTRACTED FROM THIS PDF"
+            + " (use this for exact spelling of names, emails, phone numbers, and company names"
+            + " — do NOT substitute from your training knowledge):\n"
+            + reference_text[:6000]
+        )
+
+    try:
+        data = await llm_client.llm_json_vision(
+            page_images,
+            prompt,
+            max_tokens=max_tokens,
+            vision_models=vision_models or None,
+            request_timeout=request_timeout,
+            max_retries=max_retries,
+        )
+        if "_error" in data:
+            logger.warning("Vision LLM parse failed: %s", data.get("_details"))
+            return {}
+        result = _validate_structure(data)
+        if reference_text.strip():
+            from domain.resume_verifier import verify_against_reference
+            result = verify_against_reference(result, reference_text)
+        logger.info(
+            "Vision parse succeeded: name=%r exps=%d skills=%d",
+            result.get("name"), len(result.get("experiences", [])), len(result.get("skills", [])),
+        )
+        return result
+    except Exception:
+        logger.exception("Resume vision parse failed")
         return {}
 
 
@@ -255,15 +378,51 @@ def _validate_structure(data: dict) -> dict:
             return [val]
         return []
 
+    _DEGREE_KEYWORDS = re.compile(
+        r"\b(b\.?tech|m\.?tech|b\.?e\b|m\.?e\b|b\.?sc|m\.?sc|m\.?s\b|ph\.?d|bachelor|master|"
+        r"mca|bca|diploma|degree|b\.?com|m\.?com|mba|llb|b\.?arch)\b",
+        re.I,
+    )
+
+    education = []
+    for edu in to_list(data.get("education")):
+        if isinstance(edu, dict):
+            cleaned = {
+                "degree": to_str(edu.get("degree")),
+                "institution": to_str(edu.get("institution")),
+                "year": to_str(edu.get("year")),
+            }
+            if any(cleaned.get(field) for field in ("degree", "institution", "year")):
+                education.append(cleaned)
+
     experiences = []
     for exp in to_list(data.get("experiences")):
         if isinstance(exp, dict):
+            raw_bullets = [to_str(b) for b in to_list(exp.get("bullets")) if to_str(b)]
+            tech_val = to_str(exp.get("tech"))
+            title = to_str(exp.get("title"))
+            company = to_str(exp.get("company"))
+            # Rescue: LLM put an education entry into experiences
+            if _DEGREE_KEYWORDS.search(title) and not _DEGREE_KEYWORDS.search(company):
+                rescued = {
+                    "degree": title,
+                    "institution": company,
+                    "year": to_str(exp.get("dates")),
+                }
+                if not any(
+                    e.get("degree", "").lower() == rescued["degree"].lower()
+                    for e in education
+                ):
+                    logger.info("Rescued education entry from experiences: %r", title)
+                    education.append(rescued)
+                continue
             cleaned = {
-                "title": to_str(exp.get("title")),
-                "company": to_str(exp.get("company")),
+                "title": title,
+                "company": company,
                 "dates": to_str(exp.get("dates")),
                 "location": to_str(exp.get("location")),
-                "bullets": [to_str(b) for b in to_list(exp.get("bullets")) if to_str(b)],
+                "tech": tech_val,
+                "bullets": raw_bullets,
             }
             if any(cleaned.get(field) for field in ("title", "company", "dates", "location", "bullets")):
                 experiences.append(cleaned)
@@ -274,7 +433,7 @@ def _validate_structure(data: dict) -> dict:
             items = [to_str(i) for i in to_list(skill.get("items")) if to_str(i)]
             if items:
                 skills.append({
-                    "category": to_str(skill.get("category")) or "General",
+                    "category": to_str(skill.get("category")) or "Other",
                     "items": items,
                 })
 
@@ -288,17 +447,6 @@ def _validate_structure(data: dict) -> dict:
             }
             if any(cleaned.get(field) for field in ("name", "url", "description")):
                 projects.append(cleaned)
-
-    education = []
-    for edu in to_list(data.get("education")):
-        if isinstance(edu, dict):
-            cleaned = {
-                "degree": to_str(edu.get("degree")),
-                "institution": to_str(edu.get("institution")),
-                "year": to_str(edu.get("year")),
-            }
-            if any(cleaned.get(field) for field in ("degree", "institution", "year")):
-                education.append(cleaned)
 
     certifications = [to_str(c) for c in to_list(data.get("certifications")) if to_str(c)]
 

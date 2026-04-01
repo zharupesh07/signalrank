@@ -1,8 +1,10 @@
 import asyncio
+import base64
 import hashlib
 import json
 import logging
 import random
+import re
 import time as _time
 
 import httpx
@@ -24,24 +26,55 @@ def _get_probe_lock(key: tuple) -> asyncio.Lock:
     return _probe_locks[key]
 
 FALLBACK_MODELS = [
-    "arcee-ai/trinity-mini:free",           # 14s, 4 exp — fastest + works
-    "arcee-ai/trinity-large-preview:free",  # 72s, 4 exp — quality fallback
+    "nvidia/nemotron-3-nano-30b-a3b:free",      # 1.3s — fastest
+    "arcee-ai/trinity-mini:free",                # 2.0s — reliable
+    "google/gemma-3-27b-it:free",                # 2.3s — also vision-capable
+    "arcee-ai/trinity-large-preview:free",       # 3.5s — quality fallback
+    "nvidia/nemotron-3-super-120b-a12b:free",    # 4.3s — largest
+]
+
+# Free vision-capable models on OpenRouter, in preference order.
+# Updated by fetch_free_vision_models() at runtime; this is the static fallback.
+VISION_MODELS = [
+    "google/gemma-3-27b-it:free",                # 2.3s, 27B — best quality
+    "google/gemma-3-12b-it:free",                # 6.0s, 12B
+    "nvidia/nemotron-nano-12b-v2-vl:free",       # 2.0s, 12B — dedicated VL
+    "google/gemma-3-4b-it:free",                 # 2.2s, 4B — fast fallback
 ]
 
 BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
+MODELS_URL = "https://openrouter.ai/api/v1/models"
 MAX_RETRIES_PER_MODEL = 3
 _llm_semaphore = asyncio.Semaphore(3)  # max 3 concurrent LLM calls across all workers
+
+
+_MODEL_SIZE_RE = re.compile(r"(?i)(\d+(?:\.\d+)?)b")
+_TRAILING_COMMA_RE = re.compile(r",\s*([}\]])")
+
+
+def _repair_jsonish(text: str) -> str:
+    return _TRAILING_COMMA_RE.sub(r"\1", text)
 
 
 def _extract_json(raw: str) -> dict | None:
     text = raw.strip()
     if text.startswith("```"):
-        lines = text.split("\n")
-        text = "\n".join(lines[1:-1]) if len(lines) > 2 else text
+        lines = text.splitlines()
+        if lines:
+            lines = lines[1:]
+        if lines and lines[-1].strip().startswith("```"):
+            lines = lines[:-1]
+        text = "\n".join(lines).strip()
     try:
         return json.loads(text)
     except json.JSONDecodeError:
         pass
+    repaired = _repair_jsonish(text)
+    if repaired != text:
+        try:
+            return json.loads(repaired)
+        except json.JSONDecodeError:
+            pass
 
     stack = 0
     start_idx = None
@@ -60,9 +93,137 @@ def _extract_json(raw: str) -> dict | None:
         try:
             return json.loads(candidate)
         except json.JSONDecodeError:
+            repaired_candidate = _repair_jsonish(candidate)
+            if repaired_candidate != candidate:
+                try:
+                    return json.loads(repaired_candidate)
+                except json.JSONDecodeError:
+                    continue
             continue
 
     return None
+
+
+def _looks_like_nonempty_resume_payload(payload: dict) -> bool:
+    if not isinstance(payload, dict):
+        return False
+    for key in ("name", "email", "phone", "location", "position", "summary"):
+        if str(payload.get(key) or "").strip():
+            return True
+    for key in ("experiences", "skills", "projects", "education", "certifications"):
+        value = payload.get(key)
+        if isinstance(value, list) and value:
+            return True
+        if isinstance(value, dict) and value:
+            return True
+    return False
+
+
+def _coerce_content_text(value) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        parts: list[str] = []
+        for item in value:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict):
+                text = item.get("text") or item.get("content")
+                if isinstance(text, str):
+                    parts.append(text)
+        joined = "".join(parts).strip()
+        return joined or None
+    if isinstance(value, dict):
+        for key in ("text", "content", "output_text"):
+            if isinstance(value.get(key), str):
+                return value[key]
+    return None
+
+
+def _extract_response_content(payload) -> str | None:
+    if isinstance(payload, str):
+        return payload
+    if not isinstance(payload, dict):
+        return None
+
+    choices = payload.get("choices")
+    if isinstance(choices, list) and choices:
+        first = choices[0] or {}
+        if isinstance(first, dict):
+            message = first.get("message")
+            if isinstance(message, dict):
+                content = _coerce_content_text(message.get("content"))
+                if content:
+                    return content
+            content = _coerce_content_text(first.get("text"))
+            if content:
+                return content
+            content = _coerce_content_text(first.get("content"))
+            if content:
+                return content
+
+    message = payload.get("message")
+    if isinstance(message, dict):
+        content = _coerce_content_text(message.get("content"))
+        if content:
+            return content
+
+    for key in ("content", "text", "output_text", "response"):
+        content = _coerce_content_text(payload.get(key))
+        if content:
+            return content
+
+    output = payload.get("output")
+    if isinstance(output, list):
+        for item in output:
+            content = _coerce_content_text(item)
+            if content:
+                return content
+
+    return None
+
+
+async def fetch_free_vision_models(api_key: str, http: httpx.AsyncClient | None = None) -> list[str]:
+    """Query /models, return IDs of free models that accept image input.
+
+    Sorted largest-first (by parameter count in ID, rough heuristic) so the
+    most capable model is tried first.  Falls back to VISION_MODELS on error.
+    """
+    own_http = http is None
+    client = http or httpx.AsyncClient(timeout=15.0)
+    try:
+        resp = await client.get(
+            MODELS_URL,
+            headers={"Authorization": f"Bearer {api_key}"},
+        )
+        resp.raise_for_status()
+        models = resp.json().get("data", [])
+        free_vision = []
+        for m in models:
+            if ":free" not in m.get("id", ""):
+                continue
+            arch = m.get("architecture", {})
+            modalities = arch.get("input_modalities", []) or []
+            if "image" in modalities:
+                free_vision.append(m["id"])
+        free_vision.sort(key=_vision_model_sort_key, reverse=True)
+        logger.info("Found %d free vision-capable models on OpenRouter", len(free_vision))
+        return free_vision if free_vision else VISION_MODELS
+    except Exception as exc:
+        logger.warning("Could not fetch free vision models: %s — using static list", exc)
+        return VISION_MODELS
+    finally:
+        if own_http:
+            await client.aclose()
+
+
+def _vision_model_sort_key(model_id: str) -> tuple[float, int, str]:
+    match = _MODEL_SIZE_RE.search(model_id or "")
+    size_hint = float(match.group(1)) if match else 0.0
+    multimodal_bonus = 1 if "vl" in (model_id or "").lower() else 0
+    return (size_hint, multimodal_bonus, model_id)
 
 
 class OpenRouterClient:
@@ -130,9 +291,19 @@ class OpenRouterClient:
         messages: list[dict],
         max_tokens: int,
         temperature: float,
+        *,
+        request_timeout: float | None = None,
+        max_retries: int | None = None,
     ) -> str | None:
         async with _llm_semaphore:
-            return await self._call_inner(model, messages, max_tokens, temperature)
+            return await self._call_inner(
+                model,
+                messages,
+                max_tokens,
+                temperature,
+                request_timeout=request_timeout,
+                max_retries=max_retries,
+            )
 
     async def _call_inner(
         self,
@@ -140,8 +311,12 @@ class OpenRouterClient:
         messages: list[dict],
         max_tokens: int,
         temperature: float,
+        *,
+        request_timeout: float | None = None,
+        max_retries: int | None = None,
     ) -> str | None:
-        for attempt in range(MAX_RETRIES_PER_MODEL + 1):
+        retries = MAX_RETRIES_PER_MODEL if max_retries is None else max(0, max_retries)
+        for attempt in range(retries + 1):
             try:
                 resp = await self._http.post(
                     BASE_URL,
@@ -156,11 +331,22 @@ class OpenRouterClient:
                         "max_tokens": max_tokens,
                         "temperature": temperature,
                     },
+                    timeout=request_timeout,
                 )
                 resp.raise_for_status()
                 data = resp.json()
-                content = data["choices"][0]["message"]["content"]
-                return content.strip() if content else None
+                content = _extract_response_content(data)
+                if content:
+                    return content.strip()
+                raw_text = resp.text.strip()
+                if raw_text:
+                    return raw_text
+                logger.warning(
+                    "Response from %s had no extractable content keys: %s",
+                    model,
+                    sorted(data.keys()) if isinstance(data, dict) else type(data).__name__,
+                )
+                return None
 
             except httpx.HTTPStatusError as e:
                 if e.response.status_code == 429:
@@ -263,6 +449,69 @@ class OpenRouterClient:
 
         logger.error("All models exhausted for llm_text")
         return ""
+
+    async def llm_json_vision(
+        self,
+        images: list[bytes],
+        prompt: str,
+        *,
+        vision_models: list[str] | None = None,
+        max_tokens: int = 4096,
+        temperature: float = 0.0,
+        request_timeout: float | None = None,
+        max_retries: int | None = None,
+    ) -> dict:
+        """Send one or more images + a text prompt to a free vision model, return parsed JSON.
+
+        Images should be PNG bytes. They are base64-encoded and sent as data URIs.
+        Tries each model in `vision_models` (defaults to VISION_MODELS) in order.
+        Returns ``{"_error": ...}`` if all models fail.
+        """
+        if vision_models:
+            models = vision_models
+        else:
+            candidates = await fetch_free_vision_models(self.api_key, self._http)
+            # Probe candidates and use only healthy ones (reuses probe cache).
+            vision_client = OpenRouterClient(api_key=self.api_key, models=candidates)
+            vision_client._http = self._http  # share the connection pool
+            healthy = await vision_client._ensure_healthy()
+            models = healthy if healthy else candidates
+        content: list[dict] = []
+        for img_bytes in images:
+            b64 = base64.b64encode(img_bytes).decode()
+            content.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:image/png;base64,{b64}"},
+            })
+        content.append({"type": "text", "text": prompt})
+        messages = [{"role": "user", "content": content}]
+
+        last_error = None
+        for model in models:
+            logger.info("llm_json_vision trying %s (%d image(s))", model, len(images))
+            raw = await self._call(
+                model,
+                messages,
+                max_tokens,
+                temperature,
+                request_timeout=request_timeout,
+                max_retries=max_retries,
+            )
+            if raw is None:
+                last_error = f"{model} returned nothing"
+                continue
+            parsed = _extract_json(raw)
+            if parsed is not None:
+                if not _looks_like_nonempty_resume_payload(parsed):
+                    last_error = f"{model} returned structurally empty resume payload"
+                    logger.warning("Empty resume payload from vision model %s", model)
+                    continue
+                logger.info("llm_json_vision success via %s", model)
+                return parsed
+            last_error = f"{model} returned non-JSON: {raw[:120]}"
+            logger.warning("Non-JSON from vision model %s: %s...", model, raw[:80])
+
+        return {"_error": "vision_llm_failed", "_details": str(last_error)}
 
     async def close(self):
         await self._http.aclose()

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.database import get_db
 from api.deps import get_current_user
 from api.models import Profile, User
-from batch.context import load_base_config
+from batch.context import deep_merge, load_base_config
 from domain.profile_rules import enrich_config_with_profile_rules
 from domain.resume_editor import merge_resume_editor, parse_resume_editor, serialize_resume_editor
 from domain.role_taxonomy import CANONICAL_ROLE_OPTIONS, LOCATION_OPTIONS, ROLE_UI_OPTIONS, TIER_OPTIONS
@@ -274,8 +274,11 @@ async def get_profile(current_user: User = Depends(get_current_user), db: AsyncS
 async def get_profile_options(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
     profile = result.scalar_one_or_none()
+    base_cfg = load_base_config()
+    if profile and isinstance(profile.config_overrides, dict):
+        base_cfg = deep_merge(base_cfg, profile.config_overrides)
     cfg = enrich_config_with_profile_rules(
-        load_base_config(),
+        base_cfg,
         resume_text=profile.resume_text if profile else "",
         profile_roles=profile.target_roles if profile else [],
     )

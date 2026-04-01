@@ -8,6 +8,9 @@ from llm.openrouter import (
     FALLBACK_MODELS,
     OpenRouterClient,
     _extract_json,
+    _looks_like_nonempty_resume_payload,
+    _extract_response_content,
+    fetch_free_vision_models,
 )
 
 
@@ -30,8 +33,32 @@ def test_extract_json_returns_none_on_garbage():
     assert _extract_json("no json here") is None
 
 
+def test_extract_json_repairs_trailing_commas():
+    raw = '{"name": "test", "skills": ["python",],}'
+    assert _extract_json(raw) == {"name": "test", "skills": ["python"]}
+
+
+def test_extract_json_handles_fenced_json_without_closing_fence():
+    raw = '```json\n{"name":"test","skills":["python",],}\n'
+    assert _extract_json(raw) == {"name": "test", "skills": ["python"]}
+
+
+def test_extract_response_content_handles_multiple_payload_shapes():
+    assert _extract_response_content({"choices": [{"message": {"content": "hello"}}]}) == "hello"
+    assert _extract_response_content({"choices": [{"message": {"content": [{"type": "text", "text": "hello"}]}}]}) == "hello"
+    assert _extract_response_content({"choices": [{"text": "hello"}]}) == "hello"
+    assert _extract_response_content({"content": "hello"}) == "hello"
+    assert _extract_response_content({"output": [{"content": "hello"}]}) == "hello"
+
+
 def test_fallback_models_has_at_least_two():
     assert len(FALLBACK_MODELS) >= 2
+
+
+def test_nonempty_resume_payload_detects_empty_and_filled_dicts():
+    assert not _looks_like_nonempty_resume_payload({"name": "", "experiences": [], "skills": []})
+    assert _looks_like_nonempty_resume_payload({"name": "Example"})
+    assert _looks_like_nonempty_resume_payload({"experiences": [{"title": "Engineer"}]})
 
 
 def _mock_success_response(content: str) -> MagicMock:
@@ -99,6 +126,21 @@ async def test_client_text_returns_empty_on_failure():
     assert result == ""
 
 
+@pytest.mark.asyncio
+async def test_client_tolerates_non_choices_payload_shape():
+    client = OpenRouterClient(api_key="test-key")
+    resp = MagicMock(spec=httpx.Response)
+    resp.status_code = 200
+    resp.json.return_value = {"content": '{"result":"ok"}'}
+    resp.text = '{"result":"ok"}'
+    resp.raise_for_status = MagicMock()
+
+    with patch.object(client._http, "post", AsyncMock(return_value=resp)):
+        result = await client.llm_json("test prompt")
+
+    assert result == {"result": "ok"}
+
+
 @pytest.fixture(autouse=True)
 def _reset_probe_cache():
     """Reset module-level probe cache before each test to prevent state leaks."""
@@ -155,3 +197,68 @@ async def test_probe_models_uses_lock_no_thundering_herd():
 
     assert all(r == ["model-a"] for r in results)
     assert mock_post.call_count == 1, f"Expected 1 probe call, got {mock_post.call_count}"
+
+
+@pytest.mark.asyncio
+async def test_fetch_free_vision_models_filters_and_sorts():
+    client = AsyncMock()
+    response = MagicMock(spec=httpx.Response)
+    response.raise_for_status = MagicMock()
+    response.json.return_value = {
+        "data": [
+            {"id": "google/gemma-3-4b-it:free", "architecture": {"input_modalities": ["text", "image"]}},
+            {"id": "google/gemma-3-27b-it:free", "architecture": {"input_modalities": ["text", "image"]}},
+            {"id": "nvidia/nemotron-nano-12b-v2-vl:free", "architecture": {"input_modalities": ["image", "text"]}},
+            {"id": "openai/gpt-4.1-mini", "architecture": {"input_modalities": ["text", "image"]}},
+            {"id": "text-only-free:free", "architecture": {"input_modalities": ["text"]}},
+        ]
+    }
+    client.get.return_value = response
+
+    models = await fetch_free_vision_models("test-key", client)
+
+    assert models == [
+        "google/gemma-3-27b-it:free",
+        "nvidia/nemotron-nano-12b-v2-vl:free",
+        "google/gemma-3-4b-it:free",
+    ]
+    client.get.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_fetch_free_vision_models_falls_back_on_error():
+    client = AsyncMock()
+    client.get.side_effect = httpx.HTTPError("boom")
+
+    models = await fetch_free_vision_models("test-key", client)
+
+    assert models
+
+
+@pytest.mark.asyncio
+async def test_llm_json_vision_discovers_models_when_none_supplied():
+    client = OpenRouterClient(api_key="test-key", models=["unused"])
+
+    with patch("llm.openrouter.fetch_free_vision_models", AsyncMock(return_value=["vision-a"])) as mock_fetch, patch.object(
+        client, "_call", AsyncMock(return_value='{"name":"Vision User"}')
+    ) as mock_call:
+        result = await client.llm_json_vision([b"png-bytes"], "Parse it")
+
+    assert result == {"name": "Vision User"}
+    mock_fetch.assert_awaited_once()
+    assert mock_call.await_args.args[0] == "vision-a"
+
+
+@pytest.mark.asyncio
+async def test_llm_json_vision_skips_structurally_empty_resume_payload():
+    client = OpenRouterClient(api_key="test-key", models=["unused"])
+
+    with patch.object(
+        client,
+        "_call",
+        AsyncMock(side_effect=['{"name":"","experiences":[],"skills":[]}', '{"name":"Vision User"}']),
+    ) as mock_call:
+        result = await client.llm_json_vision([b"png-bytes"], "Parse it", vision_models=["vision-a", "vision-b"])
+
+    assert result == {"name": "Vision User"}
+    assert mock_call.await_count == 2

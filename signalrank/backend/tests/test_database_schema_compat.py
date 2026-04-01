@@ -28,9 +28,13 @@ async def test_get_db_session_compatibility_repairs_runs_error_column(test_engin
         await conn.execute(text("ALTER TABLE runs DROP COLUMN IF EXISTS error"))
 
     original_session_local = database.AsyncSessionLocal
+    original_active_factory = database._active_session_factory
+    original_active_engine = database._active_engine
     original_checked = database._schema_compat_checked
     session_factory = database.async_sessionmaker(test_engine, expire_on_commit=False)
     database.AsyncSessionLocal = session_factory
+    database._active_session_factory = session_factory
+    database._active_engine = test_engine
     database._schema_compat_checked = False
 
     try:
@@ -39,6 +43,8 @@ async def test_get_db_session_compatibility_repairs_runs_error_column(test_engin
             break
     finally:
         database.AsyncSessionLocal = original_session_local
+        database._active_session_factory = original_active_factory
+        database._active_engine = original_active_engine
         database._schema_compat_checked = original_checked
 
     async with test_engine.begin() as conn:

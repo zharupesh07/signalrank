@@ -9,24 +9,24 @@ def test_serialize_resume_editor_emits_structured_resume_text():
     editor = {
         "name": "Example Candidate",
         "position": "Senior Software Engineer",
-        "email": "example@example.com",
+        "email": "candidate@example.com",
         "phone": "+91 90000 00000",
-        "location": "Bengaluru, India",
-        "linkedin": "https://linkedin.com/in/example",
-        "github": "https://github.com/example",
-        "website": "https://example.dev",
+        "location": "Remote",
+        "linkedin": "https://linkedin.com/in/example-candidate",
+        "github": "https://github.com/example-candidate",
+        "website": "https://candidate.dev",
         "summary": "Platform engineer with **Python** and cloud systems experience.",
         "experiences": [
             {
                 "title": "Senior Engineer",
-                "company": "Dow Chemical International Private Limited",
+                "company": "Example Enterprise",
                 "dates": "Jan 2024 - Present",
-                "location": "Bengaluru, India",
+                "location": "Remote",
                 "bullets": ["Built internal tooling", "Reduced latency by 35%"],
             }
         ],
         "projects": [
-            {"name": "SignalRank", "url": "https://github.com/example/signalrank", "description": "Job search copilot"}
+            {"name": "Example Project", "url": "https://github.com/example-candidate/example-project", "description": "Job search copilot"}
         ],
         "skills": [{"category": "Programming", "items": ["Python", "SQL"]}],
         "certifications": ["AWS Certified Developer"],
@@ -35,7 +35,7 @@ def test_serialize_resume_editor_emits_structured_resume_text():
     text = serialize_resume_editor(editor)
 
     assert "Example Candidate" in text
-    assert "Dow Chemical International Private Limited" in text
+    assert "Example Enterprise" in text
     assert "Summary" in text
     assert "Work Experience" in text
     assert "Technical Skills" in text
@@ -46,26 +46,26 @@ def test_serialize_resume_editor_emits_structured_resume_text():
 def test_parse_resume_editor_reads_serialized_sections():
     resume_text = """Example Candidate
 Senior Software Engineer
-example@example.com
+candidate@example.com
 +91 90000 00000
-Bengaluru, India
-https://linkedin.com/in/example
-https://github.com/example
-https://example.dev
+Remote
+https://linkedin.com/in/example-candidate
+https://github.com/example-candidate
+https://candidate.dev
 
 Summary
 Platform engineer with **Python** and cloud systems experience.
 
 Work Experience
-Senior Engineer - Dow Chemical International Private Limited
+Senior Engineer - Example Enterprise
 Jan 2024 - Present
-Bengaluru, India
+Remote
 - Built internal tooling
 - Reduced latency by 35%
 
 Projects
-SignalRank
-https://github.com/example/signalrank
+Example Project
+https://github.com/example-candidate/example-project
 - Job search copilot
 
 Technical Skills
@@ -78,78 +78,75 @@ AWS Certified Developer
     parsed = parse_resume_editor(resume_text)
 
     assert parsed["name"] == "Example Candidate"
-    assert parsed["email"] == "example@example.com"
-    assert parsed["experiences"][0]["company"] == "Dow Chemical International Private Limited"
+    assert parsed["email"] == "candidate@example.com"
+    assert parsed["experiences"][0]["company"] == "Example Enterprise"
     assert parsed["experiences"][0]["bullets"] == ["Built internal tooling", "Reduced latency by 35%"]
-    assert parsed["projects"][0]["name"] == "SignalRank"
+    assert parsed["projects"][0]["name"] == "Example Project"
     assert parsed["skills"][0]["items"] == ["Python", "SQL"]
     assert parsed["certifications"] == ["AWS Certified Developer"]
 
 
-def test_parse_resume_editor_handles_ayush_pdf_layout():
-    resume_text = """Ayush Khandelwal
-SAP Certified Application Associate - SAP S/4HANA Sales
-A hard working and dynamic professional with almost 7 years of working experience as Sales
-and Distribution Functional Consultant with complete understanding of Material Management
+def test_parse_resume_editor_handles_dense_resume_layout():
+    resume_text = """Example Candidate
+Systems Certification
+A hard working and dynamic professional with almost 7 years of working experience as enterprise
+systems consultant with complete understanding of supply chain and business process delivery
 module
-helloayushkh@gmail.com
+candidate@example.com
 +91 9044781514
-Kanpur, India
-linkedin.com/in/ayushhkhandelwal
+Remote
+linkedin.com/in/example-candidate
 WORK EXPERIENCE
-Senior Information Technology Analyst
-Dow Chemical International Private Limited
+Senior Technology Analyst
+Example Enterprise
 09/2022 - Present
-Mumbai, Maharashtra
-Working as an Senior Analyst in Dow's Enterprise Segment - Accelerated Capability Team.
+Remote
+Working as a Senior Analyst in the enterprise delivery segment - accelerated capability team.
 Configured delivery processing, shipping point, output determination and storage location determination.
-Application Developement Analyst
-Accenture Solutions Private Limited
+Application Development Analyst
+Example Consulting
 08/2021 - 09/2022
-Noida, Uttar Pradesh
+Remote
 Involved in all aspects of S/4 HANA implementation process from project planning, business requirement gathering.
 SKILLS AND ABILITIES
-SAP SD
-SAP MM
+ERP Delivery
+Process Design
 Python
 CERTIFICATION AND INNOVATION
-SAP Certified Application Associate - SAP S/4HANA Sales
-SAP Script Automation
+Systems Certification
+Automation Toolkit
 """
 
     parsed = parse_resume_editor(resume_text)
 
-    assert parsed["name"] == "Ayush Khandelwal"
-    assert parsed["email"] == "helloayushkh@gmail.com"
+    assert parsed["name"] == "Example Candidate"
+    assert parsed["email"] == "candidate@example.com"
     assert parsed["summary"].startswith("A hard working and dynamic professional")
-    assert parsed["experiences"][0]["company"] == "Dow Chemical International Private Limited"
+    assert parsed["experiences"][0]["company"] == "Example Enterprise"
     assert parsed["experiences"][0]["bullets"] == [
-        "Working as an Senior Analyst in Dow's Enterprise Segment - Accelerated Capability Team.",
+        "Working as a Senior Analyst in the enterprise delivery segment - accelerated capability team.",
         "Configured delivery processing, shipping point, output determination and storage location determination.",
     ]
     assert parsed["experiences"][1]["bullets"] == [
         "Involved in all aspects of S/4 HANA implementation process from project planning, business requirement gathering.",
     ]
-    assert parsed["skills"][0]["items"] == ["SAP SD", "SAP MM", "Python"]
-    assert parsed["certifications"] == [
-        "SAP Certified Application Associate - SAP S/4HANA Sales",
-        "SAP Script Automation",
-    ]
+    assert parsed["skills"][0]["items"] == ["ERP Delivery", "Process Design", "Python"]
+    assert parsed["certifications"] == ["Systems Certification Automation Toolkit"]
 
 
 def test_parse_resume_editor_merges_wrapped_experience_lines_into_dense_bullets():
-    resume_text = """Ayush Khandelwal
-helloayushkh@gmail.com
+    resume_text = """Example Candidate
+candidate@example.com
 +91 9044781514
-Kanpur, India
-linkedin.com/in/ayushhkhandelwal
+Remote
+linkedin.com/in/example-candidate
 WORK EXPERIENCE
-Senior Information Technology Analyst
-Dow Chemical International Private Limited
+Senior Technology Analyst
+Example Enterprise
 09/2022 - Present
-Mumbai, Maharashtra
-Working as a Senior Analyst in Dow's Enterprise
-Segment - Accelerated Capability Team. Aligned to the
+Remote
+Working as a Senior Analyst in the enterprise
+Delivery Capability Team. Aligned to the
 Order to Cash (OTC) workstream focusing on the
 Customer Service and Planning work process.
 Configured delivery processing, shipping point, output
@@ -162,7 +159,7 @@ Consignment, Scheduling agreement, Contracts etc.
     parsed = parse_resume_editor(resume_text)
 
     assert parsed["experiences"][0]["bullets"] == [
-        "Working as a Senior Analyst in Dow's Enterprise Segment - Accelerated Capability Team. Aligned to the Order to Cash (OTC) workstream focusing on the Customer Service and Planning work process.",
+        "Working as a Senior Analyst in the enterprise Delivery Capability Team. Aligned to the Order to Cash (OTC) workstream focusing on the Customer Service and Planning work process.",
         "Configured delivery processing, shipping point, output determination and storage location determination.",
         "Deep understanding of special business process - Third Party Process, Inter-company Billing & Stock Transfer, Consignment, Scheduling agreement, Contracts etc.",
     ]
@@ -196,17 +193,17 @@ Infosys Insta Award
 
 def test_editor_to_tailored_content_preserves_certifications_and_links():
     content = editor_to_tailored_content({
-        "name": "Ayush Khandelwal",
-        "email": "helloayushkh@gmail.com",
-        "linkedin": "https://linkedin.com/in/ayushhkhandelwal",
-        "website": "ayush.dev",
-        "summary": "SAP and enterprise systems engineer.",
-        "experiences": [{"title": "Analyst", "company": "Dow", "dates": "2022 - Present", "location": "Mumbai", "bullets": ["Built workflows"]}],
+        "name": "Example Candidate",
+        "email": "candidate@example.com",
+        "linkedin": "https://linkedin.com/in/example-candidate",
+        "website": "candidate.dev",
+        "summary": "Enterprise systems engineer.",
+        "experiences": [{"title": "Analyst", "company": "Example Enterprise", "dates": "2022 - Present", "location": "Remote", "bullets": ["Built workflows"]}],
         "projects": [],
-        "skills": [{"category": "General", "items": ["SAP SD", "Python"]}],
-        "certifications": ["SAP Certified Application Associate - SAP S/4HANA Sales"],
+        "skills": [{"category": "General", "items": ["ERP", "Python"]}],
+        "certifications": ["Systems Certification"],
     })
 
-    assert content.homepage == "ayush.dev"
-    assert content.linkedin == "ayushhkhandelwal"
-    assert content.certifications == ["SAP Certified Application Associate - SAP S/4HANA Sales"]
+    assert content.homepage == "candidate.dev"
+    assert content.linkedin == "example-candidate"
+    assert content.certifications == ["Systems Certification"]
