@@ -586,6 +586,13 @@ async def _claim_pending_run(session_factory: async_sessionmaker):
 
         run.status = "scraping"
         await db.commit()
+        logger.info(
+            "Claimed pending run %s from DB poll (mode=%s user_id=%s force_scrape=%s)",
+            run.id,
+            mode,
+            run.user_id,
+            force_scrape,
+        )
         return RunRequest(str(run.id), str(run.user_id), mode, force_scrape)
 
 
@@ -612,6 +619,14 @@ async def worker_loop(session_factory: async_sessionmaker) -> None:
             req = RunRequest(item[0], item[1], item[2])
         else:
             req = RunRequest(item[0], item[1])
+        if from_queue:
+            logger.info(
+                "Dequeued run %s from in-process queue (mode=%s user_id=%s force_scrape=%s)",
+                req.run_id,
+                req.mode,
+                req.user_id,
+                req.force_scrape,
+            )
         try:
             await process_run(req.run_id, req.user_id, session_factory, mode=req.mode, force_scrape=req.force_scrape)
         finally:

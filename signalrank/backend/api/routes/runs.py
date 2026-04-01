@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+import logging
 
 from api.config import api_runtime_flags
 from api.database import get_db
@@ -13,6 +14,7 @@ from api.models import Profile, Run, User
 from batch.worker import RunRequest, get_queue
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
+logger = logging.getLogger(__name__)
 
 
 def _display_status(db_status: str) -> str:
@@ -58,6 +60,14 @@ async def trigger_run(
     if api_runtime_flags()["run_api_worker"]:
         queue = get_queue()
         await queue.put(RunRequest(run.id, current_user.id, requested_mode, False))
+        logger.info("Run %s queued in-process by API worker (mode=%s user_id=%s)", run.id, requested_mode, current_user.id)
+    else:
+        logger.info(
+            "Run %s created as pending in DB (mode=%s user_id=%s); awaiting dedicated worker service",
+            run.id,
+            requested_mode,
+            current_user.id,
+        )
 
     return {"run_id": run.id, "status": "pending"}
 

@@ -20,6 +20,19 @@ _configure_logging()
 logger = logging.getLogger(__name__)
 
 
+def _log_worker_runtime_role(runtime_flags: dict[str, bool]) -> None:
+    logger.info(
+        "Worker role: queue_worker=%s resume_worker=%s archival_worker=%s boot_scan=%s boot_embed=%s",
+        runtime_flags["run_api_worker"],
+        runtime_flags["run_resume_worker"],
+        runtime_flags["run_archival_worker"],
+        runtime_flags["run_boot_scan"],
+        runtime_flags["run_boot_embed"],
+    )
+    if runtime_flags["run_api_worker"]:
+        logger.info("Queue worker enabled: this process will poll DB for pending runs")
+
+
 async def _resume_worker_watchdog(llm) -> None:
     from batch.resume_worker import resume_worker_loop
 
@@ -51,6 +64,7 @@ async def main() -> None:
     llm = None
     runtime_flags = worker_runtime_flags()
     logger.info("Worker entrypoint starting with flags=%s", runtime_flags)
+    _log_worker_runtime_role(runtime_flags)
 
     await ensure_runtime_schema_compatibility()
 

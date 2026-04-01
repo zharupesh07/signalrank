@@ -1,4 +1,4 @@
-from sqlalchemy import text
+from sqlalchemy import event, text
 
 import api.database as database
 from api.database import ensure_runtime_schema_compatibility
@@ -58,3 +58,19 @@ async def test_get_db_session_compatibility_repairs_runs_error_column(test_engin
             )
         )
         assert result.scalar_one() == "error"
+
+
+async def test_ensure_runtime_schema_compatibility_skips_alter_when_runs_error_column_exists(test_engine):
+    statements: list[str] = []
+
+    def _capture_sql(conn, cursor, statement, parameters, context, executemany):
+        statements.append(statement)
+
+    event.listen(test_engine.sync_engine, "before_cursor_execute", _capture_sql)
+    try:
+        await ensure_runtime_schema_compatibility(test_engine)
+    finally:
+        event.remove(test_engine.sync_engine, "before_cursor_execute", _capture_sql)
+
+    assert any("information_schema.columns" in statement for statement in statements)
+    assert not any("ALTER TABLE runs ADD COLUMN IF NOT EXISTS error TEXT" in statement for statement in statements)

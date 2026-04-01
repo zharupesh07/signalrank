@@ -40,6 +40,21 @@ _archival_worker_task: asyncio.Task | None = None
 _boot_tasks: list[asyncio.Task] = []
 
 
+def _log_api_runtime_role(runtime_flags: dict[str, bool]) -> None:
+    logger.info(
+        "API role: http=true queue_worker=%s resume_worker=%s archival_worker=%s boot_scan=%s boot_embed=%s",
+        runtime_flags["run_api_worker"],
+        runtime_flags["run_resume_worker"],
+        runtime_flags["run_archival_worker"],
+        runtime_flags["run_boot_scan"],
+        runtime_flags["run_boot_embed"],
+    )
+    if not runtime_flags["run_api_worker"]:
+        logger.info(
+            "API split mode: this process will create pending runs in DB only; a separate worker service must claim them"
+        )
+
+
 async def _resume_worker_watchdog(session_factory, llm) -> None:
     from batch.resume_worker import resume_worker_loop
 
@@ -72,6 +87,7 @@ async def lifespan(app: FastAPI):
     _boot_tasks = []
     runtime_flags = api_runtime_flags()
     logger.info("API startup — runtime flags: %s", runtime_flags)
+    _log_api_runtime_role(runtime_flags)
 
     try:
         await ensure_runtime_schema_compatibility()

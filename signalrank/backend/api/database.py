@@ -82,6 +82,7 @@ _active_session_factory = AsyncSessionLocal
 _db_target: str = "local"
 _schema_compat_checked = False
 _schema_compat_lock = asyncio.Lock()
+_RUNS_ERROR_SCHEMA_LOCK_KEY = 1_947_017_465
 
 
 class Base(DeclarativeBase):
@@ -131,9 +132,48 @@ def get_db_info() -> dict:
 
 
 async def ensure_runtime_schema_compatibility(bind=None) -> None:
+    global _schema_compat_checked
     target = bind or _active_engine
     async with target.begin() as conn:
+        result = await conn.execute(
+            text(
+                """
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = current_schema()
+                  AND table_name = 'runs'
+                  AND column_name = 'error'
+                """
+            )
+        )
+        if result.scalar() == 1:
+            if target is _active_engine:
+                _schema_compat_checked = True
+            return
+        if conn.dialect.name == "postgresql":
+            # Serialize the one-time repair across API/worker processes during deploys.
+            await conn.execute(
+                text("SELECT pg_advisory_xact_lock(:lock_key)"),
+                {"lock_key": _RUNS_ERROR_SCHEMA_LOCK_KEY},
+            )
+            result = await conn.execute(
+                text(
+                    """
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = current_schema()
+                      AND table_name = 'runs'
+                      AND column_name = 'error'
+                    """
+                )
+            )
+            if result.scalar() == 1:
+                if target is _active_engine:
+                    _schema_compat_checked = True
+                return
         await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS error TEXT"))
+    if target is _active_engine:
+        _schema_compat_checked = True
 
 
 async def ensure_session_schema_compatibility(session: AsyncSession) -> None:
