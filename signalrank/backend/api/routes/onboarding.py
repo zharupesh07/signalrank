@@ -367,8 +367,14 @@ async def _parse_and_update_profile(
             profile = result.scalar_one_or_none()
             if not profile:
                 return
+            existing_editor = None
+            if isinstance(profile.config_overrides, dict):
+                candidate = profile.config_overrides.get("resume_editor")
+                if isinstance(candidate, dict):
+                    existing_editor = candidate
             distilled_text = _apply_parsed_profile_updates(profile, parsed)
             overrides = dict(profile.config_overrides or {})
+            merged_editor = merge_resume_editor(merged_editor, existing_editor)
             if has_resume_editor_content(merged_editor):
                 overrides["resume_editor"] = merged_editor
                 profile.config_overrides = overrides

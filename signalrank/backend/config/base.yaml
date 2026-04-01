@@ -473,7 +473,7 @@ concurrency:
 caching:
   llm_response_ttl: 86400
   llm_probe_ttl: 3600
-  vector_cache_max: 20000
+  vector_cache_max: 1000
   recruiter_cache_days: 3
 
 # ============================================================

@@ -1,5 +1,6 @@
 import logging
 import os
+import resource
 import subprocess
 
 
@@ -13,7 +14,16 @@ def rss_mb() -> float | None:
         )
         return round(kb / 1024, 1)
     except Exception:
-        return None
+        try:
+            usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+            if usage <= 0:
+                return None
+            # Linux reports KB, macOS reports bytes.
+            if usage > 10_000_000:
+                return round(usage / (1024 * 1024), 1)
+            return round(usage / 1024, 1)
+        except Exception:
+            return None
 
 
 def log_rss(logger: logging.Logger, phase: str, **extra) -> None:

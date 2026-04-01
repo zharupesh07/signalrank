@@ -580,10 +580,11 @@ def _merge_project_rows(preferred_rows: list[dict], fallback_rows: list[dict]) -
     index_by_key: dict[tuple[str, str], int] = {}
 
     def project_key(project: dict) -> tuple[str, str]:
-        return (
-            _clean_line(str(project.get("name", "") or "")).lower(),
-            _clean_line(str(project.get("url", "") or "")).lower(),
-        )
+        name = _clean_line(str(project.get("name", "") or "")).lower()
+        url = _clean_line(str(project.get("url", "") or "")).lower()
+        if name:
+            return ("name", name)
+        return ("url", url)
 
     for row in preferred_rows + fallback_rows:
         if not isinstance(row, dict):
@@ -645,7 +646,7 @@ def merge_resume_editor(preferred: dict | None, fallback: dict | None = None) ->
     merged["experiences"] = _merge_experience_rows(pref_experiences, fall_experiences)
 
     pref_projects = list((preferred or {}).get("projects") or [])
-    fall_projects = list((fallback or {}).get("projects") or []) if not pref_projects else []
+    fall_projects = list((fallback or {}).get("projects") or [])
     merged["projects"] = _merge_project_rows(pref_projects, fall_projects)
 
     merged["skills"] = _merge_skill_rows(

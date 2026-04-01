@@ -75,13 +75,16 @@ async def scrape(
     config: ScraperConfig,
     on_progress: Callable | None = None,
     on_persist: Callable | None = None,
-) -> list[RawJob]:
+    *,
+    return_mode: str = "jobs",
+) -> list[RawJob] | list[str]:
     from batch.sources.rapidapi import search as search_rapidapi
     from batch.sources.jobspy_source import search as search_jobspy
     from batch.sources.free_apis import search as search_free
     from batch.sources.google_jobs import search as search_google
 
-    all_jobs: list[RawJob] = []
+    keep_urls_only = return_mode == "urls"
+    all_results: list[RawJob] | list[str] = []
     seen_urls: set[str] = set()
 
     def _dedup_new(jobs: list[RawJob]) -> list[RawJob]:
@@ -97,7 +100,10 @@ async def scrape(
         filtered = [j for j in deduped if not _is_blocked(j.title, config.title_blocklist)]
         if filtered and on_persist:
             await on_persist(filtered)
-        all_jobs.extend(filtered)
+        if keep_urls_only:
+            all_results.extend([j.job_url for j in filtered])
+        else:
+            all_results.extend(filtered)
 
     allowed = set(config.sources) if config.sources else None
 
@@ -124,7 +130,7 @@ async def scrape(
             if on_progress:
                 await on_progress(
                     phase="jobspy_linkedin", phase_num=2, total_phases=3,
-                    jobs_found=len(all_jobs), message="Scanning LinkedIn...",
+                    jobs_found=len(all_results), message="Scanning LinkedIn...",
                 )
             try:
                 results = await asyncio.wait_for(search_jobspy(linkedin_queries, config, site="linkedin"), timeout=config.jobspy_timeout)
@@ -142,7 +148,7 @@ async def scrape(
             if on_progress:
                 await on_progress(
                     phase="parallel", phase_num=3, total_phases=3,
-                    jobs_found=len(all_jobs), message="Scanning additional sources...",
+                    jobs_found=len(all_results), message="Scanning additional sources...",
                 )
             parallel_sources = [
                 ("rapidapi", search_rapidapi),
@@ -165,7 +171,7 @@ async def scrape(
     try:
         await asyncio.wait_for(_run(), timeout=config.total_timeout)
     except asyncio.TimeoutError:
-        logger.warning("Scrape timed out after 900s, returning %d jobs", len(all_jobs))
+        logger.warning("Scrape timed out after 900s, returning %d jobs", len(all_results))
 
-    logger.info("Scrape complete: %d jobs (deduped+filtered per phase)", len(all_jobs))
-    return all_jobs
+    logger.info("Scrape complete: %d jobs (deduped+filtered per phase)", len(all_results))
+    return all_results

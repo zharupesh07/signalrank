@@ -6,15 +6,26 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models import Embedding, JobRaw
+from batch.context import load_base_config
 
 # Process-level LRU cache keyed by (cfg_fp, text_fp) — avoids re-fetching
 # vectors from Neon on repeated ranking runs within the same process lifetime.
 _VECTOR_CACHE: dict[tuple[str, str], list[float]] = {}
-_VECTOR_CACHE_MAX = 20_000
+_VECTOR_CACHE_MAX = load_base_config().get("caching", {}).get("vector_cache_max", 2_000)
 
 
 def _clean_vector(vector: Sequence[float]) -> list[float]:
     return [v if math.isfinite(v) else 0.0 for v in vector]
+
+
+def _remember_vector(key: tuple[str, str], vector: Sequence[float]) -> None:
+    if _VECTOR_CACHE_MAX <= 0:
+        return
+    if key in _VECTOR_CACHE:
+        return
+    if len(_VECTOR_CACHE) >= _VECTOR_CACHE_MAX:
+        _VECTOR_CACHE.pop(next(iter(_VECTOR_CACHE)))
+    _VECTOR_CACHE[key] = _clean_vector(vector)
 
 
 class PgEmbeddingCache:
@@ -46,8 +57,7 @@ class PgEmbeddingCache:
             for row in result.all():
                 vec = list(row.vector)
                 out[row.text_fp] = vec
-                if len(_VECTOR_CACHE) < _VECTOR_CACHE_MAX:
-                    _VECTOR_CACHE[(self.cfg_fp, row.text_fp)] = vec
+                _remember_vector((self.cfg_fp, row.text_fp), vec)
         return out
 
     async def store_vectors(self, rows: list[tuple[str, list[float]]]) -> None:
@@ -66,9 +76,7 @@ class PgEmbeddingCache:
                 .on_conflict_do_nothing(index_elements=["text_fp", "cfg_fp"])
             )
             for text_fp, vector in batch:
-                key = (self.cfg_fp, text_fp)
-                if key not in _VECTOR_CACHE and len(_VECTOR_CACHE) < _VECTOR_CACHE_MAX:
-                    _VECTOR_CACHE[key] = _clean_vector(vector)
+                _remember_vector((self.cfg_fp, text_fp), vector)
         await self.db.flush()
 
 

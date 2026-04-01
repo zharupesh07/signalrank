@@ -1,6 +1,6 @@
 import pytest
 
-from domain.resume_editor import editor_to_tailored_content, parse_resume_editor, serialize_resume_editor
+from domain.resume_editor import editor_to_tailored_content, merge_resume_editor, parse_resume_editor, serialize_resume_editor
 
 pytestmark = pytest.mark.unit
 
@@ -207,3 +207,26 @@ def test_editor_to_tailored_content_preserves_certifications_and_links():
     assert content.homepage == "candidate.dev"
     assert content.linkedin == "example-candidate"
     assert content.certifications == ["Systems Certification"]
+
+
+def test_merge_resume_editor_preserves_project_url_from_fallback_when_preferred_missing():
+    preferred = {
+        "projects": [
+            {"name": "SignalRank", "url": "", "description": "Job search copilot"},
+        ]
+    }
+    fallback = {
+        "projects": [
+            {"name": "SignalRank", "url": "https://github.com/example/signalrank", "description": ""},
+        ]
+    }
+
+    merged = merge_resume_editor(preferred, fallback)
+
+    assert merged["projects"] == [
+        {
+            "name": "SignalRank",
+            "url": "https://github.com/example/signalrank",
+            "description": "Job search copilot",
+        }
+    ]

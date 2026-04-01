@@ -87,6 +87,22 @@ async def test_scrape_blocklist(queries):
     assert result[0].job_url == "https://example.com/1"
 
 
+@pytest.mark.asyncio
+async def test_scrape_can_return_urls_only(config, queries):
+    mock_jobs = [
+        _make_job("https://example.com/1"),
+        _make_job("https://example.com/2"),
+    ]
+
+    with patch("batch.sources.rapidapi.search", new_callable=AsyncMock, return_value=mock_jobs), \
+         patch("batch.sources.jobspy_source.search", new_callable=AsyncMock, return_value=[]), \
+         patch("batch.sources.free_apis.search", new_callable=AsyncMock, return_value=[]), \
+         patch("batch.sources.google_jobs.search", new_callable=AsyncMock, return_value=[]):
+        result = await scrape(queries, config, return_mode="urls")
+
+    assert result == ["https://example.com/1", "https://example.com/2"]
+
+
 def test_config_from_env(monkeypatch):
     import api.config as _cfg_mod
     monkeypatch.setattr(_cfg_mod.settings, "rapidapi_key", "test-key")
