@@ -6,13 +6,17 @@ import logging
 import random
 import re
 import time as _time
+from collections import OrderedDict
 
 import httpx
 
+from api.config import settings
+
 logger = logging.getLogger(__name__)
 
-_response_cache: dict[str, tuple[float, object]] = {}
+_response_cache: OrderedDict[str, tuple[float, object]] = OrderedDict()
 _RESPONSE_TTL = 86400  # 24h — same prompt+temp = same result
+_RESPONSE_CACHE_MAX = settings.llm_response_cache_max
 
 _probe_cache: dict[tuple, list[str]] = {}
 _probe_cache_at: dict[tuple, float] = {}
@@ -24,6 +28,26 @@ def _get_probe_lock(key: tuple) -> asyncio.Lock:
     if key not in _probe_locks:
         _probe_locks[key] = asyncio.Lock()
     return _probe_locks[key]
+
+
+def _get_response_cache_value(cache_key: str):
+    cached = _response_cache.get(cache_key)
+    if not cached:
+        return None
+    if (_time.monotonic() - cached[0]) >= _RESPONSE_TTL:
+        _response_cache.pop(cache_key, None)
+        return None
+    _response_cache.move_to_end(cache_key)
+    return cached[1]
+
+
+def _store_response_cache_value(cache_key: str, value: object) -> None:
+    if _RESPONSE_CACHE_MAX <= 0:
+        return
+    _response_cache[cache_key] = (_time.monotonic(), value)
+    _response_cache.move_to_end(cache_key)
+    while len(_response_cache) > _RESPONSE_CACHE_MAX:
+        _response_cache.popitem(last=False)
 
 FALLBACK_MODELS = [
     "nvidia/nemotron-3-nano-30b-a3b:free",      # 1.3s — fastest
@@ -392,10 +416,10 @@ class OpenRouterClient:
             messages = [{"role": "user", "content": prompt or ""}]
 
         cache_key = self._cache_key(messages, temperature)
-        cached = _response_cache.get(cache_key)
-        if cached and (_time.monotonic() - cached[0]) < _RESPONSE_TTL:
+        cached = _get_response_cache_value(cache_key)
+        if cached is not None:
             logger.info("llm_json cache hit")
-            return cached[1]  # type: ignore[return-value]
+            return cached  # type: ignore[return-value]
 
         healthy = await self._ensure_healthy()
         models_to_try = healthy if healthy else self.models
@@ -410,7 +434,7 @@ class OpenRouterClient:
             parsed = _extract_json(raw)
             if parsed is not None:
                 logger.info("llm_json success via %s", model)
-                _response_cache[cache_key] = (_time.monotonic(), parsed)
+                _store_response_cache_value(cache_key, parsed)
                 return parsed
 
             last_error = f"{model} returned non-JSON: {raw[:100]}"
@@ -432,10 +456,10 @@ class OpenRouterClient:
         ]
 
         cache_key = self._cache_key(messages, temperature)
-        cached = _response_cache.get(cache_key)
-        if cached and (_time.monotonic() - cached[0]) < _RESPONSE_TTL:
+        cached = _get_response_cache_value(cache_key)
+        if cached is not None:
             logger.info("llm_text cache hit")
-            return cached[1]  # type: ignore[return-value]
+            return cached  # type: ignore[return-value]
 
         healthy = await self._ensure_healthy()
         models_to_try = healthy if healthy else self.models
@@ -444,7 +468,7 @@ class OpenRouterClient:
             raw = await self._call(model, messages, max_tokens, temperature)
             if raw is not None:
                 logger.info("llm_text success via %s", model)
-                _response_cache[cache_key] = (_time.monotonic(), raw)
+                _store_response_cache_value(cache_key, raw)
                 return raw
 
         logger.error("All models exhausted for llm_text")

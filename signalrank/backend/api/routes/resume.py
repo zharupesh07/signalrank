@@ -1,6 +1,9 @@
 import logging
 import json
+import hashlib
+import time
 from dataclasses import asdict
+from collections import OrderedDict
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -10,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.database import get_db
+from api.config import settings
 from api.deps import get_current_user, get_user_profile
 from api.deps_llm import get_llm_client
 from api.helpers import VALID_TEMPLATES, get_resume_template
@@ -22,12 +26,41 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/resume", tags=["resume"])
 
+_preview_cache: OrderedDict[str, tuple[float, str, bytes, object]] = OrderedDict()
+_PREVIEW_CACHE_MAX = settings.resume_preview_cache_max
+_PREVIEW_CACHE_TTL = 900
+
 
 def _stored_resume_editor(profile: Profile | None) -> dict | None:
     if not profile or not isinstance(profile.config_overrides, dict):
         return None
     editor = profile.config_overrides.get("resume_editor")
     return editor if isinstance(editor, dict) else None
+
+
+def _preview_cache_key(template: str, editor_payload: dict) -> str:
+    blob = json.dumps({"template": template, "editor": editor_payload}, sort_keys=True, separators=(",", ":"))
+    return hashlib.md5(blob.encode()).hexdigest()
+
+
+def _get_preview_cache(cache_key: str):
+    cached = _preview_cache.get(cache_key)
+    if not cached:
+        return None
+    if (time.monotonic() - cached[0]) >= _PREVIEW_CACHE_TTL:
+        _preview_cache.pop(cache_key, None)
+        return None
+    _preview_cache.move_to_end(cache_key)
+    return cached[1:]
+
+
+def _store_preview_cache(cache_key: str, typst_src: str, pdf_bytes: bytes, validation: object) -> None:
+    if _PREVIEW_CACHE_MAX <= 0:
+        return
+    _preview_cache[cache_key] = (time.monotonic(), typst_src, pdf_bytes, validation)
+    _preview_cache.move_to_end(cache_key)
+    while len(_preview_cache) > _PREVIEW_CACHE_MAX:
+        _preview_cache.popitem(last=False)
 
 
 class TailorRequest(BaseModel):
@@ -243,7 +276,14 @@ async def preview_resume(
 
     selected_template = get_resume_template(profile, body.template)
     content = editor_to_tailored_content(editor_payload)
-    typst_src, pdf_bytes, validation = render_compile_validate_content(content, selected_template)
+    cache_key = _preview_cache_key(selected_template, editor_payload)
+    cached = _get_preview_cache(cache_key)
+    if cached is not None:
+        typst_src, pdf_bytes, validation = cached
+        logger.info("Resume preview cache hit for template=%s", selected_template)
+    else:
+        typst_src, pdf_bytes, validation = render_compile_validate_content(content, selected_template)
+        _store_preview_cache(cache_key, typst_src, pdf_bytes, validation)
 
     if body.debug:
         return JSONResponse(

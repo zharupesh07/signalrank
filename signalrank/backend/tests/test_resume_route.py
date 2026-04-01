@@ -51,6 +51,15 @@ def _make_client(db_session):
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
 
+@pytest.fixture(autouse=True)
+def _clear_preview_cache():
+    import api.routes.resume as resume_route
+
+    resume_route._preview_cache.clear()
+    yield
+    resume_route._preview_cache.clear()
+
+
 @pytest.mark.asyncio
 async def test_download_returns_202_when_no_tailored_resume():
     db = AsyncMock(spec=AsyncSession)
@@ -231,6 +240,45 @@ async def test_preview_prefers_stored_resume_editor_when_no_body_editor():
         assert content.name == "Stored Candidate"
         assert content.experiences[0]["company"] == "Example Systems"
         assert "X-Resume-Validation" in r.headers
+
+
+@pytest.mark.asyncio
+async def test_preview_reuses_cached_render_for_same_payload():
+    profile = MagicMock()
+    profile.resume_text = "Existing resume"
+    profile.config_overrides = {"resume": {"template": "modern"}}
+    profile_found = MagicMock()
+    profile_found.scalar_one_or_none.return_value = profile
+
+    db = AsyncMock(spec=AsyncSession)
+    db.execute = AsyncMock(side_effect=[profile_found, profile_found])
+
+    validation = ResumeValidationReport(page_count=1)
+    with patch(
+        "llm.resume_tailor.render_compile_validate_content",
+        return_value=("#typst", b"%PDF-preview", validation),
+    ) as mock_render_compile:
+        async with _make_client(db) as client:
+            payload = {
+                "template": "minimal",
+                "resume_editor": {
+                    "name": "Preview Candidate",
+                    "email": "preview@example.com",
+                    "summary": "Enterprise systems engineer.",
+                    "experiences": [],
+                    "projects": [],
+                    "skills": [{"category": "General", "items": ["ERP", "Python"]}],
+                    "certifications": [],
+                },
+            }
+            first = await client.post("/api/resume/preview", json=payload)
+            second = await client.post("/api/resume/preview", json=payload)
+
+        app.dependency_overrides.clear()
+
+        assert first.status_code == 200
+        assert second.status_code == 200
+        assert mock_render_compile.call_count == 1
 
 
 @pytest.mark.asyncio

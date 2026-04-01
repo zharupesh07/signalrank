@@ -145,10 +145,12 @@ async def test_client_tolerates_non_choices_payload_shape():
 def _reset_probe_cache():
     """Reset module-level probe cache before each test to prevent state leaks."""
     import llm.openrouter as mod
+    mod._response_cache.clear()
     mod._probe_cache.clear()
     mod._probe_cache_at.clear()
     mod._probe_locks.clear()
     yield
+    mod._response_cache.clear()
     mod._probe_cache.clear()
     mod._probe_cache_at.clear()
     mod._probe_locks.clear()
@@ -262,3 +264,23 @@ async def test_llm_json_vision_skips_structurally_empty_resume_payload():
 
     assert result == {"name": "Vision User"}
     assert mock_call.await_count == 2
+
+
+def test_response_cache_eviction_keeps_most_recent_entries():
+    import llm.openrouter as mod
+
+    old_cache_max = mod._RESPONSE_CACHE_MAX
+    mod._response_cache.clear()
+    mod._RESPONSE_CACHE_MAX = 2
+    try:
+        mod._store_response_cache_value("a", {"ok": 1})
+        mod._store_response_cache_value("b", {"ok": 2})
+        mod._store_response_cache_value("c", {"ok": 3})
+
+        assert "a" not in mod._response_cache
+        assert list(mod._response_cache.keys()) == ["b", "c"]
+        assert mod._get_response_cache_value("b") == {"ok": 2}
+        assert list(mod._response_cache.keys()) == ["c", "b"]
+    finally:
+        mod._RESPONSE_CACHE_MAX = old_cache_max
+        mod._response_cache.clear()
