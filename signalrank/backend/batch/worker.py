@@ -644,6 +644,18 @@ async def _claim_pending_run(session_factory: async_sessionmaker, mode: str) -> 
             await db.rollback()
             return None
 
+        # Quick scans take priority: if any quick scan is pending, defer full scans.
+        if mode == "full":
+            quick_pending = await db.scalar(
+                select(func.count(Run.id)).where(
+                    Run.status == "pending",
+                    Run.progress["requested_mode"].astext == "quick",
+                )
+            )
+            if quick_pending:
+                await db.rollback()
+                return None
+
         result = await db.execute(
             select(Run)
             .where(
