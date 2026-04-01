@@ -1239,18 +1239,33 @@ export default function SettingsPage() {
                       <Info size={13} className="text-primary" />
                       <span className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">Title Penalties</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={saveRankingConfig}
-                      disabled={savingRankingConfig}
-                      className="flex items-center gap-1.5 px-3 py-1 text-[11px] border border-primary/30 text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
-                    >
-                      <Save size={10} />
-                      {savingRankingConfig ? "Saving…" : "Save"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditPenaltyStrong(titlePenaltyRules.strong.map(formatPenaltyPattern));
+                          setEditPenaltyAdjacent(titlePenaltyRules.adjacent.map(formatPenaltyPattern));
+                          setEditPenaltyHybrid(titlePenaltyRules.hybrid.map(formatPenaltyPattern));
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1 text-[11px] border border-muted-foreground/30 text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+                        title="Reset to auto-generated penalties based on your profile"
+                      >
+                        <RefreshCw size={10} />
+                        Reset to auto
+                      </button>
+                      <button
+                        type="button"
+                        onClick={saveRankingConfig}
+                        disabled={savingRankingConfig}
+                        className="flex items-center gap-1.5 px-3 py-1 text-[11px] border border-primary/30 text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+                      >
+                        <Save size={10} />
+                        {savingRankingConfig ? "Saving…" : "Save"}
+                      </button>
+                    </div>
                   </div>
                   <p className="border-l-2 border-primary/20 pl-3 text-[10px] leading-relaxed text-muted-foreground">
-                    Drag patterns between severity buckets or type to add new ones. Strong = heavily downranked, Adjacent = softened, Hybrid = mild penalty.
+                    Auto-grouped from your profile archetype. Drag patterns between severity buckets, type to add, or reset to auto.
                   </p>
                   <div className="grid gap-3 xl:grid-cols-3">
                     <DraggableTagList

@@ -222,12 +222,19 @@ def _verify_contact(editor: dict, ref: str) -> dict:
     llm_position = _clean_line(editor.get("position", ""))
 
     if not llm_position:
-        editor["position"] = header_position or ref_position
-    elif header_position and header_position.lower() not in (ref or "").lower()[:200].lower():
-        # ref header has a headline the LLM missed — prefer it if LLM position isn't in the header
-        pass  # keep LLM position; it may have read it from the image
-    elif header_position and llm_position.lower() not in (ref or "")[:500].lower():
-        # LLM position doesn't appear in reference header — override with reference headline
+        # Prefer: header headline → summary inference → first experience title
+        best = header_position or ref_position
+        if not best:
+            exps = editor.get("experiences", [])
+            if exps and isinstance(exps[0], dict):
+                best = exps[0].get("title", "")
+        editor["position"] = best or ""
+    elif (
+        header_position
+        and not header_position.lower().startswith(("and ", "or ", "with ", "to ", "the ", "of "))
+        and llm_position.lower() not in (ref or "").lower()
+    ):
+        # LLM position doesn't appear anywhere in the reference — override with header headline
         logger.info("Verifier: overriding position %r -> %r", llm_position, header_position)
         editor["position"] = header_position
 
@@ -238,6 +245,14 @@ def _verify_contact(editor: dict, ref: str) -> dict:
 # Certification verification
 # ---------------------------------------------------------------------------
 
+_CERT_SECTION_HEADER_RE = re.compile(
+    r"^(open source|work experience|skills|education|projects|certifications?|"
+    r"awards?|summary|technical skills|key skills|achievements|responsibilities)"
+    r"\b[^a-z]*$",
+    re.I,
+)
+
+
 def _verify_certifications(certs: list[str], ref: str) -> list[str]:
     if not certs:
         return certs
@@ -247,6 +262,19 @@ def _verify_certifications(certs: list[str], ref: str) -> list[str]:
     for cert in certs:
         cert_clean = cert.strip()
         if not cert_clean:
+            continue
+        # Drop obvious non-cert patterns before word-overlap check
+        if re.match(r"^TECH\s*:", cert_clean, re.I):
+            logger.warning("Verifier: dropping tech-stack cert %r", cert_clean[:60])
+            continue
+        if cert_clean.count(" | ") >= 2:
+            logger.warning("Verifier: dropping project-list cert %r", cert_clean[:60])
+            continue
+        if len(cert_clean) > 120:
+            logger.warning("Verifier: dropping oversized cert (%d chars)", len(cert_clean))
+            continue
+        if _CERT_SECTION_HEADER_RE.match(cert_clean):
+            logger.warning("Verifier: dropping section-header cert %r", cert_clean)
             continue
         if cert_clean.lower() in ref_lower:
             verified.append(cert_clean)
@@ -382,6 +410,9 @@ def _fix_mashed_words(text: str, vocab: set[str]) -> str:
 # Experience verification
 # ---------------------------------------------------------------------------
 
+_DASH_SEP_RE = re.compile(r"\s*[–—]\s*")  # em dash / en dash separators in job lines
+
+
 def _verify_experiences(experiences: list[dict], ref: str) -> list[dict]:
     if not experiences:
         return experiences
@@ -397,7 +428,21 @@ def _verify_experiences(experiences: list[dict], ref: str) -> list[dict]:
         if dates:
             exp["dates"] = _correct_date_string(dates, ref_dates, ref)
 
+        # Fix "Senior ML Engineer – HCL" stored as company instead of just "HCL"
         company = exp.get("company", "")
+        title = exp.get("title", "")
+        if company and _DASH_SEP_RE.search(company):
+            parts = _DASH_SEP_RE.split(company, maxsplit=1)
+            if len(parts) == 2:
+                inferred_title, actual_company = parts[0].strip(), parts[1].strip()
+                if actual_company:
+                    logger.info("Verifier: splitting company %r -> title=%r company=%r",
+                                company, inferred_title, actual_company)
+                    exp["company"] = actual_company
+                    if not title:
+                        exp["title"] = inferred_title
+                    company = actual_company
+
         if company and _word_overlap(company, ref_words) < 0.8:
             logger.warning("Verifier: company %r has low overlap with reference text", company)
 
@@ -439,7 +484,23 @@ def _verify_skills(skills: list[dict], ref: str) -> list[dict]:
             logger.warning("Verifier: dropping garbled skill group %r (%d/%d single-char items)",
                            group.get("category"), single_char_count, len(items))
             continue
-        # Drop items that look like sentences rather than skill names
+        # Drop items that look like sentences, dates, company names, or job titles
+        _COMPANY_SUFFIX_RE = re.compile(
+            r"\b(limited|ltd\.?|inc\.?|corp\.?|llc|private|pvt\.?|solutions|"
+            r"services|systems|technologies|consulting|group)\s*$",
+            re.I,
+        )
+        _JOB_TITLE_START_RE = re.compile(
+            r"^(senior|junior|lead|principal|staff|associate|assistant|chief|"
+            r"vp|director|manager|head of)\b",
+            re.I,
+        )
+        _DATE_ITEM_RE = re.compile(
+            r"\b\d{1,2}/\d{4}\b|\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)"
+            r"[\s.]\d{4}\b|\b(19|20)\d{2}\s*[-–]\s*(present|\d{4})\b",
+            re.I,
+        )
+
         def _is_skill_name(item: str) -> bool:
             s = str(item).strip()
             if len(s) > 60:
@@ -449,8 +510,20 @@ def _verify_skills(skills: list[dict], ref: str) -> list[dict]:
             words = s.split()
             if len(words) > 6:
                 return False
-            # Gerund openers: "Working as ...", "Managing ...", "Configured ..."
-            if words and re.match(r"[A-Z][a-z]+ing$|[A-Z][a-z]+ed$", words[0]):
+            # Date ranges e.g. "09/2022 - Present"
+            if _DATE_ITEM_RE.search(s):
+                return False
+            # Company names e.g. "Dow Chemical International Private Limited"
+            if _COMPANY_SUFFIX_RE.search(s):
+                return False
+            # Job title lines e.g. "Senior Information Technology Analyst"
+            if _JOB_TITLE_START_RE.match(s) and len(words) >= 3:
+                return False
+            # Section header artifacts e.g. "Achievements/Tasks and Responsibilities"
+            if "/" in s and len(words) >= 3:
+                return False
+            # Gerund/past-tense openers: "Working as ...", "Configured ..."
+            if words and re.match(r"[A-Z]\w+(?:ing|ed)$", words[0]):
                 return False
             return True
 
