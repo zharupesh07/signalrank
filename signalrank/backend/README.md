@@ -52,11 +52,15 @@ Use separate config-as-code files per Railway service:
 
 - API service config path: `/signalrank/backend/railway.api.toml`
 - Worker service config path: `/signalrank/backend/railway.worker.toml`
+- Queue-only worker config path: `/signalrank/backend/railway.worker.queue.toml`
+- Resume-only worker config path: `/signalrank/backend/railway.worker.resume.toml`
 
 Commands defined there:
 
 - API service: `uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}`
 - Worker service: `python -m api.worker_main`
+- Queue-only worker service: `python -m api.worker_main`
+- Resume-only worker service: `python -m api.worker_main`
 
 The older [railway.toml](/Users/examplecandidate/Projects/job_ranker/signalrank/backend/railway.toml) is kept as a legacy default. For a split API/worker deployment, point each Railway service at its dedicated config file instead of sharing the same one.
 
@@ -64,6 +68,23 @@ This matches the runtime defaults in code:
 
 - `uvicorn api.main:app ...` defaults worker flags to `false` unless you explicitly set `RUN_*`.
 - `uv run python -m api.worker_main` defaults queue/resume/archival workers to `true`.
+
+Recommended split for lower memory pressure:
+
+- Queue worker service env:
+  - `RUN_API_WORKER=true`
+  - `RUN_RESUME_WORKER=false`
+  - `RUN_ARCHIVAL_WORKER=false`
+  - `RUN_BOOT_SCAN=false`
+  - `RUN_BOOT_EMBED=false`
+- Resume worker service env:
+  - `RUN_API_WORKER=false`
+  - `RUN_RESUME_WORKER=true`
+  - `RUN_ARCHIVAL_WORKER=false`
+  - `RUN_BOOT_SCAN=false`
+  - `RUN_BOOT_EMBED=false`
+
+This separates scrape/rank memory from resume-generation memory while still using the same entrypoint image.
 
 Measured locally after the memory pass:
 

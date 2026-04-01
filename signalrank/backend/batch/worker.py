@@ -5,13 +5,14 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from api.models import JobRaw, JobResult, Profile, Run
 from batch.context import build_context, get_batch, get_retry
 from batch.embedding_cache import PgEmbeddingCache, store_job_embeddings
+from batch.memory import log_rss
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,15 @@ class RunRequest:
     user_id: str
     mode: str = "quick"
     force_scrape: bool = False
+
+
+def _should_log_embed_progress(done: int, total: int, last_logged: int) -> bool:
+    if done >= total:
+        return True
+    if total <= 100:
+        return done != last_logged
+    step = max(100, total // 20)
+    return (done // step) > (last_logged // step)
 
 
 
@@ -108,27 +118,41 @@ async def _embed_new_jobs(
                 "[EMBED] %d cache hits, %d misses (attempt %d/%d)",
                 len(job_fps) - len(misses), len(misses), attempt, embed_max_retries,
             )
+            log_rss(logger, "embed_prepare", total_jobs=len(raw_jobs), cache_misses=len(misses))
 
             engine = EmbeddingEngine(cfg)
             miss_texts = [job_texts[i] for i in misses]
             total = len(miss_texts)
 
             embedded = 0
-            cache_rows: list[tuple[str, list[float]]] = []
-            job_embedding_rows: list[tuple[str, list[float]]] = []
+            last_logged = 0
+            if cached_job_rows:
+                await store_job_embeddings(db, cached_job_rows)
+                await db.commit()
+                cached_job_rows.clear()
             for chunk_start in range(0, total, embed_chunk_size):
                 chunk_end = min(chunk_start + embed_chunk_size, total)
                 chunk_texts = miss_texts[chunk_start:chunk_end]
                 chunk_indices = misses[chunk_start:chunk_end]
 
                 vecs = await asyncio.to_thread(engine.embed, chunk_texts)
+                cache_rows: list[tuple[str, list[float]]] = []
+                job_embedding_rows: list[tuple[str, list[float]]] = []
 
                 for i, v in zip(chunk_indices, vecs):
                     vector = v.tolist()
                     cache_rows.append((job_fps[i], vector))
                     job_embedding_rows.append((raw_jobs[i].job_url, vector))
 
+                await cache.store_vectors(cache_rows)
+                await store_job_embeddings(db, job_embedding_rows)
+                await db.commit()
+
                 embedded = chunk_end
+                if _should_log_embed_progress(embedded, total, last_logged):
+                    logger.info("[EMBED] Encoded %d/%d uncached jobs", embedded, total)
+                    last_logged = embedded
+                    log_rss(logger, "embed_progress", encoded=embedded, total=total)
                 if update_progress:
                     await update_progress(
                         phase="embedding",
@@ -137,10 +161,6 @@ async def _embed_new_jobs(
                         jobs_found=len(raw_jobs),
                         message=f"Embedding jobs: {embedded}/{total}",
                     )
-
-            await cache.store_vectors(cache_rows)
-            await store_job_embeddings(db, cached_job_rows + job_embedding_rows)
-            await db.commit()
 
             logger.info("[EMBED] Pre-cached %d job embeddings", total)
             unload_embedding_engine()
@@ -183,6 +203,7 @@ async def process_run(
     async with session_factory() as db:
         scrape_executed = False
         try:
+            log_rss(logger, "run_start", run_id=run_id, user_id=user_id, mode=mode)
             # Check if run was cancelled before it even started
             run_check_result = await db.execute(select(Run).where(Run.id == run_id))
             run_check = run_check_result.scalar_one_or_none()
@@ -321,6 +342,7 @@ async def process_run(
                             extra={"run_id": run_id, "phase": "scrape",
                                    "duration_s": round(time.monotonic() - t_scrape, 1),
                                    "jobs_found": len(raw_jobs)})
+                log_rss(logger, "after_scrape", run_id=run_id, jobs_found=len(raw_jobs))
 
                 # Check cancellation after scraping
                 run_check_result = await db.execute(select(Run).where(Run.id == run_id))
@@ -338,6 +360,7 @@ async def process_run(
                                 extra={"run_id": run_id, "phase": "embed",
                                        "duration_s": round(time.monotonic() - t_embed, 1),
                                        "jobs": len(raw_jobs)})
+                    log_rss(logger, "after_embed", run_id=run_id, jobs=len(raw_jobs))
                     del raw_jobs
                     gc.collect()
 
@@ -365,6 +388,7 @@ async def process_run(
                 )
             )
             await db.commit()
+            log_rss(logger, "before_rank", run_id=run_id, scrape_count=scrape_count)
 
             t_rank = time.monotonic()
             try:
@@ -392,6 +416,7 @@ async def process_run(
                 return
             logger.info("Run %s ranking done in %.1fs, %d jobs",
                         run_id, time.monotonic() - t_rank, len(ranked_df))
+            log_rss(logger, "after_rank", run_id=run_id, ranked_jobs=len(ranked_df))
 
             # Check cancellation after ranking (before inserting results)
             run_check_result = await db.execute(select(Run).where(Run.id == run_id))
@@ -465,89 +490,110 @@ async def boot_embed_uncached_jobs(session_factory: async_sessionmaker) -> None:
     from batch.context import build_context
     from datetime import timedelta
 
-    async with session_factory() as db:
-        cutoff = datetime.now(timezone.utc) - timedelta(days=15)
-        result = await db.execute(
-            select(JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.description, JobRaw.embedding)
-            .where(JobRaw.ingested_at >= cutoff)
-        )
-        rows = result.all()
-
-    if not rows:
-        return
-
-    from domain.embeddings import build_job_embedding_text, fingerprint_text
-    from domain.skills import SkillCanonicalizer, extract_skills_from_texts
-
+    cutoff = datetime.now(timezone.utc) - timedelta(days=15)
     ctx = build_context(user_id="__base__", resume_text="")
     cfg = ctx.config
+    page_size = get_batch(cfg, "boot_embed_page_size", 512)
+
+    async with session_factory() as db:
+        total_recent = (
+            await db.execute(
+                select(func.count()).select_from(JobRaw).where(JobRaw.ingested_at >= cutoff)
+            )
+        ).scalar_one()
+        total_missing = (
+            await db.execute(
+                select(func.count()).select_from(JobRaw).where(
+                    JobRaw.ingested_at >= cutoff,
+                    JobRaw.embedding.is_(None),
+                )
+            )
+        ).scalar_one()
+
+    if not total_recent:
+        return
+    if not total_missing:
+        logger.info("[BOOT-EMBED] All %d recent jobs already have stored embeddings", total_recent)
+        return
+
+    logger.info("[BOOT-EMBED] Pre-embedding %d/%d uncached jobs", total_missing, total_recent)
+    log_rss(logger, "boot_embed_start", total_recent=total_recent, total_missing=total_missing)
+
+    from domain.embeddings import EmbeddingEngine, build_job_embedding_text, fingerprint_text, unload_embedding_engine
+    from domain.skills import SkillCanonicalizer, extract_skills_from_texts
+
     canon = SkillCanonicalizer(cfg)
-
-    rows_to_embed = [r for r in rows if r.embedding is None]
-    if not rows_to_embed:
-        logger.info("[BOOT-EMBED] All %d recent jobs already have stored embeddings", len(rows))
-        return
-
-    descriptions = [r.description or "" for r in rows_to_embed]
-    raw_skills_list = extract_skills_from_texts(descriptions, cfg)
-    canonical_skills_list = [sorted(canon.canonicalize(s)) for s in raw_skills_list]
-
-    job_texts = [
-        build_job_embedding_text(
-            title=r.title or "",
-            description=r.description or "",
-            canonical_skills=cs,
-            cfg=cfg,
-        )
-        for r, cs in zip(rows_to_embed, canonical_skills_list)
-    ]
-    job_fps = [fingerprint_text(t) for t in job_texts]
-
-    async with session_factory() as db:
-        cache = PgEmbeddingCache(db, ctx.config_fp)
-        cached = await cache.fetch(job_fps)
-        misses = [i for i, fp in enumerate(job_fps) if fp not in cached]
-        cached_job_rows = [
-            (rows_to_embed[i].job_url, cached[fp])
-            for i, fp in enumerate(job_fps)
-            if fp in cached
-        ]
-
-    if not misses:
-        async with session_factory() as db:
-            await store_job_embeddings(db, cached_job_rows)
-            await db.commit()
-        logger.info("[BOOT-EMBED] All %d job embeddings cached", len(job_fps))
-        return
-
-    logger.info("[BOOT-EMBED] Pre-embedding %d/%d uncached jobs", len(misses), len(job_fps))
-    from domain.embeddings import EmbeddingEngine, unload_embedding_engine
     engine = EmbeddingEngine(cfg)
-    total = len(misses)
-    cache_rows: list[tuple[str, list[float]]] = []
-    job_embedding_rows: list[tuple[str, list[float]]] = []
+    embed_chunk_size = get_batch(cfg, "embed_chunk_size", 4)
+    completed = 0
+    last_logged = 0
 
-    for chunk_start in range(0, total, _EMBED_CHUNK_SIZE):
-        chunk_end = min(chunk_start + _EMBED_CHUNK_SIZE, total)
-        chunk_indices = misses[chunk_start:chunk_end]
-        chunk_texts = [job_texts[i] for i in chunk_indices]
+    while True:
+        async with session_factory() as db:
+            result = await db.execute(
+                select(JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.description)
+                .where(JobRaw.ingested_at >= cutoff, JobRaw.embedding.is_(None))
+                .order_by(JobRaw.ingested_at.desc(), JobRaw.id.desc())
+                .limit(page_size)
+            )
+            rows = result.all()
 
-        vecs = await asyncio.to_thread(engine.embed, chunk_texts)
-        for i, v in zip(chunk_indices, vecs):
-            vector = v.tolist()
-            cache_rows.append((job_fps[i], vector))
-            job_embedding_rows.append((rows_to_embed[i].job_url, vector))
+            if not rows:
+                break
 
-        if chunk_end % 500 == 0 or chunk_end == total:
-            logger.info("[BOOT-EMBED] %d/%d", chunk_end, total)
+            descriptions = [r.description or "" for r in rows]
+            raw_skills_list = extract_skills_from_texts(descriptions, cfg)
+            canonical_skills_list = [sorted(canon.canonicalize(s)) for s in raw_skills_list]
+            job_texts = [
+                build_job_embedding_text(
+                    title=r.title or "",
+                    description=r.description or "",
+                    canonical_skills=cs,
+                    cfg=cfg,
+                )
+                for r, cs in zip(rows, canonical_skills_list)
+            ]
+            job_fps = [fingerprint_text(t) for t in job_texts]
 
-    async with session_factory() as db:
-        cache = PgEmbeddingCache(db, ctx.config_fp)
-        await cache.store_vectors(cache_rows)
-        await store_job_embeddings(db, cached_job_rows + job_embedding_rows)
-        await db.commit()
+            cache = PgEmbeddingCache(db, ctx.config_fp)
+            cached = await cache.fetch(job_fps)
+            misses = [i for i, fp in enumerate(job_fps) if fp not in cached]
+            cached_job_rows = [
+                (rows[i].job_url, cached[fp])
+                for i, fp in enumerate(job_fps)
+                if fp in cached
+            ]
+            if cached_job_rows:
+                await store_job_embeddings(db, cached_job_rows)
+                await db.commit()
 
-    logger.info("[BOOT-EMBED] Done — pre-cached %d job embeddings", total)
+            for chunk_start in range(0, len(misses), embed_chunk_size):
+                chunk_end = min(chunk_start + embed_chunk_size, len(misses))
+                chunk_indices = misses[chunk_start:chunk_end]
+                chunk_texts = [job_texts[i] for i in chunk_indices]
+                vecs = await asyncio.to_thread(engine.embed, chunk_texts)
+
+                cache_rows: list[tuple[str, list[float]]] = []
+                job_embedding_rows: list[tuple[str, list[float]]] = []
+                for i, v in zip(chunk_indices, vecs):
+                    vector = v.tolist()
+                    cache_rows.append((job_fps[i], vector))
+                    job_embedding_rows.append((rows[i].job_url, vector))
+
+                await cache.store_vectors(cache_rows)
+                await store_job_embeddings(db, job_embedding_rows)
+                await db.commit()
+
+                completed += len(chunk_indices)
+                if _should_log_embed_progress(completed, total_missing, last_logged):
+                    logger.info("[BOOT-EMBED] Encoded %d/%d uncached jobs", completed, total_missing)
+                    log_rss(logger, "boot_embed_progress", encoded=completed, total=total_missing)
+                    last_logged = completed
+
+            del rows, descriptions, raw_skills_list, canonical_skills_list, job_texts, job_fps, cached, misses
+            gc.collect()
+
+    logger.info("[BOOT-EMBED] Done — pre-cached %d job embeddings", completed)
     unload_embedding_engine()
     gc.collect()
 
@@ -600,6 +646,7 @@ async def worker_loop(session_factory: async_sessionmaker) -> None:
     queue = get_queue()
     await _cleanup_stale_runs(session_factory)
     logger.info("Background worker started")
+    log_rss(logger, "worker_loop_started")
     while True:
         item = None
         from_queue = False

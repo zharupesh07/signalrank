@@ -15,6 +15,7 @@ from api.models import JobRaw, Profile
 from api.config import settings
 from batch.context import build_context, get_batch, load_base_config
 from batch.embedding_cache import PgEmbeddingCache, store_job_embeddings
+from batch.memory import log_rss
 from domain.additive_scoring import (
     detect_contract_type,
     recency_score_0_100,
@@ -53,6 +54,7 @@ logger = logging.getLogger(__name__)
 _JOB_WINDOW_DAYS = load_base_config().get("batch", {}).get("job_window_days", 15)
 _RANK_MAX_CANDIDATES = settings.ranker_max_candidates
 _RANK_DESCRIPTION_CHARS = settings.ranker_max_description_chars
+_RANK_LOAD_CHUNK = load_base_config().get("batch", {}).get("rank_load_chunk", 500)
 
 
 def _is_uuid_like(value: str) -> bool:
@@ -94,15 +96,18 @@ def matches_requested_clusters_for_row(
 async def load_jobs_dataframe(
     db: AsyncSession,
     role_clusters: set[str] | None = None,
+    *,
+    limit: int | None = None,
+    offset: int = 0,
 ) -> pd.DataFrame:
     cutoff = datetime.now(timezone.utc) - timedelta(days=_JOB_WINDOW_DAYS)
     stmt = select(
         JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.company,
         func.left(JobRaw.description, _RANK_DESCRIPTION_CHARS).label("description"),
         JobRaw.location, JobRaw.site, JobRaw.date_posted, JobRaw.role_clusters, JobRaw.embedding,
-    ).where(JobRaw.ingested_at >= cutoff)
+    ).where(JobRaw.ingested_at >= cutoff).order_by(JobRaw.ingested_at.desc(), JobRaw.id.desc())
 
-    stmt = stmt.limit(_RANK_MAX_CANDIDATES)
+    stmt = stmt.offset(offset).limit(limit or _RANK_MAX_CANDIDATES)
 
     result = await db.execute(stmt)
     rows = result.all()
@@ -398,20 +403,26 @@ async def _compute_embeddings(
         "Embedding cache: %d stored hits, %d cache hits, %d misses out of %d jobs",
         stored_hits, len(cached), len(misses), len(df),
     )
+    df = df.drop(columns=["embedding"], errors="ignore")
+    log_rss(logger, "rank_embed_prepare", jobs=len(df), cache_misses=len(misses))
 
     engine = None
     if misses:
         engine = EmbeddingEngine(cfg)
         total = len(misses)
-        cache_rows: list[tuple[str, list[float]]] = []
-        job_embedding_rows: list[tuple[str, list[float]]] = []
         rank_embed_chunk = get_batch(cfg, "rank_embed_chunk", 4)
+        if cached_job_rows:
+            await store_job_embeddings(db, cached_job_rows)
+            await db.commit()
+            cached_job_rows.clear()
         for chunk_start in range(0, total, rank_embed_chunk):
             chunk_end = min(chunk_start + rank_embed_chunk, total)
             chunk = misses[chunk_start:chunk_end]
             chunk_texts = [miss_text_by_row_idx[row_idx] for row_idx, _ in chunk]
 
             new_vecs = await asyncio.to_thread(engine.embed, chunk_texts)
+            cache_rows: list[tuple[str, list[float]]] = []
+            job_embedding_rows: list[tuple[str, list[float]]] = []
 
             for (row_idx, text_fp), v in zip(chunk, new_vecs):
                 vector = v.tolist()
@@ -419,11 +430,13 @@ async def _compute_embeddings(
                 job_embedding_rows.append((df.at[row_idx, "job_url"], vector))
                 vectors[row_idx] = v
 
-            logger.info("Ranking embed: %d/%d", chunk_end, total)
+            await job_cache.store_vectors(cache_rows)
+            await store_job_embeddings(db, job_embedding_rows)
+            await db.commit()
 
-        await job_cache.store_vectors(cache_rows)
-        await store_job_embeddings(db, cached_job_rows + job_embedding_rows)
-        await db.commit()
+            logger.info("Ranking embed: %d/%d", chunk_end, total)
+            log_rss(logger, "rank_embed_progress", encoded=chunk_end, total=total)
+
     elif cached_job_rows:
         await store_job_embeddings(db, cached_job_rows)
         await db.commit()
@@ -463,6 +476,7 @@ async def _compute_embeddings(
         extra={"jobs": len(df), "cache_misses": len(misses),
                "duration_s": round(time.monotonic() - t_emb, 2)},
     )
+    log_rss(logger, "rank_embed_done", jobs=len(df), cache_misses=len(misses))
     df = df.drop(columns=["canonical_skills"], errors="ignore")
     del vectors, cached, raw_skills, canon
     del miss_specs, miss_text_by_row_idx
@@ -486,15 +500,90 @@ async def score_jobs_for_user(
     ctx = build_context(user_id, resume_text, config_overrides)
     profile_roles = ctx.config.get("profile_intent", {}).get("roles", [])
     clusters = roles_to_clusters(profile_roles) if profile_roles else None
-    df = await load_jobs_dataframe(db, role_clusters=clusters)
-    return await _score_loaded_jobs_dataframe(
-        db=db,
-        df=df,
-        user_id=user_id,
+    cfg = enrich_config_with_profile_rules(
+        ctx.config,
         resume_text=resume_text,
-        config_overrides=config_overrides,
-        distilled_text=distilled_text,
+        profile_roles=profile_roles,
     )
+    logger.info(
+        "Profile title rules",
+        extra={
+            "user_id": user_id,
+            "archetypes": cfg.get("ranking", {}).get("profile_archetypes", []),
+            "rule_counts": {
+                name: len(patterns)
+                for name, patterns in (cfg.get("ranking", {}).get("profile_title_rules", {}) or {}).items()
+            },
+        },
+    )
+    role_intent = (
+        cfg.get("profile_intent", {}).get("preset")
+        or cfg.get("ranking", {}).get("default_role")
+        or "software_general"
+    )
+
+    persisted_resume_embedding = None
+    if _is_uuid_like(user_id):
+        profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+        profile = profile_result.scalar_one_or_none()
+        if profile and profile.resume_embedding is not None:
+            persisted_resume_embedding = list(profile.resume_embedding)
+
+    frames: list[pd.DataFrame] = []
+    total_loaded = 0
+    total_scored = 0
+    rank_load_chunk = max(1, min(_RANK_LOAD_CHUNK, _RANK_MAX_CANDIDATES))
+
+    for offset in range(0, _RANK_MAX_CANDIDATES, rank_load_chunk):
+        page_limit = min(rank_load_chunk, _RANK_MAX_CANDIDATES - offset)
+        df = await load_jobs_dataframe(db, role_clusters=clusters, limit=page_limit, offset=offset)
+        if df.empty:
+            break
+        total_loaded += len(df)
+        log_rss(logger, "rank_jobs_loaded_chunk", jobs=len(df), offset=offset, total_loaded=total_loaded)
+
+        scored = await _score_loaded_jobs_dataframe(
+            db=db,
+            df=df,
+            user_id=user_id,
+            resume_text=resume_text,
+            config_overrides=config_overrides,
+            distilled_text=distilled_text,
+            cfg=cfg,
+            role_intent=role_intent,
+            persisted_resume_embedding=persisted_resume_embedding,
+            skip_context_enrichment=True,
+        )
+        if not scored.empty:
+            total_scored += len(scored)
+            frames.append(scored)
+        logger.info(
+            "Ranking chunk complete: loaded=%d scored=%d offset=%d/%d",
+            len(df),
+            len(scored),
+            offset + len(df),
+            _RANK_MAX_CANDIDATES,
+        )
+        log_rss(logger, "rank_chunk_done", offset=offset, loaded=len(df), scored=len(scored))
+        del df, scored
+        gc.collect()
+
+        if len(frames) > 1:
+            merged = pd.concat(frames, ignore_index=True)
+            merged = merged.sort_values("final_score", ascending=False).head(_RANK_MAX_CANDIDATES).reset_index(drop=True)
+            frames = [merged]
+            log_rss(logger, "rank_chunk_merge", rows=len(merged))
+
+        if len(frames) == 1 and len(frames[0]) >= _RANK_MAX_CANDIDATES and offset + len(frames[0]) >= _RANK_MAX_CANDIDATES:
+            break
+
+    if not frames:
+        return pd.DataFrame(columns=["final_score"])
+
+    df = pd.concat(frames, ignore_index=True)
+    logger.info("Ranking chunked aggregation complete: loaded=%d scored=%d", total_loaded, len(df))
+    log_rss(logger, "rank_jobs_aggregated", total_loaded=total_loaded, scored=len(df))
+    return _finalize_ranked_dataframe(df, user_id, role_intent="chunked")
 
 
 async def score_job_ids_for_user(
@@ -523,33 +612,40 @@ async def _score_loaded_jobs_dataframe(
     resume_text: str,
     config_overrides: dict | None,
     distilled_text: str | None = None,
+    *,
+    cfg: dict | None = None,
+    role_intent: str | None = None,
+    persisted_resume_embedding: list[float] | None = None,
+    skip_context_enrichment: bool = False,
 ) -> pd.DataFrame:
     t_total = time.monotonic()
     ctx = build_context(user_id, resume_text, config_overrides)
-    cfg = ctx.config
-
-    profile_roles = cfg.get("profile_intent", {}).get("roles", [])
-    cfg = enrich_config_with_profile_rules(
-        cfg,
-        resume_text=resume_text,
-        profile_roles=profile_roles,
-    )
-    logger.info(
-        "Profile title rules",
-        extra={
-            "user_id": user_id,
-            "archetypes": cfg.get("ranking", {}).get("profile_archetypes", []),
-            "rule_counts": {
-                name: len(patterns)
-                for name, patterns in (cfg.get("ranking", {}).get("profile_title_rules", {}) or {}).items()
+    if cfg is None:
+        cfg = ctx.config
+    if not skip_context_enrichment:
+        profile_roles = cfg.get("profile_intent", {}).get("roles", [])
+        cfg = enrich_config_with_profile_rules(
+            cfg,
+            resume_text=resume_text,
+            profile_roles=profile_roles,
+        )
+        logger.info(
+            "Profile title rules",
+            extra={
+                "user_id": user_id,
+                "archetypes": cfg.get("ranking", {}).get("profile_archetypes", []),
+                "rule_counts": {
+                    name: len(patterns)
+                    for name, patterns in (cfg.get("ranking", {}).get("profile_title_rules", {}) or {}).items()
+                },
             },
-        },
-    )
+        )
 
     if df.empty:
         return pd.DataFrame(columns=["final_score"])
 
     df = _apply_pre_filters(df, cfg)
+    log_rss(logger, "rank_prefilter_done", jobs=len(df))
     if df.empty:
         return pd.DataFrame(columns=["final_score"])
 
@@ -557,19 +653,20 @@ async def _score_loaded_jobs_dataframe(
     df = _dedupe_before_embedding(df)
     if len(df) != pre_dedupe_count:
         logger.info("Pre-embedding dedupe removed %d duplicate rows", pre_dedupe_count - len(df))
+    log_rss(logger, "rank_preembed_dedupe_done", jobs=len(df))
 
-    role_intent = (
+    effective_role_intent = role_intent or (
         cfg.get("profile_intent", {}).get("preset")
         or cfg.get("ranking", {}).get("default_role")
         or "software_general"
     )
 
-    persisted_resume_embedding = None
-    if _is_uuid_like(user_id):
+    effective_persisted_resume_embedding = persisted_resume_embedding
+    if effective_persisted_resume_embedding is None and _is_uuid_like(user_id):
         profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
         profile = profile_result.scalar_one_or_none()
         if profile and profile.resume_embedding is not None:
-            persisted_resume_embedding = list(profile.resume_embedding)
+            effective_persisted_resume_embedding = list(profile.resume_embedding)
 
     df = await _compute_embeddings(
         df,
@@ -578,11 +675,12 @@ async def _score_loaded_jobs_dataframe(
         ctx.config_fp,
         user_id,
         resume_text,
-        persisted_resume_embedding=persisted_resume_embedding,
+        persisted_resume_embedding=effective_persisted_resume_embedding,
         distilled_text=distilled_text,
     )
 
-    df = _apply_semantic_gates(df, cfg, role_intent)
+    df = _apply_semantic_gates(df, cfg, effective_role_intent)
+    log_rss(logger, "rank_semantic_gates_done", jobs=len(df))
     if df.empty:
         return pd.DataFrame(columns=["final_score"])
 
@@ -620,6 +718,16 @@ async def _score_loaded_jobs_dataframe(
 
     df = _apply_additive_scoring(df, cfg)
 
+    return _finalize_ranked_dataframe(df, user_id, role_intent=effective_role_intent, duration_s=time.monotonic() - t_total)
+
+
+def _finalize_ranked_dataframe(
+    df: pd.DataFrame,
+    user_id: str,
+    *,
+    role_intent: str,
+    duration_s: float | None = None,
+) -> pd.DataFrame:
     df = df.sort_values("final_score", ascending=False).drop_duplicates(subset=["job_url"])
     df["_dedup_key"] = (
         df["title"].str.strip().str.lower() + "|" + df["company"].str.strip().str.lower()
@@ -637,6 +745,12 @@ async def _score_loaded_jobs_dataframe(
 
     logger.info(
         "Ranking complete",
-        extra={"user_id": user_id, "input_jobs": len(df), "duration_s": round(time.monotonic() - t_total, 2)},
+        extra={
+            "user_id": user_id,
+            "input_jobs": len(df),
+            "duration_s": round(duration_s, 2) if duration_s is not None else None,
+            "role_intent": role_intent,
+        },
     )
+    log_rss(logger, "rank_complete", user_id=user_id, jobs=len(df))
     return df

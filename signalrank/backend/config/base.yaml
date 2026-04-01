@@ -480,9 +480,11 @@ caching:
 # BATCH SIZING
 # ============================================================
 batch:
-  embed_chunk_size: 4
-  rank_embed_chunk: 4
-  embed_batch_size: 4
+  embed_chunk_size: 32
+  rank_load_chunk: 500
+  rank_embed_chunk: 32
+  embed_batch_size: 8
+  boot_embed_page_size: 512
   embedding_cache_query: 5000
   job_window_days: 15
   worker_poll_interval: 5
