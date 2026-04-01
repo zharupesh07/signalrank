@@ -484,6 +484,16 @@ def _verify_skills(skills: list[dict], ref: str) -> list[dict]:
             logger.warning("Verifier: dropping garbled skill group %r (%d/%d single-char items)",
                            group.get("category"), single_char_count, len(items))
             continue
+        # Drop cert-like category names (e.g. "Microsoft Certified", "AWS Certified")
+        category = (group.get("category") or "").strip()
+        _CERT_CATEGORY_RE = re.compile(
+            r"\b(certified|certification|certificate|specialization|credential)\b",
+            re.I,
+        )
+        if _CERT_CATEGORY_RE.search(category):
+            logger.warning("Verifier: dropping cert-like skill category %r", category)
+            continue
+
         # Drop items that look like sentences, dates, company names, or job titles
         _COMPANY_SUFFIX_RE = re.compile(
             r"\b(limited|ltd\.?|inc\.?|corp\.?|llc|private|pvt\.?|solutions|"
@@ -512,6 +522,12 @@ def _verify_skills(skills: list[dict], ref: str) -> list[dict]:
                 return False
             # Date ranges e.g. "09/2022 - Present"
             if _DATE_ITEM_RE.search(s):
+                return False
+            # Bullet-separator lists e.g. "Python • SQL • PyTorch"
+            if "•" in s or " | " in s:
+                return False
+            # All-caps section header artifacts e.g. "FAMILIAR WITH", "PERSONAL PROJECTS"
+            if s == s.upper() and len(s) > 3 and s.replace(" ", "").isalpha():
                 return False
             # Company names e.g. "Dow Chemical International Private Limited"
             if _COMPANY_SUFFIX_RE.search(s):
