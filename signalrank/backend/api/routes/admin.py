@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.config import api_runtime_flags
 from api.database import get_db
 from api.deps import get_current_user
+from api.deps_llm import get_llm_client
 from batch.resume_worker import force_regenerate_all
 from api.models import (
     Application, ArchivalQueue, GenerationQueue, JobRaw, JobResult,
@@ -327,4 +328,61 @@ async def force_regenerate_resumes_for_user(
 ):
     count = await force_regenerate_all(db, user_id)
     return {"queued": count, "user_id": user_id}
+
+
+@router.post("/users/{user_id}/reparse-resume", status_code=202)
+async def reparse_resume_for_user(
+    user_id: str,
+    background_tasks: BackgroundTasks,
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Re-run LLM resume parse + verify pipeline for a single user.
+
+    Uses stored resume_text (no PDF required). Applies latest verifier fixes
+    (ligature normalisation, inverted-caps, date correction, hallucination removal).
+    """
+    from api.routes.onboarding import _parse_and_update_profile
+
+    result = await db.execute(
+        select(Profile).where(Profile.user_id == user_id)
+    )
+    profile = result.scalar_one_or_none()
+    if not profile or not (profile.resume_text or "").strip():
+        raise HTTPException(status_code=404, detail="User has no resume text stored")
+
+    llm = get_llm_client()
+    background_tasks.add_task(
+        _parse_and_update_profile, user_id, profile.resume_text, llm
+    )
+    return {"status": "queued", "user_id": user_id}
+
+
+@router.post("/reparse-all-resumes", status_code=202)
+async def reparse_all_resumes(
+    background_tasks: BackgroundTasks,
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Re-run LLM resume parse + verify pipeline for every user who has resume text.
+
+    Fires all parses as background tasks.  Returns count of users queued.
+    Each user's resume_editor, skills, distilled_text, and target_roles are
+    updated in-place; onboarding_complete is left unchanged.
+    """
+    from api.routes.onboarding import _parse_and_update_profile
+
+    result = await db.execute(
+        select(Profile.user_id, Profile.resume_text).where(
+            Profile.resume_text.is_not(None),
+            Profile.resume_text != "",
+        )
+    )
+    rows = result.all()
+    llm = get_llm_client()
+    for user_id, resume_text in rows:
+        background_tasks.add_task(
+            _parse_and_update_profile, user_id, resume_text, llm
+        )
+    return {"queued": len(rows)}
 

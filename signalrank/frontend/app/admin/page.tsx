@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/toast";
-import { Users, Activity, BarChart2, Play, Trash2, Shield, ShieldOff, CheckCircle, XCircle, ChevronDown, ChevronRight, ExternalLink, RefreshCw, RotateCcw, FileText } from "lucide-react";
+import { Users, Activity, BarChart2, Play, Trash2, Shield, ShieldOff, CheckCircle, XCircle, ChevronDown, ChevronRight, ExternalLink, RefreshCw, RotateCcw, FileText, ScanText } from "lucide-react";
 
 type AdminUser = {
   id: string;
@@ -173,14 +173,43 @@ export default function AdminPage() {
     toast(`Queued ${res.queued} resume generation task(s) for ${email}`, "success");
   }
 
+  async function reparseResume(userId: string, email: string) {
+    try {
+      await api.admin.reparseResume(token, userId);
+      toast(`Re-parsing resume for ${email} in background`, "success");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to queue reparse", "error");
+    }
+  }
+
+  async function reparseAllResumes() {
+    if (!confirm("Re-run resume parse + verify pipeline for ALL users? This will update their resume editor and search profile in the background.")) return;
+    try {
+      const res = await api.admin.reparseAllResumes(token);
+      toast(`Queued re-parse for ${res.queued} users`, "success");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to queue reparse", "error");
+    }
+  }
+
   if (!isAdmin) return null;
 
   return (
     <div className="pt-14 min-h-screen page-content">
       <div className="mx-auto w-full max-w-7xl px-6 py-8 space-y-7">
-        <div className="space-y-1">
-          <div className="section-label">admin</div>
-          <h1 className="text-xl font-bold text-foreground tracking-tight">System Administration</h1>
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="section-label">admin</div>
+            <h1 className="text-xl font-bold text-foreground tracking-tight">System Administration</h1>
+          </div>
+          <button
+            onClick={reparseAllResumes}
+            className="flex items-center gap-2 px-3 py-2 text-[11px] uppercase tracking-widest border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+            title="Re-run resume parse + verify pipeline for all users"
+          >
+            <ScanText size={12} />
+            Reparse All Resumes
+          </button>
         </div>
 
         {/* Stats */}
@@ -295,6 +324,13 @@ export default function AdminPage() {
                               title="Force scrape + run"
                             >
                               <RefreshCw size={12} />
+                            </button>
+                            <button
+                              onClick={() => reparseResume(u.id, u.email)}
+                              className="p-1.5 text-muted-foreground hover:text-purple-400 transition-colors"
+                              title="Re-parse resume (update resume editor + search profile)"
+                            >
+                              <ScanText size={12} />
                             </button>
                             <button
                               onClick={() => forceRegenerateResumes(u.id, u.email)}

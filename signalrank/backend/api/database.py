@@ -54,6 +54,9 @@ def _log_url_guidance(label: str, url: str) -> None:
 def _build_engine(url: str, *, label: str = "runtime"):
     clean_url, connect_args = _parse_url(url)
     _log_url_guidance(label, url)
+    # command_timeout: asyncpg cancels any single DB query taking >120s and
+    # releases the connection cleanly (guards against runaway queries).
+    connect_args = {**connect_args, "command_timeout": 120}
     eng = create_async_engine(
         clean_url,
         echo=False,
@@ -63,6 +66,9 @@ def _build_engine(url: str, *, label: str = "runtime"):
         pool_timeout=settings.db_pool_timeout,
         pool_pre_ping=True,
         pool_use_lifo=True,
+        # Recycle connections before Railway/Neon proxy idle-timeout (~300s) kills them.
+        # Expired connections are replaced transparently when next checked out.
+        pool_recycle=280,
     )
     factory = async_sessionmaker(eng, expire_on_commit=False)
     return eng, factory

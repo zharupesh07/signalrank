@@ -6,8 +6,157 @@ The LLM provides *structure* (field classification).  The reference text provide
 
 import logging
 import re
+from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Unicode normalisation (ligatures + inverted-caps)
+# ---------------------------------------------------------------------------
+
+# PDF ligature glyphs that PyMuPDF sometimes preserves verbatim
+_LIGATURE_MAP: dict[str, str] = {
+    "\ufb00": "ff",
+    "\ufb01": "fi",
+    "\ufb02": "fl",
+    "\ufb03": "ffi",
+    "\ufb04": "ffl",
+    "\ufb05": "st",
+    "\ufb06": "st",
+}
+
+# Proper casing for tech terms that title-case would mangle (e.g. MLOPS → Mlops)
+_TECH_ACRONYMS: dict[str, str] = {
+    "mlops": "MLOps",
+    "llmops": "LLMOps",
+    "devops": "DevOps",
+    "devsecops": "DevSecOps",
+    "genai": "GenAI",
+    "cicd": "CI/CD",
+    "iot": "IoT",
+    "nosql": "NoSQL",
+    "pytorch": "PyTorch",
+    "tensorflow": "TensorFlow",
+    "javascript": "JavaScript",
+    "typescript": "TypeScript",
+    "github": "GitHub",
+    "gitlab": "GitLab",
+    "linkedin": "LinkedIn",
+    "postgresql": "PostgreSQL",
+    "mongodb": "MongoDB",
+    "openai": "OpenAI",
+    "langchain": "LangChain",
+}
+
+
+def _normalize_ligatures(text: str) -> str:
+    for lig, rep in _LIGATURE_MAP.items():
+        text = text.replace(lig, rep)
+    return text
+
+
+def _is_inverted_caps_word(word: str) -> bool:
+    """Return True if this word uses PDF small-caps encoding (e.g. SENiOR, ENGiNEER).
+
+    Signature: mostly uppercase letters with lowercase 'i', 'j', 'l', 'f', 'k'
+    scattered in — these are glyphs whose small-cap form is indistinguishable from
+    the regular lowercase glyph in some PDF fonts.
+    """
+    alpha = [c for c in word if c.isalpha()]
+    if len(alpha) < 4:
+        return False
+    upper_count = sum(1 for c in alpha if c.isupper())
+    lower_chars = [c for c in alpha if c.islower()]
+    if not lower_chars or upper_count < 2:
+        return False
+    # All lowercase chars must be in the "invisible small-cap" set
+    _INVERTED_LOWER = frozenset("ijlftk")
+    return upper_count / len(alpha) > 0.6 and all(c in _INVERTED_LOWER for c in lower_chars)
+
+
+def _normalize_caps_token(token: str) -> str:
+    """Normalize one whitespace-free token from an inverted-caps string."""
+    alpha_only = re.sub(r"[^A-Za-z]", "", token)
+    lower_key = alpha_only.lower()
+    # Known tech acronyms
+    if lower_key in _TECH_ACRONYMS:
+        return _TECH_ACRONYMS[lower_key]
+    # Short (≤3 alpha chars) → likely acronym, preserve
+    if len(alpha_only) <= 3:
+        return token
+    # Apply title-case (handles SENiOR → Senior, PLATFORM → Platform)
+    return token.title()
+
+
+def _normalize_inverted_caps(text: str) -> str:
+    """If *text* exhibits the inverted-caps PDF pattern, normalize each word.
+
+    Only activates when at least one inverted-caps word is detected so normal
+    mixed-case strings are left untouched.
+    """
+    tokens = text.split()
+    if not any(_is_inverted_caps_word(t) for t in tokens):
+        return text
+    return " ".join(_normalize_caps_token(t) for t in tokens)
+
+
+def _normalize_str(value: Any) -> Any:
+    """Apply ligature + inverted-caps normalisation to a single string value."""
+    if not isinstance(value, str):
+        return value
+    value = _normalize_ligatures(value)
+    value = _normalize_inverted_caps(value)
+    return value
+
+
+def _normalize_editor_strings(editor: dict) -> dict:
+    """Walk all string fields in the editor dict and apply text normalization."""
+    scalar_fields = (
+        "name", "position", "email", "phone", "location",
+        "linkedin", "github", "website", "summary",
+    )
+    result = dict(editor)
+    for field in scalar_fields:
+        if isinstance(result.get(field), str):
+            result[field] = _normalize_str(result[field])
+
+    # Certifications: list of strings
+    result["certifications"] = [
+        _normalize_str(c) for c in result.get("certifications", []) if isinstance(c, str)
+    ]
+
+    # Experiences
+    normalized_exps = []
+    for exp in result.get("experiences", []):
+        if not isinstance(exp, dict):
+            normalized_exps.append(exp)
+            continue
+        exp = dict(exp)
+        for f in ("title", "company", "dates", "location"):
+            if isinstance(exp.get(f), str):
+                exp[f] = _normalize_str(exp[f])
+        exp["bullets"] = [
+            _normalize_str(b) for b in exp.get("bullets", []) if isinstance(b, str)
+        ]
+        normalized_exps.append(exp)
+    result["experiences"] = normalized_exps
+
+    # Skills
+    normalized_skills = []
+    for group in result.get("skills", []):
+        if not isinstance(group, dict):
+            normalized_skills.append(group)
+            continue
+        group = dict(group)
+        if isinstance(group.get("category"), str):
+            group["category"] = _normalize_str(group["category"])
+        group["items"] = [
+            _normalize_str(i) for i in group.get("items", []) if isinstance(i, str)
+        ]
+        normalized_skills.append(group)
+    result["skills"] = normalized_skills
+
+    return result
 
 _EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)
 _PHONE_RE = re.compile(r"(\(?\+?\d[\d\s().-]{7,}\d)")
@@ -217,8 +366,8 @@ def _verify_contact(editor: dict, ref: str) -> dict:
     ):
         editor["location"] = ref_location
 
-    ref_position = _extract_summary_position(ref)
-    header_position = _extract_header_position(ref)
+    ref_position = _normalize_str(_extract_summary_position(ref))
+    header_position = _normalize_str(_extract_header_position(ref))
     llm_position = _clean_line(editor.get("position", ""))
 
     if not llm_position:
@@ -232,7 +381,7 @@ def _verify_contact(editor: dict, ref: str) -> dict:
     elif (
         header_position
         and not header_position.lower().startswith(("and ", "or ", "with ", "to ", "the ", "of "))
-        and llm_position.lower() not in (ref or "").lower()
+        and llm_position.lower() not in _normalize_ligatures(ref or "").lower()
     ):
         # LLM position doesn't appear anywhere in the reference — override with header headline
         logger.info("Verifier: overriding position %r -> %r", llm_position, header_position)
@@ -245,12 +394,29 @@ def _verify_contact(editor: dict, ref: str) -> dict:
 # Certification verification
 # ---------------------------------------------------------------------------
 
-_CERT_SECTION_HEADER_RE = re.compile(
-    r"^(open source|work experience|skills|education|projects|certifications?|"
-    r"awards?|summary|technical skills|key skills|achievements|responsibilities)"
-    r"\b[^a-z]*$",
-    re.I,
+_CERT_SECTION_HEADER_WORDS = frozenset(
+    "open source work experience skills education project projects certifications "
+    "certification awards award summary technical key achievements achievement "
+    "responsibilities responsibility tasks training knowledge proficiency".split()
 )
+_CERT_SECTION_CONNECTORS = frozenset("in for by at from through via with of".split())
+
+
+def _is_cert_section_header(cert: str) -> bool:
+    """Return True if cert looks like a section header rather than a real cert.
+
+    Handles: "Open Source & Projects", "Technical Skills", "Projects / Tasks",
+    "Key Achievements", "Work Experience", etc.
+    """
+    words = cert.lower().split()
+    if not words or len(words) > 5:
+        return False
+    if words[0] not in _CERT_SECTION_HEADER_WORDS:
+        return False
+    # Connectors like "in", "for", "by" indicate a real cert phrase, not a header
+    if any(w in _CERT_SECTION_CONNECTORS for w in words[1:]):
+        return False
+    return True
 
 
 def _verify_certifications(certs: list[str], ref: str) -> list[str]:
@@ -267,13 +433,14 @@ def _verify_certifications(certs: list[str], ref: str) -> list[str]:
         if re.match(r"^TECH\s*:", cert_clean, re.I):
             logger.warning("Verifier: dropping tech-stack cert %r", cert_clean[:60])
             continue
-        if cert_clean.count(" | ") >= 2:
+        # Drop pipe-separated project/skill lists (2+ pipes with or without spaces)
+        if cert_clean.count("|") >= 2:
             logger.warning("Verifier: dropping project-list cert %r", cert_clean[:60])
             continue
         if len(cert_clean) > 120:
             logger.warning("Verifier: dropping oversized cert (%d chars)", len(cert_clean))
             continue
-        if _CERT_SECTION_HEADER_RE.match(cert_clean):
+        if _is_cert_section_header(cert_clean):
             logger.warning("Verifier: dropping section-header cert %r", cert_clean)
             continue
         if cert_clean.lower() in ref_lower:
@@ -428,9 +595,10 @@ def _verify_experiences(experiences: list[dict], ref: str) -> list[dict]:
         if dates:
             exp["dates"] = _correct_date_string(dates, ref_dates, ref)
 
-        # Fix "Senior ML Engineer – HCL" stored as company instead of just "HCL"
+        # Fix "Senior ML Engineer – HCL" in company or title fields
         company = exp.get("company", "")
         title = exp.get("title", "")
+
         if company and _DASH_SEP_RE.search(company):
             parts = _DASH_SEP_RE.split(company, maxsplit=1)
             if len(parts) == 2:
@@ -442,6 +610,15 @@ def _verify_experiences(experiences: list[dict], ref: str) -> list[dict]:
                     if not title:
                         exp["title"] = inferred_title
                     company = actual_company
+
+        if title and _DASH_SEP_RE.search(title):
+            parts = _DASH_SEP_RE.split(title, maxsplit=1)
+            if len(parts) == 2:
+                actual_title, appended_company = parts[0].strip(), parts[1].strip()
+                if actual_title:
+                    logger.info("Verifier: stripping company from title %r -> %r",
+                                title, actual_title)
+                    exp["title"] = actual_title
 
         if company and _word_overlap(company, ref_words) < 0.8:
             logger.warning("Verifier: company %r has low overlap with reference text", company)
@@ -567,6 +744,7 @@ def verify_against_reference(editor: dict, reference_text: str) -> dict:
     if not editor or not (reference_text or "").strip():
         return editor or {}
     result = dict(editor)
+    result = _normalize_editor_strings(result)
     result = _verify_contact(result, reference_text)
     result["certifications"] = _verify_certifications(
         result.get("certifications", []), reference_text

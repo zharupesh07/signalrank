@@ -186,8 +186,8 @@ async def process_run(
             # Check if run was cancelled before it even started
             run_check_result = await db.execute(select(Run).where(Run.id == run_id))
             run_check = run_check_result.scalar_one_or_none()
-            if run_check and run_check.status == "cancelled":
-                logger.info("Run %s was cancelled before starting, skipping", run_id)
+            if not run_check or run_check.status == "cancelled":
+                logger.info("Run %s not found or cancelled before starting, skipping", run_id)
                 return
 
             await db.execute(
@@ -279,14 +279,15 @@ async def process_run(
                 # Check cancellation before scraping
                 run_check_result = await db.execute(select(Run).where(Run.id == run_id))
                 run_check = run_check_result.scalar_one_or_none()
-                if run_check and run_check.status == "cancelled":
-                    await db.execute(
-                        update(Run).where(Run.id == run_id).values(
-                            status="cancelled", finished_at=datetime.now(timezone.utc)
+                if not run_check or run_check.status == "cancelled":
+                    if run_check:
+                        await db.execute(
+                            update(Run).where(Run.id == run_id).values(
+                                status="cancelled", finished_at=datetime.now(timezone.utc)
+                            )
                         )
-                    )
-                    await db.commit()
-                    logger.info("Run %s was cancelled before scraping", run_id)
+                        await db.commit()
+                    logger.info("Run %s not found or cancelled before scraping", run_id)
                     return
 
                 async def _persist_jobs(jobs):
@@ -324,9 +325,8 @@ async def process_run(
                 # Check cancellation after scraping
                 run_check_result = await db.execute(select(Run).where(Run.id == run_id))
                 run_check = run_check_result.scalar_one_or_none()
-                if run_check and run_check.status == "cancelled":
-                    await db.commit()
-                    logger.info("Run %s was cancelled after scraping", run_id)
+                if not run_check or run_check.status == "cancelled":
+                    logger.info("Run %s not found or cancelled after scraping", run_id)
                     return
 
                 scrape_count = len(raw_jobs)
@@ -344,9 +344,8 @@ async def process_run(
             # Check cancellation before ranking
             run_check_result = await db.execute(select(Run).where(Run.id == run_id))
             run_check = run_check_result.scalar_one_or_none()
-            if run_check and run_check.status == "cancelled":
-                await db.commit()
-                logger.info("Run %s was cancelled before ranking", run_id)
+            if not run_check or run_check.status == "cancelled":
+                logger.info("Run %s not found or cancelled before ranking", run_id)
                 return
 
             await db.execute(
@@ -397,9 +396,8 @@ async def process_run(
             # Check cancellation after ranking (before inserting results)
             run_check_result = await db.execute(select(Run).where(Run.id == run_id))
             run_check = run_check_result.scalar_one_or_none()
-            if run_check and run_check.status == "cancelled":
-                await db.commit()
-                logger.info("Run %s was cancelled before saving results", run_id)
+            if not run_check or run_check.status == "cancelled":
+                logger.info("Run %s not found or cancelled before saving results", run_id)
                 return
 
             result_rows = [
@@ -444,17 +442,21 @@ async def process_run(
 
         except Exception as exc:
             logger.exception("Run %s failed", run_id)
-            await db.execute(
-                update(Run)
-                .where(Run.id == run_id)
-                .values(
-                    status="failed",
-                    finished_at=datetime.now(timezone.utc),
-                    progress=_run_progress_meta(mode, force_scrape, scrape_executed=scrape_executed),
-                    error=_format_run_error(exc),
+            try:
+                await db.rollback()
+                await db.execute(
+                    update(Run)
+                    .where(Run.id == run_id)
+                    .values(
+                        status="failed",
+                        finished_at=datetime.now(timezone.utc),
+                        progress=_run_progress_meta(mode, force_scrape, scrape_executed=scrape_executed),
+                        error=_format_run_error(exc),
+                    )
                 )
-            )
-            await db.commit()
+                await db.commit()
+            except Exception:
+                logger.warning("Run %s: failed to update status after error", run_id, exc_info=True)
 
 
 async def boot_embed_uncached_jobs(session_factory: async_sessionmaker) -> None:

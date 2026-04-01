@@ -73,6 +73,8 @@ Measured locally after the memory pass:
 
 The older `DB_POOL_SIZE=2` / `DB_MAX_OVERFLOW=1` profile is too small for normal authenticated page loads. The frontend routinely issues several requests in parallel, and an active scrape can briefly need extra checkouts for progress updates and batch writes. Use a `5/5` pool as the baseline unless you have a stricter database connection cap.
 
+For Railway, prefer a private database endpoint for backend runtime traffic. The backend now honors `DATABASE_PRIVATE_URL` first and falls back to `DATABASE_URL`. Keep any public DB URL in `DATABASE_PUBLIC_URL` only for local tools or external clients, not service-to-database runtime traffic.
+
 ## Environment Variables
 
 ```bash
@@ -82,6 +84,9 @@ NEXTAUTH_SECRET=<generate with: openssl rand -base64 32>
 OPENROUTER_API_KEY=sk-or-v1-...
 
 # Optional
+DATABASE_PRIVATE_URL=             # Preferred runtime DB URL on Railway/private networking
+DATABASE_PUBLIC_URL=              # Public DB URL for manual/external access only
+DATABASE_URL_RAILWAY=             # Optional alternate DB used by the dev-only DB switcher
 RAPIDAPI_KEY=                     # JSearch API — extra job sources
 HUNTER_API_KEY=                   # Optional recruiter/contact enrichment integrations
 ALLOWED_ORIGINS=http://localhost:3000

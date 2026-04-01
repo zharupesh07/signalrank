@@ -7,6 +7,10 @@ from domain.resume_verifier import (
     _verify_skills,
     _correct_date_string,
     _extract_ref_dates,
+    _is_cert_section_header,
+    _normalize_ligatures,
+    _is_inverted_caps_word,
+    _normalize_inverted_caps,
     verify_against_reference,
 )
 
@@ -84,6 +88,54 @@ def test_verify_certifications_keeps_partial_word_overlap():
     certs = ["Certified Design Sprint Master"]
     result = _verify_certifications(certs, ref)
     assert len(result) == 1
+
+
+def test_verify_certifications_drops_section_header():
+    ref = "AppliedAI Course\nOpen Source & Projects\nALPR | PDF2Podcast | RockReveal AI"
+    certs = [
+        "AppliedAI Course",          # real — keep
+        "Open Source & Projects",    # section header compound — drop
+        "Open Source",               # section header bare — drop
+        "Projects",                  # section header bare — drop
+        "Technical Skills",          # section header — drop
+        "Key Achievements",          # section header — drop
+    ]
+    result = _verify_certifications(certs, ref)
+    assert result == ["AppliedAI Course"]
+
+
+def test_is_cert_section_header():
+    assert _is_cert_section_header("Open Source & Projects") is True
+    assert _is_cert_section_header("Open Source") is True
+    assert _is_cert_section_header("Projects") is True
+    assert _is_cert_section_header("Technical Skills") is True
+    assert _is_cert_section_header("Key Achievements") is True
+    assert _is_cert_section_header("Work Experience") is True
+    # Real certs should NOT be flagged as headers
+    assert _is_cert_section_header("AWS Certified Machine Learning Specialty") is False
+    assert _is_cert_section_header("Certification in Machine Learning") is False
+    assert _is_cert_section_header("AppliedAI Course") is False
+
+
+def test_verify_certifications_drops_pipe_separated_projects():
+    ref = "ALPR PDF2Podcast RockReveal AI Idea Generation open source projects AppliedAI Course"
+    certs = [
+        "ALPR(Streamlit Hall of Fame) | PDF2Podcast | RockReveal AI | Idea Generation | Others",
+        "AppliedAI Course",
+    ]
+    result = _verify_certifications(certs, ref)
+    assert "AppliedAI Course" in result
+    assert not any("PDF2Podcast" in c for c in result)
+
+
+def test_verify_certifications_drops_tech_stack():
+    ref = "Claude Code Copilot HuggingFace Gemini OpenAI RAG LangGraph Streamlit AppliedAI Course"
+    certs = [
+        "TECH: CLAUDE CODE, COPILOT, HUGGINGFACE, GEMINI, OPENAI, RAG, LANGGRAPH, STREAMLIT",
+        "AppliedAI Course",
+    ]
+    result = _verify_certifications(certs, ref)
+    assert result == ["AppliedAI Course"]
 
 
 def test_verify_dates_corrects_wrong_year():
@@ -206,6 +258,56 @@ def test_verify_skills_keeps_valid_groups():
     ]
     result = _verify_skills(skills, REF_TEXT)
     assert len(result) == 2
+
+
+def test_normalize_ligatures_fi_and_fl():
+    assert _normalize_ligatures("Certiﬁed") == "Certified"
+    assert _normalize_ligatures("Oﬃce") == "Office"
+    assert _normalize_ligatures("ﬂow") == "flow"
+    assert _normalize_ligatures("no ligatures here") == "no ligatures here"
+
+
+def test_is_inverted_caps_word_detects_pattern():
+    assert _is_inverted_caps_word("SENiOR") is True
+    assert _is_inverted_caps_word("ENGiNEER") is True
+    assert _is_inverted_caps_word("AGENTiC") is True
+    assert _is_inverted_caps_word("RAPiD") is True
+
+
+def test_is_inverted_caps_word_ignores_normal():
+    assert _is_inverted_caps_word("Senior") is False
+    assert _is_inverted_caps_word("MLOPS") is False  # all uppercase, no inverted marker
+    assert _is_inverted_caps_word("AI") is False  # too short
+    assert _is_inverted_caps_word("Platform") is False
+
+
+def test_normalize_inverted_caps_position():
+    raw = "SENiOR AI PLATFORM ENGiNEER | CLOUD INFRASTRUCTURE | MLOPS | AGENTiC SYSTEMS"
+    result = _normalize_inverted_caps(raw)
+    assert "Senior" in result
+    assert "Engineer" in result
+    assert "Platform" in result
+    assert "Infrastructure" in result
+    assert "MLOps" in result
+    assert "Agentic" in result
+    assert "Systems" in result
+
+
+def test_normalize_inverted_caps_no_op_on_normal_text():
+    normal = "Senior AI Platform Engineer | Cloud Infrastructure"
+    assert _normalize_inverted_caps(normal) == normal
+
+
+def test_verify_experiences_strips_company_from_title():
+    ref = "Network Engineer II – FIS  Jun 2025 – Present\nNetwork Engineer I – FIS  Jul 2023"
+    exps = [
+        {"title": "Network Engineer II – FIS", "company": "FIS", "dates": "Jun 2025 – Present", "bullets": []},
+        {"title": "Network Engineer I – FIS", "company": "FIS", "dates": "Jul 2023 – Jun 2025", "bullets": []},
+    ]
+    result = _verify_experiences(exps, ref)
+    assert result[0]["title"] == "Network Engineer II"
+    assert result[1]["title"] == "Network Engineer I"
+    assert result[0]["company"] == "FIS"
 
 
 def test_expand_to_fill_page_increases_spacing():

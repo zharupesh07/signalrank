@@ -366,6 +366,10 @@ export const api = {
       request<{ run_id: string; status: string; user_email: string }>(`/api/admin/users/${userId}/trigger-run`, { method: "POST", token, body: JSON.stringify({ force_scrape: forceScrape }) }),
     forceRegenerateResumes: (token: string, userId: string) =>
       request<{ queued: number; user_id: string }>(`/api/admin/users/${userId}/force-regenerate-resumes`, { method: "POST", token }),
+    reparseResume: (token: string, userId: string) =>
+      request<{ status: string; user_id: string }>(`/api/admin/users/${userId}/reparse-resume`, { method: "POST", token }),
+    reparseAllResumes: (token: string) =>
+      request<{ queued: number }>("/api/admin/reparse-all-resumes", { method: "POST", token }),
     runs: (token: string) =>
       request<{ run_id: string; user_email: string; status: string; job_count: number | null; started_at: string | null; finished_at: string | null }[]>("/api/admin/runs", { token }),
     topJobs: (token: string, userId: string) =>
