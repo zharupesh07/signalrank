@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
+import { Check } from "lucide-react";
 import { api } from "@/lib/api";
 import { formatElapsed } from "@/lib/formatting";
 import type { Run } from "@/types";
@@ -168,7 +169,7 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
                              "text-muted-foreground/40"
                 }>
                   {isActive && <span className="mr-0.5 text-primary animate-pulse">▶</span>}
-                  {isDone   && <span className="mr-0.5">✓</span>}
+                  {isDone   && <Check size={8} className="inline mr-0.5 text-primary" />}
                   {ph.label}
                 </span>
                 {i < PHASES.length - 1 && (
