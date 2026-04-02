@@ -151,6 +151,7 @@ export default function TrackerPage() {
   const [expandedColumns, setExpandedColumns] = useState<Set<string>>(new Set());
   const [tailoring, setTailoring] = useState<Set<string>>(new Set());
   const [gmailLinks, setGmailLinks] = useState<Map<string, string>>(new Map());
+  const [loading, setLoading] = useState(true);
   const COLUMN_LIMIT = 10;
 
   const loadData = useCallback(async () => {
@@ -169,12 +170,13 @@ export default function TrackerPage() {
     if (!token) {
       setApplications([]);
       setStats(null);
+      setLoading(false);
       return;
     }
     Promise.all([
       swr("tracker:apps", () => api.applications.list(token), setApplications),
       swr("tracker:stats", () => api.applications.stats(token), setStats),
-    ]);
+    ]).finally(() => setLoading(false));
   }, [token]);
 
   useEffect(() => {
@@ -508,6 +510,21 @@ export default function TrackerPage() {
         </div>
 
         {/* Kanban grid */}
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <div className="skeleton h-4 w-24 mb-3" />
+                {Array.from({ length: 3 }).map((_, j) => (
+                  <div key={j} className="border border-border bg-card p-3 space-y-2">
+                    <div className="skeleton h-3 w-32" />
+                    <div className="skeleton h-2.5 w-20" />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {visibleStatuses.map((status) => {
             const style = STATUS_STYLE[status];
@@ -886,6 +903,7 @@ export default function TrackerPage() {
             );
           })}
         </div>
+        )}
       </div>
     </div>
     <AddJobModal

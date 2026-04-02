@@ -12,6 +12,7 @@ import {
   Layers,
   Target,
 } from "lucide-react";
+import { ChartSkeleton } from "@/components/skeleton";
 
 type Analytics = {
   score_distribution: { range: string; count: number }[];
@@ -414,7 +415,10 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     Promise.all([
       swr("analytics", () => api.jobs.analytics(token), setAnalytics),
       swr("stats", () => api.applications.stats(token), setStats),
@@ -509,7 +513,19 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Score & Companies side by side */}
-            {effectiveAnalytics && effectiveAnalytics.total > 0 && (
+            {effectiveLoading ? (
+              <div>
+                <div className="section-label mb-3">job market</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="stat-card border border-border bg-card p-5">
+                    <ChartSkeleton rows={5} />
+                  </div>
+                  <div className="stat-card border border-border bg-card p-5">
+                    <ChartSkeleton rows={6} />
+                  </div>
+                </div>
+              </div>
+            ) : effectiveAnalytics && effectiveAnalytics.total > 0 ? (
               <div>
                 <div className="section-label mb-3">job market</div>
                 <div className="grid grid-cols-2 gap-3">
@@ -557,7 +573,7 @@ export default function AnalyticsPage() {
                   </div>
                 </div>
               </div>
-            )}
+            ) : null}
 
             {/* Tier breakdown + Sources */}
             <div className="grid grid-cols-2 gap-3">

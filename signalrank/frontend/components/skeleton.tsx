@@ -40,3 +40,35 @@ export function StatCardSkeleton() {
     </div>
   );
 }
+
+export function ChartSkeleton({ rows = 5 }: { rows?: number }) {
+  const heights = [60, 80, 45, 90, 55, 70, 40];
+  return (
+    <div className="flex items-end gap-2 h-32">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div
+          key={i}
+          className="skeleton flex-1 rounded-sm"
+          style={{ height: `${heights[i % heights.length]}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function ResumePreviewSkeleton() {
+  return (
+    <div className="space-y-2 p-4 border border-border bg-card">
+      <Skeleton className="h-3 w-3/4" />
+      <Skeleton className="h-3 w-full" />
+      <Skeleton className="h-3 w-5/6" />
+      <Skeleton className="h-3 w-full" />
+      <Skeleton className="h-3 w-2/3" />
+      <div className="pt-2 space-y-2">
+        <Skeleton className="h-3 w-1/2" />
+        <Skeleton className="h-3 w-full" />
+        <Skeleton className="h-3 w-4/5" />
+      </div>
+    </div>
+  );
+}
