@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +8,7 @@ from api.database import get_db
 from api.deps import get_current_user
 from api.deps_llm import get_llm_client
 from batch.resume_worker import force_regenerate_all
+from batch.quality_report import compute_global_quality_metrics, compute_user_quality_metrics
 from api.models import (
     Application, ArchivalQueue, GenerationQueue, JobRaw, JobResult,
     Profile, RecruiterRefreshTask, Run, TailoredResume, User,
@@ -90,13 +91,17 @@ async def get_stats(
     )
 
 
-@router.get("/users", response_model=list[AdminUserResponse])
+@router.get("/users")
 async def list_users(
     _: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
+    limit: int = Query(default=50, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
 ):
-    # Fetch all users
-    users_result = await db.execute(select(User).order_by(User.created_at.desc()))
+    total_count = (await db.execute(select(func.count(User.id)))).scalar_one()
+    users_result = await db.execute(
+        select(User).order_by(User.created_at.desc()).limit(limit).offset(offset)
+    )
     users = users_result.scalars().all()
     if not users:
         return []
@@ -133,7 +138,7 @@ async def list_users(
     )
     latest_runs = {r.user_id: r for r in latest_runs_result.scalars().all()}
 
-    return [
+    user_list = [
         AdminUserResponse(
             id=u.id,
             email=u.email,
@@ -147,6 +152,7 @@ async def list_users(
         )
         for u in users
     ]
+    return {"users": user_list, "total": total_count, "limit": limit, "offset": offset}
 
 
 @router.patch("/users/{user_id}")
@@ -238,6 +244,7 @@ class TopJob(BaseModel):
     final_score: float | None
     semantic_score: float | None
     skills_score: float | None
+    title_relevance_score: float | None
     job_url: str
 
 
@@ -251,7 +258,7 @@ async def get_user_top_jobs(
         text("""
             SELECT DISTINCT ON (jr.job_id)
                 jr.job_id, jr.semantic_score, jr.skills_score, jr.final_score,
-                j.title, j.company, j.location, j.job_url
+                jr.title_relevance_score, j.title, j.company, j.location, j.job_url
             FROM job_results jr
             JOIN jobs_raw j ON jr.job_id = j.id
             WHERE jr.user_id = :user_id
@@ -269,6 +276,7 @@ async def get_user_top_jobs(
             final_score=r["final_score"],
             semantic_score=r["semantic_score"],
             skills_score=r["skills_score"],
+            title_relevance_score=r["title_relevance_score"],
             job_url=r["job_url"],
         )
         for r in sorted(rows, key=lambda x: (x["final_score"] or 0), reverse=True)[:10]
@@ -368,6 +376,29 @@ async def reparse_resume_for_user(
         _parse_and_update_profile, user_id, profile.resume_text, llm
     )
     return {"status": "queued", "user_id": user_id}
+
+
+@router.get("/quality-metrics")
+async def get_global_quality_metrics(
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+    k: int = Query(default=10, ge=1, le=50),
+):
+    return await compute_global_quality_metrics(db, k=k)
+
+
+@router.get("/quality-metrics/{user_id}")
+async def get_user_quality_metrics(
+    user_id: str,
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+    k: int = Query(default=10, ge=1, le=50),
+):
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return await compute_user_quality_metrics(db, user_id, k=k)
 
 
 @router.post("/reparse-all-resumes", status_code=202)

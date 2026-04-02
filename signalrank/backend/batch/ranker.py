@@ -32,6 +32,7 @@ from domain.embeddings import (
 )
 from domain.profile_rules import enrich_config_with_profile_rules, title_rule_flags
 from domain.profile_rules import text_matches_profile_positive_terms
+from domain.title_relevance import compute_title_relevance, title_relevance_score_0_100
 from domain.roles import (
     classify_functional_role,
     consulting_dampener,
@@ -250,7 +251,7 @@ def _apply_semantic_gates(df: pd.DataFrame, cfg: dict, role_intent: str) -> pd.D
             & (df["skill_overlap"] < hybrid_cfg.get("min_skill_overlap", 3))
         )
 
-    positive_terms = (cfg.get("ranking", {}) or {}).get("profile_positive_terms", [])
+    positive_terms = (cfg.get("ranking", {}) or {}).get("profile_positive_terms", {})
     if positive_terms:
         positive_mask = df.apply(
             lambda r: text_matches_profile_positive_terms(
@@ -260,6 +261,10 @@ def _apply_semantic_gates(df: pd.DataFrame, cfg: dict, role_intent: str) -> pd.D
             axis=1,
         )
         mask &= positive_mask
+
+    title_relevance_floor = ranking.get("title_relevance_floor", 0.0)
+    if title_relevance_floor > 0 and "title_relevance" in df:
+        mask &= df["title_relevance"] >= title_relevance_floor
 
     out = df.loc[mask].reset_index(drop=True)
     out["description_quality"] = desc_quality.loc[mask].values
@@ -299,6 +304,12 @@ def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     gem_mask = is_default_tier & high_semantic
     df.loc[gem_mask, "company_score"] = np.maximum(df.loc[gem_mask, "company_score"], gem_bonus)
 
+    # Company score relevance dampening: high-tier company for irrelevant role still gets penalized
+    company_tr_floor = ranking_cfg.get("company_title_relevance_floor", 0.0)
+    if company_tr_floor > 0 and "title_relevance" in df:
+        relevance_factor = np.clip(df["title_relevance"] / company_tr_floor, 0.3, 1.0)
+        df["company_score"] = df["company_score"] * relevance_factor
+
     # Seniority — vectorized
     df["seniority_score_dim"] = np.clip(((df["seniority_score"] - 0.4) / 0.75) * 90 + 10, 0, 100)
 
@@ -308,11 +319,23 @@ def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     # Recency — still per-row (date parsing)
     df["recency_score"] = df["date_posted"].apply(recency_score_0_100)
 
+    # Title-role relevance score (0-100)
+    ranking_cfg = cfg.get("ranking", {})
+    if "title_relevance" in df:
+        tr_low = ranking_cfg.get("title_relevance_low", 0.25)
+        tr_high = ranking_cfg.get("title_relevance_high", 0.90)
+        df["title_relevance_score"] = title_relevance_score_0_100(
+            df["title_relevance"].values, low=tr_low, high=tr_high
+        )
+    else:
+        df["title_relevance_score"] = 100.0
+
     # Weighted final score — vectorized
-    w = cfg.get("ranking", {}).get("scoring_weights", {})
+    w = ranking_cfg.get("scoring_weights", {})
     df["final_score"] = (
-        df["skills_score"] * w.get("skills_match", 0.40)
-        + df["company_score"] * w.get("company_fit", 0.20)
+        df["skills_score"] * w.get("skills_match", 0.35)
+        + df["title_relevance_score"] * w.get("title_relevance", 0.10)
+        + df["company_score"] * w.get("company_fit", 0.15)
         + df["seniority_score_dim"] * w.get("seniority", 0.15)
         + df["location_score"] * w.get("location", 0.15)
         + df["recency_score"] * w.get("recency", 0.10)
@@ -493,6 +516,25 @@ async def _compute_embeddings(
     if nan_count:
         logger.warning("semantic_score has %d NaN values, filling with 0", nan_count)
         df["semantic_score"] = df["semantic_score"].fillna(0.0)
+
+    # Title-role relevance: embed job titles and compare to target roles
+    target_roles = cfg.get("profile_intent", {}).get("roles") or []
+    if target_roles:
+        if engine is None:
+            engine = EmbeddingEngine(cfg)
+        title_texts = df["title"].fillna("").astype(str).tolist()
+        title_vecs = await asyncio.to_thread(engine.embed, title_texts)
+        role_vecs = await asyncio.to_thread(engine.embed, target_roles)
+        df["title_relevance"] = compute_title_relevance(
+            title_vecs.tolist(), role_vecs
+        )
+        logger.info(
+            "Title relevance computed for %d jobs against %d target roles",
+            len(df), len(target_roles),
+        )
+    else:
+        df["title_relevance"] = 1.0
+
     logger.info(
         "Embeddings computed",
         extra={"jobs": len(df), "cache_misses": len(misses),

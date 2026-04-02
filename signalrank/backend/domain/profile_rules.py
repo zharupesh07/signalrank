@@ -308,12 +308,18 @@ def build_profile_title_rules(archetypes: Iterable[str]) -> dict[str, list[str]]
     }
 
 
-def build_profile_positive_terms(archetypes: Iterable[str]) -> list[str]:
+def build_profile_positive_terms(archetypes: Iterable[str]) -> dict[str, list[str]]:
+    """Return tiered positive terms: core (must match ≥1) and broad (only if core also matches).
+
+    Backward-compatible: callers that pass a list[str] to
+    text_matches_profile_positive_terms() still work — treated as all-core.
+    """
     archetypes = set(archetypes)
-    terms: list[str] = []
+    core: list[str] = []
+    broad: list[str] = []
 
     if "sap_sd" in archetypes:
-        terms.extend([
+        core.extend([
             "sap sd",
             "sd consultant",
             "sales and distribution",
@@ -321,15 +327,66 @@ def build_profile_positive_terms(archetypes: Iterable[str]) -> list[str]:
             "order to cash",
             "order-to-cash",
             "otc",
-            "gts",
-            "pricing",
             "s/4hana sd",
             "sap gts",
+        ])
+        broad.extend([
+            "gts",
+            "pricing",
             "functional analyst",
             "functional consultant",
         ])
 
-    return sorted(set(terms))
+    if "ai_builder" in archetypes:
+        core.extend([
+            "machine learning",
+            "ml engineer",
+            "llm",
+            "large language model",
+            "genai",
+            "gen ai",
+            "ai engineer",
+            "nlp",
+        ])
+        broad.extend([
+            "python",
+            "data scientist",
+            "deep learning",
+        ])
+
+    if "platform_infra" in archetypes:
+        core.extend([
+            "devops",
+            "sre",
+            "site reliability",
+            "platform engineer",
+            "kubernetes",
+            "infrastructure engineer",
+        ])
+        broad.extend([
+            "cloud",
+            "aws",
+            "gcp",
+            "azure",
+        ])
+
+    if "data_engineer" in archetypes:
+        core.extend([
+            "data engineer",
+            "etl",
+            "data pipeline",
+            "data platform",
+        ])
+        broad.extend([
+            "sql",
+            "python",
+            "spark",
+        ])
+
+    return {
+        "core": sorted(set(core)),
+        "broad": sorted(set(broad)),
+    }
 
 
 def enrich_config_with_profile_rules(
@@ -374,7 +431,26 @@ def title_rule_flags(title: str, cfg: dict) -> dict[str, bool]:
 
 
 def text_matches_profile_positive_terms(text: str, cfg: dict) -> bool:
-    positive_terms = (cfg.get("ranking", {}) or {}).get("profile_positive_terms", [])
+    positive_terms = (cfg.get("ranking", {}) or {}).get("profile_positive_terms", {})
     if not positive_terms:
         return True
-    return _has_any((text or "").lower(), positive_terms)
+
+    lowered = (text or "").lower()
+
+    # Backward-compatible: flat list → treat all terms as core
+    if isinstance(positive_terms, list):
+        return _has_any(lowered, positive_terms)
+
+    core = positive_terms.get("core", [])
+    broad = positive_terms.get("broad", [])
+
+    if not core and not broad:
+        return True
+
+    core_match = _has_any(lowered, core) if core else False
+    broad_match = _has_any(lowered, broad) if broad else False
+
+    # Pass if: at least one core term matches, OR (no core terms defined and broad matches)
+    if core:
+        return core_match
+    return broad_match

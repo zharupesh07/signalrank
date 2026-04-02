@@ -122,6 +122,7 @@ class JobResult(Base):
     location_score: Mapped[float | None] = mapped_column(Float)
     recency_score: Mapped[float | None] = mapped_column(Float)
     final_score: Mapped[float | None] = mapped_column(Float)
+    title_relevance_score: Mapped[float | None] = mapped_column(Float)
     company_tier: Mapped[str | None] = mapped_column(String(50))
     is_contract: Mapped[bool | None] = mapped_column(Boolean)
     archived_by_llm: Mapped[bool | None] = mapped_column(Boolean)
@@ -129,6 +130,8 @@ class JobResult(Base):
 
     __table_args__ = (
         Index("ix_job_results_user_run_score", "user_id", "run_id", "final_score"),
+        Index("ix_jr_user_archived", "user_id", "archived_by_llm"),
+        Index("ix_jr_user_tier", "user_id", "company_tier"),
     )
 
     run: Mapped["Run"] = relationship(back_populates="results")

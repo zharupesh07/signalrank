@@ -2,6 +2,7 @@ resumes/
 .DS_Store
 .agents/
 .superpowers/
+docs/superpowers/
 skills-lock.json
 signalrank/backend/output/
 signalrank/backend/signalrank.db

@@ -785,9 +785,11 @@ export default function JobsPage() {
               <div className="space-y-2">
                 {[
                   { label: "Overall", value: selectedJob.final_score },
+                  { label: "Title match", value: selectedJob.title_relevance_score },
                   { label: "Resume match", value: selectedJob.semantic_score },
                   { label: "Skills", value: selectedJob.skills_score },
                   { label: "Company", value: selectedJob.company_score },
+                  { label: "Recency", value: selectedJob.recency_score },
                 ].map(({ label, value }) => {
                   if (value == null) return null;
                   const pct = value * 100;

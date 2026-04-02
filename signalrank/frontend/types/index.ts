@@ -92,6 +92,7 @@ export interface Job {
   seniority_score: number | null;
   location_score: number | null;
   recency_score: number | null;
+  title_relevance_score: number | null;
   company_tier: string | null;
   is_contract: boolean;
   archived_by_llm: boolean | null;

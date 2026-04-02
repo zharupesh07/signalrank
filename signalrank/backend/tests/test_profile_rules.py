@@ -128,14 +128,25 @@ def test_sap_functional_title_rules_penalize_basis_btp_and_ai_titles():
 
 def test_sap_sd_positive_terms_require_sd_otc_signals():
     terms = build_profile_positive_terms(["sap_sd"])
-    assert "sap sd" in terms
-    assert "order to cash" in terms
+    assert isinstance(terms, dict)
+    assert "sap sd" in terms["core"]
+    assert "order to cash" in terms["core"]
+    # broad-only terms must NOT be in core
+    assert "functional consultant" not in terms["core"]
+    assert "functional consultant" in terms["broad"]
 
     cfg = {"ranking": {"profile_positive_terms": terms}}
+    # core match → pass
     assert text_matches_profile_positive_terms(
         "SAP SD Functional Analyst with OTC process ownership",
         cfg,
     ) is True
+    # no core match, broad only ("functional consultant") → fail
+    assert text_matches_profile_positive_terms(
+        "Functional Consultant for Finance processes",
+        cfg,
+    ) is False
+    # no match at all → fail
     assert text_matches_profile_positive_terms(
         "SAP Basis Consultant for Linux administration",
         cfg,

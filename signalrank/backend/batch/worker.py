@@ -16,6 +16,10 @@ from batch.memory import log_rss, release_memory
 
 logger = logging.getLogger(__name__)
 
+_TRANSIENT_EXCEPTIONS = (asyncio.TimeoutError, ConnectionError, OSError)
+_RUN_MAX_RETRIES = 3
+_RUN_BACKOFF_BASE = 2  # seconds: 2, 4, 8
+
 
 @dataclass
 class RunRequest:
@@ -462,6 +466,7 @@ async def process_run(
                     "location_score": float(row.location_score or 0),
                     "recency_score": float(row.recency_score or 0),
                     "final_score": float(row.final_score or 0),
+                    "title_relevance_score": float(getattr(row, "title_relevance_score", None) or 0),
                     "company_tier": str(row.company_tier or ""),
                     "is_contract": bool(row.is_contract),
                 })
@@ -730,7 +735,20 @@ async def _worker_loop_for_mode(session_factory: async_sessionmaker, mode: str) 
                 mode, req.run_id, req.user_id, req.force_scrape,
             )
         try:
-            await process_run(req.run_id, req.user_id, session_factory, mode=req.mode, force_scrape=req.force_scrape)
+            for attempt in range(1, _RUN_MAX_RETRIES + 1):
+                try:
+                    await process_run(req.run_id, req.user_id, session_factory, mode=req.mode, force_scrape=req.force_scrape)
+                    break
+                except _TRANSIENT_EXCEPTIONS as exc:
+                    if attempt < _RUN_MAX_RETRIES:
+                        delay = _RUN_BACKOFF_BASE ** attempt
+                        logger.warning(
+                            "Run %s transient failure (attempt %d/%d), retrying in %ds: %s",
+                            req.run_id, attempt, _RUN_MAX_RETRIES, delay, exc,
+                        )
+                        await asyncio.sleep(delay)
+                    else:
+                        logger.error("Run %s failed after %d attempts: %s", req.run_id, _RUN_MAX_RETRIES, exc)
         finally:
             if from_queue:
                 queue.task_done()

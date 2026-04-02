@@ -88,11 +88,17 @@ ranking:
   # SCORING WEIGHTS (additive model)
   # ----------------------------------------------------------
   scoring_weights:
-    skills_match: 0.40
-    company_fit: 0.20
+    skills_match: 0.35
+    title_relevance: 0.10
+    company_fit: 0.15
     seniority: 0.15
     location: 0.15
     recency: 0.10
+
+  title_relevance_floor: 0.25  # gate: jobs with title similarity below this are dropped
+  title_relevance_low: 0.25    # linear map lower bound (→ score 0)
+  title_relevance_high: 0.90   # linear map upper bound (→ score 100)
+  company_title_relevance_floor: 0.50  # below this similarity, company score gets dampened
 
   # Neutral defaults — no role preference here
   functional_role_penalties:

@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 async def list_jobs(
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
-    sort: Literal["final_score", "semantic_score", "skills_score", "company_score", "seniority_score", "location_score", "recency_score", "date_posted"] = Query("final_score"),
+    sort: Literal["final_score", "semantic_score", "skills_score", "company_score", "seniority_score", "location_score", "recency_score", "title_relevance_score", "date_posted"] = Query("final_score"),
     sort_dir: Literal["asc", "desc"] = Query("desc"),
     search: str = Query(""),
     show_archived: bool = Query(True),
@@ -129,6 +129,7 @@ async def list_jobs(
             "seniority_score": result.seniority_score / 100 if result.seniority_score is not None else None,
             "location_score": result.location_score / 100 if result.location_score is not None else None,
             "recency_score": result.recency_score / 100 if result.recency_score is not None else None,
+            "title_relevance_score": result.title_relevance_score / 100 if result.title_relevance_score is not None else None,
             "company_tier": result.company_tier if result.company_tier not in ("default", "", None) else None,
             "is_contract": result.is_contract,
             "archived_by_llm": result.archived_by_llm,
