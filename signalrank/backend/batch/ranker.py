@@ -516,6 +516,8 @@ async def score_jobs_for_user(
     job_ids: list[str] | None = None,
 ) -> pd.DataFrame:
     from domain.role_clusters import roles_to_clusters
+    if job_ids:
+        logger.info("Ranking against %d freshly scraped job IDs (filtered mode)", len(job_ids))
     ctx = build_context(user_id, resume_text, config_overrides)
     profile_roles = ctx.config.get("profile_intent", {}).get("roles", [])
     clusters = roles_to_clusters(profile_roles) if profile_roles else None

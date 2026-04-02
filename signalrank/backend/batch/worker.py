@@ -375,6 +375,8 @@ async def process_run(
                 if scraped_job_urls:
                     result = await db.execute(select(JobRaw.id).where(JobRaw.job_url.in_(scraped_job_urls)))
                     freshly_scraped_job_ids = [row[0] for row in result.all()]
+                    logger.info("Run %s captured %d fresh job IDs for ranking (from %d scraped URLs)",
+                                run_id, len(freshly_scraped_job_ids), len(scraped_job_urls))
 
                 if scraped_job_urls:
                     t_embed = time.monotonic()
