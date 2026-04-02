@@ -276,6 +276,7 @@ async def get_user_top_jobs(
 
 
 class TriggerRunRequest(BaseModel):
+    mode: str = "full"
     force_scrape: bool = False
 
 
@@ -290,19 +291,20 @@ async def trigger_run_for_user(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    mode = body.mode if body.mode in ("quick", "full") else "full"
     run = Run(
         user_id=user.id,
         status="pending",
-        mode="full",
-        progress={"requested_mode": "full", "force_scrape": body.force_scrape},
+        mode=mode,
+        progress={"requested_mode": mode, "force_scrape": body.force_scrape},
     )
     db.add(run)
     await db.commit()
     await db.refresh(run)
     if api_runtime_flags()["run_api_worker"]:
-        queue = get_queue("full")
-        await queue.put(RunRequest(run.id, user.id, "full", body.force_scrape))
-    return {"run_id": run.id, "status": "pending", "user_email": user.email}
+        queue = get_queue(mode)
+        await queue.put(RunRequest(run.id, user.id, mode, body.force_scrape))
+    return {"run_id": run.id, "status": "pending", "mode": mode, "user_email": user.email}
 
 
 @router.get("/runs", response_model=list[AdminRunResponse])
