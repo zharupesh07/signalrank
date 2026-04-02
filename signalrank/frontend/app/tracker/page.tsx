@@ -22,6 +22,7 @@ import {
   Copy,
   Loader2,
   Sparkles,
+  Check,
 } from "lucide-react";
 
 const STATUSES: ApplicationStatus[] = [
@@ -152,6 +153,7 @@ export default function TrackerPage() {
   const [tailoring, setTailoring] = useState<Set<string>>(new Set());
   const [gmailLinks, setGmailLinks] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const COLUMN_LIMIT = 10;
 
   const loadData = useCallback(async () => {
@@ -842,11 +844,13 @@ export default function TrackerPage() {
                               : `Subject: ${subject}\n\n${body}`;
                             navigator.clipboard.writeText(text);
                             toast("Email copied to clipboard", "success");
+                            setCopiedId(app.id);
+                            setTimeout(() => setCopiedId((prev) => prev === app.id ? null : prev), 1500);
                           }}
-                          className="text-muted-foreground hover:text-primary transition-colors"
+                          className={`transition-colors ${copiedId === app.id ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
                           title="Copy email to clipboard"
                         >
-                          <Copy size={11} />
+                          {copiedId === app.id ? <Check size={11} /> : <Copy size={11} />}
                         </button>
                         {app.job_id && (
                           <button
