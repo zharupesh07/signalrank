@@ -701,8 +701,9 @@ export default function JobsPage() {
                         <tr
                           key={row.id}
                           onClick={() => { toggleSelectedJob(job).catch(() => null); }}
-                          className="job-row-item border-b border-border bg-card"
+                          className="job-row-item border-b border-border bg-card row-fade-in"
                           style={{
+                            animationDelay: `${Math.min(row.index * 20, 200)}ms`,
                             ...(isSelected ? { boxShadow: "inset 2px 0 0 var(--primary)", background: "color-mix(in srgb, var(--primary) 5%, transparent)" } : {}),
                             ...(job.archived_by_llm ? { opacity: 0.45 } : {}),
                             ...(refreshing ? { opacity: 0.7 } : {}),
