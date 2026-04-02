@@ -1,0 +1,7 @@
+resumes/
+.DS_Store
+.agents/
+.superpowers/
+skills-lock.json
+signalrank/backend/output/
+signalrank/backend/signalrank.db
