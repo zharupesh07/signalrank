@@ -415,7 +415,7 @@ export default function TrackerPage() {
                   className="w-full text-xs bg-background border border-border text-secondary-foreground px-2 py-1.5 focus:border-primary focus:outline-none"
                 >
                   <option value="">Select run...</option>
-                  {runs.filter((r) => r.status === "success").map((r) => (
+                  {runs.filter((r) => r.status === "done" || r.status === "success").map((r) => (
                     <option key={r.run_id} value={r.run_id}>
                       {r.run_id.slice(0, 8)} ({r.job_count ?? 0} jobs)
                     </option>
