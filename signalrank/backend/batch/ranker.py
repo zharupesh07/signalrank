@@ -97,7 +97,7 @@ async def load_jobs_dataframe(
     db: AsyncSession,
     role_clusters: set[str] | None = None,
     *,
-    job_ids: list[str] | None = None,
+    job_urls: list[str] | None = None,
     limit: int | None = None,
     offset: int = 0,
 ) -> pd.DataFrame:
@@ -108,9 +108,9 @@ async def load_jobs_dataframe(
         JobRaw.location, JobRaw.site, JobRaw.date_posted, JobRaw.role_clusters, JobRaw.embedding,
     ).where(JobRaw.ingested_at >= cutoff)
 
-    if job_ids:
-        logger.info("Loading jobs from filtered set of %d IDs (offset=%d)", len(job_ids), offset)
-        stmt = stmt.where(JobRaw.id.in_(job_ids))
+    if job_urls:
+        logger.info("Loading jobs from filtered set of %d URLs (offset=%d)", len(job_urls), offset)
+        stmt = stmt.where(JobRaw.job_url.in_(job_urls))
     else:
         logger.debug("Loading jobs from global pool (offset=%d)", offset)
 
@@ -516,11 +516,11 @@ async def score_jobs_for_user(
     resume_text: str,
     config_overrides: dict | None,
     distilled_text: str | None = None,
-    job_ids: list[str] | None = None,
+    job_urls: list[str] | None = None,
 ) -> pd.DataFrame:
     from domain.role_clusters import roles_to_clusters
-    if job_ids:
-        logger.info("Ranking against %d freshly scraped job IDs (filtered mode)", len(job_ids))
+    if job_urls:
+        logger.info("Ranking against %d freshly scraped jobs (filtered mode)", len(job_urls))
     ctx = build_context(user_id, resume_text, config_overrides)
     profile_roles = ctx.config.get("profile_intent", {}).get("roles", [])
     clusters = roles_to_clusters(profile_roles) if profile_roles else None
@@ -562,7 +562,7 @@ async def score_jobs_for_user(
 
     for offset in range(0, _RANK_MAX_CANDIDATES, rank_load_chunk):
         page_limit = min(rank_load_chunk, _RANK_MAX_CANDIDATES - offset)
-        df = await load_jobs_dataframe(db, role_clusters=clusters, job_ids=job_ids, limit=page_limit, offset=offset)
+        df = await load_jobs_dataframe(db, role_clusters=clusters, job_urls=job_urls, limit=page_limit, offset=offset)
         if df.empty:
             break
         total_loaded += len(df)

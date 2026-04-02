@@ -299,7 +299,7 @@ async def process_run(
                 )
 
             scrape_count = 0
-            freshly_scraped_job_ids = None
+            freshly_scraped_job_urls = None
             if queries and not skip_scrape:
                 scrape_executed = True
                 title_blocklist = (config_overrides or {}).get("title_blocklist", [])
@@ -370,14 +370,11 @@ async def process_run(
 
                 scrape_count = len(scraped_job_urls)
 
-                # Track job IDs of newly scraped jobs for ranking against fresh results only
-                freshly_scraped_job_ids = None
-                if scraped_job_urls:
-                    result = await db.execute(select(JobRaw.id).where(JobRaw.job_url.in_(scraped_job_urls)))
-                    freshly_scraped_job_ids = [row[0] for row in result.all()]
-                    logger.info("Run %s captured %d fresh job IDs for ranking (from %d scraped URLs). IDs: %s",
-                                run_id, len(freshly_scraped_job_ids), len(scraped_job_urls),
-                                freshly_scraped_job_ids[:5] if freshly_scraped_job_ids else "empty")
+                # Track URLs of newly scraped jobs for ranking against fresh results only
+                freshly_scraped_job_urls = scraped_job_urls if scraped_job_urls else None
+                if freshly_scraped_job_urls:
+                    logger.info("Run %s will rank against %d freshly scraped job URLs (filtered mode)",
+                                run_id, len(freshly_scraped_job_urls))
 
                 if scraped_job_urls:
                     t_embed = time.monotonic()
@@ -426,7 +423,7 @@ async def process_run(
                         resume_text=resume_text,
                         distilled_text=distilled_text,
                         config_overrides=config_overrides,
-                        job_ids=freshly_scraped_job_ids,
+                        job_urls=freshly_scraped_job_urls,
                     ),
                     timeout=600,  # 10 min max
                 )
