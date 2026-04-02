@@ -25,6 +25,7 @@ import { TagInput } from "@/components/tag-input";
 import { DraggableTagList } from "@/components/draggable-tag-list";
 import { useToast } from "@/components/toast";
 import RunProgress from "@/components/run-progress";
+import { ResumePreviewSkeleton } from "@/components/skeleton";
 import { api } from "@/lib/api";
 import { swr } from "@/lib/cache";
 import { loadProfileOptions, PROFILE_OPTIONS_FALLBACK } from "@/lib/profile-options";
@@ -883,6 +884,7 @@ export default function SettingsPage() {
                         </button>
                       </div>
                     </div>
+                    {previewingResume && <ResumePreviewSkeleton />}
                     <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
                       <span>Preview opens in a new tab.</span>
                       <span>Pages: <span className="text-foreground tabular-nums">{resumePreviewMeta?.pageCount ?? "—"}</span></span>
