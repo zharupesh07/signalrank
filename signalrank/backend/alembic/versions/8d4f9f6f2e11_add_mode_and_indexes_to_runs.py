@@ -19,7 +19,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("runs", sa.Column("mode", sa.String(length=20), nullable=True, server_default="quick"))
+    op.execute(
+        """
+        ALTER TABLE runs ADD COLUMN IF NOT EXISTS mode VARCHAR(20) DEFAULT 'quick'
+        """
+    )
     op.execute(
         """
         UPDATE runs
@@ -27,10 +31,17 @@ def upgrade() -> None:
         WHERE mode IS NULL
         """
     )
-    op.alter_column("runs", "mode", nullable=False, server_default="quick")
-    op.create_index("ix_runs_user_started", "runs", ["user_id", "started_at"], unique=False)
-    op.create_index("ix_runs_status", "runs", ["status"], unique=False)
-    op.create_index("ix_runs_status_mode_started", "runs", ["status", "mode", "started_at"], unique=False)
+    op.execute("ALTER TABLE runs ALTER COLUMN mode SET NOT NULL")
+    op.execute("ALTER TABLE runs ALTER COLUMN mode SET DEFAULT 'quick'")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_runs_user_started ON runs (user_id, started_at)"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_runs_status ON runs (status)"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_runs_status_mode_started ON runs (status, mode, started_at)"
+    )
 
 
 def downgrade() -> None:
