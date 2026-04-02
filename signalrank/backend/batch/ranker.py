@@ -109,7 +109,10 @@ async def load_jobs_dataframe(
     ).where(JobRaw.ingested_at >= cutoff)
 
     if job_ids:
+        logger.info("Loading jobs from filtered set of %d IDs (offset=%d)", len(job_ids), offset)
         stmt = stmt.where(JobRaw.id.in_(job_ids))
+    else:
+        logger.debug("Loading jobs from global pool (offset=%d)", offset)
 
     stmt = stmt.order_by(JobRaw.ingested_at.desc(), JobRaw.id.desc())
 
