@@ -97,6 +97,7 @@ async def load_jobs_dataframe(
     db: AsyncSession,
     role_clusters: set[str] | None = None,
     *,
+    job_ids: list[str] | None = None,
     limit: int | None = None,
     offset: int = 0,
 ) -> pd.DataFrame:
@@ -105,7 +106,12 @@ async def load_jobs_dataframe(
         JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.company,
         func.left(JobRaw.description, _RANK_DESCRIPTION_CHARS).label("description"),
         JobRaw.location, JobRaw.site, JobRaw.date_posted, JobRaw.role_clusters, JobRaw.embedding,
-    ).where(JobRaw.ingested_at >= cutoff).order_by(JobRaw.ingested_at.desc(), JobRaw.id.desc())
+    ).where(JobRaw.ingested_at >= cutoff)
+
+    if job_ids:
+        stmt = stmt.where(JobRaw.id.in_(job_ids))
+
+    stmt = stmt.order_by(JobRaw.ingested_at.desc(), JobRaw.id.desc())
 
     stmt = stmt.offset(offset).limit(limit or _RANK_MAX_CANDIDATES)
 
@@ -507,6 +513,7 @@ async def score_jobs_for_user(
     resume_text: str,
     config_overrides: dict | None,
     distilled_text: str | None = None,
+    job_ids: list[str] | None = None,
 ) -> pd.DataFrame:
     from domain.role_clusters import roles_to_clusters
     ctx = build_context(user_id, resume_text, config_overrides)
@@ -550,7 +557,7 @@ async def score_jobs_for_user(
 
     for offset in range(0, _RANK_MAX_CANDIDATES, rank_load_chunk):
         page_limit = min(rank_load_chunk, _RANK_MAX_CANDIDATES - offset)
-        df = await load_jobs_dataframe(db, role_clusters=clusters, limit=page_limit, offset=offset)
+        df = await load_jobs_dataframe(db, role_clusters=clusters, job_ids=job_ids, limit=page_limit, offset=offset)
         if df.empty:
             break
         total_loaded += len(df)

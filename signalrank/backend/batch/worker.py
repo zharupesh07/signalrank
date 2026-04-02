@@ -299,6 +299,7 @@ async def process_run(
                 )
 
             scrape_count = 0
+            freshly_scraped_job_ids = None
             if queries and not skip_scrape:
                 scrape_executed = True
                 title_blocklist = (config_overrides or {}).get("title_blocklist", [])
@@ -369,6 +370,12 @@ async def process_run(
 
                 scrape_count = len(scraped_job_urls)
 
+                # Track job IDs of newly scraped jobs for ranking against fresh results only
+                freshly_scraped_job_ids = None
+                if scraped_job_urls:
+                    result = await db.execute(select(JobRaw.id).where(JobRaw.job_url.in_(scraped_job_urls)))
+                    freshly_scraped_job_ids = [row[0] for row in result.all()]
+
                 if scraped_job_urls:
                     t_embed = time.monotonic()
                     await _embed_new_jobs(db, scraped_job_urls, update_progress=_update_progress)
@@ -416,6 +423,7 @@ async def process_run(
                         resume_text=resume_text,
                         distilled_text=distilled_text,
                         config_overrides=config_overrides,
+                        job_ids=freshly_scraped_job_ids,
                     ),
                     timeout=600,  # 10 min max
                 )
