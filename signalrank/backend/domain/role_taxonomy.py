@@ -62,9 +62,9 @@ TIER_OPTIONS = [
 ROLE_QUERY_EXPANSIONS: dict[str, tuple[str, ...]] = {
     "sap sd consultant": (
         "SAP SD Consultant",
-        "SAP OTC Consultant",
         "SAP S/4HANA SD Consultant",
-        "Order to Cash Consultant",
+        "SAP SD Functional Consultant",
+        "SAP OTC Functional Consultant",
     ),
     "sap functional consultant": (
         "SAP Functional Consultant",

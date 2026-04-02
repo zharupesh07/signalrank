@@ -13,6 +13,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -80,7 +81,7 @@ class JobRaw(Base):
     date_posted: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     embedding: Mapped[list[float] | None] = mapped_column(Vector(384))
     ingested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    role_clusters: Mapped[list | None] = mapped_column(JSONB, server_default="'[]'::jsonb")
+    role_clusters: Mapped[list | None] = mapped_column(JSONB, server_default=text("'[]'::jsonb"))
 
     results: Mapped[list["JobResult"]] = relationship(back_populates="job")
 
@@ -129,7 +130,8 @@ class JobResult(Base):
     archival_reason: Mapped[str | None] = mapped_column(String(500))
 
     __table_args__ = (
-        Index("ix_job_results_user_run_score", "user_id", "run_id", "final_score"),
+        UniqueConstraint("user_id", "job_id", name="uq_job_results_user_job"),
+        Index("ix_job_results_user_score", "user_id", "final_score"),
         Index("ix_jr_user_archived", "user_id", "archived_by_llm"),
         Index("ix_jr_user_tier", "user_id", "company_tier"),
     )

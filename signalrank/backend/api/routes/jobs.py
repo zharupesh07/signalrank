@@ -45,9 +45,8 @@ async def list_jobs(
     sort_col = JobRaw.date_posted if sort == "date_posted" else getattr(JobResult, sort)
     order_expr = sort_col.asc().nulls_last() if sort_dir == "asc" else sort_col.desc().nulls_last()
 
-    base_filters = [JobResult.run_id == run.id, JobResult.user_id == current_user.id]
-    run_total_query = select(func.count()).select_from(JobResult).where(*base_filters)
-    run_total = (await db.execute(run_total_query)).scalar() or 0
+    base_filters = [JobResult.user_id == current_user.id]
+    run_total = run.job_count or 0
 
     if not show_archived:
         base_filters.append(

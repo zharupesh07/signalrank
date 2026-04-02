@@ -115,17 +115,21 @@ Rules:
 - If the resume flags SAP/Sales & Distribution/ERP delivery, prioritize "SAP SD Consultant" as the top suggested role.
 - Choose 1-3 roles that feel consistent with the bulk of the experience. Avoid adding multiple AI or generic roles unless the resume justifies them.
 - Choose 1-3 locations that align with the candidate's recent work history.
+- For suggested_search_queries: generate 3-5 specific job search strings that capture this candidate's unique skill+role combination. Each query should be a realistic job title someone would post (e.g. "SAP SD GTS Consultant", "SAP S/4HANA Order-to-Cash Consultant", "Senior Backend Engineer Python Kafka"). Vary the terms — do not just repeat the same role with minor changes. Avoid generic terms like "Software Engineer" alone.
+- For suggested_exclusions: list role keywords this person likely wants to avoid based on their seniority and domain. For senior candidates avoid "Junior", "Support", "Helpdesk". For specialists avoid generic titles that dilute their expertise.
+- For salary: use LPA (lakhs per annum) for India-based candidates, USD/year for international. Return as integer in LPA for India, or null if unclear.
 
 Keys:
-- skills: list of technical skills
+- skills: list of technical skills (include all domain-specific tools, platforms, and frameworks; not soft skills)
 - years_of_experience: integer or null
 - recent_titles: list of 2-3 most recent job titles
 - industries: list of industries worked in
 - education: list of degrees/certifications
 - suggested_roles: 1-3 items from the available role options that best match this profile
 - suggested_locations: 1-3 items from the available location options based on where they have worked
-- salary_lpa: estimated annual salary expectation as integer in LPA based on experience level and Indian market, or null
-- suggested_exclusions: role keywords this person likely wants to avoid (e.g. "QA Engineer", "Support", "Consulting")
+- salary_lpa: estimated annual salary expectation as integer (LPA for India, USD thousands for international), or null
+- suggested_exclusions: 3-6 role keywords this person likely wants to avoid
+- suggested_search_queries: 3-5 specific job search strings combining role + key differentiating skills
 
 Return JSON only. No explanations.
 
@@ -154,6 +158,7 @@ class ResumeParseResult:
     suggested_locations: list[str] = field(default_factory=list)
     salary_lpa: int | None = None
     suggested_exclusions: list[str] = field(default_factory=list)
+    suggested_search_queries: list[str] = field(default_factory=list)
 
 
 def _validate_extraction(data: dict) -> ResumeParseResult:
@@ -185,6 +190,7 @@ def _validate_extraction(data: dict) -> ResumeParseResult:
         suggested_locations=to_list(data.get("suggested_locations")),
         salary_lpa=to_int(data.get("salary_lpa")),
         suggested_exclusions=to_list(data.get("suggested_exclusions")),
+        suggested_search_queries=to_list(data.get("suggested_search_queries")),
     )
 
 
@@ -474,7 +480,7 @@ async def parse_resume(
 ) -> ResumeParseResult:
     prompt = _build_extraction_prompt(resume_text)
     try:
-        data = await llm_client.llm_json(prompt, max_tokens=900)
+        data = await llm_client.llm_json(prompt, max_tokens=1200)
         data = _massage_parsed_data(data, resume_text)
         return _validate_extraction(data)
     except Exception:

@@ -93,6 +93,6 @@ def test_sap_queries_stay_narrow_to_erp_roles():
     queries = build_queries(p, max_terms=10)
     terms = {q.term for q in queries}
     assert "SAP SD Consultant" in terms
-    assert "SAP OTC Consultant" in terms
+    assert "SAP OTC Functional Consultant" in terms
     assert "SAP S/4HANA SD Consultant" in terms
     assert "SAP Consultant" not in terms

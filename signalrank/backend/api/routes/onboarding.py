@@ -171,6 +171,10 @@ def _apply_parsed_profile_updates(profile: Profile, parsed: ResumeParseResult) -
     if suggested_exclusions:
         overrides["title_blocklist"] = suggested_exclusions
 
+    suggested_search_queries = _normalize_str_list(parsed.suggested_search_queries)
+    if suggested_search_queries:
+        profile.custom_search_queries = suggested_search_queries
+
     if overrides != (profile.config_overrides or {}):
         profile.config_overrides = overrides
 
@@ -382,9 +386,10 @@ async def _parse_and_update_profile(
 
             await db.commit()
             logger.info(
-                "Background parse complete for user=%s (%d skills, roles=%s, locs=%s, editor=%s)",
+                "Background parse complete for user=%s (%d skills, roles=%s, locs=%s, queries=%s, editor=%s)",
                 user_id, len(parsed.skills or []),
                 parsed.suggested_roles, parsed.suggested_locations,
+                parsed.suggested_search_queries,
                 has_resume_editor_content(merged_editor),
             )
     except Exception:

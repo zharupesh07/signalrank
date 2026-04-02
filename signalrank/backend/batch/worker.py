@@ -471,10 +471,44 @@ async def process_run(
                     "is_contract": bool(row.is_contract),
                 })
                 if len(insert_batch) >= 500:
-                    await db.execute(pg_insert(JobResult).values(insert_batch))
+                    await db.execute(
+                        pg_insert(JobResult).values(insert_batch).on_conflict_do_update(
+                            constraint="uq_job_results_user_job",
+                            set_={
+                                "run_id": pg_insert(JobResult).excluded.run_id,
+                                "semantic_score": pg_insert(JobResult).excluded.semantic_score,
+                                "skills_score": pg_insert(JobResult).excluded.skills_score,
+                                "company_score": pg_insert(JobResult).excluded.company_score,
+                                "seniority_score": pg_insert(JobResult).excluded.seniority_score,
+                                "location_score": pg_insert(JobResult).excluded.location_score,
+                                "recency_score": pg_insert(JobResult).excluded.recency_score,
+                                "final_score": pg_insert(JobResult).excluded.final_score,
+                                "title_relevance_score": pg_insert(JobResult).excluded.title_relevance_score,
+                                "company_tier": pg_insert(JobResult).excluded.company_tier,
+                                "is_contract": pg_insert(JobResult).excluded.is_contract,
+                            },
+                        )
+                    )
                     insert_batch.clear()
             if insert_batch:
-                await db.execute(pg_insert(JobResult).values(insert_batch))
+                await db.execute(
+                    pg_insert(JobResult).values(insert_batch).on_conflict_do_update(
+                        constraint="uq_job_results_user_job",
+                        set_={
+                            "run_id": pg_insert(JobResult).excluded.run_id,
+                            "semantic_score": pg_insert(JobResult).excluded.semantic_score,
+                            "skills_score": pg_insert(JobResult).excluded.skills_score,
+                            "company_score": pg_insert(JobResult).excluded.company_score,
+                            "seniority_score": pg_insert(JobResult).excluded.seniority_score,
+                            "location_score": pg_insert(JobResult).excluded.location_score,
+                            "recency_score": pg_insert(JobResult).excluded.recency_score,
+                            "final_score": pg_insert(JobResult).excluded.final_score,
+                            "title_relevance_score": pg_insert(JobResult).excluded.title_relevance_score,
+                            "company_tier": pg_insert(JobResult).excluded.company_tier,
+                            "is_contract": pg_insert(JobResult).excluded.is_contract,
+                        },
+                    )
+                )
                 insert_batch.clear()
             release_memory(logger, "result_rows_release", run_id=run_id)
 
