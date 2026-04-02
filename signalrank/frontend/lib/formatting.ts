@@ -37,6 +37,17 @@ export function formatJobAge(
 }
 
 /**
+ * Converts a stored regex penalty pattern to a human-readable display string.
+ */
+export function formatPenaltyPattern(pattern: string): string {
+  return pattern
+    .replace(/\\b/g, "")
+    .replace(/\\s\+/g, " ")
+    .replace(/\\/g, "")
+    .trim();
+}
+
+/**
  * Returns elapsed time string ("14s", "2m 5s") from a start timestamp string.
  * Returns "—" if the date is malformed/invalid.
  */
