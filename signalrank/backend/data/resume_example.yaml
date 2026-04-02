@@ -1,0 +1,119 @@
+name: Example Candidate
+email: examplecandidate@gmail.com
+phone: "(+91) 7020901969"
+linkedin: example-candidate
+github: examplecandidate
+homepage: examplecandidate.github.io
+position: "Senior AI Platform Engineer | Cloud Infrastructure | MLOps | Agentic Systems"
+
+summary: >-
+  Senior AI Platform Engineer with nearly 7 years of experience designing
+  cloud-native infrastructure and internal developer platforms (IDP).
+  Specialized in automating the lifecycle of AI systems using Infrastructure
+  as Code (IaC) and CI/CD at enterprise scale across AWS and GCP. Proven
+  track record of converting experimental GenAI initiatives into governed,
+  production-grade enterprise systems. Deep experience in integrating FinOps
+  accountability, Zero-Trust security, and agentic orchestration (LangGraph/RAG)
+  into robust platforms that balance rapid innovation with operational reliability.
+
+experiences:
+  - title: "Senior AI Platform Engineer (GenAI, LLMOps, CI/CD)"
+    company: Fractal Analytics
+    company_url: "https://fractal.ai"
+    location: Pune
+    dates: "Nov 2024 – Present"
+    tech: "Python, GCP, LangGraph, FastAPI, Jenkins, OIDC, SQLModel, Docker"
+    bullets:
+      - "Architected a centralized 'Agentic Factory', standardizing the lifecycle for 400+ AI agents to enable secure, multi-team adoption for a Fortune 5 U.S. Telecom."
+      - "Unified fragmented pipelines into a modular CI/CD standard supporting 16,000+ deployments; reduced onboarding time to 90 seconds via automated infrastructure provisioning."
+      - "Designed a stateful orchestration layer (LangGraph) supporting hierarchical reasoning, dynamic tool injection, and reliable traffic management, abstracting complexity for downstream developers."
+      - "Engineered an automated cost-governance engine that detects inactive services, auto-reclaims quotas, and enforces strict budget guardrails on compute resources."
+      - "Enforced a Zero-Trust security model using automated OIDC federation and granular RBAC, ensuring secrets isolation and enterprise compliance."
+      - "Led a cross-functional team of 5 engineers, establishing design review standards and driving the technical roadmap for production AI maturity."
+
+  - title: "Senior Machine Learning Engineer"
+    company: HCL
+    company_url: "https://www.hcltech.com"
+    location: Bengaluru
+    dates: "Apr 2024 – Jun 2024"
+    tech: "Python, GCP, MLflow, Seldon Core, TensorFlow, Label Studio, Flask"
+    bullets:
+      - "Architected human-in-the-loop (HITL) evaluation frameworks for enterprise models, integrating human feedback loops for model validation."
+      - "Developed scalable annotation pipelines using Label Studio and microservices on GCP, ensuring high-quality ground truth for retraining."
+      - "Productionized ML inference services with Docker and Cloud Run, ensuring high availability and observability."
+
+  - title: "Machine Learning Engineer"
+    company: Chugani
+    location: Bengaluru
+    dates: "Feb 2022 – May 2023"
+    tech: "Python, AWS, MLflow, IaC, nbdev, Quantization"
+    bullets:
+      - "Engineered a real-time liveness detection system, optimizing face recognition models via quantization to achieve 150ms latency."
+      - "Modernized ML infrastructure by implementing MLFlow for experiment tracking and Infrastructure as Code."
+      - "Refactored legacy codebases into modular Python packages (nbdev), improving maintainability and collaboration."
+
+  - title: "Machine Learning Engineer"
+    company: Yang
+    location: Bengaluru
+    dates: "Apr 2019 – Jan 2022"
+    tech: "Python, Airflow, AWS, ETL, Tableau"
+    bullets:
+      - "Built an automated AI audit system processing real-time factory data streams to improve quality control standards."
+      - "Designed and deployed operational dashboards for 20+ vendor sites, saving over 200 manual hours per week."
+      - "Orchestrated distributed data pipelines ensuring high availability for global stakeholders across 12 countries."
+
+  - title: "Systems Engineer Intern"
+    company: Infosys
+    location: Mysuru
+    dates: "Oct 2018 – Mar 2019"
+    tech: ""
+    bullets: []
+
+  - title: "Analytics Intern"
+    company: TCS
+    location: Nagpur
+    dates: "Jan 2018 – Jul 2018"
+    tech: ""
+    bullets: []
+
+skills:
+  - category: "Cloud & DevOps"
+    items: ["AWS", "GCP", "Cloud Run", "Docker", "Kubernetes", "Terraform", "Jenkins", "GitHub Actions"]
+  - category: "MLOps Platforms"
+    items: ["MLflow", "Seldon Core", "FastAPI", "Langfuse", "Internal Developer Platforms (IDP)"]
+  - category: "Agentic AI & RAG"
+    items: ["LangGraph", "LangChain", "Vector Databases (Chroma/FAISS)", "Function Calling", "MCP (Model Context Protocol)"]
+  - category: "Generative AI Tooling"
+    items: ["OpenAI/Gemini/Claude APIs", "Claude Code", "GitHub Copilot", "Hugging Face", "Prompt Engineering", "Benchmarking"]
+  - category: "FinOps & Governance"
+    items: ["Cost Attribution", "Usage Telemetry", "Budget Guardrails", "RBAC"]
+  - category: "Languages & Libs"
+    items: ["Python", "SQL", "Bash", "Groovy", "Pandas", "NumPy", "TensorFlow", "PyTorch", "Pydantic"]
+
+projects:
+  - name: "ALPR (Streamlit Hall of Fame)"
+    url: "https://github.com/examplecandidate/Automatic-License-Plate-Recognition"
+    description: "License plate detection and OCR system deployed as Streamlit app"
+  - name: "PDF2Podcast"
+    url: "https://github.com/examplecandidate/Data-Science-Projects/tree/master/NotebookLM_clone/PDF2Podcast"
+    description: "Converts PDF documents into podcast-style audio using generative AI"
+  - name: "RockReveal AI"
+    url: "https://github.com/examplecandidate/Whats-this-rock"
+    description: "Image classification system for rock identification using TensorFlow"
+  - name: "Idea Generation"
+    url: "https://github.com/examplecandidate/Idea_Generator"
+    description: "Ideation tool using OpenAI API for generating innovation ideas"
+
+education:
+  - degree: "B.Tech. in Information Technology"
+    institution: "RCOEM, Nagpur"
+    year: "2014 – 2018"
+  - degree: "Diploma in Computer Engineering"
+    institution: "Shri Sai Polytechnic"
+    year: "2011 – 2014"
+
+certifications:
+  - name: "AppliedAI Course"
+    url: "https://github.com/examplecandidate/Data-Science-Projects"
+  - name: "Pyspark and Data Engineering"
+    url: "https://drive.google.com/file/d/1jT354cGLbs9ZUIO4jf71Qiy5wZDAVQKI/view?usp=sharing"

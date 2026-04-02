@@ -1,9 +1,7 @@
 import ctypes
 import gc
 import logging
-import os
 import resource
-import subprocess
 import sys
 
 _LIBC = None
@@ -17,25 +15,25 @@ if sys.platform.startswith("linux"):
 
 
 def rss_mb() -> float | None:
-    try:
-        kb = int(
-            subprocess.check_output(
-                ["ps", "-o", "rss=", "-p", str(os.getpid())],
-                stderr=subprocess.DEVNULL,
-            ).decode().strip()
-        )
-        return round(kb / 1024, 1)
-    except Exception:
+    if sys.platform.startswith("linux"):
         try:
-            usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-            if usage <= 0:
-                return None
-            # Linux reports KB, macOS reports bytes.
-            if usage > 10_000_000:
-                return round(usage / (1024 * 1024), 1)
-            return round(usage / 1024, 1)
+            with open("/proc/self/status") as f:
+                for line in f:
+                    if line.startswith("VmRSS:"):
+                        kb = int(line.split()[1])
+                        return round(kb / 1024, 1)
         except Exception:
+            pass
+    try:
+        usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        if usage <= 0:
             return None
+        # Linux reports KB, macOS reports bytes.
+        if usage > 10_000_000:
+            return round(usage / (1024 * 1024), 1)
+        return round(usage / 1024, 1)
+    except Exception:
+        return None
 
 
 def log_rss(logger: logging.Logger, phase: str, **extra) -> None:

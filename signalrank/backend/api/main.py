@@ -1,13 +1,11 @@
 import asyncio
 import logging
-import logging.config
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
-from pythonjsonlogger import jsonlogger
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -20,16 +18,11 @@ from sqlalchemy.pool import NullPool
 from api.config import api_runtime_flags, settings
 from api.database import AsyncSessionLocal, _parse_url, ensure_runtime_schema_compatibility
 from api.deps_llm import get_llm_client
+from api.logging_setup import configure_logging
 from api.routes import admin, applications, auth, dev, ingest, jobs, onboarding, profile, recruiters, resume, runs
 
-# --- Structured JSON logging ---
-_handler = logging.StreamHandler()
-_handler.setFormatter(jsonlogger.JsonFormatter("%(asctime)s %(name)s %(levelname)s %(message)s"))
-logging.root.setLevel(logging.INFO)
-logging.root.handlers = [_handler]
-
+configure_logging()
 logger = logging.getLogger(__name__)
-logging.getLogger("passlib.handlers.bcrypt").setLevel(logging.ERROR)
 
 # --- Rate limiter (in-memory, no Redis — suitable for single-instance 512MB) ---
 limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])

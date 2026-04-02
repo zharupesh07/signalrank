@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from typing import Dict, Iterable, List
+from typing import List
 
 import numpy as np
 
@@ -154,70 +154,6 @@ def unload_embedding_engine() -> None:
         logger.warning("[EMBED] Failed to unload ONNX model cleanly", exc_info=True)
         _ENGINE = None
 
-
-class EmbeddingCache:
-    """
-    DuckDB-backed embedding cache (read/write via Store).
-
-    RULES:
-    - keyed by (text_fp, cfg_fp, user, use_case)
-    - deterministic lookup
-    """
-
-    def __init__(self, store, ctx):
-        self.store = store
-        self.ctx = ctx
-
-    def fetch(self, text_fps: Iterable[str]) -> Dict[str, List[float]]:
-        if not text_fps:
-            return {}
-
-        rows = self.store.con.execute(
-            """
-            SELECT text_fp, vector
-            FROM embeddings
-            WHERE
-              text_fp IN ?
-              AND cfg_fp = ?
-              AND user = ?
-              AND use_case = ?
-            """,
-            [
-                list(text_fps),
-                self.ctx.config_fp,
-                self.ctx.user,
-                self.ctx.use_case,
-            ],
-        ).fetchall()
-
-        return {k: v for k, v in rows}
-
-    def store_vectors(self, rows: List[tuple[str, List[float]]]):
-        if not rows:
-            return
-
-        import pandas as pd
-
-        df = pd.DataFrame(
-            rows,
-            columns=["text_fp", "vector"],
-        )
-        df["cfg_fp"] = self.ctx.config_fp
-        df["user"] = self.ctx.user
-        df["use_case"] = self.ctx.use_case
-
-        self.store.con.execute("""
-            INSERT INTO embeddings
-            SELECT
-              text_fp,
-              cfg_fp,
-              vector,
-              user,
-              use_case
-            FROM df
-            ON CONFLICT (text_fp, cfg_fp, user, use_case)
-            DO NOTHING
-            """)
 
 
 def build_job_embedding_text(

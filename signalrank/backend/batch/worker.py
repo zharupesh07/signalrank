@@ -441,39 +441,22 @@ async def process_run(
                 logger.info("Run %s not found or cancelled before saving results", run_id)
                 return
 
-            row_iter = (
-                ranked_df.itertuples(index=False)
-                if hasattr(ranked_df, "itertuples")
-                else ranked_df.to_dict("records")
-            )
             insert_batch: list[dict] = []
-            for row in row_iter:
-                row_id = row.id if hasattr(row, "id") else row["id"]
-                semantic_score = getattr(row, "semantic_score", None) if hasattr(row, "id") else row.get("semantic_score", 0)
-                skills_score = getattr(row, "skills_score", None) if hasattr(row, "id") else row.get("skills_score", 0)
-                company_score = getattr(row, "company_score", None) if hasattr(row, "id") else row.get("company_score", 0)
-                seniority_score = getattr(row, "seniority_score_dim", None) if hasattr(row, "id") else row.get("seniority_score_dim", 0)
-                location_score = getattr(row, "location_score", None) if hasattr(row, "id") else row.get("location_score", 0)
-                recency_score = getattr(row, "recency_score", None) if hasattr(row, "id") else row.get("recency_score", 0)
-                final_score = getattr(row, "final_score", None) if hasattr(row, "id") else row.get("final_score", 0)
-                company_tier = getattr(row, "company_tier", "") if hasattr(row, "id") else row.get("company_tier", "")
-                is_contract = getattr(row, "is_contract", False) if hasattr(row, "id") else row.get("is_contract", False)
-                insert_batch.append(
-                    {
-                        "run_id": run_id,
-                        "user_id": user_id,
-                        "job_id": row_id,
-                        "semantic_score": float(semantic_score or 0),
-                        "skills_score": float(skills_score or 0),
-                        "company_score": float(company_score or 0),
-                        "seniority_score": float(seniority_score or 0),
-                        "location_score": float(location_score or 0),
-                        "recency_score": float(recency_score or 0),
-                        "final_score": float(final_score or 0),
-                        "company_tier": str(company_tier or ""),
-                        "is_contract": bool(is_contract),
-                    }
-                )
+            for row in ranked_df.itertuples(index=False):
+                insert_batch.append({
+                    "run_id": run_id,
+                    "user_id": user_id,
+                    "job_id": row.id,
+                    "semantic_score": float(row.semantic_score or 0),
+                    "skills_score": float(row.skills_score or 0),
+                    "company_score": float(row.company_score or 0),
+                    "seniority_score": float(row.seniority_score_dim or 0),
+                    "location_score": float(row.location_score or 0),
+                    "recency_score": float(row.recency_score or 0),
+                    "final_score": float(row.final_score or 0),
+                    "company_tier": str(row.company_tier or ""),
+                    "is_contract": bool(row.is_contract),
+                })
                 if len(insert_batch) >= 500:
                     await db.execute(pg_insert(JobResult).values(insert_batch))
                     insert_batch.clear()

@@ -359,6 +359,9 @@ async def _compute_embeddings(
     resume_text: str,
     persisted_resume_embedding: list[float] | None = None,
     distilled_text: str | None = None,
+    *,
+    canon: SkillCanonicalizer | None = None,
+    base_cfg_fp: str | None = None,
 ) -> pd.DataFrame:
     t_emb = time.monotonic()
 
@@ -372,14 +375,14 @@ async def _compute_embeddings(
     ]
     del emb_series
 
-    # Use __base__ cfg_fp for job embeddings so pre-embed cache is reusable
-    base_ctx = build_context(user_id="__base__", resume_text="")
-    job_cache = PgEmbeddingCache(db, base_ctx.config_fp)
-    # User-specific cache for resume embedding
+    if base_cfg_fp is None:
+        base_cfg_fp = build_context(user_id="__base__", resume_text="").config_fp
+    job_cache = PgEmbeddingCache(db, base_cfg_fp)
     resume_cache = PgEmbeddingCache(db, cfg_fp)
 
     raw_skills = extract_skills_from_texts(df["description"].fillna("").tolist(), cfg)
-    canon = SkillCanonicalizer(cfg)
+    if canon is None:
+        canon = SkillCanonicalizer(cfg)
     df["canonical_skills"] = [sorted(canon.canonicalize(s)) for s in raw_skills]
     df["skill_overlap"] = df["canonical_skills"].apply(len)
 
@@ -494,8 +497,6 @@ async def _compute_embeddings(
         del new_vecs
     if "r_emb" in locals():
         del r_emb
-    unload_embedding_engine()
-    clear_vector_cache()
     release_memory(logger, "rank_embed_release", jobs=len(df), cache_misses=len(misses))
     return df
 
@@ -540,6 +541,8 @@ async def score_jobs_for_user(
         if profile and profile.resume_embedding is not None:
             persisted_resume_embedding = list(profile.resume_embedding)
 
+    base_cfg_fp = build_context(user_id="__base__", resume_text="").config_fp
+    canon = SkillCanonicalizer(cfg)
     frames: list[pd.DataFrame] = []
     total_loaded = 0
     total_scored = 0
@@ -564,6 +567,8 @@ async def score_jobs_for_user(
             role_intent=role_intent,
             persisted_resume_embedding=persisted_resume_embedding,
             skip_context_enrichment=True,
+            canon=canon,
+            base_cfg_fp=base_cfg_fp,
         )
         if not scored.empty:
             total_scored += len(scored)
@@ -589,6 +594,8 @@ async def score_jobs_for_user(
         if len(frames) == 1 and len(frames[0]) >= _RANK_MAX_CANDIDATES and offset + len(frames[0]) >= _RANK_MAX_CANDIDATES:
             break
 
+    unload_embedding_engine()
+    clear_vector_cache()
     if not frames:
         return pd.DataFrame(columns=["final_score"])
 
@@ -629,6 +636,8 @@ async def _score_loaded_jobs_dataframe(
     role_intent: str | None = None,
     persisted_resume_embedding: list[float] | None = None,
     skip_context_enrichment: bool = False,
+    canon: SkillCanonicalizer | None = None,
+    base_cfg_fp: str | None = None,
 ) -> pd.DataFrame:
     t_total = time.monotonic()
     ctx = build_context(user_id, resume_text, config_overrides)
@@ -689,6 +698,8 @@ async def _score_loaded_jobs_dataframe(
         resume_text,
         persisted_resume_embedding=effective_persisted_resume_embedding,
         distilled_text=distilled_text,
+        canon=canon,
+        base_cfg_fp=base_cfg_fp,
     )
 
     df = _apply_semantic_gates(df, cfg, effective_role_intent)

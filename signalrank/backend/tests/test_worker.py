@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
+import pandas as pd
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -8,13 +9,10 @@ from api.models import Profile, Run, User
 from batch.worker import process_run
 
 
-class _EmptyRankedDf:
-    def __len__(self):
-        return 0
-
-    def to_dict(self, orient):
-        assert orient == "records"
-        return []
+def _empty_ranked_df():
+    return pd.DataFrame(columns=["id", "final_score", "semantic_score", "skills_score",
+                                  "company_score", "seniority_score_dim", "location_score",
+                                  "recency_score", "company_tier", "is_contract"])
 
 
 @pytest.mark.asyncio
@@ -73,7 +71,7 @@ async def test_process_run_full_mode_skips_scrape_after_recent_deep_scan(
     monkeypatch.setattr(scraper, "scrape", _scrape)
 
     async def _score_jobs_for_user(**kwargs):
-        return _EmptyRankedDf()
+        return _empty_ranked_df()
 
     monkeypatch.setattr(ranker, "score_jobs_for_user", _score_jobs_for_user)
 
@@ -141,7 +139,7 @@ async def test_process_run_full_mode_does_not_skip_after_recent_quick_scan(
     monkeypatch.setattr(scraper, "scrape", _scrape)
 
     async def _score_jobs_for_user(**kwargs):
-        return _EmptyRankedDf()
+        return _empty_ranked_df()
 
     monkeypatch.setattr(ranker, "score_jobs_for_user", _score_jobs_for_user)
 
