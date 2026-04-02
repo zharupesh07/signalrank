@@ -28,6 +28,9 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 function ScoreCell({ value }: { value: number | null }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
   if (value == null) return <span className="text-muted-foreground">—</span>;
   const pct = value * 100;
   const color = scoreColor(pct);
@@ -37,7 +40,10 @@ function ScoreCell({ value }: { value: number | null }) {
         {pct.toFixed(0)}
       </span>
       <div className="score-bar w-12">
-        <div className="score-bar-fill" style={{ width: `${pct}%`, background: color }} />
+        <div
+          className="score-bar-fill"
+          style={{ width: mounted ? `${pct}%` : "0%", background: color }}
+        />
       </div>
     </div>
   );
