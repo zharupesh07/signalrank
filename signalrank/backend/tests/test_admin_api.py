@@ -54,7 +54,8 @@ async def test_list_users_requires_admin(client, regular_token):
 async def test_list_users_returns_all_fields(client, admin_token):
     r = await client.get("/api/admin/users", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
-    users = r.json()
+    data = r.json()
+    users = data["users"]
     assert isinstance(users, list)
     assert len(users) >= 1
     for u in users:
@@ -71,7 +72,7 @@ async def test_list_users_no_n_plus_one(client, admin_token, db: AsyncSession):
         )
     r = await client.get("/api/admin/users", headers={"Authorization": f"Bearer {admin_token}"})
     assert r.status_code == 200
-    users = r.json()
+    users = r.json()["users"]
     assert len(users) >= 5
     # All users must have valid run_count (not missing)
     for u in users:
@@ -91,7 +92,7 @@ async def test_update_user_toggle_admin(client, admin_token, regular_token, db: 
     assert r.status_code == 200
 
     users = await client.get("/api/admin/users", headers={"Authorization": f"Bearer {admin_token}"})
-    user = next((u for u in users.json() if u["id"] == user_id), None)
+    user = next((u for u in users.json()["users"] if u["id"] == user_id), None)
     assert user is not None
     assert user["is_admin"] is True
 
@@ -108,7 +109,7 @@ async def test_update_user_404(client, admin_token):
 async def test_delete_user_removes_user(client, admin_token, db: AsyncSession):
     await client.post("/api/auth/register", json={"email": "todelete@test.com", "password": "password123"})
     users_r = await client.get("/api/admin/users", headers={"Authorization": f"Bearer {admin_token}"})
-    target = next((u for u in users_r.json() if u["email"] == "todelete@test.com"), None)
+    target = next((u for u in users_r.json()["users"] if u["email"] == "todelete@test.com"), None)
     assert target is not None
 
     r = await client.delete(
@@ -118,7 +119,7 @@ async def test_delete_user_removes_user(client, admin_token, db: AsyncSession):
     assert r.status_code == 200
 
     users_after = await client.get("/api/admin/users", headers={"Authorization": f"Bearer {admin_token}"})
-    assert not any(u["id"] == target["id"] for u in users_after.json())
+    assert not any(u["id"] == target["id"] for u in users_after.json()["users"])
 
 
 async def test_cannot_delete_self(client, admin_token, db: AsyncSession):

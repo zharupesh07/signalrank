@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models import JobRaw, Profile
@@ -173,6 +173,37 @@ async def load_jobs_by_ids_dataframe(
     )
 
 
+_ANN_PREFILTER_CANDIDATES = 600
+
+
+async def ann_prefilter_job_urls(
+    db: AsyncSession,
+    resume_embedding: list[float],
+    *,
+    limit: int = _ANN_PREFILTER_CANDIDATES,
+    cutoff: datetime | None = None,
+) -> list[str]:
+    """Return top-N job URLs by cosine similarity to the resume embedding.
+
+    Uses the HNSW index on jobs_raw.embedding for sub-millisecond ANN lookup.
+    Only considers jobs with a stored embedding; jobs without embeddings are
+    handled by the fallback path in the caller.
+    """
+    if cutoff is None:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=_JOB_WINDOW_DAYS)
+    rows = await db.execute(
+        text("""
+            SELECT job_url FROM jobs_raw
+            WHERE embedding IS NOT NULL
+              AND ingested_at >= :cutoff
+            ORDER BY embedding <=> CAST(:vec AS vector)
+            LIMIT :limit
+        """),
+        {"vec": str(resume_embedding), "cutoff": cutoff, "limit": limit},
+    )
+    return [r[0] for r in rows.all()]
+
+
 def _apply_pre_filters(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     mask = pd.Series(True, index=df.index)
     blocklist = cfg.get("title_blocklist", [])
@@ -330,16 +361,29 @@ def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     else:
         df["title_relevance_score"] = 100.0
 
-    # Weighted final score — vectorized
+    # Weighted final score — vectorized.
+    # title_relevance is removed from additive weights; its 0.10 share is
+    # redistributed to skills (+0.05) and recency (+0.05). It is applied
+    # instead as a post-multiplier so off-domain titles are penalised
+    # proportionally rather than just losing a fixed additive bonus.
     w = ranking_cfg.get("scoring_weights", {})
     df["final_score"] = (
-        df["skills_score"] * w.get("skills_match", 0.35)
-        + df["title_relevance_score"] * w.get("title_relevance", 0.10)
+        df["skills_score"] * w.get("skills_match", 0.40)
         + df["company_score"] * w.get("company_fit", 0.15)
         + df["seniority_score_dim"] * w.get("seniority", 0.15)
         + df["location_score"] * w.get("location", 0.15)
-        + df["recency_score"] * w.get("recency", 0.10)
+        + df["recency_score"] * w.get("recency", 0.15)
     ).fillna(0.0)
+
+    # Title-relevance multiplier: maps tr_score [0, 100] → multiplier [0.70, 1.0].
+    # A perfectly irrelevant title (tr=0) gets a 30% penalty; perfectly relevant
+    # (tr=100) passes through unchanged. Override via ranking.title_relevance_multiplier_min.
+    tr_min = ranking_cfg.get("title_relevance_multiplier_min", 0.70)
+    tr_multiplier = np.clip(
+        tr_min + (1.0 - tr_min) * (df["title_relevance_score"] / 100.0),
+        tr_min, 1.0,
+    )
+    df["final_score"] = df["final_score"] * tr_multiplier
 
     title_rule_cfg = cfg.get("ranking", {}).get("profile_title_rule_scoring", {})
     strong_cfg = title_rule_cfg.get("strong", {})
@@ -595,6 +639,19 @@ async def score_jobs_for_user(
         if profile and profile.resume_embedding is not None:
             persisted_resume_embedding = list(profile.resume_embedding)
 
+    # ANN pre-filter: when no specific job_urls are requested and a resume
+    # embedding is available, use the HNSW index to narrow candidates from
+    # _RANK_MAX_CANDIDATES (2000) to _ANN_PREFILTER_CANDIDATES (600) before
+    # full scoring. Falls back to the global pool if ANN returns too few results.
+    effective_job_urls = job_urls
+    if effective_job_urls is None and persisted_resume_embedding is not None:
+        ann_urls = await ann_prefilter_job_urls(db, persisted_resume_embedding)
+        if len(ann_urls) >= 50:
+            effective_job_urls = ann_urls
+            logger.info("ANN pre-filter: %d candidates (embedding-based)", len(ann_urls))
+        else:
+            logger.info("ANN pre-filter skipped: only %d embedded jobs, using global pool", len(ann_urls))
+
     base_cfg_fp = build_context(user_id="__base__", resume_text="").config_fp
     canon = SkillCanonicalizer(cfg)
     frames: list[pd.DataFrame] = []
@@ -604,7 +661,7 @@ async def score_jobs_for_user(
 
     for offset in range(0, _RANK_MAX_CANDIDATES, rank_load_chunk):
         page_limit = min(rank_load_chunk, _RANK_MAX_CANDIDATES - offset)
-        df = await load_jobs_dataframe(db, role_clusters=clusters, job_urls=job_urls, limit=page_limit, offset=offset)
+        df = await load_jobs_dataframe(db, role_clusters=clusters, job_urls=effective_job_urls, limit=page_limit, offset=offset)
         if df.empty:
             break
         total_loaded += len(df)
