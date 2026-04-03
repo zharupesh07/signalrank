@@ -43,3 +43,19 @@ def test_fingerprint():
     assert isinstance(fp, str)
     assert len(fp) == 64
     assert fp == fingerprint_text("hello world")
+
+
+def test_build_job_embedding_text_skills_before_responsibilities():
+    """Skills must appear before responsibilities so they fit within BGE-small's 256-token limit."""
+    from domain.embeddings import build_job_embedding_text
+
+    cfg = {"embeddings": {"text": {"max_chars": 2000}}}
+    text = build_job_embedding_text(
+        title="ML Engineer",
+        description="build models " * 200,  # long description that would push skills past token limit
+        canonical_skills=["python", "pytorch", "mlflow"],
+        cfg=cfg,
+    )
+    assert text.index("REQUIRED_SKILLS") < text.index("RESPONSIBILITIES"), (
+        "Skills must appear before responsibilities so they fit within the 256-token BGE-small limit"
+    )
