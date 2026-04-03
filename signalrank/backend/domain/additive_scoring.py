@@ -134,6 +134,49 @@ def detect_contract_type(title: str, description: str) -> bool:
     return any(signal in text for signal in CONTRACT_SIGNALS)
 
 
+_REMOTE_LOCATION_SIGNALS = [
+    "remote", "work from home", "wfh", "anywhere",
+]
+
+_REMOTE_DESCRIPTION_SIGNALS = [
+    "fully remote", "100% remote", "work from home", "wfh",
+    "remote position", "remote role", "remote working", "remote first",
+    "remote-first", "work remotely", "fully distributed",
+]
+
+_HYBRID_SIGNALS = [
+    "hybrid", "2 days", "3 days", "days in office", "days per week",
+    "flexible work", "flexible arrangement", "partially remote",
+]
+
+
+def detect_work_mode(location: str, title: str, description: str) -> str:
+    """Classify work mode as 'remote', 'hybrid', 'onsite', or 'unknown'.
+
+    Priority: remote > hybrid > onsite > unknown.
+    Returns 'unknown' when there is insufficient signal (no location, no description signals).
+    """
+    if not location and not title and not description:
+        return "unknown"
+
+    loc = (location or "").lower().strip()
+    desc_prefix = (description or "")[:500].lower()
+
+    if any(s in loc for s in _REMOTE_LOCATION_SIGNALS):
+        return "remote"
+
+    if any(s in desc_prefix for s in _REMOTE_DESCRIPTION_SIGNALS):
+        return "remote"
+
+    if any(s in desc_prefix for s in _HYBRID_SIGNALS):
+        return "hybrid"
+
+    if loc:
+        return "onsite"
+
+    return "unknown"
+
+
 DEFAULT_WEIGHTS = {
     "skills_match": 0.40,
     "company_fit": 0.20,

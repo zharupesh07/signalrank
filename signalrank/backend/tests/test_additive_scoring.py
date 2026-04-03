@@ -12,6 +12,7 @@ from domain.additive_scoring import (
     company_score_0_100,
     compute_weighted_score,
     detect_contract_type,
+    detect_work_mode,
     location_score_0_100,
     recency_score_0_100,
     seniority_score_0_100,
@@ -229,6 +230,35 @@ def test_recency_invalid():
 ])
 def test_detect_contract(title, desc, expected):
     assert detect_contract_type(title, desc) is expected
+
+
+# ---------------------------------------------------------------------------
+# detect_work_mode
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("location,title,description,expected", [
+    # Remote signals in location
+    ("Remote", "ML Engineer", "", "remote"),
+    ("Work from Home", "Engineer", "", "remote"),
+    ("remote - india", "Backend Dev", "", "remote"),
+    # Remote signals in description
+    ("KA, IN", "Engineer", "This is a fully remote position", "remote"),
+    ("KA, IN", "Engineer", "work from home allowed", "remote"),
+    ("KA, IN", "Engineer", "100% remote working", "remote"),
+    # Hybrid signals
+    ("Bangalore", "Engineer", "hybrid work model", "hybrid"),
+    ("Bangalore", "Engineer", "2 days office per week", "hybrid"),
+    ("Bangalore", "Engineer", "flexible work arrangement", "hybrid"),
+    # Onsite (no signals)
+    ("Bangalore", "Software Engineer", "Great company culture", "onsite"),
+    ("MH, IN", "Data Engineer", "Join our team in Mumbai", "onsite"),
+    # Unknown (empty)
+    ("", "", "", "unknown"),
+    (None, None, None, "unknown"),
+])
+def test_detect_work_mode(location, title, description, expected):
+    assert detect_work_mode(location or "", title or "", description or "") == expected
 
 
 # ---------------------------------------------------------------------------
