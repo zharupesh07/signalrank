@@ -84,6 +84,7 @@ export interface Job {
   site: string | null;
   job_url: string;
   date_posted: string | null;
+  is_new_find: boolean;
   description?: string | null;
   final_score: number | null;
   semantic_score: number | null;
@@ -103,6 +104,7 @@ export interface JobsResponse {
   jobs: Job[];
   total: number;
   run_total: number;
+  new_good_matches: number;
   available_sites: string[];
   page: number;
   limit: number;

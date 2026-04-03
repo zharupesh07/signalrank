@@ -10,6 +10,7 @@ from domain.scoring import (
     calculate_role_and_skill_match_score,
     calculate_seniority_score,
     extract_required_yoe,
+    location_tier,
     location_weight,
     recency_weight,
 )
@@ -188,6 +189,16 @@ def test_location_weight_empty_location():
 def test_location_weight_case_insensitive():
     cfg = {"location_scoring": {"preferred_locations": ["REMOTE"], "preferred_weight": 1.2}}
     assert location_weight("Remote - India", cfg) == 1.2
+
+
+def test_location_tier_remote_preference():
+    cfg = {"location_scoring": {"preferred_locations": ["Remote"], "want_remote": True}}
+    assert location_tier("Remote - India", "Fully remote role", cfg) == 100
+
+
+def test_location_tier_india_fallback():
+    cfg = {"location_scoring": {"preferred_locations": ["Bangalore"]}}
+    assert location_tier("KA, IN", "Onsite role", cfg) == 50
 
 
 # ---------------------------------------------------------------------------

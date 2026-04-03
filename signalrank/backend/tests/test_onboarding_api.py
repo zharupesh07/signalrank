@@ -141,6 +141,8 @@ async def test_upload_resume_prefills_qa_role_and_yoe(client, auth_token, monkey
     assert profile.config_overrides["scraping"]["locations"] == ["Pune"]
     assert profile.config_overrides["title_blocklist"] == ["Support"]
     assert profile.config_overrides["career_intent"]["target_roles"][0]["title"] == "QA / Test Engineer"
+    assert profile.candidate_profile["target_roles_primary"] == ["QA / Test Engineer"]
+    assert "python" in profile.candidate_profile["must_have_skills"]
     assert "Experience: 6 years" in distilled
 
 

@@ -145,12 +145,19 @@ export function getColumns({ tracked, trackJob }: ColumnHandlers) {
         return tracked.has(job.id) ? (
           <span className="text-[11px] text-muted-foreground uppercase tracking-wider">tracked</span>
         ) : (
-          <button
-            onClick={(e) => { e.stopPropagation(); trackJob(job); }}
-            className="flex items-center gap-0.5 text-[11px] text-primary/60 border border-primary/20 px-1.5 py-0.5 hover:border-primary hover:text-primary transition-colors uppercase tracking-wider"
-          >
-            <Plus size={8} />track
-          </button>
+          <div className="flex items-center justify-end gap-1.5">
+            {job.is_new_find ? (
+              <span className="text-[10px] text-[var(--terminal-green-bright)] border border-[var(--terminal-green-bright)]/30 px-1.5 py-0.5 uppercase tracking-wider">
+                new
+              </span>
+            ) : null}
+            <button
+              onClick={(e) => { e.stopPropagation(); trackJob(job); }}
+              className="flex items-center gap-0.5 text-[11px] text-primary/60 border border-primary/20 px-1.5 py-0.5 hover:border-primary hover:text-primary transition-colors uppercase tracking-wider"
+            >
+              <Plus size={8} />track
+            </button>
+          </div>
         );
       },
     }),

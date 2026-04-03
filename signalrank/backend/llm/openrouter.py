@@ -70,7 +70,7 @@ VISION_MODELS = [
 BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODELS_URL = "https://openrouter.ai/api/v1/models"
 MAX_RETRIES_PER_MODEL = 3
-_llm_semaphore = asyncio.Semaphore(3)  # max 3 concurrent LLM calls across all workers
+_llm_semaphore = asyncio.Semaphore(max(1, int(getattr(settings, "llm_semaphore", 3))))
 
 
 _MODEL_SIZE_RE = re.compile(r"(?i)(\d+(?:\.\d+)?)b")
@@ -280,6 +280,7 @@ class OpenRouterClient:
         self.api_key = api_key
         self.models = models or FALLBACK_MODELS
         self._http = httpx.AsyncClient(timeout=timeout)
+        self._preferred_models = self.models[:1]
 
     async def probe_models(self) -> list[str]:
         """Probe all models concurrently; cache and return healthy ones."""
@@ -475,6 +476,10 @@ class OpenRouterClient:
 
         healthy = await self._ensure_healthy()
         models_to_try = healthy if healthy else self.models
+        if self._preferred_models:
+            preferred = [m for m in self._preferred_models if m in models_to_try]
+            if preferred:
+                models_to_try = preferred
 
         last_error = None
         for model in models_to_try:
@@ -524,6 +529,10 @@ class OpenRouterClient:
 
         healthy = await self._ensure_healthy()
         models_to_try = healthy if healthy else self.models
+        if self._preferred_models:
+            preferred = [m for m in self._preferred_models if m in models_to_try]
+            if preferred:
+                models_to_try = preferred
 
         for model in models_to_try:
             raw = await self._call(model, messages, max_tokens, temperature)

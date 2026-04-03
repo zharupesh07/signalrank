@@ -123,6 +123,96 @@ def _ensure_query_term(query_plan: dict, bucket: str, term: str) -> None:
     query_plan[bucket] = values
 
 
+def _contains_any(text: str, phrases: Iterable[str]) -> bool:
+    lowered = (text or "").lower()
+    return any(phrase in lowered for phrase in phrases)
+
+
+def _looks_like_ai_platform_resume(parsed: ResumeParseResult) -> bool:
+    text = _text_blob(parsed)
+    ai_terms = (
+        "ai platform",
+        "machine learning",
+        "mlops",
+        "llmops",
+        "llm",
+        "genai",
+        "agentic",
+        "rag",
+    )
+    platform_terms = (
+        "platform engineer",
+        "internal developer platform",
+        "idp",
+        "kubernetes",
+        "terraform",
+        "docker",
+        "ci/cd",
+        "cloud-native",
+        "oidc",
+        "rbac",
+        "deployment",
+        "observability",
+    )
+    return _contains_any(text, ai_terms) and _contains_any(text, platform_terms)
+
+
+def _prefer_ai_platform_roles(target_roles: list[dict], query_plan: dict) -> tuple[list[dict], dict]:
+    preferred_roles = [
+        "AI Platform Engineer",
+        "MLOps Engineer",
+        "ML Platform Engineer",
+        "LLMOps Engineer",
+        "Platform Engineer",
+        "Machine Learning Engineer",
+    ]
+    deprioritized_terms = (
+        "data scientist",
+        "applied scientist",
+        "research scientist",
+        "research engineer",
+        "software engineer",
+    )
+
+    filtered = [
+        role for role in target_roles
+        if not any(
+            term in str(role.get("title", "")).strip().lower()
+            for term in deprioritized_terms
+        )
+    ]
+
+    for idx, title in reversed(list(enumerate(preferred_roles))):
+        _ensure_target_role(
+            filtered,
+            title=title,
+            priority="primary" if idx == 0 else "secondary",
+            confidence=0.97 if idx == 0 else max(0.80, 0.92 - idx * 0.02),
+            evidence=["AI platform and MLOps infrastructure markers found in resume"],
+        )
+
+    ordered = sorted(
+        filtered,
+        key=lambda item: (
+            preferred_roles.index(item["title"]) if item.get("title") in preferred_roles else len(preferred_roles),
+            -float(item.get("confidence", 0.0)),
+            str(item.get("title", "")).lower(),
+        ),
+    )
+
+    for title in preferred_roles:
+        _ensure_query_term(query_plan, "title_queries", title)
+    _ensure_query_term(query_plan, "skill_queries", "Kubernetes")
+    _ensure_query_term(query_plan, "skill_queries", "Terraform")
+    _ensure_query_term(query_plan, "skill_queries", "CI/CD")
+    _ensure_query_term(query_plan, "domain_queries", "AI platform")
+    _ensure_query_term(query_plan, "domain_queries", "MLOps")
+    _ensure_query_term(query_plan, "negative_keywords", "Data Scientist")
+    _ensure_query_term(query_plan, "negative_keywords", "Applied Scientist")
+
+    return ordered[:6], query_plan
+
+
 def _normalize_query_plan(query_plan: dict | None) -> dict:
     base = dict(query_plan or {})
     return {
@@ -252,6 +342,18 @@ def build_career_intent_profile(parsed: ResumeParseResult) -> dict:
         _ensure_query_term(query_plan, "title_queries", "Infrastructure Automation Engineer")
         _ensure_query_term(query_plan, "title_queries", "Cloud Network Engineer")
         _ensure_query_term(query_plan, "negative_keywords", "AI Platform Engineer")
+
+    if _looks_like_ai_platform_resume(parsed):
+        evidence = ["AI platform + infrastructure markers found in resume"]
+        _ensure_archetype(
+            archetypes,
+            archetype_id="ai_platform_engineer",
+            label="AI Platform Engineer",
+            priority="primary",
+            confidence=0.96,
+            evidence=evidence,
+        )
+        target_roles, query_plan = _prefer_ai_platform_roles(target_roles, query_plan)
 
     priority_order = {"primary": 0, "secondary": 1, "adjacent": 2}
     target_roles = sorted(

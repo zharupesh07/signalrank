@@ -22,11 +22,11 @@ async def test_get_profile_contains_nested_and_flat_fields(client, auth_token):
     # Nested profile object
     assert "profile" in data
     nested = data["profile"]
-    for field in ("onboarding_complete", "role_intent", "min_salary", "resume_template", "resume_editor", "career_intent"):
+    for field in ("onboarding_complete", "role_intent", "min_salary", "resume_template", "resume_editor", "career_intent", "candidate_profile"):
         assert field in nested, f"Missing nested field: {field}"
 
     # Root-level convenience copy of profile fields
-    for field in ("onboarding_complete", "role_intent", "min_salary", "resume_template", "resume_editor", "career_intent"):
+    for field in ("onboarding_complete", "role_intent", "min_salary", "resume_template", "resume_editor", "career_intent", "candidate_profile"):
         assert field in data, f"Missing root field: {field}"
 
 

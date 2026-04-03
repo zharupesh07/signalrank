@@ -136,6 +136,9 @@ async def test_list_jobs_returns_isoformatted_date_posted(client, auth_token, db
     assert len(jobs) == 1
     assert jobs[0]["date_posted"] == posted_at.isoformat()
     assert "description" not in jobs[0]
+    assert "fit_band" in jobs[0]
+    assert "confidence_band" in jobs[0]
+    assert "explanation_summary" in jobs[0]
 
 
 async def test_list_jobs_sorts_by_date_posted_desc(client, auth_token, db: AsyncSession):
@@ -240,3 +243,42 @@ async def test_jobs_analytics_returns_expected_aggregates(client, auth_token, db
     ]
     assert payload["top_companies"][0] == {"company": "Acme", "count": 2}
     assert {"site": "manual", "count": 2} in payload["sites"]
+
+
+async def test_get_job_includes_agentic_summary_fields(client, auth_token, db: AsyncSession):
+    me = await client.get("/api/profile", headers={"Authorization": f"Bearer {auth_token}"})
+    user_id = me.json()["user_id"]
+
+    run = Run(user_id=user_id, status="success")
+    job = JobRaw(
+        job_url="https://example.com/jobs/agentic",
+        title="Senior ML Engineer",
+        company="Example Corp",
+        description="Role",
+        location="Remote",
+        site="manual",
+    )
+    db.add_all([run, job])
+    await db.flush()
+    db.add(
+        JobResult(
+            run_id=run.id,
+            user_id=user_id,
+            job_id=job.id,
+            final_score=86.0,
+            fit_band="strong_fit",
+            confidence_band="high",
+            explanation_summary="Strong fit | lane: direct",
+        )
+    )
+    await db.commit()
+
+    response = await client.get(
+        f"/api/jobs/{job.id}",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["fit_band"] == "strong_fit"
+    assert payload["confidence_band"] == "high"
+    assert payload["explanation_summary"] == "Strong fit | lane: direct"

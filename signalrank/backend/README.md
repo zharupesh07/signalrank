@@ -92,6 +92,46 @@ Measured locally after the memory pass:
 - Worker-like process after ranker import: about `108 MB`
 - Worker-like process during embedding inference: about `385 MB`
 
+## Embedding Throughput Benchmark
+
+The ONNX embedding session uses a small multicore setting by default, and the
+default embedding model is `sentence-transformers/all-MiniLM-L6-v2`:
+
+- `embeddings.session_intra_op_threads: 4`
+- `embeddings.session_inter_op_threads: 1`
+
+To compare single-thread versus multicore locally or against a deployed Postgres target, use:
+
+```bash
+SIGNALRANK_BENCHMARK_DB_URLS=postgresql+asyncpg://... \
+SIGNALRANK_BENCHMARK_JOB_COUNT=200 \
+SIGNALRANK_BENCHMARK_EMBED_THREADS_LIST=1,4 \
+uv run python signalrank/backend/tools/benchmark_worker_memory.py
+```
+
+The script prints RSS and wall-clock time for each thread setting so you can compare throughput without adding a separate profiler.
+
+To compare multiple embedding models on the same corpus, set `SIGNALRANK_BENCHMARK_MODEL_LIST`:
+
+```bash
+SIGNALRANK_BENCHMARK_DB_URL=postgresql+asyncpg://... \
+SIGNALRANK_BENCHMARK_JOB_COUNT=200 \
+SIGNALRANK_BENCHMARK_EMBED_THREADS_LIST=4 \
+SIGNALRANK_BENCHMARK_MODEL_LIST=sentence-transformers/all-MiniLM-L6-v2,BAAI/bge-small-en-v1.5,sentence-transformers/paraphrase-MiniLM-L3-v2 \
+uv run python signalrank/backend/tools/benchmark_worker_memory.py
+```
+
+Use the same DB and job count when comparing models so the timing stays apples-to-apples.
+
+Batch size matters too:
+
+- `4` is the safest low-memory baseline
+- `8` is usually the best balance of speed and RAM
+- `16` is a bit faster but starts to grow RSS noticeably
+- `32` is generally not worth it unless you have plenty of headroom
+
+On Railway, prefer the private Postgres URL if available. The backend logs a warning when it sees a public Railway proxy host because network round trips over that proxy are usually the biggest ranking slowdown compared with local Postgres.
+
 The older `DB_POOL_SIZE=2` / `DB_MAX_OVERFLOW=1` profile is too small for normal authenticated page loads. The frontend routinely issues several requests in parallel, and an active scrape can briefly need extra checkouts for progress updates and batch writes. Use a `5/5` pool as the baseline unless you have a stricter database connection cap.
 
 For Railway, prefer a private database endpoint for backend runtime traffic. The backend now honors `DATABASE_PRIVATE_URL` first and falls back to `DATABASE_URL`. Keep any public DB URL in `DATABASE_PUBLIC_URL` only for local tools or external clients, not service-to-database runtime traffic.

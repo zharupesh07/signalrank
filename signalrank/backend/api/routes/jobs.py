@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.database import get_db
 from api.deps import get_current_user
-from api.models import ArchivalQueue, JobRaw, JobResult, Run, User
+from api.models import Application, ArchivalQueue, JobRaw, JobResult, Run, User
 from api.routes.admin import require_admin
 
 ARCHIVAL_TIERS = {"tier_ss", "tier_s", "tier_a"}
@@ -40,7 +40,7 @@ async def list_jobs(
     )
     run = latest_run.scalar_one_or_none()
     if not run:
-        return {"jobs": [], "total": 0, "page": page, "limit": limit}
+        return {"jobs": [], "total": 0, "page": page, "limit": limit, "new_good_matches": 0}
 
     sort_col = JobRaw.date_posted if sort == "date_posted" else getattr(JobResult, sort)
     order_expr = sort_col.asc().nulls_last() if sort_dir == "asc" else sort_col.desc().nulls_last()
@@ -92,6 +92,25 @@ async def list_jobs(
     total_result = await db.execute(count_query)
     total = total_result.scalar() or 0
 
+    new_good_matches_result = await db.execute(
+        select(func.count())
+        .select_from(JobResult)
+        .join(JobRaw, JobResult.job_id == JobRaw.id)
+        .where(
+            JobResult.run_id == run.id,
+            JobResult.user_id == current_user.id,
+            JobResult.final_score >= 70,
+            JobRaw.ingested_at >= run.started_at,
+            ~JobResult.job_id.in_(
+                select(Application.job_id).where(
+                    Application.user_id == current_user.id,
+                    Application.job_id.isnot(None),
+                )
+            ),
+        )
+    )
+    new_good_matches = new_good_matches_result.scalar() or 0
+
     sites_query = await db.execute(
         select(JobRaw.site)
         .join(JobResult, JobResult.job_id == JobRaw.id)
@@ -121,6 +140,7 @@ async def list_jobs(
             "location": job.location,
             "site": job.site,
             "date_posted": job.date_posted.isoformat() if job.date_posted else None,
+            "is_new_find": bool(result.run_id == run.id and job.ingested_at and job.ingested_at >= run.started_at),
             "final_score": result.final_score / 100 if result.final_score is not None else None,
             "semantic_score": result.semantic_score,
             "skills_score": result.skills_score / 100 if result.skills_score is not None else None,
@@ -129,6 +149,9 @@ async def list_jobs(
             "location_score": result.location_score / 100 if result.location_score is not None else None,
             "recency_score": result.recency_score / 100 if result.recency_score is not None else None,
             "title_relevance_score": result.title_relevance_score / 100 if result.title_relevance_score is not None else None,
+            "fit_band": result.fit_band,
+            "confidence_band": result.confidence_band,
+            "explanation_summary": result.explanation_summary,
             "company_tier": result.company_tier if result.company_tier not in ("default", "", None) else None,
             "is_contract": result.is_contract,
             "archived_by_llm": result.archived_by_llm,
@@ -142,6 +165,7 @@ async def list_jobs(
         "available_sites": available_sites,
         "page": page,
         "limit": limit,
+        "new_good_matches": new_good_matches,
     }
 
 
@@ -333,13 +357,14 @@ async def get_job(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(JobRaw)
+        select(JobResult, JobRaw)
         .join(JobResult, JobResult.job_id == JobRaw.id)
         .where(JobRaw.id == job_id, JobResult.user_id == current_user.id)
     )
-    job = result.scalar_one_or_none()
-    if not job:
+    row = result.first()
+    if not row:
         raise HTTPException(status_code=404, detail="Job not found")
+    job_result, job = row
     return {
         "id": job.id,
         "job_url": job.job_url,
@@ -349,4 +374,7 @@ async def get_job(
         "location": job.location,
         "site": job.site,
         "date_posted": job.date_posted.isoformat() if job.date_posted else None,
+        "fit_band": job_result.fit_band,
+        "confidence_band": job_result.confidence_band,
+        "explanation_summary": job_result.explanation_summary,
     }

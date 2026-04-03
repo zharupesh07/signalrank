@@ -59,3 +59,33 @@ def test_build_job_embedding_text_skills_before_responsibilities():
     assert text.index("REQUIRED_SKILLS") < text.index("RESPONSIBILITIES"), (
         "Skills must appear before responsibilities so they fit within the 256-token BGE-small limit"
     )
+
+
+def test_build_job_and_resume_embedding_text_supports_prefixes():
+    from domain.embeddings import build_job_embedding_text, build_resume_embedding_text
+
+    cfg = {
+        "embeddings": {
+            "text": {
+                "max_chars": 2000,
+                "query_prefix": "query: ",
+                "passage_prefix": "passage: ",
+            }
+        },
+        "resume": {"embedding_prefix": "candidate: "},
+    }
+    job_text = build_job_embedding_text(
+        title="ML Engineer",
+        description="build models",
+        canonical_skills=["python"],
+        cfg=cfg,
+    )
+    resume_text = build_resume_embedding_text(
+        resume_text="Platform engineer",
+        distilled=None,
+        cfg=cfg,
+        use_case="default",
+    )
+    assert job_text.startswith("passage: ")
+    assert "ROLE: ML Engineer" in job_text
+    assert resume_text.startswith("query: ")

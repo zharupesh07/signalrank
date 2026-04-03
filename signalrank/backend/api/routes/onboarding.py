@@ -14,6 +14,7 @@ from api.database import AsyncSessionLocal, get_db
 from api.deps import get_current_user
 from api.deps_llm import get_llm_client
 from api.models import Profile, User
+from domain.candidate_profile import build_candidate_profile
 from domain.career_intent import build_career_intent_profile
 from domain.resume_editor import has_resume_editor_content, merge_resume_editor, parse_resume_editor
 from llm.onboarding import generate_onboarding_questions
@@ -258,6 +259,12 @@ def _apply_parsed_profile_updates(profile: Profile, parsed: ResumeParseResult) -
     if inferred_max_yoe is not None:
         profile.max_yoe = inferred_max_yoe
 
+    _sync_career_intent_override(profile)
+    profile.candidate_profile = build_candidate_profile(
+        parsed=parsed,
+        profile=profile,
+        resume_text=profile.resume_text,
+    )
     return distilled_text
 
 
@@ -636,5 +643,6 @@ async def refine_onboarding(
     elif qid == "onboarding_complete":
         profile.onboarding_complete = True
 
+    profile.candidate_profile = build_candidate_profile(profile=profile)
     await db.commit()
     return {"status": "saved", "question_id": qid}

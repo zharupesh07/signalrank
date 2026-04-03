@@ -16,6 +16,7 @@ from api.config import settings
 from batch.context import build_context, get_batch, load_base_config
 from batch.embedding_cache import PgEmbeddingCache, clear_vector_cache, store_job_embeddings
 from batch.memory import log_rss, release_memory
+from domain.candidate_profile import build_candidate_profile
 from domain.additive_scoring import (
     detect_contract_type,
     recency_score_0_100,
@@ -30,8 +31,12 @@ from domain.embeddings import (
     fingerprint_text,
     unload_embedding_engine,
 )
+from domain.job_profile import build_job_profile
+from domain.match_judge import judge_match_report
+from domain.match_verifier import verify_match_report
 from domain.profile_rules import enrich_config_with_profile_rules, title_rule_flags
-from domain.profile_rules import text_matches_profile_positive_terms
+from domain.profile_rules import profile_description_alignment_multiplier, text_matches_profile_positive_terms
+from domain.score_synthesis import synthesize_match_score
 from domain.title_relevance import compute_title_relevance, title_relevance_score_0_100
 from domain.roles import (
     classify_functional_role,
@@ -42,11 +47,13 @@ from domain.scoring import (
     calculate_role_and_skill_match_score,
     calculate_seniority_score,
     extract_required_yoe,
+    location_tier,
     location_weight,
     recency_weight,
 )
 from domain.skill_boost import bounded_skill_boost
 from domain.skills import SkillCanonicalizer, extract_skills_from_texts
+from llm.openrouter import OpenRouterClient
 
 logger = logging.getLogger(__name__)
 
@@ -176,19 +183,19 @@ async def load_jobs_by_ids_dataframe(
     stmt = select(
         JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.company,
         func.left(JobRaw.description, _RANK_DESCRIPTION_CHARS).label("description"),
-        JobRaw.location, JobRaw.site, JobRaw.date_posted, JobRaw.role_clusters, JobRaw.embedding,
+        JobRaw.location, JobRaw.site, JobRaw.date_posted, JobRaw.role_clusters, JobRaw.job_profile, JobRaw.embedding,
     ).where(JobRaw.id.in_(job_ids))
     result = await db.execute(stmt)
     rows = result.all()
     if not rows:
         return pd.DataFrame(
             columns=["id", "job_url", "title", "company", "description",
-                     "location", "site", "date_posted", "role_clusters", "embedding"]
+                     "location", "site", "date_posted", "role_clusters", "job_profile", "embedding"]
         )
     return pd.DataFrame(
         rows,
         columns=["id", "job_url", "title", "company", "description",
-                 "location", "site", "date_posted", "role_clusters", "embedding"],
+                 "location", "site", "date_posted", "role_clusters", "job_profile", "embedding"],
     )
 
 
@@ -372,7 +379,8 @@ def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     df["seniority_score_dim"] = np.clip(((df["seniority_score"] - 0.4) / 0.75) * 90 + 10, 0, 100)
 
     # Location — vectorized
-    df["location_score"] = np.where(df["location_weight"] > 1.0, 100.0, 30.0)
+    if "location_score" not in df.columns:
+        df["location_score"] = 40.0
 
     # Recency — still per-row (date parsing)
     df["recency_score"] = df["date_posted"].apply(recency_score_0_100)
@@ -435,6 +443,16 @@ def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
         )
         df.loc[hybrid_mask & ~hybrid_keep, "final_score"] *= hybrid_cfg.get("multiplier", 0.82)
 
+    df["profile_alignment_multiplier"] = df.apply(
+        lambda r: profile_description_alignment_multiplier(
+            r.get("title") or "",
+            r.get("description") or "",
+            cfg,
+        ),
+        axis=1,
+    )
+    df["final_score"] = df["final_score"] * df["profile_alignment_multiplier"]
+
     # Contract penalty — vectorized
     contract_penalty = cfg.get("ranking", {}).get("contract_penalty", 0.9)
     df["is_contract"] = df.apply(
@@ -442,6 +460,196 @@ def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     )
     df.loc[df["is_contract"], "final_score"] *= contract_penalty
     return df
+
+
+def _agentic_client_or_none() -> OpenRouterClient | None:
+    api_key = getattr(settings, "openrouter_api_key", None)
+    if not api_key:
+        return None
+    try:
+        return OpenRouterClient(api_key=api_key)
+    except Exception:
+        logger.warning("Agentic matching disabled: could not initialize OpenRouter client", exc_info=True)
+        return None
+
+
+def _row_job_profile(row: pd.Series, cfg: dict, persisted_job_profile: dict | None = None) -> dict:
+    job_profile = persisted_job_profile or row.get("job_profile")
+    if isinstance(job_profile, dict) and job_profile:
+        return job_profile
+    return build_job_profile(
+        title=row.get("title"),
+        company=row.get("company"),
+        description=row.get("description"),
+        location=row.get("location"),
+        site=row.get("site"),
+        date_posted=row.get("date_posted"),
+        role_clusters=row.get("role_clusters"),
+        cfg=cfg,
+    )
+
+
+def _row_match_payload(row: pd.Series) -> str:
+    description = str(row.get("description") or "")
+    return "\n".join(
+        part
+        for part in [
+            f"TITLE: {row.get('title') or ''}",
+            f"COMPANY: {row.get('company') or ''}",
+            f"LOCATION: {row.get('location') or ''}",
+            description[:2000],
+        ]
+        if part
+    )
+
+
+async def _judge_selected_jobs(
+    df: pd.DataFrame,
+    *,
+    selected_indices: list[int],
+    candidate_profile: dict,
+    resume_text: str,
+    cfg: dict,
+    llm_client: OpenRouterClient | None,
+    persisted_job_profiles: dict[str, dict] | None = None,
+) -> list[dict]:
+    tasks = []
+    for idx in selected_indices:
+        row = df.loc[idx]
+        job_profile = _row_job_profile(row, cfg, (persisted_job_profiles or {}).get(str(row["id"])))
+        job_text = _row_match_payload(row)
+        tasks.append(
+            judge_match_report(
+                candidate_profile=candidate_profile,
+                job_profile=job_profile,
+                resume_text=resume_text,
+                job_text=job_text,
+                llm_client=llm_client,
+                max_tokens=cfg.get("ranking", {}).get("agentic_matching", {}).get("max_judge_tokens", 1200),
+            )
+        )
+    return await asyncio.gather(*tasks)
+
+
+async def _verify_selected_jobs(
+    match_reports: list[dict],
+    selected_rows: list[pd.Series],
+    *,
+    candidate_profile: dict,
+    cfg: dict,
+    llm_client: OpenRouterClient | None,
+    persisted_job_profiles: dict[str, dict] | None = None,
+) -> list[dict]:
+    tasks = []
+    for match_report, row in zip(match_reports, selected_rows):
+        job_profile = _row_job_profile(row, cfg, (persisted_job_profiles or {}).get(str(row["id"])))
+        tasks.append(
+            verify_match_report(
+                match_report=match_report,
+                candidate_profile=candidate_profile,
+                job_profile=job_profile,
+                llm_client=llm_client,
+                max_tokens=cfg.get("ranking", {}).get("agentic_matching", {}).get("max_verifier_tokens", 700),
+            )
+        )
+    return await asyncio.gather(*tasks)
+
+
+async def _apply_agentic_matching(
+    df: pd.DataFrame,
+    *,
+    cfg: dict,
+    user_id: str,
+    resume_text: str,
+    profile: Profile | None,
+    db: AsyncSession,
+    llm_client: OpenRouterClient | None = None,
+) -> pd.DataFrame:
+    agentic_cfg = cfg.get("ranking", {}).get("agentic_matching", {}) or {}
+    if not agentic_cfg.get("enabled", False) or df.empty:
+        df["match_report"] = None
+        df["verification_report"] = None
+        df["fit_band"] = None
+        df["confidence_band"] = None
+        df["explanation_summary"] = None
+        return df
+
+    for column in ("match_report", "verification_report", "fit_band", "confidence_band", "explanation_summary"):
+        if column not in df.columns:
+            df[column] = None
+
+    candidate_profile = None
+    if profile and isinstance(profile.candidate_profile, dict):
+        candidate_profile = profile.candidate_profile
+    else:
+        candidate_profile = build_candidate_profile(profile=profile, resume_text=resume_text, cfg=cfg)
+
+    created_client = False
+    if llm_client is None:
+        llm_client = _agentic_client_or_none()
+        created_client = llm_client is not None
+
+    try:
+        judge_top_n = int(agentic_cfg.get("judge_top_n", 20))
+        min_score = float(agentic_cfg.get("min_deterministic_score", 45))
+        eligible = df[df["final_score"] >= min_score].nlargest(judge_top_n, "final_score")
+        if eligible.empty:
+            df["match_report"] = None
+            df["verification_report"] = None
+            df["fit_band"] = None
+            df["confidence_band"] = None
+            df["explanation_summary"] = None
+            return df
+
+        selected_indices = list(eligible.index)
+        selected_rows = [df.loc[idx] for idx in selected_indices]
+        selected_job_ids = [str(df.at[idx, "id"]) for idx in selected_indices]
+        persisted_job_profiles: dict[str, dict] = {}
+        if selected_job_ids:
+            profile_rows = await db.execute(
+                select(JobRaw.id, JobRaw.job_profile).where(JobRaw.id.in_(selected_job_ids))
+            )
+            for job_id, job_profile in profile_rows.all():
+                if isinstance(job_profile, dict) and job_profile:
+                    persisted_job_profiles[str(job_id)] = job_profile
+        match_reports = await _judge_selected_jobs(
+            df,
+            selected_indices=selected_indices,
+            candidate_profile=candidate_profile,
+            resume_text=resume_text,
+            cfg=cfg,
+            llm_client=llm_client,
+            persisted_job_profiles=persisted_job_profiles,
+        )
+        verification_reports = await _verify_selected_jobs(
+            match_reports,
+            selected_rows,
+            candidate_profile=candidate_profile,
+            cfg=cfg,
+            llm_client=llm_client,
+            persisted_job_profiles=persisted_job_profiles,
+        )
+
+        for idx, row, match_report, verification_report in zip(selected_indices, selected_rows, match_reports, verification_reports):
+            synthesis = synthesize_match_score(
+                deterministic_score=float(row["final_score"] or 0.0),
+                match_report=match_report,
+                verification_report=verification_report,
+            )
+            df.at[idx, "final_score"] = synthesis["final_score"]
+            df.at[idx, "fit_band"] = synthesis["fit_band"]
+            df.at[idx, "confidence_band"] = synthesis["confidence_band"]
+            df.at[idx, "explanation_summary"] = synthesis["explanation_summary"]
+            df.at[idx, "match_report"] = match_report
+            df.at[idx, "verification_report"] = verification_report
+
+        return df
+    finally:
+        if created_client and llm_client is not None:
+            try:
+                await llm_client.close()
+            except Exception:
+                logger.debug("Agentic LLM client close skipped", exc_info=True)
 
 
 _SENIORITY_SUFFIXES = re.compile(
@@ -649,115 +857,127 @@ async def score_jobs_for_user(
     job_urls: list[str] | None = None,
 ) -> pd.DataFrame:
     from domain.role_clusters import roles_to_clusters
-    if job_urls:
-        logger.info("Ranking against %d freshly scraped jobs (filtered mode)", len(job_urls))
-    ctx = build_context(user_id, resume_text, config_overrides)
-    profile_roles = ctx.config.get("profile_intent", {}).get("roles", [])
-    clusters = roles_to_clusters(profile_roles) if profile_roles else None
-    cfg = enrich_config_with_profile_rules(
-        ctx.config,
-        resume_text=resume_text,
-        profile_roles=profile_roles,
-    )
-    logger.info(
-        "Profile title rules",
-        extra={
-            "user_id": user_id,
-            "archetypes": cfg.get("ranking", {}).get("profile_archetypes", []),
-            "rule_counts": {
-                name: len(patterns)
-                for name, patterns in (cfg.get("ranking", {}).get("profile_title_rules", {}) or {}).items()
-            },
-        },
-    )
-    role_intent = (
-        cfg.get("profile_intent", {}).get("preset")
-        or cfg.get("ranking", {}).get("default_role")
-        or "software_general"
-    )
 
-    persisted_resume_embedding = None
-    if _is_uuid_like(user_id):
-        profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
-        profile = profile_result.scalar_one_or_none()
-        if profile and profile.resume_embedding is not None:
-            persisted_resume_embedding = list(profile.resume_embedding)
-
-    # ANN pre-filter: when no specific job_urls are requested and a resume
-    # embedding is available, use the HNSW index to narrow candidates from
-    # _RANK_MAX_CANDIDATES (2000) to _ANN_PREFILTER_CANDIDATES (600) before
-    # full scoring. Falls back to the global pool if ANN returns too few results.
-    effective_job_urls = job_urls
-    if effective_job_urls is None and persisted_resume_embedding is not None:
-        ann_urls = await ann_prefilter_job_urls(db, persisted_resume_embedding)
-        if len(ann_urls) >= 50:
-            effective_job_urls = ann_urls
-            logger.info("ANN pre-filter: %d candidates (embedding-based)", len(ann_urls))
-        else:
-            logger.info("ANN pre-filter skipped: only %d embedded jobs, using global pool", len(ann_urls))
-
-    base_cfg_fp = build_context(user_id="__base__", resume_text="").config_fp
-    canon = SkillCanonicalizer(cfg)
-    frames: list[pd.DataFrame] = []
-    total_loaded = 0
-    total_scored = 0
-    rank_load_chunk = max(1, min(_RANK_LOAD_CHUNK, _RANK_MAX_CANDIDATES))
-
-    for offset in range(0, _RANK_MAX_CANDIDATES, rank_load_chunk):
-        page_limit = min(rank_load_chunk, _RANK_MAX_CANDIDATES - offset)
-        df = await load_jobs_dataframe(db, role_clusters=clusters, job_urls=effective_job_urls, limit=page_limit, offset=offset)
-        if df.empty:
-            break
-        total_loaded += len(df)
-        log_rss(logger, "rank_jobs_loaded_chunk", jobs=len(df), offset=offset, total_loaded=total_loaded)
-
-        scored = await _score_loaded_jobs_dataframe(
-            db=db,
-            df=df,
-            user_id=user_id,
+    llm_client = None
+    try:
+        if job_urls:
+            logger.info("Ranking against %d freshly scraped jobs (filtered mode)", len(job_urls))
+        ctx = build_context(user_id, resume_text, config_overrides)
+        profile_roles = ctx.config.get("profile_intent", {}).get("roles", [])
+        clusters = roles_to_clusters(profile_roles) if profile_roles else None
+        cfg = enrich_config_with_profile_rules(
+            ctx.config,
             resume_text=resume_text,
-            config_overrides=config_overrides,
-            distilled_text=distilled_text,
-            cfg=cfg,
-            role_intent=role_intent,
-            persisted_resume_embedding=persisted_resume_embedding,
-            skip_context_enrichment=True,
-            canon=canon,
-            base_cfg_fp=base_cfg_fp,
+            profile_roles=profile_roles,
         )
-        if not scored.empty:
-            total_scored += len(scored)
-            frames.append(scored)
         logger.info(
-            "Ranking chunk complete: loaded=%d scored=%d offset=%d/%d",
-            len(df),
-            len(scored),
-            offset + len(df),
-            _RANK_MAX_CANDIDATES,
+            "Profile title rules",
+            extra={
+                "user_id": user_id,
+                "archetypes": cfg.get("ranking", {}).get("profile_archetypes", []),
+                "rule_counts": {
+                    name: len(patterns)
+                    for name, patterns in (cfg.get("ranking", {}).get("profile_title_rules", {}) or {}).items()
+                },
+            },
         )
-        log_rss(logger, "rank_chunk_done", offset=offset, loaded=len(df), scored=len(scored))
-        del df, scored
-        release_memory(logger, "rank_chunk_release", offset=offset)
+        role_intent = (
+            cfg.get("profile_intent", {}).get("preset")
+            or cfg.get("ranking", {}).get("default_role")
+            or "software_general"
+        )
 
-        if len(frames) > 1:
-            merged = pd.concat(frames, ignore_index=True)
-            merged = merged.sort_values("final_score", ascending=False).head(_RANK_MAX_CANDIDATES).reset_index(drop=True)
-            frames = [merged]
-            log_rss(logger, "rank_chunk_merge", rows=len(merged))
-            release_memory(logger, "rank_chunk_merge_release", rows=len(merged))
+        profile = None
+        persisted_resume_embedding = None
+        if _is_uuid_like(user_id):
+            profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+            profile = profile_result.scalar_one_or_none()
+            if profile and profile.resume_embedding is not None:
+                persisted_resume_embedding = list(profile.resume_embedding)
 
-        if len(frames) == 1 and len(frames[0]) >= _RANK_MAX_CANDIDATES and offset + len(frames[0]) >= _RANK_MAX_CANDIDATES:
-            break
+        if cfg.get("ranking", {}).get("agentic_matching", {}).get("enabled", False):
+            llm_client = _agentic_client_or_none()
 
-    unload_embedding_engine()
-    clear_vector_cache()
-    if not frames:
-        return pd.DataFrame(columns=["final_score"])
+        # ANN pre-filter: when no specific job_urls are requested and a resume
+        # embedding is available, use the HNSW index to narrow candidates from
+        # _RANK_MAX_CANDIDATES (2000) to _ANN_PREFILTER_CANDIDATES (600) before
+        # full scoring. Falls back to the global pool if ANN returns too few results.
+        effective_job_urls = job_urls
+        if effective_job_urls is None and persisted_resume_embedding is not None:
+            ann_urls = await ann_prefilter_job_urls(db, persisted_resume_embedding)
+            if len(ann_urls) >= 50:
+                effective_job_urls = ann_urls
+                logger.info("ANN pre-filter: %d candidates (embedding-based)", len(ann_urls))
+            else:
+                logger.info("ANN pre-filter skipped: only %d embedded jobs, using global pool", len(ann_urls))
 
-    df = pd.concat(frames, ignore_index=True)
-    logger.info("Ranking chunked aggregation complete: loaded=%d scored=%d", total_loaded, len(df))
-    log_rss(logger, "rank_jobs_aggregated", total_loaded=total_loaded, scored=len(df))
-    return _finalize_ranked_dataframe(df, user_id, role_intent="chunked")
+        base_cfg_fp = build_context(user_id="__base__", resume_text="").config_fp
+        canon = SkillCanonicalizer(cfg)
+        frames: list[pd.DataFrame] = []
+        total_loaded = 0
+        total_scored = 0
+        rank_load_chunk = max(1, min(_RANK_LOAD_CHUNK, _RANK_MAX_CANDIDATES))
+
+        for offset in range(0, _RANK_MAX_CANDIDATES, rank_load_chunk):
+            page_limit = min(rank_load_chunk, _RANK_MAX_CANDIDATES - offset)
+            df = await load_jobs_dataframe(db, role_clusters=clusters, job_urls=effective_job_urls, limit=page_limit, offset=offset)
+            if df.empty:
+                break
+            total_loaded += len(df)
+            log_rss(logger, "rank_jobs_loaded_chunk", jobs=len(df), offset=offset, total_loaded=total_loaded)
+
+            scored = await _score_loaded_jobs_dataframe(
+                db=db,
+                df=df,
+                user_id=user_id,
+                resume_text=resume_text,
+                config_overrides=config_overrides,
+                distilled_text=distilled_text,
+                cfg=cfg,
+                role_intent=role_intent,
+                persisted_resume_embedding=persisted_resume_embedding,
+                skip_context_enrichment=True,
+                canon=canon,
+                base_cfg_fp=base_cfg_fp,
+                profile=profile,
+                llm_client=llm_client,
+            )
+            if not scored.empty:
+                total_scored += len(scored)
+                frames.append(scored)
+            logger.info(
+                "Ranking chunk complete: loaded=%d scored=%d offset=%d/%d",
+                len(df),
+                len(scored),
+                offset + len(df),
+                _RANK_MAX_CANDIDATES,
+            )
+            log_rss(logger, "rank_chunk_done", offset=offset, loaded=len(df), scored=len(scored))
+            del df, scored
+            release_memory(logger, "rank_chunk_release", offset=offset)
+
+            if len(frames) > 1:
+                merged = pd.concat(frames, ignore_index=True)
+                merged = merged.sort_values("final_score", ascending=False).head(_RANK_MAX_CANDIDATES).reset_index(drop=True)
+                frames = [merged]
+                log_rss(logger, "rank_chunk_merge", rows=len(merged))
+                release_memory(logger, "rank_chunk_merge_release", rows=len(merged))
+
+            if len(frames) == 1 and len(frames[0]) >= _RANK_MAX_CANDIDATES and offset + len(frames[0]) >= _RANK_MAX_CANDIDATES:
+                break
+
+        unload_embedding_engine()
+        clear_vector_cache()
+        if not frames:
+            return pd.DataFrame(columns=["final_score"])
+
+        df = pd.concat(frames, ignore_index=True)
+        logger.info("Ranking chunked aggregation complete: loaded=%d scored=%d", total_loaded, len(df))
+        log_rss(logger, "rank_jobs_aggregated", total_loaded=total_loaded, scored=len(df))
+        return _finalize_ranked_dataframe(df, user_id, role_intent="chunked")
+    finally:
+        if llm_client is not None:
+            await llm_client.close()
 
 
 async def score_job_ids_for_user(
@@ -769,14 +989,25 @@ async def score_job_ids_for_user(
     distilled_text: str | None = None,
 ) -> pd.DataFrame:
     df = await load_jobs_by_ids_dataframe(db, job_ids)
-    return await _score_loaded_jobs_dataframe(
-        db=db,
-        df=df,
-        user_id=user_id,
-        resume_text=resume_text,
-        config_overrides=config_overrides,
-        distilled_text=distilled_text,
-    )
+    profile = None
+    if _is_uuid_like(user_id):
+        profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+        profile = profile_result.scalar_one_or_none()
+    llm_client = _agentic_client_or_none()
+    try:
+        return await _score_loaded_jobs_dataframe(
+            db=db,
+            df=df,
+            user_id=user_id,
+            resume_text=resume_text,
+            config_overrides=config_overrides,
+            distilled_text=distilled_text,
+            profile=profile,
+            llm_client=llm_client,
+        )
+    finally:
+        if llm_client is not None:
+            await llm_client.close()
 
 
 async def _score_loaded_jobs_dataframe(
@@ -793,6 +1024,8 @@ async def _score_loaded_jobs_dataframe(
     skip_context_enrichment: bool = False,
     canon: SkillCanonicalizer | None = None,
     base_cfg_fp: str | None = None,
+    profile: Profile | None = None,
+    llm_client: OpenRouterClient | None = None,
 ) -> pd.DataFrame:
     t_total = time.monotonic()
     ctx = build_context(user_id, resume_text, config_overrides)
@@ -817,6 +1050,10 @@ async def _score_loaded_jobs_dataframe(
             },
         )
 
+    if profile is None and _is_uuid_like(user_id):
+        profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+        profile = profile_result.scalar_one_or_none()
+
     if df.empty:
         return pd.DataFrame(columns=["final_score"])
 
@@ -839,8 +1076,6 @@ async def _score_loaded_jobs_dataframe(
 
     effective_persisted_resume_embedding = persisted_resume_embedding
     if effective_persisted_resume_embedding is None and _is_uuid_like(user_id):
-        profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
-        profile = profile_result.scalar_one_or_none()
         if profile and profile.resume_embedding is not None:
             effective_persisted_resume_embedding = list(profile.resume_embedding)
 
@@ -882,6 +1117,10 @@ async def _score_loaded_jobs_dataframe(
     df["company_weight"] = df["company"].apply(scorer.score)
     df["company_tier"] = df["company"].apply(scorer.classify)
     df["location_weight"] = df["location"].apply(lambda x: location_weight(x, cfg))
+    df["location_score"] = df.apply(
+        lambda r: location_tier(r["location"], r["description"], cfg),
+        axis=1,
+    )
     df["recency_weight"] = df["date_posted"].apply(lambda d: recency_weight(cfg, d))
 
     user_yoe = cfg.get("experience", {}).get("max_yoe")
@@ -895,6 +1134,15 @@ async def _score_loaded_jobs_dataframe(
     df["functional_role_penalty"] = df["functional_role"].map(penalties).fillna(1.0)
 
     df = _apply_additive_scoring(df, cfg)
+    df = await _apply_agentic_matching(
+        df,
+        cfg=cfg,
+        user_id=user_id,
+        resume_text=resume_text,
+        profile=profile,
+        db=db,
+        llm_client=llm_client,
+    )
 
     return _finalize_ranked_dataframe(df, user_id, role_intent=effective_role_intent, duration_s=time.monotonic() - t_total)
 

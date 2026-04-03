@@ -54,3 +54,22 @@ def test_build_career_intent_profile_for_innovation_resume_preserves_non_generic
     assert "innovation_rd_engineer" in archetype_ids
     assert "Innovation Engineer" in titles
     assert "R&D Engineer" in profile["query_plan"]["title_queries"]
+
+
+def test_build_career_intent_profile_for_ai_platform_resume_prefers_platform_roles():
+    parsed = ResumeParseResult(
+        skills=["Python", "GCP", "Kubernetes", "Terraform", "MLOps", "LangGraph"],
+        recent_titles=["Senior AI Platform Engineer", "Senior Machine Learning Engineer"],
+        suggested_search_queries=["AI Platform Engineer", "Data Scientist"],
+        years_of_experience=7,
+    )
+
+    profile = build_career_intent_profile(parsed)
+
+    archetype_ids = [item["id"] for item in profile["career_archetypes"]]
+    titles = [item["title"] for item in profile["target_roles"]]
+
+    assert "ai_platform_engineer" in archetype_ids
+    assert titles[:3] == ["AI Platform Engineer", "MLOps Engineer", "ML Platform Engineer"]
+    assert "Data Scientist" not in titles
+    assert "AI Platform Engineer" in profile["query_plan"]["title_queries"]

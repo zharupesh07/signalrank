@@ -12,12 +12,16 @@ paths:
 # EMBEDDINGS (ENGINE)
 # --------------------
 embeddings:
-  model_name: BAAI/bge-small-en-v1.5
+  model_name: sentence-transformers/all-MiniLM-L6-v2
   embedding_dim: 384
   device: cpu
+  session_intra_op_threads: 4
+  session_inter_op_threads: 1
   text:
     normalize_embeddings: true
     max_chars: 50000
+    query_prefix: ""
+    passage_prefix: ""
 
 # --------------------
 # RANKING MECHANICS (NEUTRAL)
@@ -122,6 +126,20 @@ ranking:
     enabled: false
     model_max_tokens: 200
     penalty_multiplier: 0.65
+
+  agentic_matching:
+    enabled: true
+    judge_top_n: 20
+    verifier_top_n: 10
+    max_judge_tokens: 1200
+    max_verifier_tokens: 700
+    rerank_enabled: true
+    min_deterministic_score: 45
+    strong_multiplier: 1.08
+    adjacent_multiplier: 1.00
+    weak_multiplier: 0.92
+    misleading_multiplier: 0.78
+    reject_multiplier: 0.55
 
   profile_title_rule_scoring:
     strong:

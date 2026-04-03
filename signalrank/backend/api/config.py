@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     db_max_overflow: int = 3
     db_pool_timeout: int = 30
     llm_response_cache_max: int = 1000
+    llm_semaphore: int = 3
     resume_preview_cache_max: int = 16
     resume_worker_concurrency: int = 1
     archival_worker_concurrency: int = 1

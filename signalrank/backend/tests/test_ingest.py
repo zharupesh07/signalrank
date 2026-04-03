@@ -5,8 +5,18 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime, timezone, timedelta
 
+from sqlalchemy import select
+
+from api.models import JobRaw
 from api.routes.ingest import _parse_ingest_response, _compute_priority, _validate_url, ingest_extract, IngestRequest
 from fastapi import HTTPException
+
+@pytest.fixture
+async def auth_token(client):
+    await client.post("/api/auth/register", json={"email": "ingest@test.com", "password": "password123"})
+    r = await client.post("/api/auth/login", json={"email": "ingest@test.com", "password": "password123"})
+    return r.json()["access_token"]
+
 
 LLM_RESPONSE = """TITLE: Senior ML Engineer
 COMPANY: Acme Corp
@@ -107,3 +117,24 @@ async def test_ingest_extract_uses_structured_schema_output():
         "date_posted",
         "description",
     ]
+
+
+@pytest.mark.asyncio
+async def test_ingest_confirm_persists_job_profile(client, auth_token, db):
+    response = await client.post(
+        "/api/jobs/ingest/confirm",
+        json={
+            "title": "Senior ML Engineer",
+            "company": "Acme Corp",
+            "location": "Remote",
+            "job_url": "https://example.com/jobs/123",
+            "date_posted": "2026-03-23",
+            "description": "Build ML infrastructure with Python and Kubernetes.",
+        },
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 200
+
+    job = (await db.execute(select(JobRaw).where(JobRaw.job_url == "https://example.com/jobs/123"))).scalar_one()
+    assert job.job_profile["role_family"] == "AI / ML"
+    assert job.job_profile["work_mode"] == "remote"

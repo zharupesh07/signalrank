@@ -89,6 +89,45 @@ def location_score_0_100(weight: float) -> float:
     return 100.0 if weight > 1.0 else 30.0
 
 
+_INDIA_SUFFIXES = (
+    ", in", " india", "india,", "bengaluru", "bangalore", "hyderabad", "mumbai", "pune",
+    "delhi", "noida", "gurgaon", "gurugram", "chennai", "kolkata", "ahmedabad",
+    " ka,", " mh,", " ts,", " dl,", " tn,", " wb,", " gj,", " hr,", " up,",
+)
+
+
+def location_score_5tier(location: str, description: str, cfg: dict) -> int:
+    """Return location match score 0-100 across a practical gradient."""
+    loc_cfg = cfg.get("location_scoring", {})
+    preferred: list[str] = loc_cfg.get("preferred_locations", []) or []
+    want_remote: bool = bool(loc_cfg.get("want_remote", False))
+
+    loc = (location or "").lower().strip()
+    work_mode = detect_work_mode(location or "", "", description or "")
+
+    if work_mode == "remote":
+        if want_remote or any("remote" in str(p).lower() for p in preferred):
+            return 100
+        return 75
+
+    if preferred and loc:
+        for pref in preferred:
+            pref_text = str(pref).lower().strip()
+            if pref_text and pref_text in loc:
+                return 90
+
+    if work_mode == "hybrid":
+        return 70
+
+    if loc and any(suffix in loc for suffix in _INDIA_SUFFIXES):
+        return 50
+
+    if not loc:
+        return 40
+
+    return 20
+
+
 def recency_score_0_100(date_posted) -> float:
     if date_posted is None:
         return 30.0

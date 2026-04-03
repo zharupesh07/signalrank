@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import os
 from typing import List
 
 import numpy as np
@@ -11,6 +12,11 @@ logger = logging.getLogger(__name__)
 _ENGINE = None
 _MAX_SEQ_LEN = 256
 _EMBED_BATCH_SIZE = 4
+
+
+def _default_thread_count() -> int:
+    cpu_count = os.cpu_count() or 1
+    return max(1, min(4, cpu_count))
 
 
 def fingerprint_text(text: str) -> str:
@@ -32,15 +38,21 @@ class EmbeddingEngine:
 
         emb_cfg = cfg["embeddings"]
         self.normalize = emb_cfg["text"].get("normalize_embeddings", True)
-        model_repo = emb_cfg.get("model_name", "BAAI/bge-small-en-v1.5")
+        model_repo = emb_cfg.get("model_name", "sentence-transformers/all-MiniLM-L6-v2")
         self._model_repo = model_repo
+        self._session_intra_op_threads = int(
+            emb_cfg.get("session_intra_op_threads", _default_thread_count())
+        )
+        self._session_inter_op_threads = int(
+            emb_cfg.get("session_inter_op_threads", 1)
+        )
 
         model_path = hf_hub_download(repo_id=model_repo, filename="onnx/model.onnx")
         tokenizer_path = hf_hub_download(repo_id=model_repo, filename="tokenizer.json")
 
         sess_opts = ort.SessionOptions()
-        sess_opts.inter_op_num_threads = 1
-        sess_opts.intra_op_num_threads = 1
+        sess_opts.inter_op_num_threads = self._session_inter_op_threads
+        sess_opts.intra_op_num_threads = self._session_intra_op_threads
         sess_opts.enable_mem_pattern = False       # reduces peak RSS
         sess_opts.enable_cpu_mem_arena = False     # don't pre-allocate arena
         self._session = ort.InferenceSession(
@@ -51,13 +63,27 @@ class EmbeddingEngine:
         self._tokenizer.enable_padding(length=_MAX_SEQ_LEN)
 
         self._batch_size = cfg.get("batch", {}).get("embed_batch_size", _EMBED_BATCH_SIZE)
+        self._engine_key = (
+            self._model_repo,
+            self._session_intra_op_threads,
+            self._session_inter_op_threads,
+            self._batch_size,
+            self.normalize,
+        )
         logger.info("[EMBED] ONNX model loaded from %s", model_repo)
 
     def __new__(cls, cfg):
         global _ENGINE
         emb_cfg = cfg.get("embeddings", {})
-        model_repo = emb_cfg.get("model_name", "BAAI/bge-small-en-v1.5")
-        if _ENGINE is not None and getattr(_ENGINE, "_model_repo", None) == model_repo:
+        model_repo = emb_cfg.get("model_name", "sentence-transformers/all-MiniLM-L6-v2")
+        key = (
+            model_repo,
+            int(emb_cfg.get("session_intra_op_threads", _default_thread_count())),
+            int(emb_cfg.get("session_inter_op_threads", 1)),
+            int(cfg.get("batch", {}).get("embed_batch_size", _EMBED_BATCH_SIZE)),
+            bool(emb_cfg.get("text", {}).get("normalize_embeddings", True)),
+        )
+        if _ENGINE is not None and getattr(_ENGINE, "_engine_key", None) == key:
             return _ENGINE
         self = super().__new__(cls)
         _ENGINE = self
@@ -164,12 +190,16 @@ def build_job_embedding_text(
     cfg: dict,
 ) -> str:
     max_chars = cfg["embeddings"]["text"].get("max_chars", 2000)
+    passage_prefix = cfg["embeddings"]["text"].get("passage_prefix")
 
     title = (title or "").strip()
     desc = " ".join((description or "").split())[:max_chars]
     skills = ", ".join(sorted(canonical_skills)) if canonical_skills else ""
 
-    return f"ROLE: {title}\nREQUIRED_SKILLS: {skills}\nRESPONSIBILITIES: {desc}"
+    text = f"ROLE: {title}\nREQUIRED_SKILLS: {skills}\nRESPONSIBILITIES: {desc}"
+    if passage_prefix:
+        return f"{passage_prefix}{text}"
+    return text
 
 
 def build_resume_embedding_text(*, resume_text, distilled, cfg, use_case):
@@ -185,5 +215,8 @@ def build_resume_embedding_text(*, resume_text, distilled, cfg, use_case):
     prefix = cfg.get("resume", {}).get("embedding_prefix")
     if prefix:
         parts.insert(0, prefix)
+    query_prefix = cfg.get("embeddings", {}).get("text", {}).get("query_prefix")
+    if query_prefix:
+        parts.insert(0, query_prefix)
 
     return "\n\n".join(parts)

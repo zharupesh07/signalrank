@@ -153,6 +153,7 @@ export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [total, setTotal] = useState(0);
   const [runTotal, setRunTotal] = useState(0);
+  const [newGoodMatches, setNewGoodMatches] = useState(0);
   const [availableSites, setAvailableSites] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [sorting, setSorting] = useState<SortingState>([{ id: "final_score", desc: true }]);
@@ -200,6 +201,7 @@ export default function JobsPage() {
       setJobs([]);
       setTotal(0);
       setRunTotal(0);
+      setNewGoodMatches(0);
       setAvailableSites([]);
       setLoading(false);
       return;
@@ -236,6 +238,7 @@ export default function JobsPage() {
       setJobs(response.jobs);
       setTotal(response.total);
       setRunTotal(response.run_total);
+      setNewGoodMatches(response.new_good_matches);
       setAvailableSites(response.available_sites);
       setSelectedJob((current) => {
         if (!current) return null;
@@ -301,11 +304,17 @@ export default function JobsPage() {
     try {
       await api.applications.create(token, { job_id: job.id, company: job.company, title: job.title, status: "interested", system_score: job.final_score, resume_match_pct: job.semantic_score });
       setTracked((prev) => new Set(prev).add(job.id));
+      if (job.is_new_find && (job.final_score ?? 0) >= 0.7) {
+        setNewGoodMatches((prev) => Math.max(0, prev - 1));
+      }
       toast("Added to tracker", "success");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       if (msg.startsWith("409")) {
         setTracked((prev) => new Set(prev).add(job.id));
+        if (job.is_new_find && (job.final_score ?? 0) >= 0.7) {
+          setNewGoodMatches((prev) => Math.max(0, prev - 1));
+        }
         toast("Already tracked", "info");
       } else {
         toast(msg || "Failed to track job", "error");
@@ -396,6 +405,12 @@ export default function JobsPage() {
                 <span className="text-[11px] text-muted-foreground">of {runTotal}</span>
               )}
             </div>
+            {newGoodMatches > 0 && (
+              <div className="mt-2 inline-flex items-center gap-2 border border-[var(--terminal-green-bright)]/25 bg-[var(--terminal-green-bright)]/8 px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-[var(--terminal-green-bright)]">
+                <span className="tabular-nums font-bold">{newGoodMatches}</span>
+                <span>new good matches ready to review</span>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-3">
             {isAdmin && (
@@ -821,6 +836,9 @@ export default function JobsPage() {
                 {selectedJob.is_contract && (
                   <span className="text-[10px] text-[var(--terminal-yellow)] border border-[var(--terminal-yellow)]/30 px-1.5 py-0.5">CONTRACT</span>
                 )}
+                {selectedJob.is_new_find && (
+                  <span className="text-[10px] text-[var(--terminal-green-bright)] border border-[var(--terminal-green-bright)]/30 px-1.5 py-0.5 uppercase tracking-wider">NEW FIND</span>
+                )}
                 <span className="text-[10px] text-muted-foreground">{selectedJob.location ?? "—"}</span>
                 <span className="text-[10px] text-muted-foreground">{selectedJob.site}</span>
                 {selectedJob.archived_by_llm && (
@@ -849,12 +867,19 @@ export default function JobsPage() {
                 {tracked.has(selectedJob.id) ? (
                   <span className="text-[11px] text-muted-foreground uppercase tracking-wider">tracked</span>
                 ) : (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); trackJob(selectedJob); }}
-                    className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 px-2 py-1 hover:bg-primary/10 transition-colors uppercase tracking-wider"
-                  >
-                    <Plus size={8} />track
-                  </button>
+                  <>
+                    {selectedJob.is_new_find && (
+                      <span className="text-[10px] text-[var(--terminal-green-bright)] border border-[var(--terminal-green-bright)]/30 px-1.5 py-1 uppercase tracking-wider">
+                        new
+                      </span>
+                    )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); trackJob(selectedJob); }}
+                      className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 px-2 py-1 hover:bg-primary/10 transition-colors uppercase tracking-wider"
+                    >
+                      <Plus size={8} />track
+                    </button>
+                  </>
                 )}
               </div>
 

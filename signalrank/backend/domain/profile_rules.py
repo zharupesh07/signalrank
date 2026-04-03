@@ -55,6 +55,10 @@ def _has_any(text: str, terms: Iterable[str]) -> bool:
     return any(_contains_phrase(text, term) for term in terms)
 
 
+def _match_count(text: str, terms: Iterable[str]) -> int:
+    return sum(1 for term in terms if _contains_phrase(text, term))
+
+
 def infer_profile_archetypes(
     resume_text: str,
     profile_roles: Iterable[str] | None,
@@ -182,6 +186,69 @@ def infer_profile_archetypes(
     if sap_sd_signals >= 1:
         archetypes.append("sap_sd")
 
+    innovation_signals = 0
+    if skills & {
+        "iot", "robotics", "conversational_ai", "blockchain", "ar_vr",
+        "prototyping", "innovation_management",
+    }:
+        innovation_signals += 1
+    if _has_any(
+        roles_text,
+        [
+            "innovation",
+            "emerging technologies",
+            "r&d",
+            "research engineer",
+            "technical expert innovation",
+            "creative technologist",
+        ],
+    ):
+        innovation_signals += 1
+    if _has_any(
+        resume_text_lower,
+        [
+            "innovation", "emerging technolog", "rapid poc", "rapid pot", "poc", "prototype",
+            "mvp", "iot", "robotics", "conversational ai", "blockchain", "ar/vr",
+            "innovation lab", "workshop facilitation", "go-to-market", "gtm",
+        ],
+    ):
+        innovation_signals += 1
+    if innovation_signals >= 2:
+        archetypes.append("innovation_rd_engineer")
+
+    network_automation_signals = 0
+    if skills & {"networking", "ansible", "python", "aws", "docker"}:
+        network_automation_signals += 1
+    if _has_any(
+        roles_text,
+        [
+            "network automation",
+            "infrastructure automation",
+            "cloud network",
+            "cloud networking",
+            "network engineer",
+            "network operations",
+        ],
+    ):
+        network_automation_signals += 1
+    if _has_any(
+        resume_text_lower,
+        [
+            "network automation",
+            "infrastructure automation",
+            "cloud network",
+            "cloud networking",
+            "network engineer",
+            "network operations",
+            "firewall",
+            "load balancer",
+            "ssl certificate",
+        ],
+    ):
+        network_automation_signals += 1
+    if network_automation_signals >= 2:
+        archetypes.append("network_automation_engineer")
+
     if not archetypes and (skills & {"javascript", "java", "go", "python"} or "engineer" in roles_text):
         archetypes.append("software_generalist")
     if not archetypes:
@@ -301,6 +368,55 @@ def build_profile_title_rules(archetypes: Iterable[str]) -> dict[str, list[str]]
             r"\bsuccessfactors\b",
         ])
 
+    if "innovation_rd_engineer" in archetypes:
+        strong.extend([
+            r"\bcustomer engineer\b",
+            r"\bsolutions engineer\b",
+            r"\bsolutions architect\b",
+            r"\bsales engineer\b",
+            r"\baccount executive\b",
+            r"\bsupport\b",
+            r"\btest automation\b",
+        ])
+        adjacent.extend([
+            r"\bsoftware engineer\b",
+            r"\bai engineer\b",
+            r"\bdata engineer\b",
+            r"\bsite reliability\b",
+            r"\bsre\b",
+        ])
+        hybrid.extend([
+            r"\bapplication engineer\b",
+            r"\bproduct engineer\b",
+        ])
+
+    if "network_automation_engineer" in archetypes:
+        strong.extend([
+            r"\bqa\b",
+            r"\btest\b",
+            r"\bmanual tester\b",
+            r"\bsupport\b",
+            r"\bfrontend\b",
+            r"\bwordpress\b",
+            r"\bshopify\b",
+            r"\bsap\b",
+            r"\bbusiness analyst\b",
+            r"\bdata analyst\b",
+            r"\bproduct manager\b",
+        ])
+        adjacent.extend([
+            r"\bdevops\b",
+            r"\bsite reliability\b",
+            r"\bsre\b",
+            r"\bplatform engineer\b",
+            r"\binfrastructure engineer\b",
+            r"\bcloud engineer\b",
+        ])
+        hybrid.extend([
+            r"\bsystems engineer\b",
+            r"\breliability engineer\b",
+        ])
+
     return {
         "strong": sorted(set(strong)),
         "adjacent": sorted(set(adjacent)),
@@ -322,6 +438,7 @@ def build_profile_positive_terms(archetypes: Iterable[str]) -> dict[str, list[st
         core.extend([
             "sap sd",
             "sd consultant",
+            "functional analyst",
             "sales and distribution",
             "sales & distribution",
             "order to cash",
@@ -383,10 +500,258 @@ def build_profile_positive_terms(archetypes: Iterable[str]) -> dict[str, list[st
             "spark",
         ])
 
+    if "innovation_rd_engineer" in archetypes:
+        core.extend([
+            "innovation",
+            "emerging technologies",
+            "r&d",
+            "prototype",
+            "poc",
+            "mvp",
+            "iot",
+            "robotics",
+        ])
+        broad.extend([
+            "conversational ai",
+            "blockchain",
+            "ar/vr",
+            "workshop",
+            "go-to-market",
+            "gtm",
+        ])
+
+    if "network_automation_engineer" in archetypes:
+        core.extend([
+            "network automation",
+            "infrastructure automation",
+            "cloud network",
+            "cloud networking",
+            "network engineer",
+            "network operations",
+            "firewall",
+            "load balancer",
+        ])
+        broad.extend([
+            "ansible",
+            "python",
+            "servicenow",
+            "ssl certificate",
+            "network reliability",
+        ])
+
     return {
         "core": sorted(set(core)),
         "broad": sorted(set(broad)),
     }
+
+
+def refine_profile_roles_for_ranking(
+    profile_roles: Iterable[str] | None,
+    *,
+    resume_text: str,
+    archetypes: Iterable[str],
+) -> list[str]:
+    roles = [str(role).strip() for role in (profile_roles or []) if str(role).strip()]
+    role_map = {role.lower(): role for role in roles}
+    archetypes = set(archetypes)
+    resume_lower = (resume_text or "").lower()
+
+    if {"ai_builder", "platform_infra"}.issubset(archetypes) and _has_any(
+        resume_lower,
+        ["ai platform", "mlops", "llmops", "platform engineer", "internal developer platform", "idp"],
+    ):
+        preferred = [
+            "AI Platform Engineer",
+            "MLOps Engineer",
+            "ML Platform Engineer",
+            "LLMOps Engineer",
+            "Platform Engineer",
+            "Machine Learning Engineer",
+        ]
+        generic_terms = ("data scientist", "applied scientist", "research scientist", "software engineer")
+        refined: list[str] = []
+        for title in preferred:
+            existing = role_map.get(title.lower())
+            refined.append(existing or title)
+        for role in roles:
+            lowered = role.lower()
+            if lowered in {title.lower() for title in refined}:
+                continue
+            if any(term in lowered for term in generic_terms):
+                continue
+            refined.append(role)
+        return refined[:6]
+
+    if "innovation_rd_engineer" in archetypes:
+        preferred = [
+            "Innovation Engineer",
+            "Emerging Technologies Engineer",
+            "R&D Engineer",
+            "Technical Innovation Consultant",
+            "Innovation Technologist",
+        ]
+        generic_terms = ("software engineer", "ai engineer", "data engineer", "customer engineer", "solutions engineer")
+        refined: list[str] = []
+        for title in preferred:
+            existing = role_map.get(title.lower())
+            refined.append(existing or title)
+        for role in roles:
+            lowered = role.lower()
+            if lowered in {title.lower() for title in refined}:
+                continue
+            if any(term in lowered for term in generic_terms):
+                continue
+            refined.append(role)
+        return refined[:6]
+
+    if "network_automation_engineer" in archetypes:
+        preferred = [
+            "Network Automation Engineer",
+            "Infrastructure Automation Engineer",
+            "Cloud Network Engineer",
+            "Network Reliability Engineer",
+            "Network DevOps Engineer",
+            "Cloud Infrastructure Automation Engineer",
+        ]
+        generic_terms = ("qa", "test", "support", "frontend", "sap", "business analyst", "product manager")
+        refined: list[str] = []
+        for title in preferred:
+            existing = role_map.get(title.lower())
+            refined.append(existing or title)
+        for role in roles:
+            lowered = role.lower()
+            if lowered in {title.lower() for title in refined}:
+                continue
+            if any(term in lowered for term in generic_terms):
+                continue
+            refined.append(role)
+        return refined[:6]
+
+    if "sap_sd" in archetypes:
+        preferred = [
+            "SAP SD Consultant",
+            "SAP OTC Functional Consultant",
+            "SAP S/4HANA SD Consultant",
+            "SAP Sales and Distribution Consultant",
+            "SAP Order to Cash Consultant",
+            "SAP SD Functional Analyst",
+        ]
+        generic_terms = ("basis", "abap developer", "qa", "support specialist", "linux administrator")
+        refined: list[str] = []
+        for title in preferred:
+            existing = role_map.get(title.lower())
+            refined.append(existing or title)
+        for role in roles:
+            lowered = role.lower()
+            if lowered in {title.lower() for title in refined}:
+                continue
+            if any(term in lowered for term in generic_terms):
+                continue
+            refined.append(role)
+        return refined[:6]
+
+    return roles
+
+
+def profile_description_alignment_multiplier(
+    title: str,
+    description: str,
+    cfg: dict,
+) -> float:
+    archetypes = set((cfg.get("ranking", {}) or {}).get("profile_archetypes", []))
+    if not archetypes:
+        return 1.0
+
+    text = f"{title or ''} {description or ''}".lower()
+    multiplier = 1.0
+
+    if {"ai_builder", "platform_infra"}.issubset(archetypes):
+        title_text = (title or "").lower()
+        desc_text = (description or "").lower()
+        ai_terms = [
+            "machine learning", "ml engineer", "ai engineer", "llm", "genai", "rag",
+            "agentic", "ai/ml", "artificial intelligence",
+        ]
+        platform_terms = [
+            "platform engineer", "mlops", "llmops", "kubernetes", "terraform", "docker",
+            "ci/cd", "infrastructure", "deployment", "observability", "site reliability",
+            "sre", "cloud run", "rbac", "oidc",
+        ]
+        platform_title_terms = [
+            "platform engineer", "ai platform", "ml platform", "mlops", "llmops",
+            "site reliability", "sre", "devops",
+        ]
+        research_terms = [
+            "data scientist", "applied scientist", "research scientist", "research engineer",
+        ]
+
+        ai_hits = _match_count(text, ai_terms)
+        platform_hits = _match_count(desc_text, platform_terms)
+        platform_title_hits = _match_count(title_text, platform_title_terms)
+        has_research_title = _has_any(title_text, research_terms)
+
+        if ai_hits >= 1 and (platform_title_hits >= 1 or platform_hits >= 2):
+            multiplier *= 1.08
+        elif has_research_title and platform_title_hits == 0:
+            multiplier *= 0.88
+        elif ai_hits >= 1 and platform_hits == 0 and platform_title_hits == 0:
+            multiplier *= 0.92
+        elif platform_title_hits >= 1 and ai_hits == 0:
+            multiplier *= 0.96
+
+    if "innovation_rd_engineer" in archetypes:
+        title_text = (title or "").lower()
+        desc_text = (description or "").lower()
+        innovation_terms = [
+            "innovation", "emerging technologies", "r&d", "prototype", "poc", "mvp",
+            "iot", "robotics", "innovation lab", "workshop", "go-to-market", "gtm",
+        ]
+        generic_delivery_terms = [
+            "software engineer", "ai engineer", "solutions engineer", "customer engineer",
+            "site reliability", "data engineer", "application engineer",
+        ]
+        innovation_hits = _match_count(f"{title_text} {desc_text}", innovation_terms)
+        generic_hits = _match_count(title_text, generic_delivery_terms)
+
+        if innovation_hits >= 2:
+            multiplier *= 1.10
+        elif innovation_hits == 1:
+            multiplier *= 1.04
+        elif generic_hits >= 1:
+            multiplier *= 0.86
+
+    if "network_automation_engineer" in archetypes:
+        title_text = (title or "").lower()
+        desc_text = (description or "").lower()
+        network_terms = [
+            "network automation",
+            "infrastructure automation",
+            "cloud network",
+            "cloud networking",
+            "firewall",
+            "load balancer",
+            "network operations",
+            "network reliability",
+        ]
+        off_target_terms = [
+            "qa",
+            "manual tester",
+            "support",
+            "frontend",
+            "sap",
+            "business analyst",
+        ]
+        network_hits = _match_count(f"{title_text} {desc_text}", network_terms)
+        off_target_hits = _match_count(title_text, off_target_terms)
+
+        if network_hits >= 2:
+            multiplier *= 1.10
+        elif network_hits == 1:
+            multiplier *= 1.04
+        elif off_target_hits >= 1:
+            multiplier *= 0.82
+
+    return max(0.80, min(multiplier, 1.10))
 
 
 def enrich_config_with_profile_rules(
@@ -412,6 +777,39 @@ def enrich_config_with_profile_rules(
 
     ranking["profile_positive_terms"] = build_profile_positive_terms(archetypes)
     out = dict(cfg)
+    profile_intent = dict(out.get("profile_intent") or {})
+    refined_roles = refine_profile_roles_for_ranking(
+        profile_intent.get("roles") or profile_roles,
+        resume_text=resume_text,
+        archetypes=archetypes,
+    )
+    if refined_roles:
+        profile_intent["roles"] = refined_roles
+
+    if "network_automation_engineer" in archetypes:
+        profile_intent["preset"] = "platform_devops"
+        ranking["title_relevance_floor"] = min(float(ranking.get("title_relevance_floor", 0.25)), 0.0)
+        thresholds = dict(ranking.get("role_semantic_thresholds", {}))
+        thresholds["platform_devops"] = min(float(thresholds.get("platform_devops", 0.35)), 0.20)
+        ranking["role_semantic_thresholds"] = thresholds
+        rule_cfg = dict(ranking.get("profile_title_rule_scoring", {}))
+        adjacent_cfg = dict(rule_cfg.get("adjacent", {}))
+        adjacent_cfg["semantic_floor"] = min(float(adjacent_cfg.get("semantic_floor", 0.50)), 0.35)
+        adjacent_cfg["min_skill_overlap"] = min(int(adjacent_cfg.get("min_skill_overlap", 2)), 1)
+        hybrid_cfg = dict(rule_cfg.get("hybrid", {}))
+        hybrid_cfg["semantic_floor"] = min(float(hybrid_cfg.get("semantic_floor", 0.52)), 0.35)
+        hybrid_cfg["min_skill_overlap"] = min(int(hybrid_cfg.get("min_skill_overlap", 3)), 1)
+        rule_cfg["adjacent"] = adjacent_cfg
+        rule_cfg["hybrid"] = hybrid_cfg
+        ranking["profile_title_rule_scoring"] = rule_cfg
+
+    if "sap_sd" in archetypes:
+        ranking["title_relevance_floor"] = min(float(ranking.get("title_relevance_floor", 0.25)), 0.0)
+        thresholds = dict(ranking.get("role_semantic_thresholds", {}))
+        thresholds["software_general"] = min(float(thresholds.get("software_general", 0.40)), 0.20)
+        ranking["role_semantic_thresholds"] = thresholds
+
+    out["profile_intent"] = profile_intent
     out["ranking"] = ranking
     return out
 

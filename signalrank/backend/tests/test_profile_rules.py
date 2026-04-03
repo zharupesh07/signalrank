@@ -8,6 +8,8 @@ from domain.profile_rules import (
     build_profile_title_rules,
     enrich_config_with_profile_rules,
     infer_profile_archetypes,
+    profile_description_alignment_multiplier,
+    refine_profile_roles_for_ranking,
     text_matches_profile_positive_terms,
     title_rule_flags,
 )
@@ -151,3 +153,116 @@ def test_sap_sd_positive_terms_require_sd_otc_signals():
         "SAP Basis Consultant for Linux administration",
         cfg,
     ) is False
+
+
+def test_ai_platform_profile_alignment_prefers_platform_ai_jobs_over_pure_research_jobs():
+    cfg = load_base_config()
+    enriched = enrich_config_with_profile_rules(
+        cfg,
+        resume_text=(
+            "Senior AI Platform Engineer building agentic systems, MLOps, Kubernetes, "
+            "Terraform, CI/CD, OIDC, RBAC, and cloud-native AI infrastructure."
+        ),
+        profile_roles=["AI Platform Engineer", "MLOps Engineer"],
+    )
+
+    platform_job = profile_description_alignment_multiplier(
+        "Senior AI Platform Engineer",
+        "Build MLOps, Kubernetes, CI/CD, and AI infrastructure for LLM systems.",
+        enriched,
+    )
+    research_job = profile_description_alignment_multiplier(
+        "Applied Scientist",
+        "Train recommendation and personalization models for experimentation and research.",
+        enriched,
+    )
+
+    assert platform_job > 1.0
+    assert research_job < 1.0
+
+
+def test_refine_profile_roles_for_ranking_prunes_generic_roles_for_ai_platform_resume():
+    refined = refine_profile_roles_for_ranking(
+        ["AI Engineer", "Data Scientist", "Software Engineer", "AI Platform Engineer"],
+        resume_text=(
+            "Senior AI Platform Engineer focused on MLOps, IDP, Kubernetes, Terraform, "
+            "CI/CD, and cloud-native AI infrastructure."
+        ),
+        archetypes=["ai_builder", "platform_infra"],
+    )
+
+    assert refined[:3] == ["AI Platform Engineer", "MLOps Engineer", "ML Platform Engineer"]
+    assert "Data Scientist" not in refined
+    assert "Software Engineer" not in refined
+
+
+def test_infer_profile_archetypes_for_innovation_resume():
+    cfg = load_base_config()
+    resume_text = (
+        "Innovation and R&D consultant focused on emerging technologies, IoT, robotics, "
+        "rapid POCs, MVPs, workshop facilitation, and GTM experiments."
+    )
+    roles = ["Innovation Engineer", "Emerging Technologies Engineer"]
+    archetypes = infer_profile_archetypes(resume_text, roles, cfg)
+    assert "innovation_rd_engineer" in archetypes
+
+
+def test_innovation_positive_terms_filter_generic_ai_job_text():
+    cfg = load_base_config()
+    enriched = enrich_config_with_profile_rules(
+        cfg,
+        resume_text=(
+            "Innovation and R&D consultant focused on emerging technologies, IoT, robotics, "
+            "rapid POCs, MVPs, workshop facilitation, and GTM experiments."
+        ),
+        profile_roles=["Innovation Engineer", "Emerging Technologies Engineer"],
+    )
+    assert text_matches_profile_positive_terms(
+        "Innovation lead for rapid prototyping, PoCs, IoT systems, workshop facilitation",
+        enriched,
+    ) is True
+    assert text_matches_profile_positive_terms(
+        "Senior Software Engineer Python GenAI with backend APIs and RAG pipelines",
+        enriched,
+    ) is False
+
+
+def test_refine_profile_roles_for_ranking_prunes_generic_roles_for_innovation_resume():
+    refined = refine_profile_roles_for_ranking(
+        ["Innovation Engineer", "Software Engineer", "AI Engineer"],
+        resume_text=(
+            "Innovation and R&D consultant focused on emerging technologies, IoT, robotics, "
+            "rapid POCs, MVPs, workshop facilitation, and GTM experiments."
+        ),
+        archetypes=["innovation_rd_engineer"],
+    )
+
+    assert refined[:3] == ["Innovation Engineer", "Emerging Technologies Engineer", "R&D Engineer"]
+    assert "Software Engineer" not in refined
+    assert "AI Engineer" not in refined
+
+
+def test_innovation_profile_alignment_penalizes_generic_engineering_titles():
+    cfg = load_base_config()
+    enriched = enrich_config_with_profile_rules(
+        cfg,
+        resume_text=(
+            "Innovation and R&D consultant focused on emerging technologies, IoT, robotics, "
+            "rapid POCs, MVPs, workshop facilitation, and GTM experiments."
+        ),
+        profile_roles=["Innovation Engineer", "Emerging Technologies Engineer"],
+    )
+
+    innovation_job = profile_description_alignment_multiplier(
+        "Innovation Lead",
+        "Run rapid prototypes, IoT PoCs, workshop facilitation, and GTM experiments.",
+        enriched,
+    )
+    generic_job = profile_description_alignment_multiplier(
+        "Senior Software Engineer",
+        "Build backend APIs, platform services, and production software systems.",
+        enriched,
+    )
+
+    assert innovation_job > 1.0
+    assert generic_job < 1.0

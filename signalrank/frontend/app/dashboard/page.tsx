@@ -105,6 +105,7 @@ export default function DashboardPage() {
   const [triggering, setTriggering] = useState(false);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [tracked, setTracked] = useState<Set<string>>(new Set());
+  const [newGoodMatches, setNewGoodMatches] = useState(0);
   const [addJobOpen, setAddJobOpen] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
 
@@ -112,6 +113,7 @@ export default function DashboardPage() {
     if (!token) return;
     const r = await api.jobs.list(token, { page: 1, limit: 10 });
     setJobs(r.jobs);
+    setNewGoodMatches(r.new_good_matches);
   }, [token]);
 
   const loadAnalytics = useCallback(async () => {
@@ -125,12 +127,17 @@ export default function DashboardPage() {
       setRun(null);
       setAnalytics(null);
       setTracked(new Set());
+      setNewGoodMatches(0);
       setLoading(false);
       return;
     }
     setLoading(true);
     Promise.all([
-      swr("dash:jobs", () => api.jobs.list(token, { page: 1, limit: 10 }).then((r) => r.jobs), setJobs),
+      swr("dash:jobs", async () => {
+        const response = await api.jobs.list(token, { page: 1, limit: 10 });
+        setNewGoodMatches(response.new_good_matches);
+        return response.jobs;
+      }, setJobs),
       swr("dash:run", () => api.runs.latest(token), setRun),
       swr("analytics", () => api.jobs.analytics(token), setAnalytics),
       swr("dash:tracked", () => api.applications.list(token).then((apps) => new Set(apps.filter((a) => a.job_id).map((a) => a.job_id!))), setTracked),
@@ -159,23 +166,23 @@ export default function DashboardPage() {
   async function trackJob(job: Job) {
     await api.applications.create(token, { job_id: job.id, company: job.company, title: job.title, status: "interested", system_score: job.final_score, resume_match_pct: job.semantic_score });
     setTracked((prev) => new Set(prev).add(job.id));
+    if (job.is_new_find && (job.final_score ?? 0) >= 0.7) {
+      setNewGoodMatches((prev) => Math.max(0, prev - 1));
+    }
     toast("Added to tracker", "success");
   }
 
   async function handleRunComplete(completed: Run) {
     setRun(completed);
     upsertRunCaches(completed);
-    loadJobs();
+    const jobsResponse = token ? await api.jobs.list(token, { page: 1, limit: 10 }) : null;
+    if (jobsResponse) {
+      setJobs(jobsResponse.jobs);
+      setNewGoodMatches(jobsResponse.new_good_matches);
+    }
     loadAnalytics();
-    if (completed.id && completed.status === "done") {
-      try {
-        const res = await api.applications.importFromRun(token, { run_id: completed.id, min_score: 0.70, limit: 20 });
-        if (res.created > 0) {
-          toast(`Auto-imported ${res.created} top matches to tracker`, "success");
-        }
-      } catch {
-        // silent — auto-import is best-effort
-      }
+    if (completed.status === "done" && jobsResponse?.new_good_matches) {
+      toast(`${jobsResponse.new_good_matches} new good matches are ready to review`, "success");
     }
   }
 
@@ -288,12 +295,16 @@ export default function DashboardPage() {
                 <span className="text-muted-foreground">Already tracked</span>
                 <span className="text-foreground font-medium tabular-nums">{tracked.size}</span>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">New good matches</span>
+                <span className="text-foreground font-medium tabular-nums">{newGoodMatches}</span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Stat cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           {loading ? (
             <><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /></>
           ) : (
@@ -316,6 +327,12 @@ export default function DashboardPage() {
                 value={tracked.size}
                 sub={tracked.size > 0 ? "roles already moved forward" : "save promising jobs here"}
                 icon={BriefcaseBusiness}
+              />
+              <StatCard
+                label="New Good Matches"
+                value={newGoodMatches}
+                sub={newGoodMatches > 0 ? "fresh strong matches from the latest run" : "no fresh strong matches right now"}
+                icon={Sparkles}
               />
             </>
           )}
@@ -455,6 +472,9 @@ export default function DashboardPage() {
                       {job.site && <span className="text-[11px] text-border">{job.site}</span>}
                       {job.is_contract && (
                         <span className="text-[11px] text-[var(--terminal-yellow)] border border-[var(--terminal-yellow)]/20 px-1.5 py-0.5 leading-none">CONTRACT</span>
+                      )}
+                      {job.is_new_find && (
+                        <span className="text-[11px] text-[var(--terminal-green-bright)] border border-[var(--terminal-green-bright)]/25 px-1.5 py-0.5 leading-none uppercase tracking-wider">new find</span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">

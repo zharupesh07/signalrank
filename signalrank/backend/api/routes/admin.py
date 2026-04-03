@@ -7,12 +7,14 @@ from api.config import api_runtime_flags
 from api.database import get_db
 from api.deps import get_current_user
 from api.deps_llm import get_llm_client
+from batch.context import deep_merge, load_base_config
 from batch.resume_worker import force_regenerate_all
 from batch.quality_report import compute_global_quality_metrics, compute_user_quality_metrics
 from api.models import (
     Application, ArchivalQueue, GenerationQueue, JobRaw, JobResult,
     Profile, RecruiterRefreshTask, Run, TailoredResume, User,
 )
+from domain.profile_rules import enrich_config_with_profile_rules
 from batch.worker import RunRequest, get_queue
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -66,6 +68,61 @@ class ResetProfileJobsResponse(BaseModel):
     tailored_resumes_deleted: int
     archival_queue_deleted: int
     jobs_preserved: bool = True
+
+
+class AdminUserProfileConfigResponse(BaseModel):
+    user_id: str
+    email: str
+    onboarding_complete: bool
+    target_roles: list[str]
+    preferred_locations: list[str]
+    custom_search_queries: list[str]
+    target_lpa: float | None
+    min_yoe: int | None
+    max_yoe: int | None
+    scraper_hours_old: int | None
+    scraper_max_terms: int | None
+    resume_template: str | None
+    config_overrides: dict | None
+    title_penalty_rules: dict[str, list[str]]
+
+
+class AdminUserProfileConfigUpdate(BaseModel):
+    onboarding_complete: bool | None = None
+    target_roles: list[str] | None = None
+    preferred_locations: list[str] | None = None
+    custom_search_queries: list[str] | None = None
+    target_lpa: float | None = None
+    min_yoe: int | None = None
+    max_yoe: int | None = None
+    scraper_hours_old: int | None = None
+    scraper_max_terms: int | None = None
+    resume_template: str | None = None
+    config_overrides: dict | None = None
+
+
+def _deep_merge_dict(base: dict | None, incoming: dict | None) -> dict | None:
+    if base is None:
+        return incoming
+    if incoming is None:
+        return base
+    merged = dict(base)
+    for key, value in incoming.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _deep_merge_dict(merged.get(key), value)
+        else:
+            merged[key] = value
+    return merged
+
+
+def _profile_resume_template(profile: Profile | None) -> str | None:
+    if not profile or not isinstance(profile.config_overrides, dict):
+        return None
+    resume_cfg = profile.config_overrides.get("resume")
+    if not isinstance(resume_cfg, dict):
+        return None
+    template = resume_cfg.get("template")
+    return template if isinstance(template, str) else None
 
 
 @router.get("/stats", response_model=AdminStatsResponse)
@@ -168,6 +225,85 @@ async def update_user(
         raise HTTPException(status_code=404, detail="User not found")
     if body.is_admin is not None:
         user.is_admin = body.is_admin
+    await db.commit()
+    return {"status": "updated"}
+
+
+@router.get("/users/{user_id}/profile-config", response_model=AdminUserProfileConfigResponse)
+async def get_user_profile_config(
+    user_id: str,
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    user_result = await db.execute(select(User).where(User.id == user_id))
+    user = user_result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+    profile = profile_result.scalar_one_or_none()
+
+    return AdminUserProfileConfigResponse(
+        user_id=user.id,
+        email=user.email,
+        onboarding_complete=profile.onboarding_complete if profile else False,
+        target_roles=list(profile.target_roles or []) if profile else [],
+        preferred_locations=list(profile.preferred_locations or []) if profile else [],
+        custom_search_queries=list(profile.custom_search_queries or []) if profile else [],
+        target_lpa=profile.target_lpa if profile else None,
+        min_yoe=profile.min_yoe if profile else None,
+        max_yoe=profile.max_yoe if profile else None,
+        scraper_hours_old=profile.scraper_hours_old if profile else None,
+        scraper_max_terms=profile.scraper_max_terms if profile else None,
+        resume_template=_profile_resume_template(profile),
+        config_overrides=dict(profile.config_overrides or {}) if profile else None,
+        title_penalty_rules=(
+            enrich_config_with_profile_rules(
+                deep_merge(load_base_config(), dict(profile.config_overrides or {})) if profile and isinstance(profile.config_overrides, dict) else load_base_config(),
+                resume_text=profile.resume_text if profile else "",
+                profile_roles=profile.target_roles if profile else [],
+            ).get("ranking", {}).get("profile_title_rules", {"strong": [], "adjacent": [], "hybrid": []})
+        ),
+    )
+
+
+@router.patch("/users/{user_id}/profile-config")
+async def update_user_profile_config(
+    user_id: str,
+    body: AdminUserProfileConfigUpdate,
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    user_result = await db.execute(select(User).where(User.id == user_id))
+    user = user_result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    profile_result = await db.execute(
+        select(Profile).where(Profile.user_id == user_id).with_for_update()
+    )
+    profile = profile_result.scalar_one_or_none()
+    if not profile:
+        profile = Profile(user_id=user_id)
+        db.add(profile)
+        await db.flush()
+
+    payload = body.model_dump(exclude_unset=True)
+    resume_template = payload.pop("resume_template", None) if "resume_template" in payload else None
+    config_overrides = payload.pop("config_overrides", None) if "config_overrides" in payload else None
+
+    for field, value in payload.items():
+        setattr(profile, field, value)
+
+    if config_overrides is not None:
+        profile.config_overrides = _deep_merge_dict(profile.config_overrides, config_overrides)
+
+    if "resume_template" in body.model_fields_set:
+        profile.config_overrides = _deep_merge_dict(
+            profile.config_overrides,
+            {"resume": {"template": resume_template}},
+        )
+
     await db.commit()
     return {"status": "updated"}
 

@@ -237,6 +237,8 @@ async def process_run(
             resume_text = profile.resume_text if profile else ""
             distilled_text = profile.distilled_text if profile else None
             config_overrides = profile.config_overrides if profile else None
+            ctx = build_context(user_id=user_id, resume_text=resume_text, config_overrides=config_overrides)
+            cfg = ctx.config
 
             from batch.query_builder import build_queries
             from batch.scraper import ScraperConfig, scrape, raw_job_to_dict
@@ -328,6 +330,7 @@ async def process_run(
 
                 async def _persist_jobs(jobs):
                     from sqlalchemy.dialects.postgresql import insert as pg_insert
+                    from domain.job_profile import build_job_profile
                     from domain.role_clusters import infer_clusters_from_job_text
                     async with session_factory() as pdb:
                         batch_size = 2000
@@ -338,13 +341,30 @@ async def process_run(
                                 v["role_clusters"] = sorted(
                                     infer_clusters_from_job_text(v.get("title"), v.get("description")) - {"general"}
                                 )
+                                v["job_profile"] = build_job_profile(
+                                    title=v.get("title"),
+                                    company=v.get("company"),
+                                    description=v.get("description"),
+                                    location=v.get("location"),
+                                    site=v.get("site"),
+                                    date_posted=v.get("date_posted"),
+                                    role_clusters=v["role_clusters"],
+                                    cfg=cfg,
+                                )
                             insert_stmt = pg_insert(JobRaw).values(values)
                             stmt = (
                                 insert_stmt
                                 .on_conflict_do_update(
                                     index_elements=["job_url"],
                                     set_={
+                                        "title": insert_stmt.excluded.title,
+                                        "company": insert_stmt.excluded.company,
+                                        "description": insert_stmt.excluded.description,
+                                        "location": insert_stmt.excluded.location,
+                                        "site": insert_stmt.excluded.site,
+                                        "date_posted": insert_stmt.excluded.date_posted,
                                         "role_clusters": insert_stmt.excluded.role_clusters,
+                                        "job_profile": insert_stmt.excluded.job_profile,
                                     },
                                 )
                             )
@@ -390,6 +410,8 @@ async def process_run(
                     log_rss(logger, "after_embed", run_id=run_id, jobs=len(scraped_job_urls))
                     del scraped_job_urls
                     release_memory(logger, "after_embed_release", run_id=run_id)
+                gc.collect()
+                release_memory(logger, "after_scrape_cleanup", run_id=run_id)
 
             # Check cancellation before ranking
             run_check_result = await db.execute(select(Run).where(Run.id == run_id))
@@ -467,6 +489,11 @@ async def process_run(
                     "recency_score": float(row.recency_score or 0),
                     "final_score": float(row.final_score or 0),
                     "title_relevance_score": float(getattr(row, "title_relevance_score", None) or 0),
+                    "fit_band": getattr(row, "fit_band", None),
+                    "confidence_band": getattr(row, "confidence_band", None),
+                    "explanation_summary": getattr(row, "explanation_summary", None),
+                    "match_report": getattr(row, "match_report", None),
+                    "verification_report": getattr(row, "verification_report", None),
                     "company_tier": str(row.company_tier or ""),
                     "is_contract": bool(row.is_contract),
                 })
@@ -484,6 +511,11 @@ async def process_run(
                                 "recency_score": pg_insert(JobResult).excluded.recency_score,
                                 "final_score": pg_insert(JobResult).excluded.final_score,
                                 "title_relevance_score": pg_insert(JobResult).excluded.title_relevance_score,
+                                "fit_band": pg_insert(JobResult).excluded.fit_band,
+                                "confidence_band": pg_insert(JobResult).excluded.confidence_band,
+                                "explanation_summary": pg_insert(JobResult).excluded.explanation_summary,
+                                "match_report": pg_insert(JobResult).excluded.match_report,
+                                "verification_report": pg_insert(JobResult).excluded.verification_report,
                                 "company_tier": pg_insert(JobResult).excluded.company_tier,
                                 "is_contract": pg_insert(JobResult).excluded.is_contract,
                             },
@@ -504,6 +536,11 @@ async def process_run(
                             "recency_score": pg_insert(JobResult).excluded.recency_score,
                             "final_score": pg_insert(JobResult).excluded.final_score,
                             "title_relevance_score": pg_insert(JobResult).excluded.title_relevance_score,
+                            "fit_band": pg_insert(JobResult).excluded.fit_band,
+                            "confidence_band": pg_insert(JobResult).excluded.confidence_band,
+                            "explanation_summary": pg_insert(JobResult).excluded.explanation_summary,
+                            "match_report": pg_insert(JobResult).excluded.match_report,
+                            "verification_report": pg_insert(JobResult).excluded.verification_report,
                             "company_tier": pg_insert(JobResult).excluded.company_tier,
                             "is_contract": pg_insert(JobResult).excluded.is_contract,
                         },
@@ -526,6 +563,8 @@ async def process_run(
             await db.commit()
             logger.info("Run %s (%s) completed: %d scraped, %d ranked", run_id, mode, scrape_count, len(ranked_df))
             del ranked_df
+            gc.collect()
+            release_memory(logger, "after_rank_cleanup", run_id=run_id)
             clear_vector_cache()
             release_memory(logger, "run_complete_release", run_id=run_id, mode=mode)
 

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.database import get_db
 from api.deps import get_current_user
 from api.models import Profile, User
+from domain.candidate_profile import build_candidate_profile
 from batch.context import deep_merge, load_base_config
 from domain.profile_rules import enrich_config_with_profile_rules
 from domain.resume_editor import merge_resume_editor, parse_resume_editor, serialize_resume_editor
@@ -255,6 +256,7 @@ async def get_profile(current_user: User = Depends(get_current_user), db: AsyncS
         "preferred_locations": p.preferred_locations if p else None,
         "custom_search_queries": p.custom_search_queries if p else None,
         "config_overrides": p.config_overrides if p else None,
+        "candidate_profile": p.candidate_profile if p else None,
         "career_intent": (p.config_overrides or {}).get("career_intent") if p and isinstance(p.config_overrides, dict) else None,
         "resume_template": _profile_resume_template(p),
         "scraper_hours_old": p.scraper_hours_old if p else None,
@@ -329,5 +331,6 @@ async def update_profile(
             _drop_stored_resume_editor(profile)
         setattr(profile, field, value)
 
+    profile.candidate_profile = build_candidate_profile(profile=profile)
     await db.commit()
     return {"status": "updated"}

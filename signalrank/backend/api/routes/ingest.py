@@ -17,6 +17,8 @@ from api.database import get_db
 from api.deps import get_current_user
 from api.deps_llm import get_llm_client
 from api.models import Application, GenerationQueue, JobRaw, JobResult, Profile, User
+from batch.context import load_base_config
+from domain.job_profile import build_job_profile
 from llm.openrouter import OpenRouterClient
 
 logger = logging.getLogger(__name__)
@@ -244,6 +246,16 @@ async def ingest_confirm(
     inferred_clusters = sorted(
         infer_clusters_from_job_text(body.title or None, body.description or None) - {"general"}
     )
+    job_profile = build_job_profile(
+        title=body.title,
+        company=body.company,
+        description=body.description,
+        location=body.location,
+        site="manual",
+        date_posted=date_posted,
+        role_clusters=inferred_clusters,
+        cfg=load_base_config(),
+    )
 
     # Upsert JobRaw (shared across users) — tag by job content, not by the current user's profile.
     insert_stmt = pg_insert(JobRaw).values(
@@ -255,6 +267,7 @@ async def ingest_confirm(
             site="manual",
             date_posted=date_posted,
             role_clusters=inferred_clusters,
+            job_profile=job_profile,
         )
     await db.execute(
         insert_stmt
@@ -262,6 +275,7 @@ async def ingest_confirm(
             index_elements=["job_url"],
             set_={
                 "role_clusters": insert_stmt.excluded.role_clusters,
+                "job_profile": insert_stmt.excluded.job_profile,
             },
         )
     )

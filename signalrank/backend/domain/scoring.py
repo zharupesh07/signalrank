@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 
 # domain/scoring.py
 
+from domain.additive_scoring import location_score_5tier
+
 
 def recency_weight(cfg, date_posted):
     ranking = cfg.get("ranking", {})
@@ -141,6 +143,11 @@ def location_weight(location: str, cfg: dict) -> float:
             return boost
 
     return 1.0
+
+
+def location_tier(location: str, description: str, cfg: dict) -> int:
+    """Return a user-aware location score on a 0-100 gradient."""
+    return location_score_5tier(location, description, cfg)
 
 
 def extract_required_yoe(text: str) -> int | None:
