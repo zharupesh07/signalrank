@@ -255,6 +255,7 @@ async def get_profile(current_user: User = Depends(get_current_user), db: AsyncS
         "preferred_locations": p.preferred_locations if p else None,
         "custom_search_queries": p.custom_search_queries if p else None,
         "config_overrides": p.config_overrides if p else None,
+        "career_intent": (p.config_overrides or {}).get("career_intent") if p and isinstance(p.config_overrides, dict) else None,
         "resume_template": _profile_resume_template(p),
         "scraper_hours_old": p.scraper_hours_old if p else None,
         "scraper_max_terms": p.scraper_max_terms if p else None,

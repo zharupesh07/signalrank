@@ -17,6 +17,16 @@ def generate_onboarding_questions(profile: ResumeParseResult) -> list[dict]:
         "options": CANONICAL_ROLE_OPTIONS,
     })
 
+    for item in profile.follow_up_questions[:2]:
+        if not isinstance(item, dict):
+            continue
+        questions.append({
+            "id": item.get("id") or "follow_up",
+            "text": item.get("question") or "Which role family should we prioritize?",
+            "type": "text",
+            "reason": item.get("reason"),
+        })
+
     questions.append({
         "id": "preferred_locations",
         "text": "Preferred locations? Open to remote?",
@@ -44,4 +54,12 @@ def generate_onboarding_questions(profile: ResumeParseResult) -> list[dict]:
         "type": "text",
     })
 
-    return questions
+    unique: list[dict] = []
+    seen_ids: set[str] = set()
+    for question in questions:
+        qid = str(question.get("id") or "").strip()
+        if not qid or qid in seen_ids:
+            continue
+        seen_ids.add(qid)
+        unique.append(question)
+    return unique

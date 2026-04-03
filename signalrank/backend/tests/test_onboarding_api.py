@@ -45,6 +45,7 @@ async def test_onboarding_parsed_completes_when_parse_status_is_done_even_withou
     assert payload["parsing"] is False
     assert payload["prefill"]["target_roles"] == ["Backend Engineer"]
     assert payload["prefill"]["preferred_locations"] == ["Pune"]
+    assert payload["prefill"]["career_intent"] == {}
 
 
 async def test_onboarding_parsed_returns_empty_prefill_when_parse_failed(
@@ -139,6 +140,7 @@ async def test_upload_resume_prefills_qa_role_and_yoe(client, auth_token, monkey
     assert profile.config_overrides["profile_intent"]["roles"] == ["QA / Test Engineer"]
     assert profile.config_overrides["scraping"]["locations"] == ["Pune"]
     assert profile.config_overrides["title_blocklist"] == ["Support"]
+    assert profile.config_overrides["career_intent"]["target_roles"][0]["title"] == "QA / Test Engineer"
     assert "Experience: 6 years" in distilled
 
 
@@ -178,7 +180,9 @@ def test_apply_parsed_profile_updates_overwrites_stale_roles_and_locations():
     assert profile.preferred_locations == ["Hyderabad"]
     assert profile.config_overrides["profile_intent"]["roles"] == ["SAP SD Consultant"]
     assert profile.config_overrides["scraping"]["locations"] == ["Hyderabad"]
-    assert profile.config_overrides["title_blocklist"] == ["QA Engineer"]
+    assert "QA Automation" in profile.config_overrides["title_blocklist"]
+    assert profile.config_overrides["career_intent"]["target_roles"][0]["title"] == "SAP SD Consultant"
+    assert "SAP S/4HANA SD Consultant" in profile.custom_search_queries
     assert profile.target_lpa == 28.0
     assert profile.min_yoe == 7
     assert profile.max_yoe == 11

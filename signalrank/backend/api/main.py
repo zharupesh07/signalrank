@@ -15,7 +15,12 @@ from sqlalchemy.exc import TimeoutError as SATimeoutError
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
 
-from api.config import api_runtime_flags, settings
+from api.config import (
+    api_runtime_flags,
+    effective_allow_origin_regex,
+    effective_allowed_origins,
+    settings,
+)
 from api.database import AsyncSessionLocal, _parse_url, ensure_runtime_schema_compatibility
 from api.deps_llm import get_llm_client
 from api.logging_setup import configure_logging
@@ -46,6 +51,14 @@ def _log_api_runtime_role(runtime_flags: dict[str, bool]) -> None:
         logger.info(
             "API split mode: this process will create pending runs in DB only; a separate worker service must claim them"
         )
+
+
+def _log_cors_settings() -> None:
+    logger.info(
+        "CORS config: allow_origins=%s allow_origin_regex=%s",
+        effective_allowed_origins(),
+        effective_allow_origin_regex(),
+    )
 
 
 async def _resume_worker_watchdog(session_factory, llm) -> None:
@@ -81,6 +94,7 @@ async def lifespan(app: FastAPI):
     runtime_flags = api_runtime_flags()
     logger.info("API startup — runtime flags: %s", runtime_flags)
     _log_api_runtime_role(runtime_flags)
+    _log_cors_settings()
 
     try:
         await ensure_runtime_schema_compatibility()
@@ -170,7 +184,8 @@ app.add_middleware(GZipMiddleware, minimum_size=500)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.allowed_origins,
+    allow_origins=effective_allowed_origins(),
+    allow_origin_regex=effective_allow_origin_regex(),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept"],

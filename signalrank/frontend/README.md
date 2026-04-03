@@ -17,6 +17,7 @@ Next.js 16 (App Router) frontend for SignalRank.
 npm install
 cp .env.local.example .env.local
 # Edit .env.local: NEXTAUTH_URL, NEXTAUTH_SECRET, NEXT_PUBLIC_API_URL
+# Optional for server-side auth/API calls: API_URL_SERVER, API_REQUEST_TIMEOUT_MS
 npm run dev
 ```
 
@@ -41,5 +42,8 @@ The onboarding UI loads role/location options from the backend taxonomy, polls `
 | Variable | Description |
 |---|---|
 | `NEXT_PUBLIC_API_URL` | Backend URL (e.g. `http://localhost:8000`) |
+| `API_URL_SERVER` | Optional server-side backend URL for NextAuth/server fetches. Use this when the browser and Next.js server should reach the backend differently. |
 | `NEXTAUTH_URL` | Frontend URL (e.g. `http://localhost:3000`) |
 | `NEXTAUTH_SECRET` | Must match backend `NEXTAUTH_SECRET` |
+| `API_REQUEST_TIMEOUT_MS` | Optional server-side request timeout in ms. Defaults to `20000`. |
+| `NEXT_PUBLIC_API_REQUEST_TIMEOUT_MS` | Optional browser request timeout in ms. Defaults to `15000`. |

@@ -1,6 +1,7 @@
 import json
 import os
 from typing import Annotated
+from urllib.parse import urlparse
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -15,6 +16,7 @@ class Settings(BaseSettings):
     nextauth_secret: str
     environment: str = "development"
     allowed_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
+    cors_allow_origin_regex: str = ""
     openrouter_api_key: str = ""
     hunter_api_key: str = ""
     db_pool_size: int = 3
@@ -57,6 +59,72 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def _normalize_origin_candidate(value: str | None) -> str | None:
+    text = (value or "").strip()
+    if not text:
+        return None
+    if "://" not in text:
+        if text.startswith("localhost:") or text.startswith("127.0.0.1:"):
+            text = f"http://{text}"
+        elif "." in text and " " not in text and "/" not in text:
+            text = f"https://{text}"
+        else:
+            return None
+    parsed = urlparse(text)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return None
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+def effective_allowed_origins() -> list[str]:
+    origins: list[str] = []
+    seen: set[str] = set()
+
+    def _add(candidate: str | None) -> None:
+        normalized = _normalize_origin_candidate(candidate)
+        if not normalized:
+            return
+        lowered = normalized.lower()
+        if lowered in seen:
+            return
+        seen.add(lowered)
+        origins.append(normalized)
+
+    for origin in settings.allowed_origins or []:
+        _add(origin)
+
+    for env_name in (
+        "NEXTAUTH_URL",
+        "FRONTEND_URL",
+        "APP_URL",
+        "PUBLIC_URL",
+        "VERCEL_URL",
+        "RAILWAY_STATIC_URL",
+        "RAILWAY_PUBLIC_DOMAIN",
+    ):
+        raw = os.getenv(env_name, "")
+        if not raw:
+            continue
+        if raw.strip().startswith("["):
+            try:
+                loaded = json.loads(raw)
+                if isinstance(loaded, list):
+                    for item in loaded:
+                        _add(str(item))
+                    continue
+            except json.JSONDecodeError:
+                pass
+        for item in raw.split(","):
+            _add(item)
+
+    return origins
+
+
+def effective_allow_origin_regex() -> str | None:
+    regex = (settings.cors_allow_origin_regex or "").strip()
+    return regex or None
 
 
 def _env_truthy(name: str, default: bool) -> bool:

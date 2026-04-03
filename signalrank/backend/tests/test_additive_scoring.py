@@ -2,10 +2,12 @@
 
 from datetime import datetime, timedelta, timezone
 
+import pandas as pd
 import pytest
 
 pytestmark = pytest.mark.unit
 
+from batch.ranker import _apply_additive_scoring
 from domain.additive_scoring import (
     apply_company_semantic_floor,
     apply_hidden_gem_bonus,
@@ -46,6 +48,49 @@ def test_skills_overlap_cap():
     s1 = skills_score_0_100(0.50, skill_overlap=4, role_skill_score=1.0, functional_role_penalty=1.0, consulting_damp=1.0)
     s2 = skills_score_0_100(0.50, skill_overlap=10, role_skill_score=1.0, functional_role_penalty=1.0, consulting_damp=1.0)
     assert s1 == s2  # both capped at +8
+
+
+def test_apply_additive_scoring_handles_company_title_relevance_floor():
+    df = pd.DataFrame(
+        [
+            {
+                "title": "AI Platform Engineer",
+                "semantic_score": 0.82,
+                "skill_overlap": 3,
+                "role_skill_score": 1.1,
+                "functional_role_penalty": 1.0,
+                "skill_coverage": 0.7,
+                "company_tier": "tier_s",
+                "title_relevance": 0.4,
+                "seniority_score": 1.0,
+                "location_weight": 1.2,
+                "description": "Enterprise AI platform role focused on MLOps and agent systems.",
+                "date_posted": datetime.now(timezone.utc).isoformat(),
+                "strong_title_penalty": False,
+                "adjacent_title": False,
+                "hybrid_title": False,
+            }
+        ]
+    )
+
+    scored = _apply_additive_scoring(
+        df,
+        {
+            "ranking": {
+                "company_title_relevance_floor": 0.8,
+                "scoring_weights": {
+                    "skills_match": 0.40,
+                    "company_fit": 0.15,
+                    "seniority": 0.15,
+                    "location": 0.15,
+                    "recency": 0.15,
+                },
+            }
+        },
+    )
+
+    assert scored.iloc[0]["company_score"] < 95.0
+    assert scored.iloc[0]["final_score"] > 0
 
 
 def test_skills_role_boost():

@@ -33,7 +33,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             accessToken: data.access_token,
             isAdmin: (decoded.is_admin as boolean) ?? false,
           };
-        } catch {
+        } catch (error) {
+          console.error("Credentials authorize failed", error);
           return null;
         }
       },

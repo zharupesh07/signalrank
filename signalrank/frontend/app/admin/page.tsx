@@ -92,7 +92,12 @@ export default function AdminPage() {
       api.admin.users(token).then((r) => setUsers(r.users)),
       api.admin.runs(token).then(setRuns),
     ])
-      .catch(() => toast("Failed to load admin data", "error"))
+      .catch((err) =>
+        toast(
+          err instanceof Error ? `Failed to load admin data: ${err.message}` : "Failed to load admin data",
+          "error",
+        )
+      )
       .finally(() => setLoading(false));
   }, [token, isAdmin, toast]);
 

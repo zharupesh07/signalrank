@@ -2,12 +2,10 @@ import logging
 import re
 from dataclasses import dataclass, field
 
-from domain.role_taxonomy import CANONICAL_ROLE_OPTIONS, ENTERPRISE_ROLE_KEYWORDS, LOCATION_OPTIONS
+from domain.role_taxonomy import ENTERPRISE_ROLE_KEYWORDS, LOCATION_OPTIONS
 from llm.openrouter import OpenRouterClient
 
 logger = logging.getLogger(__name__)
-
-_ROLE_LOOKUP = {role.lower(): role for role in CANONICAL_ROLE_OPTIONS}
 
 
 def detect_enterprise_role_from_text(text: str) -> str | None:
@@ -17,17 +15,10 @@ def detect_enterprise_role_from_text(text: str) -> str | None:
     return None
 
 
-def _normalize_role_option(role: str) -> str | None:
+def _normalize_role_text(role: str) -> str | None:
     candidate = re.sub(r"\s+", " ", (role or "").strip())
     if not candidate:
         return None
-    lower_candidate = candidate.lower()
-    if lower_candidate in _ROLE_LOOKUP:
-        return _ROLE_LOOKUP[lower_candidate]
-    for option in CANONICAL_ROLE_OPTIONS:
-        option_lower = option.lower()
-        if option_lower in lower_candidate or lower_candidate in option_lower:
-            return option
     return candidate
 
 
@@ -38,7 +29,7 @@ def _sanitize_roles(raw_roles) -> list[str]:
     seen = set()
     iterable = raw_roles if isinstance(raw_roles, list) else [raw_roles]
     for entry in iterable:
-        normalized = _normalize_role_option(str(entry))
+        normalized = _normalize_role_text(str(entry))
         if not normalized:
             continue
         key = normalized.lower()
@@ -107,16 +98,20 @@ def _normalize_website(value: object) -> str:
 
 _PROMPT_TEMPLATE = """Extract structured job search data from this resume. Return a single JSON object only.
 
-Available role options (pick best matches): {role_options}
 Available location options (pick based on work history): {location_options}
 
 Rules:
+- This is a prompt-first extraction. Do not force the candidate into any preset role taxonomy.
 - Focus on the candidate's true domain and seniority; do not default to AI/ML roles unless the resume clearly shows that focus.
 - If the resume flags SAP/Sales & Distribution/ERP delivery, prioritize "SAP SD Consultant" as the top suggested role.
+- Identify the candidate's actual career lane, adjacent valid lanes, and misleading lookalike lanes that should be excluded.
+- Prefer specific functional identities over generic software labels.
+- If the profile is unusual or spans multiple lanes, preserve ambiguity instead of collapsing to one generic role.
 - Choose 1-3 roles that feel consistent with the bulk of the experience. Avoid adding multiple AI or generic roles unless the resume justifies them.
 - Choose 1-3 locations that align with the candidate's recent work history.
 - For suggested_search_queries: generate 3-5 specific job search strings that capture this candidate's unique skill+role combination. Each query should be a realistic job title someone would post (e.g. "SAP SD GTS Consultant", "SAP S/4HANA Order-to-Cash Consultant", "Senior Backend Engineer Python Kafka"). Vary the terms — do not just repeat the same role with minor changes. Avoid generic terms like "Software Engineer" alone.
 - For suggested_exclusions: list role keywords this person likely wants to avoid based on their seniority and domain. For senior candidates avoid "Junior", "Support", "Helpdesk". For specialists avoid generic titles that dilute their expertise.
+- Every archetype, target role, negative target, and ambiguity should be grounded in resume evidence.
 - For salary: use LPA (lakhs per annum) for India-based candidates, USD/year for international. Return as integer in LPA for India, or null if unclear.
 
 Keys:
@@ -125,22 +120,26 @@ Keys:
 - recent_titles: list of 2-3 most recent job titles
 - industries: list of industries worked in
 - education: list of degrees/certifications
-- suggested_roles: 1-3 items from the available role options that best match this profile
+- suggested_roles: 1-5 precise freeform role titles that best match this profile
 - suggested_locations: 1-3 items from the available location options based on where they have worked
 - salary_lpa: estimated annual salary expectation as integer (LPA for India, USD thousands for international), or null
 - suggested_exclusions: 3-6 role keywords this person likely wants to avoid
 - suggested_search_queries: 3-5 specific job search strings combining role + key differentiating skills
+- career_archetypes: 1-4 objects with fields id, label, priority, confidence, evidence
+- target_roles: 1-5 objects with fields title, priority, confidence, evidence
+- domains: 0-5 objects with fields name, confidence, evidence
+- negative_targets: 0-5 objects with fields label, reason, confidence
+- false_friend_terms: 0-3 objects with fields term, intended_meaning, exclude_meanings
+- query_plan: object with title_queries, skill_queries, domain_queries, negative_keywords
+- ambiguities: list of unresolved ambiguities, if any
+- follow_up_questions: 0-2 objects with fields id, question, reason
 
 Return JSON only. No explanations.
 
 RESUME:
 {resume_text}"""
 
-EXTRACTION_PROMPT = _PROMPT_TEMPLATE.replace(
-    "{role_options}", ", ".join(CANONICAL_ROLE_OPTIONS)
-).replace(
-    "{location_options}", ", ".join(LOCATION_OPTIONS)
-)
+EXTRACTION_PROMPT = _PROMPT_TEMPLATE.replace("{location_options}", ", ".join(LOCATION_OPTIONS))
 
 
 def _build_extraction_prompt(resume_text: str) -> str:
@@ -159,6 +158,14 @@ class ResumeParseResult:
     salary_lpa: int | None = None
     suggested_exclusions: list[str] = field(default_factory=list)
     suggested_search_queries: list[str] = field(default_factory=list)
+    career_archetypes: list[dict] = field(default_factory=list)
+    target_roles: list[dict] = field(default_factory=list)
+    domains: list[dict] = field(default_factory=list)
+    negative_targets: list[dict] = field(default_factory=list)
+    false_friend_terms: list[dict] = field(default_factory=list)
+    query_plan: dict = field(default_factory=dict)
+    ambiguities: list[str] = field(default_factory=list)
+    follow_up_questions: list[dict] = field(default_factory=list)
 
 
 def _validate_extraction(data: dict) -> ResumeParseResult:
@@ -171,6 +178,11 @@ def _validate_extraction(data: dict) -> ResumeParseResult:
         if isinstance(val, str):
             return [val.strip()] if val.strip() else []
         return []
+
+    def to_dict_list(val) -> list[dict]:
+        if not isinstance(val, list):
+            return []
+        return [item for item in val if isinstance(item, dict)]
 
     def to_int(val) -> int | None:
         if val is None:
@@ -191,6 +203,14 @@ def _validate_extraction(data: dict) -> ResumeParseResult:
         salary_lpa=to_int(data.get("salary_lpa")),
         suggested_exclusions=to_list(data.get("suggested_exclusions")),
         suggested_search_queries=to_list(data.get("suggested_search_queries")),
+        career_archetypes=to_dict_list(data.get("career_archetypes")),
+        target_roles=to_dict_list(data.get("target_roles")),
+        domains=to_dict_list(data.get("domains")),
+        negative_targets=to_dict_list(data.get("negative_targets")),
+        false_friend_terms=to_dict_list(data.get("false_friend_terms")),
+        query_plan=data.get("query_plan") if isinstance(data.get("query_plan"), dict) else {},
+        ambiguities=to_list(data.get("ambiguities")),
+        follow_up_questions=to_dict_list(data.get("follow_up_questions")),
     )
 
 
@@ -258,6 +278,99 @@ def _resume_parse_schema() -> dict:
             "salary_lpa": {"type": ["integer", "null"]},
             "suggested_exclusions": {"type": "array", "items": {"type": "string"}},
             "suggested_search_queries": {"type": "array", "items": {"type": "string"}},
+            "career_archetypes": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "label": {"type": "string"},
+                        "priority": {"type": "string"},
+                        "confidence": {"type": "number"},
+                        "evidence": {"type": "array", "items": {"type": "string"}},
+                    },
+                    "required": ["id", "label", "priority", "confidence", "evidence"],
+                    "additionalProperties": False,
+                },
+            },
+            "target_roles": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string"},
+                        "priority": {"type": "string"},
+                        "confidence": {"type": "number"},
+                        "evidence": {"type": "array", "items": {"type": "string"}},
+                    },
+                    "required": ["title", "priority", "confidence", "evidence"],
+                    "additionalProperties": False,
+                },
+            },
+            "domains": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "confidence": {"type": "number"},
+                        "evidence": {"type": "array", "items": {"type": "string"}},
+                    },
+                    "required": ["name", "confidence", "evidence"],
+                    "additionalProperties": False,
+                },
+            },
+            "negative_targets": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "label": {"type": "string"},
+                        "reason": {"type": "string"},
+                        "confidence": {"type": "number"},
+                    },
+                    "required": ["label", "reason", "confidence"],
+                    "additionalProperties": False,
+                },
+            },
+            "false_friend_terms": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "term": {"type": "string"},
+                        "intended_meaning": {"type": "string"},
+                        "exclude_meanings": {"type": "array", "items": {"type": "string"}},
+                    },
+                    "required": ["term", "intended_meaning", "exclude_meanings"],
+                    "additionalProperties": False,
+                },
+            },
+            "query_plan": {
+                "type": "object",
+                "properties": {
+                    "title_queries": {"type": "array", "items": {"type": "string"}},
+                    "skill_queries": {"type": "array", "items": {"type": "string"}},
+                    "domain_queries": {"type": "array", "items": {"type": "string"}},
+                    "negative_keywords": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["title_queries", "skill_queries", "domain_queries", "negative_keywords"],
+                "additionalProperties": False,
+            },
+            "ambiguities": {"type": "array", "items": {"type": "string"}},
+            "follow_up_questions": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "question": {"type": "string"},
+                        "reason": {"type": "string"},
+                    },
+                    "required": ["id", "question", "reason"],
+                    "additionalProperties": False,
+                },
+            },
         },
         "required": [
             "skills",
@@ -270,6 +383,14 @@ def _resume_parse_schema() -> dict:
             "salary_lpa",
             "suggested_exclusions",
             "suggested_search_queries",
+            "career_archetypes",
+            "target_roles",
+            "domains",
+            "negative_targets",
+            "false_friend_terms",
+            "query_plan",
+            "ambiguities",
+            "follow_up_questions",
         ],
         "additionalProperties": False,
     }

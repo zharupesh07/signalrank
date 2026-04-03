@@ -323,6 +323,7 @@ def _apply_semantic_gates(df: pd.DataFrame, cfg: dict, role_intent: str) -> pd.D
 
 def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     df = df.copy()
+    ranking_cfg = cfg.get("ranking", {})
 
     # Skills score — vectorized
     damp = df["title"].apply(consulting_dampener)
@@ -377,7 +378,6 @@ def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     df["recency_score"] = df["date_posted"].apply(recency_score_0_100)
 
     # Title-role relevance score (0-100)
-    ranking_cfg = cfg.get("ranking", {})
     if "title_relevance" in df:
         tr_low = ranking_cfg.get("title_relevance_low", 0.25)
         tr_high = ranking_cfg.get("title_relevance_high", 0.90)

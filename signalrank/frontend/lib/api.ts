@@ -42,8 +42,29 @@ type AdminUsersResponse = {
   offset: number;
 };
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+function resolveBaseUrl() {
+  if (typeof window === "undefined") {
+    return (
+      process.env.API_URL_SERVER ??
+      process.env.BACKEND_INTERNAL_URL ??
+      process.env.NEXT_PUBLIC_API_URL ??
+      "http://localhost:8000"
+    );
+  }
+  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+}
+
+function requestTimeoutMs() {
+  const raw =
+    (typeof window === "undefined"
+      ? process.env.API_REQUEST_TIMEOUT_MS
+      : process.env.NEXT_PUBLIC_API_REQUEST_TIMEOUT_MS) ?? "";
+  const parsed = Number(raw);
+  if (Number.isFinite(parsed) && parsed >= 1000) return parsed;
+  return typeof window === "undefined" ? 20000 : 15000;
+}
 
 type ResumePreviewValidation = {
   page_count: number;
@@ -79,6 +100,7 @@ async function request<T>(
   options: RequestInit & { token?: string } = {}
 ): Promise<T> {
   const { token, ...init } = options;
+  const baseUrl = resolveBaseUrl();
   const headers: Record<string, string> = {
     ...(init.headers as Record<string, string>),
   };
@@ -91,7 +113,20 @@ async function request<T>(
   const shouldRetry = SAFE_METHODS.has(method);
 
   for (let attempt = 0; ; attempt += 1) {
-    const res = await fetch(`${BASE_URL}${path}`, { ...init, headers });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), requestTimeoutMs());
+    let res: Response;
+    try {
+      res = await fetch(`${baseUrl}${path}`, { ...init, headers, signal: controller.signal });
+    } catch (error) {
+      clearTimeout(timeout);
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error(`Backend request timed out for ${path}`);
+      }
+      const message = error instanceof Error ? error.message : "Unknown network error";
+      throw new Error(`Backend request failed for ${path}: ${message}`);
+    }
+    clearTimeout(timeout);
     if (res.ok) {
       if (res.status === 204) return undefined as T;
       return res.json();
@@ -277,7 +312,7 @@ export const api = {
         resume_editor?: unknown;
       }
     ): Promise<ResumePreviewValidation> => {
-      const res = await fetch(`${BASE_URL}/api/resume/preview`, {
+      const res = await fetch(`${resolveBaseUrl()}/api/resume/preview`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -303,7 +338,7 @@ export const api = {
         { method: "POST", token, body: JSON.stringify(data) }
       ),
     download: async (token: string, jobId: string): Promise<"ok" | "pending"> => {
-      const res = await fetch(`${BASE_URL}/api/resume/tailor/${jobId}`, {
+      const res = await fetch(`${resolveBaseUrl()}/api/resume/tailor/${jobId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 202) return "pending";

@@ -96,3 +96,27 @@ def test_sap_queries_stay_narrow_to_erp_roles():
     assert "SAP OTC Functional Consultant" in terms
     assert "SAP S/4HANA SD Consultant" in terms
     assert "SAP Consultant" not in terms
+
+
+def test_career_intent_query_plan_is_included():
+    p = _mock_profile(
+        target_roles=["Network Automation Engineer"],
+        preferred_locations=["Pune"],
+        custom_search_queries=[],
+        config_overrides={
+            "career_intent": {
+                "query_plan": {
+                    "title_queries": ["Infrastructure Automation Engineer"],
+                    "skill_queries": ["Ansible Python Network Automation"],
+                    "domain_queries": ["Cloud Networking"],
+                    "negative_keywords": ["AI Platform Engineer"],
+                }
+            }
+        },
+    )
+    queries = build_queries(p, max_terms=10)
+    terms = {q.term for q in queries}
+    assert "Network Automation Engineer" in terms
+    assert "Infrastructure Automation Engineer" in terms
+    assert "Ansible Python Network Automation" in terms
+    assert "Cloud Networking" in terms

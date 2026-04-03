@@ -18,7 +18,7 @@ export default function LoginPage() {
     try {
       const res = await signIn("credentials", { email, password, redirect: false });
       if (res?.error) {
-        setError("Invalid credentials");
+        setError("Login failed. Check credentials or backend connectivity.");
       } else {
         router.push("/dashboard");
       }

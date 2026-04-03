@@ -17,9 +17,14 @@ CANONICAL_ROLE_OPTIONS = [
     "DevOps/SRE",
     "Platform Engineer",
     "Cloud Infrastructure Engineer",
+    "Network Automation Engineer",
+    "Infrastructure Automation Engineer",
     "Security Engineer",
     "Embedded / Systems Engineer",
     "Product Engineer",
+    "Innovation Engineer",
+    "Emerging Technologies Engineer",
+    "R&D Engineer",
     "QA / Test Engineer",
     "SAP SD Consultant",
 ]
@@ -89,6 +94,84 @@ ROLE_QUERY_EXPANSIONS: dict[str, tuple[str, ...]] = {
     "backend engineer": ("Backend Engineer", "Software Engineer"),
     "full-stack engineer": ("Full Stack Engineer", "Full-Stack Engineer"),
     "devops/sre": ("DevOps Engineer", "SRE", "Platform Engineer"),
+    "network automation engineer": (
+        "Network Automation Engineer",
+        "Network Engineer Automation",
+        "Cloud Network Engineer",
+    ),
+    "infrastructure automation engineer": (
+        "Infrastructure Automation Engineer",
+        "Platform Automation Engineer",
+        "Cloud Infrastructure Automation Engineer",
+    ),
+    "innovation engineer": (
+        "Innovation Engineer",
+        "Emerging Technologies Engineer",
+        "R&D Engineer",
+        "Prototype Engineer",
+    ),
+    "emerging technologies engineer": (
+        "Emerging Technologies Engineer",
+        "Innovation Engineer",
+        "R&D Engineer",
+    ),
+    "r&d engineer": ("R&D Engineer", "Innovation Engineer", "Prototype Engineer"),
+}
+
+# Taxonomy is intentionally "lite" now: prompt outputs are primary.
+# These aliases only normalize raw LLM role titles into a small set of
+# expansion buckets so query generation stays stable without forcing the
+# parser into a preset ontology.
+ROLE_QUERY_ALIASES: dict[str, tuple[str, ...]] = {
+    "sap sd consultant": (
+        "sap functional consultant",
+        "sap sd functional consultant",
+        "sap s/4hana sales and distribution consultant",
+        "sap sales and distribution consultant",
+        "sap otc functional consultant",
+    ),
+    "network automation engineer": (
+        "network operations automation engineer",
+        "network engineer with automation focus",
+        "network automation specialist",
+        "firewall automation engineer",
+    ),
+    "infrastructure automation engineer": (
+        "platform automation engineer",
+        "cloud infrastructure automation engineer",
+    ),
+    "innovation engineer": (
+        "innovation and r&d lead",
+        "innovation manager",
+        "innovation technologist",
+        "technical innovation manager",
+        "technical innovation consultant",
+    ),
+    "emerging technologies engineer": (
+        "emerging technology consultant",
+        "emerging technologies specialist",
+        "emerging tech consultant",
+        "emerging tech r&d engineer",
+    ),
+    "r&d engineer": (
+        "r&d lead",
+        "innovation and r&d consultant",
+        "rapid prototyping lead",
+        "rapid prototyping engineer",
+    ),
+    "embedded / systems engineer": (
+        "iot solutions architect",
+        "iot automation engineer",
+        "iot hardware developer",
+    ),
+    "ai/ml engineer": (
+        "applied scientist",
+        "machine learning scientist",
+    ),
+    "ai platform engineer": (
+        "ml platform engineer",
+        "ai infrastructure engineer",
+    ),
 }
 
 ENTERPRISE_ROLE_KEYWORDS = (

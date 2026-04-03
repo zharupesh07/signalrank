@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 
 from api.config import settings
-from domain.role_taxonomy import ROLE_QUERY_EXPANSIONS
+from domain.role_taxonomy import ROLE_QUERY_ALIASES, ROLE_QUERY_EXPANSIONS
 
 
 @dataclass
@@ -17,17 +18,45 @@ def _expand_role_terms(role: str) -> list[str]:
     normalized = role.strip().lower()
     expansions = ROLE_QUERY_EXPANSIONS.get(normalized)
     if expansions:
-        return list(expansions)
+        ordered = [role.strip()]
+        ordered.extend(expanded for expanded in expansions if expanded.strip().lower() != normalized)
+        return ordered
+    # Prompt-first mode: raw LLM roles may not exactly match our buckets.
+    # Use alias matching as a lightweight normalization layer for search.
+    for canonical, aliases in ROLE_QUERY_ALIASES.items():
+        alias_values = (canonical, *aliases)
+        if any(alias in normalized or normalized in alias for alias in alias_values):
+            expansions = list(ROLE_QUERY_EXPANSIONS.get(canonical, (role.strip(),)))
+            return [role.strip(), *[expanded for expanded in expansions if expanded.strip().lower() != normalized]]
+
+    normalized_tokens = set(re.findall(r"[a-z0-9]+", normalized))
+    best_canonical: str | None = None
+    best_score = 0
+    for canonical, aliases in ROLE_QUERY_ALIASES.items():
+        for alias in (canonical, *aliases):
+            alias_tokens = set(re.findall(r"[a-z0-9]+", alias))
+            score = len(normalized_tokens & alias_tokens)
+            if score > best_score and score >= 2:
+                best_score = score
+                best_canonical = canonical
+    if best_canonical:
+        expansions = list(ROLE_QUERY_EXPANSIONS.get(best_canonical, (role.strip(),)))
+        return [role.strip(), *[expanded for expanded in expansions if expanded.strip().lower() != normalized]]
     return [role.strip()]
 
 
 def build_queries(profile, *, max_terms: int | None = None) -> list[SearchQuery]:
+    career_intent = {}
+    if profile.config_overrides:
+        career_intent = (profile.config_overrides.get("career_intent") or {})
+    query_plan = career_intent.get("query_plan") or {}
     roles = profile.target_roles
     if not roles and profile.config_overrides:
         roles = (profile.config_overrides.get("profile_intent") or {}).get("roles")
     roles = roles or []
 
-    custom = profile.custom_search_queries or []
+    custom = list(profile.custom_search_queries or [])
+    custom = list(query_plan.get("title_queries") or []) + list(query_plan.get("skill_queries") or []) + list(query_plan.get("domain_queries") or []) + custom
     seen: set[str] = set()
     terms: list[str] = []
     for t in roles:

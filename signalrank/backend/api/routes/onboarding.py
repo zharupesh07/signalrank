@@ -14,6 +14,7 @@ from api.database import AsyncSessionLocal, get_db
 from api.deps import get_current_user
 from api.deps_llm import get_llm_client
 from api.models import Profile, User
+from domain.career_intent import build_career_intent_profile
 from domain.resume_editor import has_resume_editor_content, merge_resume_editor, parse_resume_editor
 from llm.onboarding import generate_onboarding_questions
 from llm.openrouter import OpenRouterClient
@@ -85,6 +86,45 @@ def _normalize_str_list(values: Iterable[str] | None) -> list[str]:
     return cleaned
 
 
+def _sync_career_intent_override(profile: Profile) -> None:
+    overrides = dict(profile.config_overrides or {})
+    career_intent = dict(overrides.get("career_intent") or {})
+    work_preferences = dict(career_intent.get("work_preferences") or {})
+    query_plan = dict(career_intent.get("query_plan") or {})
+
+    if profile.target_roles:
+        career_intent["target_roles"] = [
+            {
+                "title": role,
+                "priority": "primary" if idx == 0 else "secondary",
+                "confidence": 0.9 if idx == 0 else 0.75,
+                "evidence": ["User-confirmed target role"],
+            }
+            for idx, role in enumerate(_normalize_str_list(profile.target_roles))
+        ]
+        query_plan["title_queries"] = _normalize_str_list(query_plan.get("title_queries", []) + list(profile.target_roles))
+
+    if profile.preferred_locations:
+        work_preferences["locations"] = _normalize_str_list(profile.preferred_locations)
+
+    title_blocklist = _normalize_str_list(overrides.get("title_blocklist") or [])
+    if title_blocklist:
+        career_intent["negative_targets"] = [
+            {
+                "label": label,
+                "reason": "User-specified exclusion",
+                "confidence": 1.0,
+            }
+            for label in title_blocklist
+        ]
+        query_plan["negative_keywords"] = title_blocklist
+
+    career_intent["work_preferences"] = work_preferences
+    career_intent["query_plan"] = query_plan
+    overrides["career_intent"] = career_intent
+    profile.config_overrides = overrides
+
+
 def _set_onboarding_parse_status(profile: Profile, status: str) -> None:
     overrides = dict(profile.config_overrides or {})
     onboarding = dict(overrides.get("onboarding") or {})
@@ -120,15 +160,33 @@ def _parse_salary_to_number(value: str | list[str]) -> int | None:
 
 def _apply_parsed_profile_updates(profile: Profile, parsed: ResumeParseResult) -> str | None:
     profile.skills = parsed.skills
+    career_intent = build_career_intent_profile(parsed)
     suggested_roles = _normalize_str_list(parsed.suggested_roles)
     suggested_locations = _normalize_str_list(parsed.suggested_locations)
     suggested_exclusions = _normalize_str_list(parsed.suggested_exclusions)
+    explicit_target_roles = _normalize_str_list(
+        role.get("title")
+        for role in career_intent.get("target_roles", [])
+        if isinstance(role, dict)
+    )
+    structured_locations = _normalize_str_list(
+        ((career_intent.get("work_preferences") or {}).get("locations")) or []
+    )
+    structured_negatives = _normalize_str_list(
+        target.get("label")
+        for target in career_intent.get("negative_targets", [])
+        if isinstance(target, dict)
+    )
+    query_plan = dict(career_intent.get("query_plan") or {})
     ai_signals = _ai_signal_count_from_parsed(parsed)
     accept_suggested = suggested_roles and (
         ai_signals >= 2 or not _suggested_roles_are_ai_only(suggested_roles)
     )
     enterprise_role = _enterprise_role(parsed)
-    if accept_suggested:
+    if explicit_target_roles:
+        profile.target_roles = explicit_target_roles
+        profile.role_intent = explicit_target_roles[0]
+    elif accept_suggested:
         profile.target_roles = suggested_roles
         profile.role_intent = suggested_roles[0]
     elif enterprise_role:
@@ -155,11 +213,15 @@ def _apply_parsed_profile_updates(profile: Profile, parsed: ResumeParseResult) -
         profile.distilled_text = distilled_text
 
     overrides = dict(profile.config_overrides or {})
+    overrides["career_intent"] = career_intent
 
     if profile.target_roles:
         overrides.setdefault("profile_intent", {})["roles"] = profile.target_roles
 
-    if suggested_locations:
+    if structured_locations:
+        profile.preferred_locations = structured_locations
+        overrides.setdefault("scraping", {})["locations"] = structured_locations
+    elif suggested_locations:
         profile.preferred_locations = suggested_locations
         overrides.setdefault("scraping", {})["locations"] = suggested_locations
     else:
@@ -168,11 +230,20 @@ def _apply_parsed_profile_updates(profile: Profile, parsed: ResumeParseResult) -
             profile.preferred_locations = enterprise_locations
             overrides.setdefault("scraping", {})["locations"] = enterprise_locations
 
-    if suggested_exclusions:
+    if structured_negatives:
+        overrides["title_blocklist"] = structured_negatives
+    elif suggested_exclusions:
         overrides["title_blocklist"] = suggested_exclusions
 
     suggested_search_queries = _normalize_str_list(parsed.suggested_search_queries)
-    if suggested_search_queries:
+    query_terms = _normalize_str_list(
+        (query_plan.get("title_queries") or [])
+        + (query_plan.get("skill_queries") or [])
+        + (query_plan.get("domain_queries") or [])
+    )
+    if query_terms:
+        profile.custom_search_queries = query_terms
+    elif suggested_search_queries:
         profile.custom_search_queries = suggested_search_queries
 
     if overrides != (profile.config_overrides or {}):
@@ -491,6 +562,7 @@ async def onboarding_parsed(
             "target_roles": overrides.get("profile_intent", {}).get("roles", []),
             "preferred_locations": overrides.get("scraping", {}).get("locations", []),
             "exclusions": overrides.get("title_blocklist", []),
+            "career_intent": overrides.get("career_intent", {}),
             "salary_lpa": int(profile.target_lpa) if profile.target_lpa else None,
             "min_yoe": profile.min_yoe,
             "max_yoe": profile.max_yoe,
@@ -547,17 +619,20 @@ async def refine_onboarding(
         profile.target_roles = cleaned_roles
         if cleaned_roles:
             profile.role_intent = cleaned_roles[0]
+        _sync_career_intent_override(profile)
     elif qid == "preferred_locations":
         overrides = profile.config_overrides or {}
         cleaned_locations = _normalize_str_list(answer if isinstance(answer, list) else [answer])
         overrides.setdefault("scraping", {})["locations"] = cleaned_locations
         profile.config_overrides = overrides
         profile.preferred_locations = cleaned_locations
+        _sync_career_intent_override(profile)
     elif qid == "exclusions":
         overrides = profile.config_overrides or {}
         exclusions = answer if isinstance(answer, list) else [answer]
-        overrides["title_blocklist"] = exclusions
+        overrides["title_blocklist"] = _normalize_str_list(exclusions)
         profile.config_overrides = overrides
+        _sync_career_intent_override(profile)
     elif qid == "onboarding_complete":
         profile.onboarding_complete = True
 
