@@ -198,7 +198,7 @@ export default function DevPanel() {
   async function checkHealth() {
     setHealthStatus("checking...");
     try {
-      const base = apiUrl || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const base = apiUrl || "/api/backend";
       const res = await fetch(`${base}/health`);
       setHealthStatus(res.ok ? `OK (${res.status})` : `Error (${res.status})`);
     } catch (e) {
@@ -496,7 +496,7 @@ export default function DevPanel() {
                       type="text"
                       value={apiUrl}
                       onChange={(e) => setApiUrl(e.target.value)}
-                      placeholder={process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}
+                      placeholder="/api/backend"
                       className={inputCls}
                     />
                     <p className="text-[10px] text-muted-foreground mt-1">Requires page reload to take effect</p>

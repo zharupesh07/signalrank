@@ -43,17 +43,18 @@ type AdminUsersResponse = {
 };
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+const BACKEND_PROXY_PREFIX = "/api/backend";
 
 function resolveBaseUrl() {
-  if (typeof window === "undefined") {
-    return (
-      process.env.API_URL_SERVER ??
-      process.env.BACKEND_INTERNAL_URL ??
-      process.env.NEXT_PUBLIC_API_URL ??
-      "http://localhost:8000"
-    );
-  }
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  if (typeof window !== "undefined") return BACKEND_PROXY_PREFIX;
+
+  const origin =
+    process.env.NEXTAUTH_URL ??
+    process.env.AUTH_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ??
+    "http://localhost:3000";
+
+  return `${origin.replace(/\/+$/, "")}${BACKEND_PROXY_PREFIX}`;
 }
 
 function requestTimeoutMs() {
