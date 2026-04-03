@@ -243,6 +243,126 @@ _SKILL_CATEGORIES = [
     "Other",
 ]
 
+
+def _resume_parse_schema() -> dict:
+    return {
+        "type": "object",
+        "properties": {
+            "skills": {"type": "array", "items": {"type": "string"}},
+            "years_of_experience": {"type": ["integer", "null"]},
+            "recent_titles": {"type": "array", "items": {"type": "string"}},
+            "industries": {"type": "array", "items": {"type": "string"}},
+            "education": {"type": "array", "items": {"type": "string"}},
+            "suggested_roles": {"type": "array", "items": {"type": "string"}},
+            "suggested_locations": {"type": "array", "items": {"type": "string"}},
+            "salary_lpa": {"type": ["integer", "null"]},
+            "suggested_exclusions": {"type": "array", "items": {"type": "string"}},
+            "suggested_search_queries": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": [
+            "skills",
+            "years_of_experience",
+            "recent_titles",
+            "industries",
+            "education",
+            "suggested_roles",
+            "suggested_locations",
+            "salary_lpa",
+            "suggested_exclusions",
+            "suggested_search_queries",
+        ],
+        "additionalProperties": False,
+    }
+
+
+def _resume_structure_schema() -> dict:
+    return {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "email": {"type": "string"},
+            "phone": {"type": "string"},
+            "location": {"type": "string"},
+            "linkedin": {"type": "string"},
+            "github": {"type": "string"},
+            "website": {"type": "string"},
+            "position": {"type": "string"},
+            "summary": {"type": "string"},
+            "experiences": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string"},
+                        "company": {"type": "string"},
+                        "dates": {"type": "string"},
+                        "location": {"type": "string"},
+                        "tech": {"type": "string"},
+                        "bullets": {"type": "array", "items": {"type": "string"}},
+                    },
+                    "required": ["title", "company", "dates", "location", "tech", "bullets"],
+                    "additionalProperties": False,
+                },
+            },
+            "skills": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "category": {"type": "string", "enum": _SKILL_CATEGORIES},
+                        "items": {"type": "array", "items": {"type": "string"}},
+                    },
+                    "required": ["category", "items"],
+                    "additionalProperties": False,
+                },
+            },
+            "projects": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "url": {"type": "string"},
+                        "description": {"type": "string"},
+                    },
+                    "required": ["name", "url", "description"],
+                    "additionalProperties": False,
+                },
+            },
+            "education": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "degree": {"type": "string"},
+                        "institution": {"type": "string"},
+                        "year": {"type": "string"},
+                    },
+                    "required": ["degree", "institution", "year"],
+                    "additionalProperties": False,
+                },
+            },
+            "certifications": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": [
+            "name",
+            "email",
+            "phone",
+            "location",
+            "linkedin",
+            "github",
+            "website",
+            "position",
+            "summary",
+            "experiences",
+            "skills",
+            "projects",
+            "education",
+            "certifications",
+        ],
+        "additionalProperties": False,
+    }
+
 _STRUCTURE_PROMPT = """Extract the complete structured content from this resume. Return a single JSON object.
 
 CRITICAL RULES — follow exactly:
@@ -294,7 +414,12 @@ async def parse_resume_structure(
         resume_text=resume_text[:12000],
     )
     try:
-        data = await llm_client.llm_json(prompt, max_tokens=3000)
+        data = await llm_client.llm_json(
+            prompt,
+            max_tokens=3000,
+            json_schema=_resume_structure_schema(),
+            schema_name="resume_structure",
+        )
         if "_error" in data:
             logger.warning("LLM structure parse failed: %s", data.get("_details"))
             return {}
@@ -350,6 +475,8 @@ async def parse_resume_from_images(
             vision_models=vision_models or None,
             request_timeout=request_timeout,
             max_retries=max_retries,
+            json_schema=_resume_structure_schema(),
+            schema_name="resume_structure_vision",
         )
         if "_error" in data:
             logger.warning("Vision LLM parse failed: %s", data.get("_details"))
@@ -480,7 +607,12 @@ async def parse_resume(
 ) -> ResumeParseResult:
     prompt = _build_extraction_prompt(resume_text)
     try:
-        data = await llm_client.llm_json(prompt, max_tokens=1200)
+        data = await llm_client.llm_json(
+            prompt,
+            max_tokens=1200,
+            json_schema=_resume_parse_schema(),
+            schema_name="resume_parse",
+        )
         data = _massage_parsed_data(data, resume_text)
         return _validate_extraction(data)
     except Exception:

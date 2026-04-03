@@ -24,6 +24,24 @@ type JobsListParams = {
   dateRange?: "any" | "24h" | "week" | "month";
 };
 
+type AdminUser = {
+  id: string;
+  email: string;
+  is_admin: boolean;
+  created_at: string;
+  last_login: string | null;
+  onboarding_complete: boolean;
+  run_count: number;
+  last_run_status: string | null;
+};
+
+type AdminUsersResponse = {
+  users: AdminUser[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
@@ -346,7 +364,7 @@ export const api = {
     stats: (token: string) =>
       request<{ total_users: number; total_jobs: number; total_runs: number; total_applications: number }>("/api/admin/stats", { token }),
     users: (token: string) =>
-      request<{ id: string; email: string; is_admin: boolean; created_at: string; last_login: string | null; onboarding_complete: boolean; run_count: number; last_run_status: string | null }[]>("/api/admin/users", { token }),
+      request<AdminUsersResponse>("/api/admin/users", { token }),
     updateUser: (token: string, userId: string, data: { is_admin?: boolean }) =>
       request<{ status: string }>(`/api/admin/users/${userId}`, { method: "PATCH", token, body: JSON.stringify(data) }),
     deleteUser: (token: string, userId: string) =>

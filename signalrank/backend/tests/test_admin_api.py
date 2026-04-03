@@ -63,6 +63,13 @@ async def test_list_users_returns_all_fields(client, admin_token):
             assert field in u, f"Missing field: {field}"
 
 
+async def test_list_users_empty_state_returns_wrapper(client, admin_token, db: AsyncSession):
+    r = await client.get("/api/admin/users?limit=10&offset=10", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    data = r.json()
+    assert data == {"users": [], "total": 1, "limit": 10, "offset": 10}
+
+
 async def test_list_users_no_n_plus_one(client, admin_token, db: AsyncSession):
     """list_users should work correctly with multiple users (batch queries)."""
     for i in range(5):

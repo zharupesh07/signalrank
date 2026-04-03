@@ -25,22 +25,37 @@ router = APIRouter(prefix="/api/jobs", tags=["ingest"])
 
 _EXTRACT_SYSTEM = """Extract structured fields from a job posting.
 
-Respond in this exact format (no JSON, no markdown):
-TITLE: <job title>
-COMPANY: <company name>
-LOCATION: <city, country or "Remote">
-JOB_URL: <canonical job url, or empty>
-DATE_POSTED: <ISO date YYYY-MM-DD if visible on page, else empty>
-DESCRIPTION: <first 500 characters of job description>"""
+Return a single JSON object only using these keys:
+- title: job title
+- company: company name
+- location: city/country or "Remote"
+- job_url: canonical job URL, or empty string
+- date_posted: ISO date YYYY-MM-DD if visible on page, else empty string
+- description: first 500 characters of job description"""
 
 _EXTRACT_SYSTEM_NO_DATE = """Extract structured fields from a job posting.
 
-Respond in this exact format (no JSON, no markdown):
-TITLE: <job title>
-COMPANY: <company name>
-LOCATION: <city, country or "Remote">
-JOB_URL: <canonical job url, or empty>
-DESCRIPTION: <first 500 characters of job description>"""
+Return a single JSON object only using these keys:
+- title: job title
+- company: company name
+- location: city/country or "Remote"
+- job_url: canonical job URL, or empty string
+- date_posted: empty string
+- description: first 500 characters of job description"""
+
+_INGEST_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "title": {"type": "string"},
+        "company": {"type": "string"},
+        "location": {"type": "string"},
+        "job_url": {"type": "string"},
+        "date_posted": {"type": ["string", "null"]},
+        "description": {"type": "string"},
+    },
+    "required": ["title", "company", "location", "job_url", "date_posted", "description"],
+    "additionalProperties": False,
+}
 
 
 def _parse_ingest_response(text: str) -> dict:
@@ -153,8 +168,24 @@ async def ingest_extract(
     user_msg = f"Job posting content:\n\n{content[:8000]}"
 
     try:
-        raw = await llm.llm_text(system, user_msg, max_tokens=300, temperature=0.0)
-        fields = _parse_ingest_response(raw)
+        fields = await llm.llm_json(
+            system=system,
+            user=user_msg,
+            max_tokens=300,
+            temperature=0.0,
+            json_schema=_INGEST_SCHEMA,
+            schema_name="job_ingest_extract",
+        )
+        if "_error" in fields:
+            raise ValueError(fields.get("_details") or "structured ingest extraction failed")
+        fields = {
+            "title": str(fields.get("title") or "").strip(),
+            "company": str(fields.get("company") or "").strip(),
+            "location": str(fields.get("location") or "").strip(),
+            "job_url": str(fields.get("job_url") or "").strip(),
+            "date_posted": str(fields.get("date_posted") or "").strip() or None,
+            "description": str(fields.get("description") or "").strip(),
+        }
     except Exception as e:
         logger.warning("LLM extraction failed: %s", e)
         raise HTTPException(status_code=502, detail={"error": "parse_failed"})

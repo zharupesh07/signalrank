@@ -89,7 +89,7 @@ export default function AdminPage() {
     setLoading(true);
     Promise.all([
       api.admin.stats(token).then(setStats),
-      api.admin.users(token).then(setUsers),
+      api.admin.users(token).then((r) => setUsers(r.users)),
       api.admin.runs(token).then(setRuns),
     ])
       .catch(() => toast("Failed to load admin data", "error"))
@@ -130,7 +130,7 @@ export default function AdminPage() {
       ]);
       setRuns(updatedRuns);
       setStats(updatedStats);
-      setUsers(updatedUsers);
+      setUsers(updatedUsers.users);
       toast(
         `Reset ${res.user_email}: removed ${res.job_results_deleted} results and ${res.runs_deleted} runs; shared jobs preserved`,
         "success",

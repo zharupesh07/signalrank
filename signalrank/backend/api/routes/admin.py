@@ -104,7 +104,7 @@ async def list_users(
     )
     users = users_result.scalars().all()
     if not users:
-        return []
+        return {"users": [], "total": total_count, "limit": limit, "offset": offset}
 
     user_ids = [u.id for u in users]
 

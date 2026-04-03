@@ -441,7 +441,7 @@ async def process_run(
                     )
                 )
                 await db.commit()
-                return
+                raise
             logger.info("Run %s ranking done in %.1fs, %d jobs",
                         run_id, time.monotonic() - t_rank, len(ranked_df))
             log_rss(logger, "after_rank", run_id=run_id, ranked_jobs=len(ranked_df))
@@ -529,6 +529,24 @@ async def process_run(
             clear_vector_cache()
             release_memory(logger, "run_complete_release", run_id=run_id, mode=mode)
 
+        except _TRANSIENT_EXCEPTIONS as exc:
+            logger.warning("Run %s transient failure", run_id, exc_info=True)
+            try:
+                await db.rollback()
+                await db.execute(
+                    update(Run)
+                    .where(Run.id == run_id)
+                    .values(
+                        status="failed",
+                        finished_at=datetime.now(timezone.utc),
+                        progress=_run_progress_meta(mode, force_scrape, scrape_executed=scrape_executed),
+                        error=_format_run_error(exc),
+                    )
+                )
+                await db.commit()
+            except Exception:
+                logger.warning("Run %s: failed to update status after transient error", run_id, exc_info=True)
+            raise
         except Exception as exc:
             logger.exception("Run %s failed", run_id)
             try:

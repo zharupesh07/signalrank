@@ -17,6 +17,7 @@ from domain.additive_scoring import (
     recency_score_0_100,
     seniority_score_0_100,
     skills_score_0_100,
+    skill_coverage_penalty,
 )
 
 
@@ -287,3 +288,19 @@ def test_weighted_score_all_zeros():
 def test_weighted_score_all_100():
     scores = {"skills_match": 100, "company_fit": 100, "seniority": 100, "location": 100, "recency": 100}
     assert compute_weighted_score(scores) == 100.0
+
+
+# ---------------------------------------------------------------------------
+# skill_coverage_penalty
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("coverage,expected", [
+    (1.0, 0.0),    # all skills match → no penalty
+    (0.5, 0.0),    # exactly half → no penalty
+    (0.375, -5.0), # midpoint of gentle zone
+    (0.25, -10.0), # bottom of gentle zone
+    (0.10, -15.0), # major gap
+    (0.0, -15.0),  # no skills match → full penalty
+])
+def test_skill_coverage_penalty(coverage, expected):
+    assert skill_coverage_penalty(coverage) == pytest.approx(expected)

@@ -74,8 +74,11 @@ async def test_parse_resume_returns_result():
     assert "python" in result.skills
     mock_client.llm_json.assert_called_once()
     called_prompt = mock_client.llm_json.await_args.args[0]
+    called_kwargs = mock_client.llm_json.await_args.kwargs
     assert "I am a software engineer" in called_prompt
     assert "{resume_text}" not in called_prompt
+    assert called_kwargs["schema_name"] == "resume_parse"
+    assert called_kwargs["json_schema"]["type"] == "object"
 
 
 @pytest.mark.asyncio
@@ -216,6 +219,9 @@ async def test_parse_resume_structure_returns_validated_editor_dict():
     assert result["experiences"][0]["bullets"] == ["configured otc process improvements"]
     assert result["skills"] == [{"category": "Platforms", "items": ["ERP", "S/4HANA"]}]
     mock_client.llm_json.assert_called_once()
+    called_kwargs = mock_client.llm_json.await_args.kwargs
+    assert called_kwargs["schema_name"] == "resume_structure"
+    assert called_kwargs["json_schema"]["properties"]["experiences"]["type"] == "array"
 
 
 @pytest.mark.asyncio
@@ -258,6 +264,7 @@ async def test_parse_resume_structure_truncates_prompt_to_avoid_token_bloat():
     called_prompt = mock_client.llm_json.await_args.args[0]
     assert called_prompt.endswith("A" * 12000)
     assert "A" * 12001 not in called_prompt
+    assert mock_client.llm_json.await_args.kwargs["schema_name"] == "resume_structure"
 
 
 @pytest.mark.asyncio

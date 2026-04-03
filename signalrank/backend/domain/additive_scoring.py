@@ -177,6 +177,21 @@ def detect_work_mode(location: str, title: str, description: str) -> str:
     return "unknown"
 
 
+def skill_coverage_penalty(skill_coverage: float) -> float:
+    """Compute a penalty (≤ 0) from skill coverage ratio ∈ [0, 1].
+
+    - coverage ≥ 0.50 → 0 penalty (user has enough skills)
+    - coverage ∈ [0.25, 0.50) → linear penalty up to -10
+    - coverage < 0.25 → flat -15 penalty (major skill gap)
+    """
+    if skill_coverage >= 0.50:
+        return 0.0
+    if skill_coverage >= 0.25:
+        shortfall = (0.50 - skill_coverage) / 0.25  # 0→1 as coverage 0.50→0.25
+        return -shortfall * 10.0
+    return -15.0
+
+
 DEFAULT_WEIGHTS = {
     "skills_match": 0.40,
     "company_fit": 0.20,

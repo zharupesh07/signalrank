@@ -94,6 +94,30 @@ async def test_client_returns_json_on_success():
 
 
 @pytest.mark.asyncio
+async def test_client_llm_json_sends_response_format_when_schema_provided():
+    client = OpenRouterClient(api_key="test-key")
+    mock_resp = _mock_success_response('{"name": "ok"}')
+
+    with patch.object(client._http, "post", AsyncMock(return_value=mock_resp)) as mock_post:
+        result = await client.llm_json(
+            "test prompt",
+            json_schema={
+                "type": "object",
+                "properties": {"name": {"type": "string"}},
+                "required": ["name"],
+                "additionalProperties": False,
+            },
+            schema_name="unit_test_schema",
+        )
+
+    assert result == {"name": "ok"}
+    body = mock_post.await_args.kwargs["json"]
+    assert body["response_format"]["type"] == "json_schema"
+    assert body["response_format"]["json_schema"]["name"] == "unit_test_schema"
+    assert body["response_format"]["json_schema"]["schema"]["required"] == ["name"]
+
+
+@pytest.mark.asyncio
 async def test_client_returns_error_dict_on_500():
     client = OpenRouterClient(api_key="test-key")
     mock_resp = _mock_error_response(500)
@@ -102,6 +126,27 @@ async def test_client_returns_error_dict_on_500():
         result = await client.llm_json("test prompt")
 
     assert "_error" in result
+
+
+@pytest.mark.asyncio
+async def test_client_llm_json_falls_back_to_prompt_only_when_structured_request_returns_nothing():
+    client = OpenRouterClient(api_key="test-key")
+
+    with patch.object(client, "_call", AsyncMock(side_effect=[None, '{"result":"ok"}'])) as mock_call:
+        result = await client.llm_json(
+            "test prompt",
+            json_schema={
+                "type": "object",
+                "properties": {"result": {"type": "string"}},
+                "required": ["result"],
+                "additionalProperties": False,
+            },
+        )
+
+    assert result == {"result": "ok"}
+    assert mock_call.await_count == 2
+    assert mock_call.await_args_list[0].kwargs["extra_body"]["response_format"]["type"] == "json_schema"
+    assert "extra_body" not in mock_call.await_args_list[1].kwargs or mock_call.await_args_list[1].kwargs["extra_body"] is None
 
 
 @pytest.mark.asyncio

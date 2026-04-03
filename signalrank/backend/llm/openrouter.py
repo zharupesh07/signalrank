@@ -7,6 +7,7 @@ import random
 import re
 import time as _time
 from collections import OrderedDict
+from copy import deepcopy
 
 import httpx
 
@@ -209,6 +210,25 @@ def _extract_response_content(payload) -> str | None:
     return None
 
 
+def _build_response_format(
+    json_schema: dict,
+    *,
+    schema_name: str = "structured_output",
+    strict: bool = True,
+) -> dict:
+    schema = deepcopy(json_schema)
+    if isinstance(schema, dict):
+        schema.setdefault("additionalProperties", False)
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": schema_name,
+            "strict": strict,
+            "schema": schema,
+        },
+    }
+
+
 async def fetch_free_vision_models(api_key: str, http: httpx.AsyncClient | None = None) -> list[str]:
     """Query /models, return IDs of free models that accept image input.
 
@@ -316,6 +336,7 @@ class OpenRouterClient:
         max_tokens: int,
         temperature: float,
         *,
+        extra_body: dict | None = None,
         request_timeout: float | None = None,
         max_retries: int | None = None,
     ) -> str | None:
@@ -325,6 +346,7 @@ class OpenRouterClient:
                 messages,
                 max_tokens,
                 temperature,
+                extra_body=extra_body,
                 request_timeout=request_timeout,
                 max_retries=max_retries,
             )
@@ -336,12 +358,21 @@ class OpenRouterClient:
         max_tokens: int,
         temperature: float,
         *,
+        extra_body: dict | None = None,
         request_timeout: float | None = None,
         max_retries: int | None = None,
     ) -> str | None:
         retries = MAX_RETRIES_PER_MODEL if max_retries is None else max(0, max_retries)
         for attempt in range(retries + 1):
             try:
+                payload = {
+                    "model": model,
+                    "messages": messages,
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                }
+                if extra_body:
+                    payload.update(extra_body)
                 resp = await self._http.post(
                     BASE_URL,
                     headers={
@@ -349,12 +380,7 @@ class OpenRouterClient:
                         "HTTP-Referer": "https://signalrank.app",
                         "X-Title": "SignalRank",
                     },
-                    json={
-                        "model": model,
-                        "messages": messages,
-                        "max_tokens": max_tokens,
-                        "temperature": temperature,
-                    },
+                    json=payload,
                     timeout=request_timeout,
                 )
                 resp.raise_for_status()
@@ -394,8 +420,21 @@ class OpenRouterClient:
 
         return None
 
-    def _cache_key(self, messages: list[dict], temperature: float) -> str:
-        blob = json.dumps(messages, sort_keys=True) + f"|t={temperature}|m={','.join(self.models)}"
+    def _cache_key(
+        self,
+        messages: list[dict],
+        temperature: float,
+        extra_body: dict | None = None,
+    ) -> str:
+        blob = json.dumps(
+            {
+                "messages": messages,
+                "temperature": temperature,
+                "models": self.models,
+                "extra_body": extra_body or {},
+            },
+            sort_keys=True,
+        )
         return hashlib.md5(blob.encode()).hexdigest()
 
     async def llm_json(
@@ -406,6 +445,9 @@ class OpenRouterClient:
         user: str | None = None,
         max_tokens: int = 1024,
         temperature: float = 0.0,
+        json_schema: dict | None = None,
+        schema_name: str = "structured_output",
+        strict: bool = True,
     ) -> dict:
         if system and user:
             messages = [
@@ -415,7 +457,17 @@ class OpenRouterClient:
         else:
             messages = [{"role": "user", "content": prompt or ""}]
 
-        cache_key = self._cache_key(messages, temperature)
+        schema_body = None
+        if json_schema:
+            schema_body = {
+                "response_format": _build_response_format(
+                    json_schema,
+                    schema_name=schema_name,
+                    strict=strict,
+                )
+            }
+
+        cache_key = self._cache_key(messages, temperature, schema_body)
         cached = _get_response_cache_value(cache_key)
         if cached is not None:
             logger.info("llm_json cache hit")
@@ -426,7 +478,16 @@ class OpenRouterClient:
 
         last_error = None
         for model in models_to_try:
-            raw = await self._call(model, messages, max_tokens, temperature)
+            raw = await self._call(
+                model,
+                messages,
+                max_tokens,
+                temperature,
+                extra_body=schema_body,
+            )
+            if raw is None and schema_body:
+                logger.info("Structured response unavailable on %s, falling back to prompt-only JSON", model)
+                raw = await self._call(model, messages, max_tokens, temperature)
             if raw is None:
                 last_error = f"{model} returned nothing"
                 continue
@@ -484,6 +545,9 @@ class OpenRouterClient:
         temperature: float = 0.0,
         request_timeout: float | None = None,
         max_retries: int | None = None,
+        json_schema: dict | None = None,
+        schema_name: str = "structured_output",
+        strict: bool = True,
     ) -> dict:
         """Send one or more images + a text prompt to a free vision model, return parsed JSON.
 
@@ -509,6 +573,20 @@ class OpenRouterClient:
             })
         content.append({"type": "text", "text": prompt})
         messages = [{"role": "user", "content": content}]
+        schema_body = None
+        if json_schema:
+            schema_body = {
+                "response_format": _build_response_format(
+                    json_schema,
+                    schema_name=schema_name,
+                    strict=strict,
+                )
+            }
+        cache_key = self._cache_key(messages, temperature, schema_body)
+        cached = _get_response_cache_value(cache_key)
+        if cached is not None:
+            logger.info("llm_json_vision cache hit")
+            return cached  # type: ignore[return-value]
 
         last_error = None
         for model in models:
@@ -518,19 +596,31 @@ class OpenRouterClient:
                 messages,
                 max_tokens,
                 temperature,
+                extra_body=schema_body,
                 request_timeout=request_timeout,
                 max_retries=max_retries,
             )
+            if raw is None and schema_body:
+                logger.info("Structured vision response unavailable on %s, falling back to prompt-only JSON", model)
+                raw = await self._call(
+                    model,
+                    messages,
+                    max_tokens,
+                    temperature,
+                    request_timeout=request_timeout,
+                    max_retries=max_retries,
+                )
             if raw is None:
                 last_error = f"{model} returned nothing"
                 continue
             parsed = _extract_json(raw)
             if parsed is not None:
                 if not _looks_like_nonempty_resume_payload(parsed):
-                    last_error = f"{model} returned structurally empty resume payload"
-                    logger.warning("Empty resume payload from vision model %s", model)
-                    continue
+                        last_error = f"{model} returned structurally empty resume payload"
+                        logger.warning("Empty resume payload from vision model %s", model)
+                        continue
                 logger.info("llm_json_vision success via %s", model)
+                _store_response_cache_value(cache_key, parsed)
                 return parsed
             last_error = f"{model} returned non-JSON: {raw[:120]}"
             logger.warning("Non-JSON from vision model %s: %s...", model, raw[:80])

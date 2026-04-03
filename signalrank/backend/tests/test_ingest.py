@@ -1,10 +1,11 @@
 """Tests for api/routes/ingest.py — no real network or LLM calls."""
 from __future__ import annotations
+from types import SimpleNamespace
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime, timezone, timedelta
 
-from api.routes.ingest import _parse_ingest_response, _compute_priority, _validate_url
+from api.routes.ingest import _parse_ingest_response, _compute_priority, _validate_url, ingest_extract, IngestRequest
 from fastapi import HTTPException
 
 LLM_RESPONSE = """TITLE: Senior ML Engineer
@@ -75,3 +76,34 @@ def test_validate_url_rejects_localhost():
 def test_validate_url_rejects_loopback_ip():
     with pytest.raises(HTTPException):
         _validate_url("http://127.0.0.1/secret")
+
+
+@pytest.mark.asyncio
+async def test_ingest_extract_uses_structured_schema_output():
+    llm = AsyncMock()
+    llm.llm_json.return_value = {
+        "title": "Senior ML Engineer",
+        "company": "Acme Corp",
+        "location": "Bangalore, India",
+        "job_url": "https://acme.com/jobs/123",
+        "date_posted": "2026-03-23",
+        "description": "Build ML platform at scale.",
+    }
+
+    result = await ingest_extract(
+        IngestRequest(text="ML engineer role"),
+        current_user=SimpleNamespace(id="user-1"),
+        llm=llm,
+    )
+
+    assert result.title == "Senior ML Engineer"
+    called_kwargs = llm.llm_json.await_args.kwargs
+    assert called_kwargs["schema_name"] == "job_ingest_extract"
+    assert called_kwargs["json_schema"]["required"] == [
+        "title",
+        "company",
+        "location",
+        "job_url",
+        "date_posted",
+        "description",
+    ]
