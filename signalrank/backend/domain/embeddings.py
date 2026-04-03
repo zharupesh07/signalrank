@@ -169,7 +169,7 @@ def build_job_embedding_text(
     desc = " ".join((description or "").split())[:max_chars]
     skills = ", ".join(sorted(canonical_skills)) if canonical_skills else ""
 
-    return f"ROLE: {title}\n" f"RESPONSIBILITIES: {desc}\n" f"REQUIRED_SKILLS: {skills}"
+    return f"ROLE: {title}\nREQUIRED_SKILLS: {skills}\nRESPONSIBILITIES: {desc}"
 
 
 def build_resume_embedding_text(*, resume_text, distilled, cfg, use_case):
