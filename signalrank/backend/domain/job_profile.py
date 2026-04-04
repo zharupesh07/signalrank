@@ -4,6 +4,12 @@ import re
 from collections.abc import Iterable
 from typing import Any
 
+from domain.artifact_versions import (
+    JOB_PROFILE_VERSION,
+    SCHEMA_VERSION,
+    job_profile_cache_key,
+    stable_digest,
+)
 from domain.description_quality import description_quality_multiplier
 from domain.role_clusters import infer_clusters_from_job_text
 from domain.skills import extract_skills_from_texts
@@ -213,7 +219,7 @@ def build_job_profile(
         role_family,
     ])
 
-    return {
+    profile_payload = {
         "role_family": role_family,
         "role_titles_normalized": role_titles[:6],
         "domain": family,
@@ -225,6 +231,31 @@ def build_job_profile(
         "must_have_constraints": _required_constraints(description_text)[:10],
         "red_flags": _red_flags(description_text, quality)[:10],
         "description_quality": quality,
+    }
+    job_fingerprint = stable_digest(
+        {
+            "title": title_text,
+            "company": _compact_text(company),
+            "description": description_text,
+            "location": location_text,
+            "site": _compact_text(site),
+            "date_posted": str(date_posted or ""),
+            "role_clusters": clusters,
+            "profile_payload": profile_payload,
+            "schema_version": SCHEMA_VERSION,
+            "artifact_version": JOB_PROFILE_VERSION,
+        }
+    )
+
+    return {
+        "artifact_version": JOB_PROFILE_VERSION,
+        "schema_version": SCHEMA_VERSION,
+        "job_fingerprint": job_fingerprint,
+        "job_cache_key": job_profile_cache_key(
+            job_fingerprint=job_fingerprint,
+            profile_version=JOB_PROFILE_VERSION,
+        ),
+        **profile_payload,
         "evidence_snippets": _evidence_snippets(
             ("title", title_text),
             ("location", normalized_location or location_text),

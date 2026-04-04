@@ -4,6 +4,12 @@ import re
 from collections.abc import Iterable
 from typing import Any
 
+from domain.artifact_versions import (
+    CANDIDATE_PROFILE_VERSION,
+    SCHEMA_VERSION,
+    candidate_profile_cache_key,
+    stable_digest,
+)
 from domain.role_clusters import infer_clusters_from_job_text, roles_to_clusters
 from domain.skills import SkillCanonicalizer, extract_skills_from_texts
 from llm.resume_parser import ResumeParseResult
@@ -298,8 +304,34 @@ def build_candidate_profile(
         _extract_strings(parsed.ambiguities)
         + _extract_strings((career_intent.get("ambiguities") or []))
     )
+    confidence_by_field = {
+        "roles": 0.92 if target_primary else 0.74 if target_adjacent else 0.52,
+        "skills": min(0.96, 0.42 + 0.07 * min(len(must_have_skills), 6)),
+        "domains": 0.88 if domains and domains[0] != "General" else 0.52,
+        "seniority": 0.86 if parsed.years_of_experience is not None or target_primary else 0.6,
+        "locations": 0.8 if locations else 0.48,
+        "overall": 0.82,
+    }
+    confidence_by_field["overall"] = round(
+        max(
+            0.05,
+            min(
+                0.98,
+                (
+                    confidence_by_field["roles"] * 0.28
+                    + confidence_by_field["skills"] * 0.24
+                    + confidence_by_field["domains"] * 0.16
+                    + confidence_by_field["seniority"] * 0.16
+                    + confidence_by_field["locations"] * 0.08
+                    + (0.08 if not ambiguities else 0.0)
+                    - min(0.18, 0.04 * len(ambiguities))
+                ),
+            ),
+        ),
+        3,
+    )
 
-    return {
+    profile_payload = {
         "target_roles_primary": target_primary[:6],
         "target_roles_adjacent": target_adjacent[:6],
         "negative_roles": negative_roles[:10],
@@ -310,6 +342,30 @@ def build_candidate_profile(
         "must_have_skills": must_have_skills,
         "good_to_have_skills": good_to_have_skills,
         "career_archetypes": archetypes[:8],
+        "ambiguities": ambiguities[:10],
+        "confidence_by_field": confidence_by_field,
+        "schema_version": SCHEMA_VERSION,
+        "artifact_version": CANDIDATE_PROFILE_VERSION,
+    }
+    profile_fingerprint = stable_digest(
+        {
+            "resume_text": full_resume_text,
+            "profile_roles": profile_roles,
+            "profile_locations": profile_locations,
+            "profile_skills": profile_skills,
+            "profile_payload": profile_payload,
+        }
+    )
+
+    return {
+        "artifact_version": CANDIDATE_PROFILE_VERSION,
+        "schema_version": SCHEMA_VERSION,
+        "profile_fingerprint": profile_fingerprint,
+        "profile_cache_key": candidate_profile_cache_key(
+            resume_fingerprint=profile_fingerprint,
+            profile_version=CANDIDATE_PROFILE_VERSION,
+        ),
+        **profile_payload,
         "evidence_snippets": _evidence_snippets(
             ("parsed_roles", ", ".join(target_primary or target_roles[:6])),
             ("parsed_titles", ", ".join(_extract_strings(parsed.recent_titles))),

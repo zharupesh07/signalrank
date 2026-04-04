@@ -5,6 +5,12 @@ import re
 from collections.abc import Iterable
 from typing import Any
 
+from domain.artifact_versions import (
+    MATCH_JUDGE_PROMPT_VERSION,
+    MATCH_REPORT_VERSION,
+    SCHEMA_VERSION,
+    match_report_cache_key,
+)
 from domain.score_synthesis import fit_band_from_verdict
 
 
@@ -49,6 +55,10 @@ MATCH_REPORT_SCHEMA = {
             },
         },
         "explanation_summary": {"type": "string"},
+        "artifact_version": {"type": "string"},
+        "schema_version": {"type": "integer"},
+        "prompt_version": {"type": "string"},
+        "match_cache_key": {"type": "string"},
     },
     "required": [
         "verdict",
@@ -320,6 +330,8 @@ def heuristic_match_report(
     cited_job_evidence = _evidence_list(job_profile.get("evidence_snippets"), limit=3)
     if not cited_job_evidence and job_text:
         cited_job_evidence = [{"source": "job_description", "text": _short_text(job_text)}]
+    candidate_fp = str(candidate_profile.get("profile_fingerprint") or candidate_profile.get("profile_cache_key") or "")
+    job_fp = str(job_profile.get("job_fingerprint") or job_profile.get("job_cache_key") or "")
 
     explanation_parts = [
         f"verdict={verdict}",
@@ -332,6 +344,15 @@ def heuristic_match_report(
     explanation_summary = "; ".join(explanation_parts)
 
     return {
+        "artifact_version": MATCH_REPORT_VERSION,
+        "schema_version": SCHEMA_VERSION,
+        "prompt_version": MATCH_JUDGE_PROMPT_VERSION,
+        "match_cache_key": match_report_cache_key(
+            candidate_profile_fingerprint=candidate_fp,
+            job_profile_fingerprint=job_fp,
+            judge_model_version="heuristic",
+            prompt_version=MATCH_JUDGE_PROMPT_VERSION,
+        ),
         "verdict": verdict,
         "target_lane_fit": "direct" if verdict == "strong_fit" else "adjacent" if verdict == "adjacent_fit" else "misleading" if verdict == "misleading_fit" else "weak",
         "skill_evidence_present": skill_present,
@@ -350,9 +371,11 @@ def heuristic_match_report(
 
 def _build_prompt(candidate_profile: dict, job_profile: dict, resume_text: str, job_text: str) -> tuple[str, str]:
     system = (
-        "You evaluate one candidate-job pair. "
-        "Return JSON only and cite exact resume/JD evidence. "
-        "Do not guess; be conservative about confidence."
+        "You evaluate one candidate-job pair for job ranking. "
+        "Return JSON only. Be evidence-first, conservative, and skeptical of title-only similarity. "
+        "A strong_fit requires grounded evidence from both the resume and the job description. "
+        "If the title looks relevant but the responsibilities, process area, or required skills do not line up, "
+        "downgrade to weak_fit, misleading_fit, or reject."
     )
     user = json.dumps(
         {
@@ -361,10 +384,14 @@ def _build_prompt(candidate_profile: dict, job_profile: dict, resume_text: str, 
             "resume_excerpt": _short_text(resume_text, 1800),
             "job_excerpt": _short_text(job_text, 2200),
             "instructions": [
-                "Use the provided structured artifacts and evidence snippets.",
-                "Judge whether the job is a strong fit, adjacent fit, weak fit, misleading fit, or reject.",
-                "List missing skills and risk flags explicitly.",
-                "Cite both resume and job evidence.",
+                "Use only the provided structured artifacts, evidence snippets, and excerpts.",
+                "Do not infer missing experience, certifications, or domain knowledge that are not explicitly shown.",
+                "Title similarity alone cannot justify strong_fit or adjacent_fit.",
+                "Judge whether the job is a strong_fit, adjacent_fit, weak_fit, misleading_fit, or reject.",
+                "Prefer misleading_fit when the title sounds aligned but the JD evidence points to a different lane.",
+                "List missing skills, process gaps, and risk flags explicitly.",
+                "Cite grounded evidence from both the resume and the job description.",
+                "Keep cited evidence short and exact; do not paraphrase unsupported claims into the evidence fields.",
             ],
         },
         ensure_ascii=True,

@@ -3,6 +3,12 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from domain.artifact_versions import (
+    MATCH_VERIFIER_PROMPT_VERSION,
+    SCHEMA_VERSION,
+    VERIFICATION_REPORT_VERSION,
+    verification_report_cache_key,
+)
 from domain.match_judge import _build_prompt as _build_judge_prompt
 
 
@@ -13,6 +19,10 @@ VERIFICATION_REPORT_SCHEMA = {
         "unsupported_claims": {"type": "array", "items": {"type": "string"}},
         "final_confidence_adjustment": {"type": "number"},
         "status": {"type": "string", "enum": ["pass", "needs_review"]},
+        "artifact_version": {"type": "string"},
+        "schema_version": {"type": "integer"},
+        "prompt_version": {"type": "string"},
+        "verification_cache_key": {"type": "string"},
     },
     "required": ["evidence_grounded", "unsupported_claims", "final_confidence_adjustment", "status"],
     "additionalProperties": False,
@@ -35,6 +45,8 @@ def heuristic_verification_report(
 ) -> dict:
     verdict = _norm(match_report.get("verdict")).lower()
     skill_evidence_present = bool(match_report.get("skill_evidence_present"))
+    cited_resume_evidence = match_report.get("cited_resume_evidence") or []
+    cited_job_evidence = match_report.get("cited_job_evidence") or []
     risk_flags = [str(item).lower() for item in match_report.get("risk_flags", []) if str(item).strip()]
     unsupported_claims: list[str] = []
     adjustment = 0.0
@@ -42,6 +54,9 @@ def heuristic_verification_report(
     if verdict in {"strong_fit", "adjacent_fit"} and not skill_evidence_present:
         unsupported_claims.append("judge overstated skill coverage")
         adjustment -= 0.2
+    if verdict in {"strong_fit", "adjacent_fit"} and (not cited_resume_evidence or not cited_job_evidence):
+        unsupported_claims.append("judge lacks grounded resume and job evidence")
+        adjustment -= 0.15
     if verdict == "strong_fit" and "skill_gap" in risk_flags:
         unsupported_claims.append("judge ignored the listed skill gaps")
         adjustment -= 0.12
@@ -64,7 +79,18 @@ def heuristic_verification_report(
 
     evidence_grounded = not unsupported_claims
     status = "pass" if evidence_grounded else "needs_review"
+    candidate_fp = str(candidate_profile.get("profile_fingerprint") or candidate_profile.get("profile_cache_key") or "")
+    job_fp = str(job_profile.get("job_fingerprint") or job_profile.get("job_cache_key") or "")
     return {
+        "artifact_version": VERIFICATION_REPORT_VERSION,
+        "schema_version": SCHEMA_VERSION,
+        "prompt_version": MATCH_VERIFIER_PROMPT_VERSION,
+        "verification_cache_key": verification_report_cache_key(
+            candidate_profile_fingerprint=candidate_fp,
+            job_profile_fingerprint=job_fp,
+            verifier_model_version="heuristic",
+            prompt_version=MATCH_VERIFIER_PROMPT_VERSION,
+        ),
         "evidence_grounded": evidence_grounded,
         "unsupported_claims": unsupported_claims,
         "final_confidence_adjustment": _bounded_adjustment(adjustment),
@@ -75,7 +101,8 @@ def heuristic_verification_report(
 def _build_prompt(match_report: dict, candidate_profile: dict, job_profile: dict) -> tuple[str, str]:
     system = (
         "You verify a prior match judgment. Return JSON only. "
-        "Challenge unsupported claims and reduce confidence when evidence is weak."
+        "Be strict about grounding: challenge title-only matches, generic engineering overlap, "
+        "and unsupported skill claims. Reduce confidence when the cited evidence does not clearly support the verdict."
     )
     user = json.dumps(
         {
@@ -84,6 +111,8 @@ def _build_prompt(match_report: dict, candidate_profile: dict, job_profile: dict
             "job_profile": job_profile,
             "instructions": [
                 "Check whether the cited resume and JD evidence really supports the verdict.",
+                "Downgrade judgments that rely mostly on title similarity without JD responsibility or skill alignment.",
+                "Treat missing grounded evidence from either side as a verification problem.",
                 "Flag unsupported claims or overconfident reasoning.",
                 "Return pass only when the judgment is well grounded.",
             ],

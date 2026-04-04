@@ -37,5 +37,9 @@ def test_build_candidate_profile_uses_resume_intent_and_evidence():
     assert "remote" in profile["preferred_work_modes"]
     assert profile["must_have_skills"] == ["kubernetes", "python", "terraform"]
     assert profile["career_archetypes"] == ["platform_infra"]
+    assert profile["artifact_version"].startswith("candidate_profile_")
+    assert profile["schema_version"] == 1
+    assert len(profile["profile_fingerprint"]) == 64
+    assert len(profile["profile_cache_key"]) == 64
     assert profile["evidence_snippets"][0]["source"] == "parsed_roles"
     assert profile["ambiguities"] == ["Open to hybrid if needed"]
