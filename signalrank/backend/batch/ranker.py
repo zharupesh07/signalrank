@@ -524,6 +524,37 @@ def _row_match_payload(row: pd.Series) -> str:
     )
 
 
+def _select_verifier_indices(
+    df: pd.DataFrame,
+    selected_indices: list[int],
+    match_reports: list[dict],
+    cfg: dict,
+) -> list[int]:
+    ranking_cfg = cfg.get("ranking", {}).get("agentic_matching", {}) or {}
+    verifier_top_n = int(ranking_cfg.get("verifier_top_n", 8))
+    verifier_min_confidence = float(ranking_cfg.get("verifier_min_confidence", 0.72))
+    verifier_adjacent_floor = float(ranking_cfg.get("verifier_adjacent_floor", 0.84))
+
+    candidates: list[tuple[int, float]] = []
+    for idx, match_report in zip(selected_indices, match_reports):
+        verdict = str(match_report.get("verdict") or "").lower()
+        confidence = float(match_report.get("confidence") or 0.0)
+        if verdict in {"weak_fit", "misleading_fit", "reject"}:
+            candidates.append((idx, confidence))
+            continue
+        if verdict == "adjacent_fit" and confidence < verifier_adjacent_floor:
+            candidates.append((idx, confidence))
+            continue
+        if confidence < verifier_min_confidence:
+            candidates.append((idx, confidence))
+
+    if not candidates:
+        return []
+
+    candidates.sort(key=lambda item: item[1])
+    return [idx for idx, _ in candidates[:verifier_top_n]]
+
+
 async def _judge_selected_jobs(
     df: pd.DataFrame,
     *,
@@ -560,9 +591,27 @@ async def _verify_selected_jobs(
     cfg: dict,
     llm_client: OpenRouterClient | None,
     persisted_job_profiles: dict[str, dict] | None = None,
+    verifier_indices: list[int] | None = None,
 ) -> list[dict]:
+    if verifier_indices is None:
+        verifier_indices = list(range(len(selected_rows)))
+    verifier_set = set(verifier_indices)
+    reports: list[dict | None] = [None] * len(selected_rows)
     tasks = []
-    for match_report, row in zip(match_reports, selected_rows):
+    task_positions = []
+    for idx, (match_report, row) in enumerate(zip(match_reports, selected_rows)):
+        if idx not in verifier_set:
+            reports[idx] = {
+                "artifact_version": "verification_report_v2",
+                "schema_version": 1,
+                "prompt_version": "match_verifier_prompt_v1",
+                "verification_cache_key": None,
+                "evidence_grounded": True,
+                "unsupported_claims": [],
+                "final_confidence_adjustment": 0.0,
+                "status": "pass",
+            }
+            continue
         job_profile = _row_job_profile(row, cfg, (persisted_job_profiles or {}).get(str(row["id"])))
         tasks.append(
             verify_match_report(
@@ -573,7 +622,13 @@ async def _verify_selected_jobs(
                 max_tokens=cfg.get("ranking", {}).get("agentic_matching", {}).get("max_verifier_tokens", 700),
             )
         )
-    return await asyncio.gather(*tasks)
+        task_positions.append(idx)
+
+    if tasks:
+        results = await asyncio.gather(*tasks)
+        for idx, report in zip(task_positions, results):
+            reports[idx] = report
+    return [report or {} for report in reports]
 
 
 async def _apply_agentic_matching(
@@ -642,6 +697,7 @@ async def _apply_agentic_matching(
             llm_client=llm_client,
             persisted_job_profiles=persisted_job_profiles,
         )
+        verifier_indices = _select_verifier_indices(df, selected_indices, match_reports, cfg)
         verification_reports = await _verify_selected_jobs(
             match_reports,
             selected_rows,
@@ -649,6 +705,7 @@ async def _apply_agentic_matching(
             cfg=cfg,
             llm_client=llm_client,
             persisted_job_profiles=persisted_job_profiles,
+            verifier_indices=verifier_indices,
         )
 
         for idx, row, match_report, verification_report in zip(selected_indices, selected_rows, match_reports, verification_reports):
