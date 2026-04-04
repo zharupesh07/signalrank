@@ -33,6 +33,41 @@ _SECTION_TERMINATORS = {
 _TYPEST_SPECIAL_CHARS = ("\\", "#", "[", "]", "{", "}", "$", "@")
 
 
+def _looks_like_location(line: str) -> bool:
+    cleaned = re.sub(r"\s+", " ", str(line or "")).strip()
+    if not cleaned:
+        return False
+    lower = cleaned.lower()
+    if cleaned in {"|", "·", "-", "–", "—", "/", ","}:
+        return False
+    location_indicators = (
+        "india",
+        "usa",
+        "uk",
+        "remote",
+        "hybrid",
+        "bengaluru",
+        "bangalore",
+        "mumbai",
+        "pune",
+        "delhi",
+        "hyderabad",
+        "chennai",
+        "kolkata",
+        "noida",
+        "gurugram",
+        "gurgaon",
+        "new york",
+        "san francisco",
+        "london",
+    )
+    if any(loc in lower for loc in location_indicators):
+        return len(cleaned.split()) <= 5
+    if "·" in cleaned and len(cleaned.split()) <= 5:
+        return True
+    return False
+
+
 def _resume_lines(resume_text: str) -> list[str]:
     return [re.sub(r"\s+", " ", line).strip(" -\t") for line in (resume_text or "").splitlines() if line.strip()]
 
@@ -335,7 +370,20 @@ def _normalize_tailored_content(content: "TailoredContent") -> "TailoredContent"
         if exp.get("company_url"):
             exp["company_url"] = _normalize_public_url(exp.get("company_url"))
         if "bullets" in exp:
-            exp["bullets"] = [_clean_bullet(b) for b in exp["bullets"] if _clean_bullet(b)]
+            cleaned_bullets: list[str] = []
+            for bullet in exp["bullets"]:
+                cleaned_bullet = _clean_bullet(bullet)
+                if not cleaned_bullet or _looks_like_location(cleaned_bullet):
+                    continue
+                cleaned_bullets.append(cleaned_bullet)
+            exp["bullets"] = cleaned_bullets
+
+    cleaned_experiences: list[dict] = []
+    for exp in content.experiences:
+        cleaned = dict(exp)
+        if cleaned.get("title") or cleaned.get("company") or cleaned.get("dates") or cleaned.get("location") or cleaned.get("bullets"):
+            cleaned_experiences.append(cleaned)
+    content.experiences = cleaned_experiences
     return content
 
 
@@ -354,6 +402,22 @@ def _clean_bullet(text: str) -> str:
     cleaned = cleaned.replace("\u201c", '"').replace("\u201d", '"').replace("\u2018", "'").replace("\u2019", "'")
     cleaned = re.sub(r"^([a-z])", lambda match: match.group(1).upper(), cleaned)
     return cleaned
+
+
+def _looks_like_stray_bullet_title(value: str) -> bool:
+    text = str(value or "").strip()
+    if not text or len(text) > 120:
+        return False
+    lowered = text.lower()
+    if text.startswith(("-", "•", "*")):
+        return True
+    if any(sep in text for sep in (".", ";", ":", " - ", " — ", " – ")):
+        return False
+    if re.search(r"\b(?:built|led|implemented|developed|designed|created|improved|reduced|engineered|configured|delivered|managed|owned|collaborated|architected)\b", lowered):
+        return True
+    if lowered[:1].islower():
+        return True
+    return False
 
 
 def _typst_bold(s: str) -> str:

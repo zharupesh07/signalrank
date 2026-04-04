@@ -11,6 +11,7 @@ from domain.resume_editor import (
     parse_resume_editor,
     serialize_resume_editor,
 )
+from llm.resume_tailor import _normalize_tailored_content, TailoredContent
 from llm.resume_parser import parse_resume_from_images, parse_resume_structure
 from llm.resume_tailor import check_page_count, render_and_compile_content, validate_resume_artifacts
 
@@ -336,6 +337,72 @@ async def test_roundtrip_experience_count_stable(sample_pdf):
     reparsed = parse_resume_editor(serialize_resume_editor(editor))
 
     assert len(reparsed["experiences"]) == len(editor["experiences"])
+
+
+def test_stray_current_title_is_reattached_to_previous_bullets():
+    text = "\n".join(
+        [
+            "Example Candidate",
+            "Work Experience",
+            "Senior AI Platform Engineer",
+            "Fractal Analytics",
+            "Nov 2024 – Present",
+            "• Built reusable pipelines",
+            "production AI maturity.",
+            "Senior Machine Learning Engineer – HCL",
+            "Apr 2024 – Jun 2024",
+            "• Built reusable pipelines",
+        ]
+    )
+
+    editor = parse_resume_editor(text)
+
+    assert len(editor["experiences"]) == 2
+    assert editor["experiences"][0]["bullets"][-1] == "production AI maturity."
+    assert editor["experiences"][1]["title"] == "Senior Machine Learning Engineer"
+    assert editor["experiences"][1]["company"] == "HCL"
+
+
+def test_location_like_experience_lines_are_not_rendered_as_bullets():
+    content = TailoredContent(
+        experiences=[
+            {
+                "title": "Network Engineer II",
+                "company": "FIS",
+                "dates": "2025 - Present",
+                "location": "Pune, India",
+                "bullets": ["India · Hybrid", "Built internal tooling", "Remote"],
+            }
+        ]
+    )
+
+    normalized = _normalize_tailored_content(content)
+
+    assert normalized.experiences[0]["bullets"] == ["Built internal tooling"]
+
+
+def test_bullet_fragment_before_real_role_header_is_reattached_to_previous_role():
+    text = "\n".join(
+        [
+            "Example Candidate",
+            "Work Experience",
+            "Senior AI Platform Engineer",
+            "Fractal Analytics",
+            "Nov 2024 – Present",
+            "• Built reusable pipelines",
+            "production AI maturity.",
+            "Senior Machine Learning Engineer – HCL",
+            "Apr 2024 – Jun 2024",
+            "• Built reusable pipelines",
+        ]
+    )
+
+    editor = parse_resume_editor(text)
+
+    assert len(editor["experiences"]) == 2
+    assert editor["experiences"][0]["bullets"][-1] == "production AI maturity."
+    assert editor["experiences"][1]["title"] == "Senior Machine Learning Engineer"
+    assert editor["experiences"][1]["company"] == "HCL"
 
 
 @pytest.mark.asyncio

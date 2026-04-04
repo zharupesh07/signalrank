@@ -13,10 +13,11 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
+from api.config import settings
 from api.database import AsyncSessionLocal
 from api.models import JobRaw, Profile, User
 from batch.context import build_context
-from batch.query_builder import build_queries
+from batch.query_plan_cache import get_cached_queries
 from batch.ranker import score_job_ids_for_user
 from batch.scraper import ScraperConfig, raw_job_to_dict, scrape
 from domain.candidate_profile import build_candidate_profile
@@ -41,6 +42,7 @@ class ResumeTarget:
 
 
 TARGETS = {
+    "abhijeet": ResumeTarget("abhijeet", "Abhijeet_CV.pdf"),
     "aditya": ResumeTarget("aditya", "aditya.pdf"),
     "ayush": ResumeTarget("ayush", "ayush_resume_new.pdf"),
     "vivek": ResumeTarget("vivek", "Vivek-Gupta-Emerging-Technologies.pdf"),
@@ -159,11 +161,18 @@ async def _run_target(target: ResumeTarget, days: int, limit: int, quick_search:
             resume_text=resume_text,
             cfg=cfg,
         )
-        queries = build_queries(profile, max_terms=profile.scraper_max_terms)
         scraper_cfg = ScraperConfig.from_env(title_blocklist=(profile.config_overrides or {}).get("title_blocklist", []))
         scraper_cfg.hours_old = days * 24
         scraper_cfg.sources = ["indeed"] if quick_search else ["indeed", "linkedin", "rapidapi", "free_apis", "google_jobs"]
 
+        queries = await get_cached_queries(
+            db,
+            profile=profile,
+            profile_fingerprint=str(candidate_profile.get("profile_fingerprint") or candidate_profile.get("profile_cache_key") or ""),
+            search_window_days=days,
+            source_filter=",".join(sorted(scraper_cfg.sources or [])),
+            max_terms=profile.scraper_max_terms or settings.scraper_max_terms,
+        )
         logger.info("Deep search for %s using %d queries", target.key, len(queries))
         jobs = await scrape(queries, scraper_cfg, db=db, return_mode="jobs")
         job_ids = await _persist_jobs(db, jobs, cfg)
@@ -220,7 +229,7 @@ async def main() -> None:
     parser.add_argument("--quick-search", action="store_true", help="Use JobSpy Indeed only for a faster search")
     args = parser.parse_args()
 
-    targets = args.resume or ["aditya", "ayush"]
+    targets = args.resume or sorted(TARGETS.keys())
     for key in targets:
         await _run_target(TARGETS[key], days=args.days, limit=args.limit, quick_search=args.quick_search)
 

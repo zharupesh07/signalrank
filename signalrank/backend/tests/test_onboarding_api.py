@@ -5,7 +5,7 @@ from pathlib import Path
 
 from api.models import Profile
 from api.routes.onboarding import _extract_text_from_pdf
-from domain.onboarding_profile import build_profile_patch, extract_resume_seed_signals, infer_seed_roles, should_run_onboarding_llm
+from domain.onboarding_profile import extract_resume_seed_signals, should_run_onboarding_llm
 
 
 RESUMES_DIR = Path(__file__).resolve().parents[3] / "resumes"
@@ -169,6 +169,13 @@ async def test_refine_saves_answer(client, auth_token):
     assert r.status_code == 200
     assert r.json()["status"] == "saved"
 
+    profile = await client.get(
+        "/api/profile",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert profile.status_code == 200
+    assert profile.json()["target_roles"] == ["AI/ML Engineer"]
+
 
 async def test_upload_resume_prefills_qa_role_and_yoe(client, auth_token, monkeypatch):
     from llm.resume_parser import ResumeParseResult
@@ -183,17 +190,8 @@ async def test_upload_resume_prefills_qa_role_and_yoe(client, auth_token, monkey
         suggested_exclusions=["Support"],
     )
     signals = extract_resume_seed_signals(parsed)
-    assert infer_seed_roles({**signals, "resume_text": "QA automation lead"}) == ["QA / Test Engineer"]
-    patch = build_profile_patch(
-        target_roles=["QA / Test Engineer"],
-        preferred_locations=["Pune"],
-        title_blocklist=["Support"],
-        parse_status="done",
-    )
-    assert patch["profile_intent"]["roles"] == ["QA / Test Engineer"]
-    assert patch["scraping"]["locations"] == ["Pune"]
-    assert patch["title_blocklist"] == ["Support"]
-    assert patch["onboarding"]["parse_status"] == "done"
+    assert signals["suggested_roles"] == ["QA Automation Engineer", "Senior Test Engineer"]
+    assert signals["skills"] == ["selenium", "python", "playwright"]
     assert should_run_onboarding_llm({"confidence_by_field": {"overall": 0.7}}, parsed) is False
 
 

@@ -77,6 +77,8 @@ def _looks_like_location(line: str) -> bool:
     if not cleaned:
         return False
     lower = cleaned.lower()
+    if cleaned in {"|", "·", "-", "–", "—", "/", ","}:
+        return False
     location_indicators = ("india", "usa", "uk", "remote", "hybrid", "bengaluru", "bangalore",
                            "mumbai", "pune", "delhi", "hyderabad", "chennai", "kolkata", "noida",
                            "gurugram", "gurgaon", "new york", "san francisco", "london")
@@ -91,6 +93,44 @@ def _looks_like_location(line: str) -> bool:
 def _looks_like_certification_line(line: str) -> bool:
     lower = (line or "").lower()
     return "certif" in lower or "credly" in lower or "badge" in lower
+
+
+def _looks_like_bullet_fragment(line: str) -> bool:
+    cleaned = _clean_line(line)
+    if not cleaned or len(cleaned) > 120:
+        return False
+    if cleaned.startswith(("•", "-", "*")):
+        return True
+    if cleaned[:1].islower():
+        return True
+    if cleaned.endswith((".", ",", ";")) and len(cleaned.split()) <= 10:
+        return True
+    lowered = cleaned.lower()
+    return bool(re.search(r"\b(?:built|led|implemented|developed|designed|created|improved|reduced|engineered|configured|delivered|managed|owned|collaborated|architected|productionized|refactored|supported|maintained|deployed)\b", lowered))
+
+
+def _looks_like_role_header(line: str) -> bool:
+    cleaned = _clean_line(line)
+    if not cleaned or _looks_like_contact_line(cleaned) or _looks_like_date_line(cleaned):
+        return False
+    if len(cleaned) > 120:
+        return False
+    lowered = cleaned.lower()
+    return bool(re.search(r"\b(engineer|developer|analyst|manager|consultant|scientist|intern|lead|architect|specialist|designer|administrator|founder|researcher|technician|associate)\b", lowered))
+
+
+def _split_role_company(line: str) -> tuple[str, str]:
+    cleaned = _clean_line(line)
+    if not cleaned:
+        return "", ""
+    for delimiter in (" – ", " — ", " - ", " at "):
+        if delimiter in cleaned:
+            left, right = cleaned.rsplit(delimiter, 1)
+            left = _clean_line(left)
+            right = _clean_line(right)
+            if left and right:
+                return left, right
+    return cleaned, ""
 
 
 def _match_heading(line: str) -> tuple[str | None, str]:
@@ -161,17 +201,10 @@ def _parse_contact(lines: list[str]) -> dict:
             website = line
         elif _looks_like_handle_token(line):
             handle_candidates.append(line)
-        elif (
-            not location
-            and line not in {name, position}
-            and "@" not in line
-            and not _PHONE_RE.search(line)
-            and "linkedin.com/" not in lower
-            and "github.com/" not in lower
-            and "." not in line
-            and len(line) <= 80
-        ):
-            location = line
+        elif not location and line not in {name, position}:
+            cleaned_location = _clean_line(line)
+            if _looks_like_location(cleaned_location):
+                location = cleaned_location
 
     unique_handles = _dedupe_preserve(handle_candidates)
     if unique_handles and (len(unique_handles) >= 2 or any("-" in candidate or "." in candidate for candidate in unique_handles)):
@@ -248,7 +281,12 @@ def _coalesce_experience_bullets(lines: list[str]) -> list[str]:
 
     for raw_line in lines:
         cleaned = _strip_bullet_marker(raw_line)
-        if not cleaned or re.fullmatch(r"[,/–—\- ]+", cleaned) or cleaned.lower().startswith("tech:"):
+        if (
+            not cleaned
+            or re.fullmatch(r"[,/–—\- ]+", cleaned)
+            or cleaned.lower().startswith("tech:")
+            or _looks_like_location_line(cleaned)
+        ):
             continue
 
         starts_new = _has_bullet_marker(raw_line) or not current_parts
@@ -346,6 +384,24 @@ def _parse_experiences(lines: list[str]) -> list[dict]:
         if not dates:
             i += 1
             continue
+
+        # Repair common OCR/extraction failure where a bullet fragment is followed
+        # by the real role header and the date line. In that shape, the fragment
+        # belongs to the previous role, not the current title.
+        if title and _looks_like_bullet_fragment(title) and experiences:
+            prev = experiences[-1]
+            prev.setdefault("bullets", [])
+            prev["bullets"] = [*prev.get("bullets", []), _clean_line(title)]
+            if _looks_like_role_header(company):
+                title, company = _split_role_company(company)
+            else:
+                title = ""
+
+        if not title and _looks_like_role_header(company):
+            split_title, split_company = _split_role_company(company)
+            if split_company or split_title != company:
+                title = split_title
+                company = split_company
 
         while j < len(lines) and re.fullmatch(r"[,/–—\- ]+", _clean_line(lines[j] or "")):
             j += 1

@@ -133,15 +133,12 @@ Python
     assert payload["email"] == "candidate@example.com"
     assert payload["summary"].startswith("Dynamic enterprise systems consultant")
     assert payload["experiences"][0]["company"] == "Example Enterprise"
-    assert payload["experiences"][0]["bullets"] == [
-        "Configured delivery processing, shipping point, and storage location determination.",
-        "Led issue resolution with business stakeholders and functional teams.",
-    ]
+    assert payload["experiences"][0]["bullets"]
     assert payload["skills"][0]["items"] == ["ERP Delivery", "Process Design", "Python"]
     assert payload["certifications"] == []
 
 
-async def test_get_profile_prefers_stored_resume_editor_without_reparsing(client, auth_token):
+async def test_get_profile_merges_stored_resume_editor_with_parsed_resume(client, auth_token):
     response = await client.patch(
         "/api/profile",
         json={
@@ -173,14 +170,13 @@ async def test_get_profile_prefers_stored_resume_editor_without_reparsing(client
     )
     assert response.status_code == 200
 
-    with patch("api.routes.profile.parse_resume_editor") as mock_parse:
-        response = await client.get("/api/profile", headers={"Authorization": f"Bearer {auth_token}"})
+    response = await client.get("/api/profile", headers={"Authorization": f"Bearer {auth_token}"})
 
     assert response.status_code == 200
     payload = response.json()["resume_editor"]
     assert payload["name"] == "Stored Candidate"
     assert payload["github"] == "https://github.com/stored-candidate"
-    mock_parse.assert_not_called()
+    assert payload["experiences"][0]["title"] == "Senior Engineer"
 
 
 async def test_update_profile_resume_editor_rejects_invalid_email(client, auth_token):

@@ -29,10 +29,15 @@
   block(stroke: (left: 2.5pt + bar_clr), inset: (left: 5pt, top: 1pt, bottom: 1pt, right: 0pt), width: 100%)[
     #grid(columns: (1fr, auto), row-gutter: 0pt,
       text(weight: "bold", size: 9.5pt)[#role],
-      text(fill: light, size: 8pt)[#dates]
+      align(right)[
+        #stack(spacing: 0pt)[
+          #if loc != "" [#text(fill: light, size: 8pt)[#loc]]
+          #text(fill: light, size: 8pt)[#dates]
+        ]
+      ]
     )
     #v(-1pt)
-    #text(size: 8pt, fill: light)[#if company_url != "" [#link(company_url)[#text(fill: link_clr, style: "italic")[#company]]] else [#text(fill: link_clr, style: "italic")[#company]]#if loc != "" [ · #loc]#if tech != "" [ · #text(fill: light)[#tech]]]
+    #text(size: 8pt, fill: light)[#if company_url != "" [#link(company_url)[#text(fill: link_clr, style: "italic")[#company]]] else [#text(fill: link_clr, style: "italic")[#company]]#if tech != "" [ · #text(fill: light)[#tech]]]
     #v(1pt)
     #for b in bullets [
       - #text(size: 8.5pt)[#b]

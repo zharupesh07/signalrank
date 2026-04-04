@@ -45,7 +45,8 @@ def _profile_resume_editor(profile: Profile | None) -> dict:
     if profile and isinstance(profile.config_overrides, dict):
         editor = profile.config_overrides.get("resume_editor")
         if isinstance(editor, dict):
-            return merge_resume_editor(editor, {})
+            parsed = parse_resume_editor(profile.resume_text if profile else None)
+            return merge_resume_editor(parsed, editor)
     return parse_resume_editor(profile.resume_text if profile else None)
 
 

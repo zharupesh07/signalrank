@@ -247,7 +247,9 @@ Keys:
 - education: list of {degree, institution, year}
 - certifications: list of strings
 
-Return JSON only. No explanations."""
+Return JSON only. No explanations.
+
+If a RAW TEXT EXTRACT appears below, use it as an exact spelling reference for names, emails, phone numbers, company names, dates, project names, and certification names. The image remains the primary source for layout and section boundaries."""
 
 
 _SKILL_CATEGORIES = [

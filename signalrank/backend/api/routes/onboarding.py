@@ -17,9 +17,12 @@ from api.models import Profile, User
 from domain.onboarding_profile import (
     apply_parsed_profile_updates,
     build_profile_patch,
+    build_candidate_profile,
     deterministic_resume_parse,
     merge_profile_patch,
+    _normalize_str_list,
     refresh_profile_from_resume,
+    sync_career_intent_override,
     should_run_onboarding_llm,
 )
 from domain.skills import extract_skills_from_texts
@@ -35,6 +38,10 @@ router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
 
 def _deterministic_resume_parse(resume_text: str, profile: Profile | None = None) -> ResumeParseResult:
     return deterministic_resume_parse(resume_text, profile)
+
+
+def _apply_parsed_profile_updates(profile: Profile, parsed: ResumeParseResult) -> str | None:
+    return apply_parsed_profile_updates(profile, parsed)
 
 
 def _clear_stored_resume_editor(profile: Profile) -> None:
@@ -132,6 +139,124 @@ def _render_pdf_pages_as_images(content: bytes, dpi: int = 120) -> list[bytes]:
         return []
 
 
+def _extract_pdf_link_targets(content: bytes) -> list[str]:
+    try:
+        import fitz
+
+        doc = fitz.open(stream=content, filetype="pdf")
+        targets: list[str] = []
+        for page in doc:
+            links = page.get_links()
+            links.sort(key=lambda link: (link.get("from").y0 if link.get("from") else 0.0, link.get("from").x0 if link.get("from") else 0.0))
+            for link in links:
+                uri = link.get("uri") or link.get("file")
+                if not uri:
+                    continue
+                uri = str(uri).strip()
+                if uri and uri not in targets:
+                    targets.append(uri)
+        doc.close()
+        return targets
+    except Exception as e:
+        logger.warning("PDF link extraction failed: %s", e)
+        return []
+
+
+def _attach_pdf_links_to_editor(editor: dict, link_targets: list[str]) -> dict:
+    if not link_targets:
+        return editor
+    updated = dict(editor)
+    cursor = 0
+
+    projects: list[dict] = []
+    for project in updated.get("projects", []) or []:
+        if not isinstance(project, dict):
+            continue
+        next_project = dict(project)
+        if not next_project.get("url") and cursor < len(link_targets):
+            next_project["url"] = link_targets[cursor]
+            cursor += 1
+        projects.append(next_project)
+    if projects:
+        updated["projects"] = projects
+
+    certifications: list[dict | str] = []
+    for cert in updated.get("certifications", []) or []:
+        if isinstance(cert, dict):
+            next_cert = dict(cert)
+            if not next_cert.get("url") and cursor < len(link_targets):
+                next_cert["url"] = link_targets[cursor]
+                cursor += 1
+            certifications.append(next_cert)
+        else:
+            next_cert: dict[str, str] = {"name": str(cert), "url": ""}
+            if cursor < len(link_targets):
+                next_cert["url"] = link_targets[cursor]
+                cursor += 1
+            certifications.append(next_cert)
+    if certifications:
+        updated["certifications"] = certifications
+    return updated
+
+
+def _attach_pdf_links_by_label(editor: dict, content: bytes) -> dict:
+    try:
+        import fitz
+
+        doc = fitz.open(stream=content, filetype="pdf")
+        updated = dict(editor)
+
+        project_map: dict[str, str] = {}
+        cert_map: dict[str, str] = {}
+
+        for page in doc:
+            words = page.get_text("words")
+            for link in page.get_links():
+                uri = link.get("uri") or link.get("file")
+                rect = link.get("from")
+                if not uri or not rect:
+                    continue
+                label_words = [w for w in words if rect.intersects(fitz.Rect(w[0], w[1], w[2], w[3]))]
+                label = " ".join(w[4] for w in sorted(label_words, key=lambda w: (w[1], w[0]))).strip()
+                if not label:
+                    continue
+                project_map[label.lower()] = str(uri).strip()
+                cert_map[label.lower()] = str(uri).strip()
+
+        projects: list[dict] = []
+        for project in updated.get("projects", []) or []:
+            if not isinstance(project, dict):
+                continue
+            next_project = dict(project)
+            if not next_project.get("url"):
+                key = str(next_project.get("name", "") or "").strip().lower()
+                if key in project_map:
+                    next_project["url"] = project_map[key]
+            projects.append(next_project)
+        if projects:
+            updated["projects"] = projects
+
+        certifications: list[dict | str] = []
+        for cert in updated.get("certifications", []) or []:
+            if isinstance(cert, dict):
+                next_cert = dict(cert)
+                if not next_cert.get("url"):
+                    key = str(next_cert.get("name", "") or "").strip().lower()
+                    if key in cert_map:
+                        next_cert["url"] = cert_map[key]
+                certifications.append(next_cert)
+            else:
+                key = str(cert).strip().lower()
+                certifications.append({"name": str(cert), "url": cert_map.get(key, "")})
+        if certifications:
+            updated["certifications"] = certifications
+        doc.close()
+        return updated
+    except Exception as e:
+        logger.warning("PDF link label mapping failed: %s", e)
+        return editor
+
+
 def _strip_icon_chars(text: str) -> str:
     return re.sub(r"[\ue000-\uf8ff]", "", text)
 
@@ -224,40 +349,48 @@ async def _parse_and_update_profile(
             return distilled, merged
 
     try:
-        # Step 1: Text-first — two parallel LLM calls on extracted text.
-        # No images, no hallucination risk. Fast (~2s each).
-        parsed_result, structure_result = await asyncio.gather(
-            asyncio.wait_for(parse_resume(resume_text, llm), timeout=60),
-            asyncio.wait_for(parse_resume_structure(resume_text, llm), timeout=90),
-            return_exceptions=True,
-        )
-        parsed = parsed_result if isinstance(parsed_result, ResumeParseResult) else ResumeParseResult()
-        llm_editor = structure_result if isinstance(structure_result, dict) else {}
-
-        # Step 2: Vision fallback — only when text parse is weak.
-        # Triggers for image-heavy/scanned PDFs where text extraction fails.
-        text_has_content = (
-            len(llm_editor.get("experiences", [])) >= 2
-            and llm_editor.get("name")
-        )
-        if pdf_bytes and not text_has_content:
+        # Step 1: Image-first for structural parsing, with raw text as a reference.
+        # Fall back to text-only extraction when vision is unavailable or weak.
+        structure_result = {}
+        parsed_result = ResumeParseResult()
+        if pdf_bytes:
             page_images = _render_pdf_pages_as_images(pdf_bytes)
             if page_images:
-                logger.info("Text parse weak (exps=%d, name=%r) — trying vision fallback",
-                            len(llm_editor.get("experiences", [])), llm_editor.get("name"))
-                vision_editor = await asyncio.wait_for(
+                structure_result = await asyncio.wait_for(
                     parse_resume_from_images(
-                        page_images, llm,
+                        page_images,
+                        llm,
                         reference_text=resume_text,
+                        max_tokens=4096,
                     ),
                     timeout=180,
                 )
-                if vision_editor and len(vision_editor.get("experiences", [])) > len(llm_editor.get("experiences", [])):
-                    llm_editor = vision_editor
+        if not structure_result:
+            parsed_result, structure_result = await asyncio.gather(
+                asyncio.wait_for(parse_resume(resume_text, llm), timeout=60),
+                asyncio.wait_for(parse_resume_structure(resume_text, llm), timeout=90),
+                return_exceptions=True,
+            )
+        parsed = parsed_result if isinstance(parsed_result, ResumeParseResult) else ResumeParseResult()
+        llm_editor = structure_result if isinstance(structure_result, dict) else {}
+        if pdf_bytes and len(llm_editor.get("experiences", [])) < 2 and structure_result:
+            logger.info("Vision parse was weak (exps=%d, name=%r) — using text fallback",
+                        len(llm_editor.get("experiences", [])), llm_editor.get("name"))
+            text_result = await asyncio.wait_for(parse_resume_structure(resume_text, llm), timeout=90)
+            if isinstance(text_result, dict) and len(text_result.get("experiences", [])) > len(llm_editor.get("experiences", [])):
+                llm_editor = text_result
 
         from domain.resume_verifier import verify_against_reference
         llm_editor = verify_against_reference(llm_editor, resume_text)
-        merged_editor = merge_resume_editor(llm_editor, parse_resume_editor(resume_text))
+        parsed_editor = parse_resume_editor(resume_text)
+        if pdf_bytes:
+            parsed_editor = _attach_pdf_links_by_label(parsed_editor, pdf_bytes)
+            if not any(
+                isinstance(item, dict) and item.get("url")
+                for item in (parsed_editor.get("projects", []) or []) + (parsed_editor.get("certifications", []) or [])
+            ):
+                parsed_editor = _attach_pdf_links_to_editor(parsed_editor, _extract_pdf_link_targets(pdf_bytes))
+        merged_editor = merge_resume_editor(llm_editor, parsed_editor)
         distilled_text, merged_editor = await _commit_profile_changes()
 
         logger.info(
@@ -325,6 +458,13 @@ async def upload_resume(
     _clear_stored_resume_editor(profile)
     deterministic_parsed = _deterministic_resume_parse(resume_text, profile)
     deterministic_editor = parse_resume_editor(resume_text)
+    if pdf_bytes:
+        deterministic_editor = _attach_pdf_links_by_label(deterministic_editor, pdf_bytes)
+        if not any(
+            isinstance(item, dict) and item.get("url")
+            for item in (deterministic_editor.get("projects", []) or []) + (deterministic_editor.get("certifications", []) or [])
+        ):
+            deterministic_editor = _attach_pdf_links_to_editor(deterministic_editor, _extract_pdf_link_targets(pdf_bytes))
     if has_resume_editor_content(deterministic_editor):
         overrides = dict(profile.config_overrides or {})
         overrides["resume_editor"] = deterministic_editor
@@ -454,20 +594,20 @@ async def refine_onboarding(
         profile.target_roles = cleaned_roles
         if cleaned_roles:
             profile.role_intent = cleaned_roles[0]
-        _sync_career_intent_override(profile)
+        sync_career_intent_override(profile)
     elif qid == "preferred_locations":
         overrides = profile.config_overrides or {}
         cleaned_locations = _normalize_str_list(answer if isinstance(answer, list) else [answer])
         overrides.setdefault("scraping", {})["locations"] = cleaned_locations
         profile.config_overrides = overrides
         profile.preferred_locations = cleaned_locations
-        _sync_career_intent_override(profile)
+        sync_career_intent_override(profile)
     elif qid == "exclusions":
         overrides = profile.config_overrides or {}
         exclusions = answer if isinstance(answer, list) else [answer]
         overrides["title_blocklist"] = _normalize_str_list(exclusions)
         profile.config_overrides = overrides
-        _sync_career_intent_override(profile)
+        sync_career_intent_override(profile)
     elif qid == "onboarding_complete":
         profile.onboarding_complete = True
 
