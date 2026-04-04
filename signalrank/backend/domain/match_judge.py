@@ -32,6 +32,7 @@ MATCH_REPORT_SCHEMA = {
         "confidence": {"type": "number"},
         "cited_resume_evidence": {
             "type": "array",
+            "minItems": 1,
             "items": {
                 "type": "object",
                 "properties": {
@@ -44,6 +45,7 @@ MATCH_REPORT_SCHEMA = {
         },
         "cited_job_evidence": {
             "type": "array",
+            "minItems": 1,
             "items": {
                 "type": "object",
                 "properties": {
@@ -372,7 +374,8 @@ def heuristic_match_report(
 def _build_prompt(candidate_profile: dict, job_profile: dict, resume_text: str, job_text: str) -> tuple[str, str]:
     system = (
         "You evaluate one candidate-job pair for job ranking. "
-        "Return JSON only. Be evidence-first, conservative, and skeptical of title-only similarity. "
+        "Return a single JSON object only, with no markdown, no prose, and no code fences. "
+        "Be evidence-first, conservative, and skeptical of title-only similarity. "
         "A strong_fit requires grounded evidence from both the resume and the job description. "
         "If the title looks relevant but the responsibilities, process area, or required skills do not line up, "
         "downgrade to weak_fit, misleading_fit, or reject."
@@ -392,6 +395,7 @@ def _build_prompt(candidate_profile: dict, job_profile: dict, resume_text: str, 
                 "List missing skills, process gaps, and risk flags explicitly.",
                 "Cite grounded evidence from both the resume and the job description.",
                 "Keep cited evidence short and exact; do not paraphrase unsupported claims into the evidence fields.",
+                "Populate cited_resume_evidence and cited_job_evidence with at least one grounded item each.",
             ],
         },
         ensure_ascii=True,

@@ -100,7 +100,7 @@ def heuristic_verification_report(
 
 def _build_prompt(match_report: dict, candidate_profile: dict, job_profile: dict) -> tuple[str, str]:
     system = (
-        "You verify a prior match judgment. Return JSON only. "
+        "You verify a prior match judgment. Return a single JSON object only, with no markdown, no prose, and no code fences. "
         "Be strict about grounding: challenge title-only matches, generic engineering overlap, "
         "and unsupported skill claims. Reduce confidence when the cited evidence does not clearly support the verdict."
     )
@@ -115,6 +115,7 @@ def _build_prompt(match_report: dict, candidate_profile: dict, job_profile: dict
                 "Treat missing grounded evidence from either side as a verification problem.",
                 "Flag unsupported claims or overconfident reasoning.",
                 "Return pass only when the judgment is well grounded.",
+                "Do not invent new evidence; only assess the provided match report and cited snippets.",
             ],
         },
         ensure_ascii=True,
