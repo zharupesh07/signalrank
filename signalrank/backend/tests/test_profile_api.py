@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import patch
 
 
 @pytest.fixture
@@ -134,6 +135,48 @@ Python
     ]
     assert payload["skills"][0]["items"] == ["ERP Delivery", "Process Design", "Python"]
     assert payload["certifications"] == []
+
+
+async def test_get_profile_prefers_stored_resume_editor_without_reparsing(client, auth_token):
+    response = await client.patch(
+        "/api/profile",
+        json={
+            "resume_editor": {
+                "name": "Stored Candidate",
+                "position": "Senior Platform Engineer",
+                "email": "stored@example.com",
+                "phone": "+91 90000 00000",
+                "location": "Remote",
+                "linkedin": "https://linkedin.com/in/stored-candidate",
+                "github": "https://github.com/stored-candidate",
+                "website": "https://stored.dev",
+                "summary": "Stored summary.",
+                "experiences": [
+                    {
+                        "title": "Senior Engineer",
+                        "company": "Stored Enterprise",
+                        "dates": "2024 - Present",
+                        "location": "Remote",
+                        "bullets": ["Built systems"],
+                    }
+                ],
+                "projects": [],
+                "skills": [{"category": "General", "items": ["Python"]}],
+                "certifications": ["Stored Cert"],
+            }
+        },
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 200
+
+    with patch("api.routes.profile.parse_resume_editor") as mock_parse:
+        response = await client.get("/api/profile", headers={"Authorization": f"Bearer {auth_token}"})
+
+    assert response.status_code == 200
+    payload = response.json()["resume_editor"]
+    assert payload["name"] == "Stored Candidate"
+    assert payload["github"] == "https://github.com/stored-candidate"
+    mock_parse.assert_not_called()
 
 
 async def test_update_profile_resume_editor_rejects_invalid_email(client, auth_token):

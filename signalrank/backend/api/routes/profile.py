@@ -40,12 +40,11 @@ def _profile_resume_template(profile: Profile | None) -> str | None:
 
 
 def _profile_resume_editor(profile: Profile | None) -> dict:
-    derived = parse_resume_editor(profile.resume_text if profile else None)
     if profile and isinstance(profile.config_overrides, dict):
         editor = profile.config_overrides.get("resume_editor")
         if isinstance(editor, dict):
-            return merge_resume_editor(editor, derived)
-    return derived
+            return merge_resume_editor(editor, {})
+    return parse_resume_editor(profile.resume_text if profile else None)
 
 
 def _drop_stored_resume_editor(profile: Profile) -> None:
