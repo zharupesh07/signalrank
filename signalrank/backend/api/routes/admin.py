@@ -10,7 +10,7 @@ from api.deps import get_current_user
 from api.deps_llm import get_llm_client
 from api.stats_cache import get_cached_stats, invalidate_stats_cache, set_cached_stats
 from batch.context import deep_merge, load_base_config
-from batch.maintenance import prune_once
+from batch.maintenance import prune_current_session, prune_once
 from batch.resume_worker import force_regenerate_all
 from batch.quality_report import compute_global_quality_metrics, compute_user_quality_metrics
 from api.models import (
@@ -477,10 +477,9 @@ async def trigger_run_for_user(
 @router.post("/maintenance/prune", response_model=MaintenanceResponse)
 async def trigger_maintenance_prune(
     _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
 ):
-    from api.database import AsyncSessionLocal
-
-    summary = await prune_once(AsyncSessionLocal)
+    summary = await prune_current_session(db)
     return MaintenanceResponse(deleted=summary.deleted)
 
 

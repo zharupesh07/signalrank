@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select, text
 
+from api.auth import create_access_token
 from api.models import (
     ArchivalQueue,
     GenerationQueue,
@@ -24,6 +25,15 @@ from batch.maintenance import (
 )
 
 
+async def _admin_token(client, db):
+    email = "prune-admin@test.com"
+    await client.post("/api/auth/register", json={"email": email, "password": "password123"})
+    user = (await db.execute(select(User).where(User.email == email))).scalar_one()
+    user.is_admin = True
+    await db.commit()
+    return create_access_token(user.id, user.email, is_admin=True)
+
+
 async def test_prune_scrape_query_cache_removes_stale_rows(db):
     stale = ScrapeQueryCache(
         provider="jobspy",
@@ -33,7 +43,7 @@ async def test_prune_scrape_query_cache_removes_stale_rows(db):
         country_normalized="",
         hours_old=24,
         result_count=1,
-        fresh_until=datetime.now(timezone.utc) - timedelta(days=1),
+        fresh_until=datetime.now(timezone.utc) - timedelta(days=15),
     )
     fresh = ScrapeQueryCache(
         provider="jobspy",
@@ -55,7 +65,7 @@ async def test_prune_scrape_query_cache_removes_stale_rows(db):
 
 async def test_prune_llm_cache_removes_old_rows(db):
     await db.execute(
-        text("INSERT INTO llm_cache (prompt_hash, response_json, created_at) VALUES (:prompt_hash, :response_json::jsonb, :created_at)"),
+        text("INSERT INTO llm_cache (prompt_hash, response_json, created_at) VALUES (:prompt_hash, CAST(:response_json AS jsonb), :created_at)"),
         {
             "prompt_hash": "old",
             "response_json": "{}",
@@ -63,7 +73,7 @@ async def test_prune_llm_cache_removes_old_rows(db):
         },
     )
     await db.execute(
-        text("INSERT INTO llm_cache (prompt_hash, response_json, created_at) VALUES (:prompt_hash, :response_json::jsonb, :created_at)"),
+        text("INSERT INTO llm_cache (prompt_hash, response_json, created_at) VALUES (:prompt_hash, CAST(:response_json AS jsonb), :created_at)"),
         {
             "prompt_hash": "fresh",
             "response_json": "{}",
@@ -161,7 +171,8 @@ async def test_prune_recruiter_refresh_tasks_removes_finished_old_rows(db):
     assert deleted == 1
 
 
-async def test_admin_maintenance_prune_endpoint(client, admin_token, db):
+async def test_admin_maintenance_prune_endpoint(client, db):
+    admin_token = await _admin_token(client, db)
     user = User(email="prune@test.com", password_hash="x")
     stale = ScrapeQueryCache(
         provider="jobspy",
@@ -171,7 +182,7 @@ async def test_admin_maintenance_prune_endpoint(client, admin_token, db):
         country_normalized="",
         hours_old=24,
         result_count=1,
-        fresh_until=datetime.now(timezone.utc) - timedelta(days=1),
+        fresh_until=datetime.now(timezone.utc) - timedelta(days=15),
     )
     db.add_all([user, stale])
     await db.commit()

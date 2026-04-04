@@ -134,24 +134,33 @@ async def prune_completed_runs_and_results(db: AsyncSession, *, now: datetime | 
     }
 
 
+async def _prune_in_session(db: AsyncSession, *, now: datetime | None = None) -> MaintenanceSummary:
+    got_lock = await db.scalar(select(func.pg_try_advisory_lock(MAINTENANCE_LOCK_KEY)))
+    if not got_lock:
+        return MaintenanceSummary(deleted={})
+    try:
+        deleted: dict[str, int] = {}
+        deleted["scrape_query_cache"] = await prune_scrape_query_cache(db, now=now)
+        deleted["llm_cache"] = await prune_llm_cache(db, now=now)
+        deleted["terminal_queues"] = sum((await prune_terminal_queues(db)).values())
+        completed = await prune_completed_runs_and_results(db, now=now)
+        deleted.update(completed)
+        deleted["recruiter_refresh_tasks"] = await prune_recruiter_refresh_tasks(db, now=now)
+        logger.info("Maintenance prune complete: %s", deleted)
+        return MaintenanceSummary(deleted=deleted)
+    finally:
+        await db.rollback()
+        await db.execute(text("SELECT pg_advisory_unlock(:lock_key)"), {"lock_key": MAINTENANCE_LOCK_KEY})
+        await db.commit()
+
+
 async def prune_once(session_factory: async_sessionmaker, *, now: datetime | None = None) -> MaintenanceSummary:
     async with session_factory() as db:
-        got_lock = await db.scalar(select(func.pg_try_advisory_lock(MAINTENANCE_LOCK_KEY)))
-        if not got_lock:
-            return MaintenanceSummary(deleted={})
-        try:
-            deleted: dict[str, int] = {}
-            deleted["scrape_query_cache"] = await prune_scrape_query_cache(db, now=now)
-            deleted["llm_cache"] = await prune_llm_cache(db, now=now)
-            deleted["terminal_queues"] = sum((await prune_terminal_queues(db)).values())
-            completed = await prune_completed_runs_and_results(db, now=now)
-            deleted.update(completed)
-            deleted["recruiter_refresh_tasks"] = await prune_recruiter_refresh_tasks(db, now=now)
-            logger.info("Maintenance prune complete: %s", deleted)
-            return MaintenanceSummary(deleted=deleted)
-        finally:
-            await db.execute(text("SELECT pg_advisory_unlock(:lock_key)"), {"lock_key": MAINTENANCE_LOCK_KEY})
-            await db.commit()
+        return await _prune_in_session(db, now=now)
+
+
+async def prune_current_session(db: AsyncSession, *, now: datetime | None = None) -> MaintenanceSummary:
+    return await _prune_in_session(db, now=now)
 
 
 async def maintenance_loop(session_factory: async_sessionmaker, *, interval_seconds: int = 3600) -> None:
