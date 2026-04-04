@@ -11,7 +11,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 from sqlalchemy import text
-from sqlalchemy.exc import TimeoutError as SATimeoutError
+from sqlalchemy.exc import ProgrammingError, TimeoutError as SATimeoutError
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
 
@@ -36,6 +36,17 @@ _worker_task: asyncio.Task | None = None
 _resume_worker_task: asyncio.Task | None = None
 _archival_worker_task: asyncio.Task | None = None
 _boot_tasks: list[asyncio.Task] = []
+_schema_heal_lock = asyncio.Lock()
+
+
+def _looks_like_undefined_column_error(exc: Exception) -> bool:
+    text = str(exc)
+    return "UndefinedColumnError" in text or "undefined column" in text.lower() or "does not exist" in text.lower()
+
+
+async def _heal_schema_once() -> None:
+    async with _schema_heal_lock:
+        await ensure_runtime_schema_compatibility()
 
 
 def _log_api_runtime_role(runtime_flags: dict[str, bool]) -> None:
@@ -211,6 +222,31 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"detail": "Internal server error"},
+    )
+
+
+@app.exception_handler(ProgrammingError)
+async def db_schema_exception_handler(request: Request, exc: ProgrammingError) -> JSONResponse:
+    if not _looks_like_undefined_column_error(exc):
+        logger.exception("Database programming error on %s %s", request.method, request.url.path)
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": "Internal server error"},
+        )
+
+    logger.warning(
+        "Detected undefined-column database error on %s %s; attempting schema repair",
+        request.method,
+        request.url.path,
+    )
+    try:
+        await _heal_schema_once()
+    except Exception:
+        logger.exception("Schema repair attempt failed after undefined-column error")
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"detail": "Database schema is being repaired, retry shortly"},
+        headers={"Retry-After": "2"},
     )
 
 

@@ -200,6 +200,35 @@ class RecruiterSearch(Base):
     raw_candidates: Mapped[dict | None] = mapped_column(JSONB)
 
 
+class ScrapeQueryCache(Base):
+    __tablename__ = "scrape_query_cache"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    provider: Mapped[str] = mapped_column(String(50), nullable=False)
+    site: Mapped[str] = mapped_column(String(50), nullable=False)
+    term_normalized: Mapped[str] = mapped_column(String(255), nullable=False)
+    location_normalized: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    country_normalized: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    hours_old: Mapped[int] = mapped_column(Integer, nullable=False)
+    result_job_urls: Mapped[list | None] = mapped_column(JSONB, server_default=text("'[]'::jsonb"))
+    result_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+    searched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    fresh_until: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "provider",
+            "site",
+            "term_normalized",
+            "location_normalized",
+            "country_normalized",
+            "hours_old",
+            name="uq_scrape_query_cache_key",
+        ),
+        Index("ix_scrape_query_cache_fresh_until", "provider", "site", "fresh_until"),
+    )
+
+
 class RecruiterRefreshTask(Base):
     __tablename__ = "recruiter_refresh_tasks"
 

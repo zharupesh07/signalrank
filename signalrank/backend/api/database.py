@@ -84,6 +84,9 @@ _schema_compat_checked = False
 _schema_compat_lock = asyncio.Lock()
 _RUNS_ERROR_SCHEMA_LOCK_KEY = 1_947_017_465
 _RUNS_MODE_SCHEMA_LOCK_KEY = 1_947_017_466
+_PROFILES_CANDIDATE_PROFILE_LOCK_KEY = 1_947_017_467
+_JOBS_RAW_JOB_PROFILE_LOCK_KEY = 1_947_017_468
+_JOB_RESULTS_REPORTS_LOCK_KEY = 1_947_017_469
 
 
 class Base(DeclarativeBase):
@@ -136,76 +139,73 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
     global _schema_compat_checked
     target = bind or _active_engine
     async with target.begin() as conn:
-        error_exists = (
-            await conn.execute(
-                text(
-                    """
-                    SELECT 1
-                    FROM information_schema.columns
-                    WHERE table_schema = current_schema()
-                      AND table_name = 'runs'
-                      AND column_name = 'error'
-                    """
+        checks = [
+            ("runs", "error"),
+            ("runs", "mode"),
+            ("profiles", "candidate_profile"),
+            ("jobs_raw", "job_profile"),
+            ("job_results", "fit_band"),
+            ("job_results", "confidence_band"),
+            ("job_results", "explanation_summary"),
+            ("job_results", "match_report"),
+            ("job_results", "verification_report"),
+        ]
+        existing = {
+            (table_name, column_name)
+            for table_name, column_name in (
+                (
+                    row[0],
+                    row[1],
                 )
+                for row in (
+                    await conn.execute(
+                        text(
+                            """
+                            SELECT table_name, column_name
+                            FROM information_schema.columns
+                            WHERE table_schema = current_schema()
+                              AND table_name IN ('runs', 'profiles', 'jobs_raw', 'job_results')
+                              AND column_name IN (
+                                  'error', 'mode', 'candidate_profile', 'job_profile',
+                                  'fit_band', 'confidence_band', 'explanation_summary',
+                                  'match_report', 'verification_report'
+                              )
+                            """
+                        )
+                    )
+                ).all()
             )
-        ).scalar() == 1
-        mode_exists = (
-            await conn.execute(
-                text(
-                    """
-                    SELECT 1
-                    FROM information_schema.columns
-                    WHERE table_schema = current_schema()
-                      AND table_name = 'runs'
-                      AND column_name = 'mode'
-                    """
-                )
-            )
-        ).scalar() == 1
-        if error_exists and mode_exists:
+        }
+
+        missing = [item for item in checks if item not in existing]
+        if not missing:
             if target is _active_engine:
                 _schema_compat_checked = True
             return
+
         if conn.dialect.name == "postgresql":
-            if not error_exists:
-                await conn.execute(
-                    text("SELECT pg_advisory_xact_lock(:lock_key)"),
-                    {"lock_key": _RUNS_ERROR_SCHEMA_LOCK_KEY},
-                )
-                error_exists = (
+            lock_map = {
+                ("runs", "error"): _RUNS_ERROR_SCHEMA_LOCK_KEY,
+                ("runs", "mode"): _RUNS_MODE_SCHEMA_LOCK_KEY,
+                ("profiles", "candidate_profile"): _PROFILES_CANDIDATE_PROFILE_LOCK_KEY,
+                ("jobs_raw", "job_profile"): _JOBS_RAW_JOB_PROFILE_LOCK_KEY,
+                ("job_results", "fit_band"): _JOB_RESULTS_REPORTS_LOCK_KEY,
+                ("job_results", "confidence_band"): _JOB_RESULTS_REPORTS_LOCK_KEY,
+                ("job_results", "explanation_summary"): _JOB_RESULTS_REPORTS_LOCK_KEY,
+                ("job_results", "match_report"): _JOB_RESULTS_REPORTS_LOCK_KEY,
+                ("job_results", "verification_report"): _JOB_RESULTS_REPORTS_LOCK_KEY,
+            }
+            for table_name, column_name in missing:
+                lock_key = lock_map.get((table_name, column_name))
+                if lock_key is not None:
                     await conn.execute(
-                        text(
-                            """
-                            SELECT 1
-                            FROM information_schema.columns
-                            WHERE table_schema = current_schema()
-                              AND table_name = 'runs'
-                              AND column_name = 'error'
-                            """
-                        )
+                        text("SELECT pg_advisory_xact_lock(:lock_key)"),
+                        {"lock_key": lock_key},
                     )
-                ).scalar() == 1
-            if not mode_exists:
-                await conn.execute(
-                    text("SELECT pg_advisory_xact_lock(:lock_key)"),
-                    {"lock_key": _RUNS_MODE_SCHEMA_LOCK_KEY},
-                )
-                mode_exists = (
-                    await conn.execute(
-                        text(
-                            """
-                            SELECT 1
-                            FROM information_schema.columns
-                            WHERE table_schema = current_schema()
-                              AND table_name = 'runs'
-                              AND column_name = 'mode'
-                            """
-                        )
-                    )
-                ).scalar() == 1
-        if not error_exists:
+
+        if ("runs", "error") in missing:
             await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS error TEXT"))
-        if not mode_exists:
+        if ("runs", "mode") in missing:
             await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS mode VARCHAR(20)"))
             await conn.execute(
                 text(
@@ -218,6 +218,20 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
             )
             await conn.execute(text("ALTER TABLE runs ALTER COLUMN mode SET DEFAULT 'quick'"))
             await conn.execute(text("ALTER TABLE runs ALTER COLUMN mode SET NOT NULL"))
+        if ("profiles", "candidate_profile") in missing:
+            await conn.execute(text("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS candidate_profile JSONB"))
+        if ("jobs_raw", "job_profile") in missing:
+            await conn.execute(text("ALTER TABLE jobs_raw ADD COLUMN IF NOT EXISTS job_profile JSONB"))
+        if ("job_results", "fit_band") in missing:
+            await conn.execute(text("ALTER TABLE job_results ADD COLUMN IF NOT EXISTS fit_band VARCHAR(50)"))
+        if ("job_results", "confidence_band") in missing:
+            await conn.execute(text("ALTER TABLE job_results ADD COLUMN IF NOT EXISTS confidence_band VARCHAR(50)"))
+        if ("job_results", "explanation_summary") in missing:
+            await conn.execute(text("ALTER TABLE job_results ADD COLUMN IF NOT EXISTS explanation_summary TEXT"))
+        if ("job_results", "match_report") in missing:
+            await conn.execute(text("ALTER TABLE job_results ADD COLUMN IF NOT EXISTS match_report JSONB"))
+        if ("job_results", "verification_report") in missing:
+            await conn.execute(text("ALTER TABLE job_results ADD COLUMN IF NOT EXISTS verification_report JSONB"))
     if target is _active_engine:
         _schema_compat_checked = True
 

@@ -23,6 +23,48 @@ async def test_ensure_runtime_schema_compatibility_adds_runs_error_column(test_e
         assert result.scalar_one() == "error"
 
 
+async def test_ensure_runtime_schema_compatibility_adds_candidate_profile_column(test_engine):
+    async with test_engine.begin() as conn:
+        await conn.execute(text("ALTER TABLE profiles DROP COLUMN IF EXISTS candidate_profile"))
+
+    await ensure_runtime_schema_compatibility(test_engine)
+
+    async with test_engine.begin() as conn:
+        result = await conn.execute(
+            text(
+                """
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = 'profiles' AND column_name = 'candidate_profile'
+                """
+            )
+        )
+        assert result.scalar_one() == "candidate_profile"
+
+
+async def test_ensure_runtime_schema_compatibility_adds_job_results_reports_columns(test_engine):
+    async with test_engine.begin() as conn:
+        await conn.execute(text("ALTER TABLE job_results DROP COLUMN IF EXISTS fit_band"))
+        await conn.execute(text("ALTER TABLE job_results DROP COLUMN IF EXISTS confidence_band"))
+        await conn.execute(text("ALTER TABLE job_results DROP COLUMN IF EXISTS explanation_summary"))
+
+    await ensure_runtime_schema_compatibility(test_engine)
+
+    async with test_engine.begin() as conn:
+        result = await conn.execute(
+            text(
+                """
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = 'job_results'
+                  AND column_name IN ('fit_band', 'confidence_band', 'explanation_summary')
+                ORDER BY column_name
+                """
+            )
+        )
+        assert result.scalars().all() == ["confidence_band", "explanation_summary", "fit_band"]
+
+
 async def test_get_db_session_compatibility_repairs_runs_error_column(test_engine):
     async with test_engine.begin() as conn:
         await conn.execute(text("ALTER TABLE runs DROP COLUMN IF EXISTS error"))
