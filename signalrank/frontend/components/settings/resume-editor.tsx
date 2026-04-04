@@ -19,12 +19,16 @@ type ResumeWorkspaceSection = "basics" | "summary" | "experience" | "projects" |
 
 function looksLikeUrl(value: string) {
   const trimmed = value.trim();
+  const lower = trimmed.toLowerCase();
   return (
     !trimmed ||
     trimmed.startsWith("http://") ||
     trimmed.startsWith("https://") ||
     trimmed.startsWith("www.") ||
-    (trimmed.includes(".") && !trimmed.includes(" "))
+    lower.includes("linkedin.com/") ||
+    lower.includes("github.com/") ||
+    /^[A-Za-z0-9._-]{2,}$/.test(trimmed) ||
+    (trimmed.includes(".") && !trimmed.includes(" ") && !trimmed.includes("@") && !trimmed.includes("|"))
   );
 }
 

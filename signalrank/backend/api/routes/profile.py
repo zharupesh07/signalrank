@@ -1,3 +1,5 @@
+import re
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy import select
@@ -58,10 +60,18 @@ def _drop_stored_resume_editor(profile: Profile) -> None:
 
 def _looks_like_public_url(value: str) -> bool:
     stripped = value.strip()
-    return (
-        stripped.startswith(("http://", "https://", "www."))
-        or ("." in stripped and " " not in stripped)
-    )
+    lower = stripped.lower()
+    if not stripped or " " in stripped:
+        return False
+    if stripped.startswith(("http://", "https://", "www.")):
+        return True
+    if "linkedin.com/" in lower or "github.com/" in lower:
+        return True
+    if re.fullmatch(r"[A-Za-z0-9._-]{2,}", stripped):
+        return True
+    if "." in stripped and not any(ch in stripped for ch in ("@", "|")):
+        return True
+    return False
 
 
 def _trim_list(values: list[str]) -> list[str]:

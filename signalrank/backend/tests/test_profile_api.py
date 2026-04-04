@@ -199,6 +199,22 @@ async def test_update_profile_resume_editor_rejects_invalid_email(client, auth_t
     assert response.status_code == 422
 
 
+async def test_update_profile_accepts_contact_handles_without_scheme(client, auth_token):
+    response = await client.patch(
+        "/api/profile",
+        json={
+            "resume_editor": {
+                "name": "Example Candidate",
+                "linkedin": "linkedin.com/in/example-candidate",
+                "github": "github.com/example-candidate",
+                "website": "example.dev",
+            }
+        },
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 200
+
+
 async def test_admin_refresh_profiles_rebuilds_resume_editor(client, db):
     await client.post("/api/auth/register", json={"email": "refresh@test.com", "password": "password123"})
     user = (await db.execute(select(User).where(User.email == "refresh@test.com"))).scalar_one()
