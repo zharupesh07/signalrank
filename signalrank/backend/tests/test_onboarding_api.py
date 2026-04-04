@@ -1,8 +1,13 @@
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from pathlib import Path
 
 from api.models import Profile
+from api.routes.onboarding import _extract_text_from_pdf
+
+
+RESUMES_DIR = Path(__file__).resolve().parents[3] / "resumes"
 
 
 @pytest.fixture
@@ -86,6 +91,8 @@ async def test_upload_resume_txt(client, auth_token, monkeypatch):
         return ResumeParseResult(skills=["python"], years_of_experience=3)
 
     monkeypatch.setattr(rp, "parse_resume", mock_parse)
+    monkeypatch.setattr(rp, "parse_resume_structure", mock_parse)
+    monkeypatch.setattr(rp, "parse_resume_from_images", mock_parse)
 
     r = await client.post(
         "/api/onboarding/resume",
@@ -96,6 +103,54 @@ async def test_upload_resume_txt(client, auth_token, monkeypatch):
     data = r.json()
     assert "questions" in data
     assert len(data["questions"]) >= 3
+
+
+@pytest.mark.parametrize(
+    "pdf_name, expected_role",
+    [
+        ("ayush_resume_new.pdf", "SAP SD Consultant"),
+        ("Example_Candidate_Resume_V2_2.pdf", "AI Platform Engineer"),
+        ("Vivek-Gupta-Emerging-Technologies.pdf", "Innovation Engineer"),
+        ("aditya.pdf", "Network Automation Engineer"),
+    ],
+)
+async def test_upload_resume_skips_llm_for_high_confidence_fixture_resumes(
+    client,
+    auth_token,
+    monkeypatch,
+    pdf_name,
+    expected_role,
+):
+    import llm.resume_parser as rp
+
+    def _should_not_run(*_args, **_kwargs):
+        raise AssertionError("LLM parser should not run for high-confidence fixture resumes")
+
+    monkeypatch.setattr(rp, "parse_resume", _should_not_run)
+    monkeypatch.setattr(rp, "parse_resume_structure", _should_not_run)
+    monkeypatch.setattr(rp, "parse_resume_from_images", _should_not_run)
+
+    resume_text = _extract_text_from_pdf((RESUMES_DIR / pdf_name).read_bytes())
+
+    response = await client.post(
+        "/api/onboarding/resume",
+        files={"file": ("resume.txt", resume_text.encode("utf-8"), "text/plain")},
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["parsing"] is False
+    assert payload["extracted"]["recent_titles"]
+
+    profile_response = await client.get(
+        "/api/profile",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert profile_response.status_code == 200
+    profile = profile_response.json()
+    assert profile["candidate_profile"]["confidence_by_field"]["overall"] >= 0.74
+    assert profile["role_intent"] == expected_role
+    assert expected_role in profile["candidate_profile"]["target_roles_primary"]
 
 
 async def test_refine_saves_answer(client, auth_token):
@@ -177,10 +232,10 @@ def test_apply_parsed_profile_updates_overwrites_stale_roles_and_locations():
 
     onboarding_route._apply_parsed_profile_updates(profile, parsed)
 
-    assert profile.target_roles == ["SAP SD Consultant"]
+    assert profile.target_roles[0] == "SAP SD Consultant"
     assert profile.role_intent == "SAP SD Consultant"
     assert profile.preferred_locations == ["Hyderabad"]
-    assert profile.config_overrides["profile_intent"]["roles"] == ["SAP SD Consultant"]
+    assert profile.config_overrides["profile_intent"]["roles"][0] == "SAP SD Consultant"
     assert profile.config_overrides["scraping"]["locations"] == ["Hyderabad"]
     assert "QA Automation" in profile.config_overrides["title_blocklist"]
     assert profile.config_overrides["career_intent"]["target_roles"][0]["title"] == "SAP SD Consultant"

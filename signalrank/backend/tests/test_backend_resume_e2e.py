@@ -360,7 +360,8 @@ async def test_resume_fixture_backend_chain_allows_results_and_tracker_import(
     async def fake_embed_new_jobs(*_args, **_kwargs):
         return None
 
-    async def fake_scrape(queries, _config, on_progress=None, on_persist=None, *, return_mode="jobs"):
+    async def fake_scrape(queries, _config, on_progress=None, on_persist=None, *, return_mode="jobs", db=None, **_kwargs):
+        del db
         assert return_mode == "urls"
         assert queries, f"{case.key}: query builder returned no queries"
         query_terms = [q.term.lower() for q in queries]
@@ -411,7 +412,7 @@ async def test_resume_fixture_backend_chain_allows_results_and_tracker_import(
         headers=headers,
     )
     assert upload.status_code == 200
-    assert upload.json()["parsing"] is True
+    assert upload.json()["parsing"] is False
 
     db.expire_all()
     profile_result = await client.get("/api/profile", headers=headers)

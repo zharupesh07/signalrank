@@ -60,6 +60,7 @@ def _extract_contact_facts(resume_text: str) -> dict[str, str]:
         "location": "",
     }
 
+    handle_candidates: list[str] = []
     email_match = _EMAIL_RE.search(text)
     if email_match:
         facts["email"] = email_match.group(0)
@@ -80,6 +81,16 @@ def _extract_contact_facts(resume_text: str) -> dict[str, str]:
         ):
             facts["homepage"] = line.strip().removeprefix("https://").removeprefix("http://").strip("/")
         elif (
+            line
+            and " " not in line
+            and "@" not in line
+            and ":" not in line
+            and "/" not in line
+            and len(line) <= 40
+            and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", line)
+        ):
+            handle_candidates.append(line)
+        elif (
             not facts["location"]
             and facts["email"]
             and facts["phone"]
@@ -88,8 +99,25 @@ def _extract_contact_facts(resume_text: str) -> dict[str, str]:
             and "@" not in lower
             and not _looks_like_name(line)
             and len(line) <= 80
-        ):
+            ):
             facts["location"] = line
+
+    unique_handles: list[str] = []
+    seen_handles: set[str] = set()
+    for candidate in handle_candidates:
+        key = candidate.lower()
+        if key not in seen_handles:
+            seen_handles.add(key)
+            unique_handles.append(candidate)
+    if unique_handles and (len(unique_handles) >= 2 or any("-" in candidate or "." in candidate for candidate in unique_handles)):
+        if not facts["linkedin"]:
+            linked_candidate = next((candidate for candidate in unique_handles if "-" in candidate or "." in candidate), "")
+            if linked_candidate:
+                facts["linkedin"] = linked_candidate
+        if not facts["github"]:
+            github_candidate = next((candidate for candidate in unique_handles if "." not in candidate and "-" not in candidate), "")
+            if github_candidate:
+                facts["github"] = github_candidate
 
     return facts
 

@@ -144,6 +144,30 @@ def test_extract_text_contains_detectable_email(sample_pdf):
     assert _first_email(extracted_text) == spec["email"]
 
 
+def test_parse_resume_editor_recovers_contact_handles_and_projects_from_real_resumes():
+    example_text = _extract_text_from_pdf((RESUMES_DIR / "Example_Candidate_Resume_V2_2.pdf").read_bytes())
+    ayush_text = _extract_text_from_pdf((RESUMES_DIR / "ayush_resume_new.pdf").read_bytes())
+    vivek_text = _extract_text_from_pdf((RESUMES_DIR / "Vivek-Gupta-Emerging-Technologies.pdf").read_bytes())
+
+    example = parse_resume_editor(example_text)
+    ayush = parse_resume_editor(ayush_text)
+    vivek = parse_resume_editor(vivek_text)
+
+    assert example["linkedin"] == "example-candidate"
+    assert example["github"] == "examplecandidate"
+    assert example["projects"]
+    assert any("ALPR" in project["name"] for project in example["projects"])
+    assert all("Open Source & Projects" not in cert for cert in example["certifications"])
+
+    assert ayush["linkedin"] == "linkedin.com/in/ayushhkhandelwal"
+    assert ayush["github"] == ""
+    assert ayush["projects"] == []
+
+    assert vivek["linkedin"] == "vivek-gupta-07bb7597"
+    assert vivek["github"] == "vikkey321"
+    assert vivek["projects"] == []
+
+
 def test_extract_text_corrupt_bytes():
     assert _extract_text_from_pdf(b"not-a-pdf") == ""
 

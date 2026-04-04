@@ -217,11 +217,21 @@ def _normalize_website(value: str) -> str:
     return cleaned.removeprefix("www.")
 
 
+def _looks_like_handle_token(line: str) -> bool:
+    cleaned = _clean_line(line)
+    if not cleaned or " " in cleaned or any(ch in cleaned for ch in "@:/|"):
+        return False
+    if len(cleaned) < 3 or len(cleaned) > 40:
+        return False
+    return re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", cleaned) is not None
+
+
 def _extract_reference_profiles(ref: str) -> dict[str, str]:
     lines = [_clean_line(line) for line in (ref or "").splitlines()[:20] if _clean_line(line)]
     linkedin = ""
     github = ""
     website = ""
+    handle_candidates: list[str] = []
     for line in lines:
         lower = line.lower()
         if not linkedin:
@@ -238,6 +248,8 @@ def _extract_reference_profiles(ref: str) -> dict[str, str]:
                 match = re.search(r"github\s*:\s*([A-Za-z0-9][A-Za-z0-9_-]*)", line, re.I)
                 if match:
                     github = _normalize_github(match.group(1))
+        if _looks_like_handle_token(line):
+            handle_candidates.append(line)
         if not website:
             for match in _URLISH_RE.finditer(line):
                 candidate = match.group(0)
@@ -246,6 +258,22 @@ def _extract_reference_profiles(ref: str) -> dict[str, str]:
                     continue
                 website = _normalize_website(candidate)
                 break
+    unique_handles = []
+    seen_handles: set[str] = set()
+    for candidate in handle_candidates:
+        key = candidate.lower()
+        if key not in seen_handles:
+            seen_handles.add(key)
+            unique_handles.append(candidate)
+    if unique_handles and (len(unique_handles) >= 2 or any("-" in candidate or "." in candidate for candidate in unique_handles)):
+        if not linkedin:
+            linked_candidate = next((candidate for candidate in unique_handles if "-" in candidate or "." in candidate), "")
+            if linked_candidate:
+                linkedin = _normalize_linkedin(linked_candidate)
+        if not github:
+            github_candidate = next((candidate for candidate in unique_handles if "." not in candidate and "-" not in candidate), "")
+            if github_candidate:
+                github = _normalize_github(github_candidate)
     return {
         "linkedin": linkedin,
         "github": github,

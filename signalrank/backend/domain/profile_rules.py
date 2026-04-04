@@ -403,6 +403,14 @@ def build_profile_title_rules(archetypes: Iterable[str]) -> dict[str, list[str]]
             r"\bbusiness analyst\b",
             r"\bdata analyst\b",
             r"\bproduct manager\b",
+            r"\bai engineer\b",
+            r"\bmachine learning\b",
+            r"\bbackend engineer\b",
+            r"\bplatform engineer\b",
+            r"\bdevops\b",
+            r"\bsre\b",
+            r"\bsite reliability\b",
+            r"\bsecurity engineer\b",
         ])
         adjacent.extend([
             r"\bdevops\b",
@@ -590,7 +598,20 @@ def refine_profile_roles_for_ranking(
             "Technical Innovation Consultant",
             "Innovation Technologist",
         ]
-        generic_terms = ("software engineer", "ai engineer", "data engineer", "customer engineer", "solutions engineer")
+        generic_terms = (
+            "software engineer",
+            "ai engineer",
+            "data engineer",
+            "customer engineer",
+            "solutions engineer",
+            "platform engineer",
+            "site reliability",
+            "sre",
+            "devops",
+            "security",
+            "backend engineer",
+            "cloud engineer",
+        )
         refined: list[str] = []
         for title in preferred:
             existing = role_map.get(title.lower())
@@ -613,7 +634,21 @@ def refine_profile_roles_for_ranking(
             "Network DevOps Engineer",
             "Cloud Infrastructure Automation Engineer",
         ]
-        generic_terms = ("qa", "test", "support", "frontend", "sap", "business analyst", "product manager")
+        generic_terms = (
+            "qa",
+            "test",
+            "support",
+            "frontend",
+            "sap",
+            "business analyst",
+            "product manager",
+            "ai engineer",
+            "machine learning",
+            "data engineer",
+            "backend engineer",
+            "platform engineer",
+            "security engineer",
+        )
         refined: list[str] = []
         for title in preferred:
             existing = role_map.get(title.lower())
@@ -718,7 +753,9 @@ def profile_description_alignment_multiplier(
         elif innovation_hits == 1:
             multiplier *= 1.04
         elif generic_hits >= 1:
-            multiplier *= 0.86
+            multiplier *= 0.80
+        elif _has_any(title_text, ["ai engineer", "software engineer", "platform engineer", "site reliability", "sre", "devops", "security"]):
+            multiplier *= 0.78
 
     if "network_automation_engineer" in archetypes:
         title_text = (title or "").lower()
@@ -743,6 +780,20 @@ def profile_description_alignment_multiplier(
         ]
         network_hits = _match_count(f"{title_text} {desc_text}", network_terms)
         off_target_hits = _match_count(title_text, off_target_terms)
+        generic_title_hits = _match_count(
+            title_text,
+            [
+                "ai engineer",
+                "machine learning",
+                "data engineer",
+                "backend engineer",
+                "security engineer",
+                "platform engineer",
+                "devops",
+                "sre",
+                "site reliability",
+            ],
+        )
 
         if network_hits >= 2:
             multiplier *= 1.10
@@ -750,6 +801,8 @@ def profile_description_alignment_multiplier(
             multiplier *= 1.04
         elif off_target_hits >= 1:
             multiplier *= 0.82
+        elif generic_title_hits >= 1:
+            multiplier *= 0.72
 
     return max(0.80, min(multiplier, 1.10))
 
@@ -788,7 +841,24 @@ def enrich_config_with_profile_rules(
 
     if "network_automation_engineer" in archetypes:
         profile_intent["preset"] = "platform_devops"
-        ranking["title_relevance_floor"] = min(float(ranking.get("title_relevance_floor", 0.25)), 0.0)
+        ranking["title_relevance_floor"] = max(float(ranking.get("title_relevance_floor", 0.25)), 0.18)
+        title_blocklist = set(ranking.get("title_blocklist", []))
+        title_blocklist.update(
+            {
+                "ai engineer",
+                "machine learning",
+                "llm",
+                "genai",
+                "software engineer",
+                "backend engineer",
+                "platform engineer",
+                "site reliability",
+                "sre",
+                "devops",
+                "security engineer",
+            }
+        )
+        ranking["title_blocklist"] = sorted(title_blocklist)
         thresholds = dict(ranking.get("role_semantic_thresholds", {}))
         thresholds["platform_devops"] = min(float(thresholds.get("platform_devops", 0.35)), 0.20)
         ranking["role_semantic_thresholds"] = thresholds
@@ -799,8 +869,11 @@ def enrich_config_with_profile_rules(
         hybrid_cfg = dict(rule_cfg.get("hybrid", {}))
         hybrid_cfg["semantic_floor"] = min(float(hybrid_cfg.get("semantic_floor", 0.52)), 0.35)
         hybrid_cfg["min_skill_overlap"] = min(int(hybrid_cfg.get("min_skill_overlap", 3)), 1)
+        strong_cfg = dict(rule_cfg.get("strong", {}))
+        strong_cfg["multiplier"] = min(float(strong_cfg.get("multiplier", 0.72)), 0.66)
         rule_cfg["adjacent"] = adjacent_cfg
         rule_cfg["hybrid"] = hybrid_cfg
+        rule_cfg["strong"] = strong_cfg
         ranking["profile_title_rule_scoring"] = rule_cfg
 
     if "sap_sd" in archetypes:

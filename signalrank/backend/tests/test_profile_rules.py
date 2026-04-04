@@ -266,3 +266,45 @@ def test_innovation_profile_alignment_penalizes_generic_engineering_titles():
 
     assert innovation_job > 1.0
     assert generic_job < 1.0
+
+
+def test_network_automation_role_refinement_excludes_generic_ai_and_backend_titles():
+    refined = refine_profile_roles_for_ranking(
+        ["Network Automation Engineer", "AI Engineer", "Backend Engineer", "Platform Engineer", "Cloud Network Engineer"],
+        resume_text=(
+            "Network automation engineer focused on Python tooling, infrastructure automation, "
+            "cloud networking, firewall rules, load balancers, and network operations."
+        ),
+        archetypes=["network_automation_engineer"],
+    )
+
+    assert refined[:3] == ["Network Automation Engineer", "Infrastructure Automation Engineer", "Cloud Network Engineer"]
+    assert "AI Engineer" not in refined
+    assert "Backend Engineer" not in refined
+    assert "Platform Engineer" not in refined
+
+
+def test_network_automation_profile_alignment_penalizes_generic_ai_titles():
+    cfg = load_base_config()
+    enriched = enrich_config_with_profile_rules(
+        cfg,
+        resume_text=(
+            "Network automation engineer focused on Python tooling, infrastructure automation, "
+            "cloud networking, firewall rules, load balancers, and network operations."
+        ),
+        profile_roles=["Network Automation Engineer", "Infrastructure Automation Engineer"],
+    )
+
+    network_job = profile_description_alignment_multiplier(
+        "Network Automation Engineer",
+        "Build network automation, firewall automation, and infrastructure tooling.",
+        enriched,
+    )
+    generic_ai_job = profile_description_alignment_multiplier(
+        "AI Engineer",
+        "Build model serving, large language model pipelines, and agentic workflows.",
+        enriched,
+    )
+
+    assert network_job > 1.0
+    assert generic_ai_job < 1.0

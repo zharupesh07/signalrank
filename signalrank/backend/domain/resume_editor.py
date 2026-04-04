@@ -49,6 +49,15 @@ def _looks_like_contact_line(line: str) -> bool:
     )
 
 
+def _looks_like_handle_token(line: str) -> bool:
+    cleaned = _clean_line(line)
+    if not cleaned or " " in cleaned or any(ch in cleaned for ch in "@:/|"):
+        return False
+    if len(cleaned) < 3 or len(cleaned) > 40:
+        return False
+    return re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", cleaned) is not None
+
+
 def _looks_like_position_line(line: str) -> bool:
     cleaned = _clean_line(line)
     if not cleaned or _looks_like_contact_line(cleaned) or _looks_like_certification_line(cleaned):
@@ -88,7 +97,7 @@ def _match_heading(line: str) -> tuple[str | None, str]:
     normalized = _normalize_heading(line)
     for name, aliases in _SECTION_HEADINGS.items():
         for alias in aliases:
-            if normalized == alias:
+            if normalized == _normalize_heading(alias):
                 return name, ""
             pattern = rf"(?i)^\s*{re.escape(alias)}\s*[:\-]\s*(.*)$"
             match = re.match(pattern, line or "")
@@ -134,6 +143,7 @@ def _parse_contact(lines: list[str]) -> dict:
     github = ""
     website = ""
     location = ""
+    handle_candidates: list[str] = []
     for line in top_lines:
         lower = line.lower()
         if "linkedin.com/" in lower and not linkedin:
@@ -149,6 +159,8 @@ def _parse_contact(lines: list[str]) -> dict:
             and " " not in line
         ):
             website = line
+        elif _looks_like_handle_token(line):
+            handle_candidates.append(line)
         elif (
             not location
             and line not in {name, position}
@@ -160,6 +172,17 @@ def _parse_contact(lines: list[str]) -> dict:
             and len(line) <= 80
         ):
             location = line
+
+    unique_handles = _dedupe_preserve(handle_candidates)
+    if unique_handles and (len(unique_handles) >= 2 or any("-" in candidate or "." in candidate for candidate in unique_handles)):
+        if not linkedin:
+            linked_candidate = next((candidate for candidate in unique_handles if "-" in candidate or "." in candidate), "")
+            if linked_candidate:
+                linkedin = linked_candidate
+        if not github:
+            github_candidate = next((candidate for candidate in unique_handles if "." not in candidate and "-" not in candidate), "")
+            if github_candidate:
+                github = github_candidate
 
     return {
         "name": name,
@@ -353,6 +376,8 @@ def _parse_projects(lines: list[str]) -> list[dict]:
     projects: list[dict] = []
     current: dict | None = None
     for line in lines:
+        if line.lower().startswith("tech:"):
+            continue
         if line.lstrip().startswith(("-", "*", "•")):
             if current:
                 description = line.lstrip("-*• ").strip()
@@ -364,6 +389,15 @@ def _parse_projects(lines: list[str]) -> list[dict]:
             if current and not current.get("url"):
                 current["url"] = line
             continue
+        if "|" in line and "http" not in line.lower():
+            parts = [part.strip() for part in line.split("|") if part.strip()]
+            if len(parts) > 1:
+                for part in parts:
+                    if part.lower() in {"idea generation", "others", "other"}:
+                        continue
+                    projects.append({"name": part, "url": "", "description": ""})
+                current = None
+                continue
         current = {"name": line, "url": "", "description": ""}
         projects.append(current)
     return [project for project in projects if project.get("name")]
