@@ -116,6 +116,11 @@ export default function DashboardPage() {
   const [newGoodMatches, setNewGoodMatches] = useState(() => cachedJobsResponse?.new_good_matches ?? 0);
   const [addJobOpen, setAddJobOpen] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(() => (typeof window !== "undefined" ? getCached<boolean>(DASHBOARD_CACHE_KEYS.onboarding, 600_000) ?? null : null));
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const loadJobs = useCallback(async () => {
     if (!token) return;
@@ -258,7 +263,7 @@ export default function DashboardPage() {
               <RefreshCw size={10} className={triggering || isRunActive ? "spin-slow" : ""} />
               {triggering ? "Queuing..." : isRunActive ? "Scanning..." : "Scan Jobs"}
             </button>
-            {run?.started_at && !isRunActive && (
+            {mounted && run?.started_at && !isRunActive && (
               <span className="text-[10px] text-right text-muted-foreground whitespace-nowrap">
                 Last run {new Date(run.started_at).toLocaleDateString([], { month: "short", day: "numeric" })}
               </span>

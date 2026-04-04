@@ -7,6 +7,7 @@ from typing import Any
 from domain.candidate_profile import build_candidate_profile
 from domain.career_intent import build_career_intent_profile
 from domain.profile_rules import infer_profile_archetypes, refine_profile_roles_for_ranking
+from domain.resume_editor import merge_resume_editor, parse_resume_editor
 from domain.skills import extract_skills_from_texts
 from llm.resume_parser import ResumeParseResult, detect_enterprise_role_from_text
 
@@ -408,3 +409,19 @@ def apply_parsed_profile_updates(profile: Any, parsed: ResumeParseResult) -> str
     sync_career_intent_override(profile)
     profile.candidate_profile = build_candidate_profile(parsed=parsed, profile=profile, resume_text=getattr(profile, "resume_text", None))
     return distilled_text
+
+
+def refresh_profile_from_resume(profile: Any) -> str | None:
+    resume_text = str(getattr(profile, "resume_text", "") or "")
+    if not resume_text:
+        return None
+    parsed = deterministic_resume_parse(resume_text, profile)
+    distilled = apply_parsed_profile_updates(profile, parsed)
+    editor = parse_resume_editor(resume_text)
+    overrides = dict(getattr(profile, "config_overrides", None) or {})
+    existing_editor = overrides.get("resume_editor") if isinstance(overrides.get("resume_editor"), dict) else {}
+    merged_editor = merge_resume_editor(existing_editor, editor)
+    if merged_editor:
+        overrides["resume_editor"] = merged_editor
+        setattr(profile, "config_overrides", overrides)
+    return distilled

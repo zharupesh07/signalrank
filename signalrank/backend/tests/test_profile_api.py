@@ -1,5 +1,9 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
+from sqlalchemy import select
+
+from api.models import Profile, User
 
 
 @pytest.fixture
@@ -193,6 +197,26 @@ async def test_update_profile_resume_editor_rejects_invalid_email(client, auth_t
         headers={"Authorization": f"Bearer {auth_token}"},
     )
     assert response.status_code == 422
+
+
+async def test_admin_refresh_profiles_rebuilds_resume_editor(client, db):
+    await client.post("/api/auth/register", json={"email": "refresh@test.com", "password": "password123"})
+    user = (await db.execute(select(User).where(User.email == "refresh@test.com"))).scalar_one()
+    user.is_admin = True
+    profile = (await db.execute(select(Profile).where(Profile.user_id == user.id))).scalar_one()
+    profile.resume_text = "Example Candidate\nSoftware Engineer\nGitHub: github.com/examplecandidate\n"
+    profile.config_overrides = {"resume_editor": {"name": "Example Candidate", "github": ""}}
+    await db.commit()
+
+    token = (await client.post("/api/auth/login", json={"email": "refresh@test.com", "password": "password123"})).json()["access_token"]
+    response = await client.post(
+        "/api/onboarding/profiles/refresh",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+
+    refreshed = (await client.get("/api/profile", headers={"Authorization": f"Bearer {token}"})).json()
+    assert "examplecandidate" in refreshed["resume_editor"]["github"].lower()
 
 
 async def test_profile_options_exposes_shared_taxonomy(client, auth_token):
