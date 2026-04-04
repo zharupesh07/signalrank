@@ -105,7 +105,14 @@ async def store_cached_jobs(
             fresh_until=cache_fresh_until(hours_old),
         )
         .on_conflict_do_update(
-            constraint="uq_scrape_query_cache_key",
+            index_elements=[
+                ScrapeQueryCache.provider,
+                ScrapeQueryCache.site,
+                ScrapeQueryCache.term_normalized,
+                ScrapeQueryCache.location_normalized,
+                ScrapeQueryCache.country_normalized,
+                ScrapeQueryCache.hours_old,
+            ],
             set_={
                 "result_job_urls": job_urls,
                 "result_count": len(job_urls),
