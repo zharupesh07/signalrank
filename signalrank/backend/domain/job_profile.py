@@ -14,6 +14,8 @@ from domain.description_quality import description_quality_multiplier
 from domain.role_clusters import infer_clusters_from_job_text
 from domain.skills import extract_skills_from_texts
 
+_JOB_PROFILE_CACHE: dict[str, dict] = {}
+
 
 _ROLE_FAMILY_MAP = {
     "sap_erp": "SAP / ERP",
@@ -247,7 +249,11 @@ def build_job_profile(
         }
     )
 
-    return {
+    cached = _JOB_PROFILE_CACHE.get(job_fingerprint)
+    if cached is not None:
+        return dict(cached)
+
+    profile = {
         "artifact_version": JOB_PROFILE_VERSION,
         "schema_version": SCHEMA_VERSION,
         "job_fingerprint": job_fingerprint,
@@ -263,3 +269,5 @@ def build_job_profile(
             ("preferred_section", preferred_section[:240] if preferred_section else None),
         ),
     }
+    _JOB_PROFILE_CACHE[job_fingerprint] = dict(profile)
+    return profile

@@ -2,12 +2,13 @@
 from __future__ import annotations
 from types import SimpleNamespace
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 from datetime import datetime, timezone, timedelta
 
 from sqlalchemy import select
 
 from api.models import JobRaw
+import api.routes.ingest as ingest_route
 from api.routes.ingest import _parse_ingest_response, _compute_priority, _validate_url, ingest_extract, IngestRequest
 from fastapi import HTTPException
 
@@ -138,3 +139,43 @@ async def test_ingest_confirm_persists_job_profile(client, auth_token, db):
     job = (await db.execute(select(JobRaw).where(JobRaw.job_url == "https://example.com/jobs/123"))).scalar_one()
     assert job.job_profile["role_family"] == "AI / ML"
     assert job.job_profile["work_mode"] == "remote"
+
+
+@pytest.mark.asyncio
+async def test_ingest_confirm_reuses_existing_job_profile_across_users(client, db, monkeypatch):
+    await client.post("/api/auth/register", json={"email": "reuse-1@test.com", "password": "password123"})
+    token_1 = (
+        await client.post("/api/auth/login", json={"email": "reuse-1@test.com", "password": "password123"})
+    ).json()["access_token"]
+    await client.post("/api/auth/register", json={"email": "reuse-2@test.com", "password": "password123"})
+    token_2 = (
+        await client.post("/api/auth/login", json={"email": "reuse-2@test.com", "password": "password123"})
+    ).json()["access_token"]
+
+    calls: list[dict] = []
+    original_build = ingest_route.build_job_profile
+
+    def _tracking_build_job_profile(**kwargs):
+        calls.append(kwargs)
+        return original_build(**kwargs)
+
+    monkeypatch.setattr(ingest_route, "build_job_profile", _tracking_build_job_profile)
+
+    payload = {
+        "title": "Senior ML Engineer",
+        "company": "Acme Corp",
+        "location": "Remote",
+        "job_url": "https://example.com/jobs/reuse",
+        "date_posted": "2026-03-23",
+        "description": "Build ML infrastructure with Python and Kubernetes.",
+    }
+
+    first = await client.post("/api/jobs/ingest/confirm", json=payload, headers={"Authorization": f"Bearer {token_1}"})
+    second = await client.post("/api/jobs/ingest/confirm", json=payload, headers={"Authorization": f"Bearer {token_2}"})
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert len(calls) == 1
+
+    jobs = (await db.execute(select(JobRaw).where(JobRaw.job_url == payload["job_url"]))).scalar_one()
+    assert jobs.job_profile["job_fingerprint"]

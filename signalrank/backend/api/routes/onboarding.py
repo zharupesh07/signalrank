@@ -10,306 +10,35 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.database import AsyncSessionLocal, ensure_runtime_schema_compatibility, get_db
+from api.database import AsyncSessionLocal, commit_with_runtime_schema_compatibility, get_db
 from api.deps import get_current_user
 from api.deps_llm import get_llm_client
 from api.models import Profile, User
-from domain.candidate_profile import build_candidate_profile
-from domain.career_intent import build_career_intent_profile
-from domain.profile_rules import infer_profile_archetypes, refine_profile_roles_for_ranking
+from domain.onboarding_profile import (
+    apply_parsed_profile_updates,
+    build_profile_patch,
+    deterministic_resume_parse,
+    merge_profile_patch,
+    should_run_onboarding_llm,
+)
 from domain.skills import extract_skills_from_texts
 from domain.resume_editor import has_resume_editor_content, merge_resume_editor, parse_resume_editor
 from llm.onboarding import generate_onboarding_questions
 from llm.openrouter import OpenRouterClient
-from llm.resume_parser import ResumeParseResult, detect_enterprise_role_from_text, parse_resume, parse_resume_from_images, parse_resume_structure
+from llm.resume_parser import ResumeParseResult, parse_resume, parse_resume_from_images, parse_resume_structure
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
 
 
-def _ai_signal_count_from_parsed(parsed: ResumeParseResult) -> int:
-    ai_terms = {"ai", "ml", "mlops", "llm", "genai", "machine learning"}
-    signals = 0
-    if set((parsed.skills or [])).intersection({"llm", "agents", "genai", "mlops", "deep learning", "rag", "conversational ai"}):
-        signals += 1
-    titles_text = " ".join(parsed.recent_titles or []).lower()
-    if any(term in titles_text for term in ai_terms):
-        signals += 1
-    resume_text = " ".join((parsed.skills or []) + (parsed.recent_titles or []))
-    if any(term in resume_text.lower() for term in ai_terms):
-        signals += 1
-    return signals
-
-
-def _suggested_roles_are_ai_only(roles: Iterable[str]) -> bool:
-    ai_terms = {"ai", "ml", "genai", "agent", "mlo", "machine learning"}
-    return roles and all(any(term in role.lower() for term in ai_terms) for role in roles)
-
-
-def _enterprise_role(parsed: ResumeParseResult) -> str | None:
-    text = " ".join((parsed.skills or []) + (parsed.recent_titles or [])).lower()
-    return detect_enterprise_role_from_text(text)
-
-
-def _enterprise_locations(parsed: ResumeParseResult) -> list[str] | None:
-    text = (parsed.skills or []) + (parsed.recent_titles or []) + (parsed.suggested_locations or [])
-    combined = " ".join(text).lower()
-    if "bangalore" in combined or "bengaluru" in combined or "hyderabad" in combined or "hydrabad" in combined:
-        return ["Bangalore", "Hyderabad"]
-    return None
-
-
-def _infer_yoe_range(years_of_experience: int | None) -> tuple[int | None, int | None]:
-    if years_of_experience is None:
-        return None, None
-    yoe = max(0, int(years_of_experience))
-    min_yoe = max(0, yoe - 2)
-    max_yoe = min(30, yoe + 2)
-    return min_yoe, max_yoe
-
-
-def _resume_mentions_enterprise(parsed: ResumeParseResult) -> bool:
-    text = " ".join((parsed.skills or []) + (parsed.recent_titles or [])).lower()
-    return bool(detect_enterprise_role_from_text(text))
-
-
-def _normalize_str_list(values: Iterable[str] | None) -> list[str]:
-    if not values:
-        return []
-    seen: set[str] = set()
-    cleaned: list[str] = []
-    for value in values:
-        item = str(value).strip()
-        key = item.lower()
-        if not item or key in seen or key in {"none", "null", "nan"}:
-            continue
-        seen.add(key)
-        cleaned.append(item)
-    return cleaned
-
-
-def _flatten_editor_skills(editor: dict) -> list[str]:
-    skills: list[str] = []
-    for group in editor.get("skills") or []:
-        if not isinstance(group, dict):
-            continue
-        for item in group.get("items") or []:
-            text = str(item or "").strip()
-            if text:
-                skills.append(text)
-    return _normalize_str_list(skills)
-
-
-def _extract_years_from_text(text: str) -> int | None:
-    matches = [
-        int(match)
-        for match in re.findall(r"(\d{1,2})\+?\s*(?:years?|yrs?)\b", text or "", flags=re.I)
-        if match
-    ]
-    if not matches:
-        return None
-    return max(matches)
-
-
 def _deterministic_resume_parse(resume_text: str, profile: Profile | None = None) -> ResumeParseResult:
-    editor = parse_resume_editor(resume_text)
-    resume_text_lower = (resume_text or "").lower()
-    skills = _flatten_editor_skills(editor)
-    if not skills and resume_text:
-        cfg = {}
-        skills = _normalize_str_list(extract_skills_from_texts([resume_text], cfg)[0])
-    recent_titles = _normalize_str_list(
-        exp.get("title")
-        for exp in (editor.get("experiences") or [])[:3]
-        if isinstance(exp, dict)
-    )
-    education = _normalize_str_list(
-        edu.get("degree")
-        for edu in (editor.get("education") or [])
-        if isinstance(edu, dict)
-    )
-    locations = _normalize_str_list([editor.get("location", "")] + list(getattr(profile, "preferred_locations", None) or []))
-    years = _extract_years_from_text(" ".join([resume_text, editor.get("summary", "") or ""]))
-    profile_roles = _normalize_str_list([getattr(profile, "role_intent", "")] + list(getattr(profile, "target_roles", None) or []) + recent_titles)
-    inferred_archetypes = infer_profile_archetypes(resume_text, profile_roles, {})
-    inferred_roles = refine_profile_roles_for_ranking(profile_roles, resume_text=resume_text, archetypes=inferred_archetypes)
-    archetype_role_map = {
-        "sap_sd": ["SAP SD Consultant", "SAP OTC Functional Consultant", "SAP S/4HANA SD Consultant"],
-        "ai_platform_engineer": ["AI Platform Engineer", "MLOps Engineer", "ML Platform Engineer"],
-        "innovation_rd_engineer": ["Innovation Engineer", "Emerging Technologies Engineer", "R&D Engineer"],
-        "network_automation_engineer": ["Network Automation Engineer", "Infrastructure Automation Engineer", "Cloud Network Engineer"],
-        "sap_functional": ["SAP Functional Consultant", "SAP OTC Functional Consultant", "SAP SD Consultant"],
-    }
-    archetype_roles: list[str] = []
-    for archetype in inferred_archetypes:
-        archetype_roles.extend(archetype_role_map.get(archetype, []))
-    suggested_roles = _normalize_str_list(
-        [getattr(profile, "role_intent", "")] + list(getattr(profile, "target_roles", None) or []) + archetype_roles + inferred_roles + recent_titles
-    )
-    if not suggested_roles and inferred_archetypes:
-        suggested_roles = _normalize_str_list(archetype_roles or inferred_roles or recent_titles)
-    if not suggested_roles:
-        if detect_enterprise_role_from_text(resume_text):
-            suggested_roles = ["SAP SD Consultant", "SAP OTC Functional Consultant", "SAP S/4HANA SD Consultant"]
-        elif any(term in resume_text_lower for term in ("ai platform", "mlops", "llmops", "internal developer platform", "platform engineer")):
-            suggested_roles = ["AI Platform Engineer", "MLOps Engineer", "ML Platform Engineer"]
-        elif any(term in resume_text_lower for term in ("innovation", "emerging technolog", "prototype", "r&d", "research engineer")):
-            suggested_roles = ["Innovation Engineer", "Emerging Technologies Engineer", "R&D Engineer"]
-        elif any(term in resume_text_lower for term in ("network automation", "infrastructure automation", "cloud networking", "network engineer", "firewall", "load balancer")):
-            suggested_roles = ["Network Automation Engineer", "Infrastructure Automation Engineer", "Cloud Network Engineer"]
-    if detect_enterprise_role_from_text(resume_text):
-        suggested_roles = _normalize_str_list([
-            "SAP SD Consultant",
-            *suggested_roles,
-        ])
-    elif any(term in resume_text_lower for term in ("ai platform", "mlops", "llmops", "internal developer platform", "platform engineer")):
-        suggested_roles = _normalize_str_list([
-            "AI Platform Engineer",
-            *suggested_roles,
-        ])
-    elif any(term in resume_text_lower for term in ("innovation", "emerging technolog", "prototype", "r&d", "research engineer")):
-        suggested_roles = _normalize_str_list([
-            "Innovation Engineer",
-            *suggested_roles,
-        ])
-    elif any(term in resume_text_lower for term in ("network automation", "infrastructure automation", "cloud networking", "network engineer", "firewall", "load balancer")):
-        suggested_roles = _normalize_str_list([
-            "Network Automation Engineer",
-            *suggested_roles,
-        ])
-    career_archetypes = [
-        {
-            "id": archetype,
-            "label": archetype.replace("_", " ").title(),
-            "priority": "primary" if idx == 0 else "secondary",
-            "confidence": 0.92 if idx == 0 else 0.8,
-            "evidence": ["Deterministic resume text classification"],
-        }
-        for idx, archetype in enumerate(inferred_archetypes[:4])
-    ]
-    target_roles = [
-        {
-            "title": role,
-            "priority": "primary" if idx == 0 else "secondary",
-            "confidence": 0.95 if idx == 0 else 0.85,
-            "evidence": ["Deterministic resume text classification"],
-        }
-        for idx, role in enumerate(suggested_roles[:5])
-    ]
-    base_parsed = ResumeParseResult(
-        skills=skills,
-        years_of_experience=years,
-        recent_titles=recent_titles,
-        education=education,
-        suggested_roles=suggested_roles[:5],
-        suggested_locations=locations[:3],
-        career_archetypes=career_archetypes,
-        target_roles=target_roles,
-    )
-    career_intent = build_career_intent_profile(base_parsed)
-    suggested_search_queries = _normalize_str_list(
-        list((career_intent.get("query_plan") or {}).get("title_queries") or [])
-        + list((career_intent.get("query_plan") or {}).get("skill_queries") or [])
-        + recent_titles[:2]
-    )
-    suggested_exclusions = _normalize_str_list(
-        [str(item.get("label", "") or "") for item in career_intent.get("negative_targets", []) if isinstance(item, dict)]
-        + list((career_intent.get("query_plan") or {}).get("negative_keywords") or [])
-    )
-    return ResumeParseResult(
-        skills=skills,
-        years_of_experience=years,
-        recent_titles=recent_titles,
-        education=education,
-        suggested_roles=suggested_roles[:5],
-        suggested_locations=locations[:3],
-        suggested_exclusions=suggested_exclusions[:6],
-        suggested_search_queries=suggested_search_queries[:5],
-        career_archetypes=career_intent.get("career_archetypes") or [],
-        target_roles=career_intent.get("target_roles") or [],
-        domains=career_intent.get("domains") or [],
-        negative_targets=career_intent.get("negative_targets") or [],
-        false_friend_terms=career_intent.get("false_friend_terms") or [],
-        query_plan=career_intent.get("query_plan") or {},
-        ambiguities=career_intent.get("ambiguities") or [],
-        follow_up_questions=career_intent.get("follow_up_questions") or [],
-    )
-
-
-def _candidate_profile_confidence(candidate_profile: dict | None) -> float:
-    if not isinstance(candidate_profile, dict):
-        return 0.0
-    confidence = candidate_profile.get("confidence_by_field", {})
-    if isinstance(confidence, dict):
-        try:
-            return float(confidence.get("overall") or 0.0)
-        except (TypeError, ValueError):
-            return 0.0
-    return 0.0
-
-
-def _should_run_onboarding_llm(candidate_profile: dict | None, parsed: ResumeParseResult) -> bool:
-    if not candidate_profile:
-        return True
-    if len(parsed.recent_titles or []) == 0 or len(parsed.skills or []) == 0:
-        return True
-    if len(candidate_profile.get("ambiguities") or []) > 0:
-        return True
-    return _candidate_profile_confidence(candidate_profile) < 0.6
-
-
-def _sync_career_intent_override(profile: Profile) -> None:
-    overrides = dict(profile.config_overrides or {})
-    career_intent = dict(overrides.get("career_intent") or {})
-    work_preferences = dict(career_intent.get("work_preferences") or {})
-    query_plan = dict(career_intent.get("query_plan") or {})
-
-    if profile.target_roles:
-        career_intent["target_roles"] = [
-            {
-                "title": role,
-                "priority": "primary" if idx == 0 else "secondary",
-                "confidence": 0.9 if idx == 0 else 0.75,
-                "evidence": ["User-confirmed target role"],
-            }
-            for idx, role in enumerate(_normalize_str_list(profile.target_roles))
-        ]
-        query_plan["title_queries"] = _normalize_str_list(query_plan.get("title_queries", []) + list(profile.target_roles))
-
-    if profile.preferred_locations:
-        work_preferences["locations"] = _normalize_str_list(profile.preferred_locations)
-
-    title_blocklist = _normalize_str_list(overrides.get("title_blocklist") or [])
-    if title_blocklist:
-        career_intent["negative_targets"] = [
-            {
-                "label": label,
-                "reason": "User-specified exclusion",
-                "confidence": 1.0,
-            }
-            for label in title_blocklist
-        ]
-        query_plan["negative_keywords"] = title_blocklist
-
-    career_intent["work_preferences"] = work_preferences
-    career_intent["query_plan"] = query_plan
-    overrides["career_intent"] = career_intent
-    profile.config_overrides = overrides
-
-
-def _set_onboarding_parse_status(profile: Profile, status: str) -> None:
-    overrides = dict(profile.config_overrides or {})
-    onboarding = dict(overrides.get("onboarding") or {})
-    onboarding["parse_status"] = status
-    overrides["onboarding"] = onboarding
-    profile.config_overrides = overrides
+    return deterministic_resume_parse(resume_text, profile)
 
 
 def _clear_stored_resume_editor(profile: Profile) -> None:
     overrides = dict(profile.config_overrides or {})
-    if "resume_editor" in overrides:
-        overrides.pop("resume_editor", None)
+    overrides.pop("resume_editor", None)
     profile.config_overrides = overrides or None
 
 
@@ -329,115 +58,6 @@ def _parse_salary_to_number(value: str | list[str]) -> int | None:
     if amount < 1000:
         return int(amount * 100000)
     return int(amount)
-
-
-def _apply_parsed_profile_updates(profile: Profile, parsed: ResumeParseResult) -> str | None:
-    profile.skills = parsed.skills
-    career_intent = build_career_intent_profile(parsed)
-    suggested_roles = _normalize_str_list(parsed.suggested_roles)
-    suggested_locations = _normalize_str_list(parsed.suggested_locations)
-    suggested_exclusions = _normalize_str_list(parsed.suggested_exclusions)
-    explicit_target_roles = _normalize_str_list(
-        role.get("title")
-        for role in career_intent.get("target_roles", [])
-        if isinstance(role, dict)
-    )
-    structured_locations = _normalize_str_list(
-        ((career_intent.get("work_preferences") or {}).get("locations")) or []
-    )
-    structured_negatives = _normalize_str_list(
-        target.get("label")
-        for target in career_intent.get("negative_targets", [])
-        if isinstance(target, dict)
-    )
-    query_plan = dict(career_intent.get("query_plan") or {})
-    ai_signals = _ai_signal_count_from_parsed(parsed)
-    accept_suggested = suggested_roles and (
-        ai_signals >= 2 or not _suggested_roles_are_ai_only(suggested_roles)
-    )
-    enterprise_role = _enterprise_role(parsed)
-    if explicit_target_roles:
-        profile.target_roles = explicit_target_roles
-        profile.role_intent = explicit_target_roles[0]
-    elif accept_suggested:
-        profile.target_roles = suggested_roles
-        profile.role_intent = suggested_roles[0]
-    elif enterprise_role:
-        profile.target_roles = [enterprise_role]
-        profile.role_intent = enterprise_role
-    elif parsed.recent_titles:
-        profile.target_roles = _normalize_str_list(parsed.recent_titles)
-        if profile.target_roles:
-            profile.role_intent = profile.target_roles[0]
-    elif _resume_mentions_enterprise(parsed):
-        profile.target_roles = ["SAP SD Consultant"]
-        profile.role_intent = "SAP SD Consultant"
-
-    parts = []
-    if parsed.recent_titles:
-        parts.append("Recent roles: " + ", ".join(parsed.recent_titles))
-    if parsed.skills:
-        parts.append("Skills: " + ", ".join(parsed.skills))
-    if parsed.years_of_experience:
-        parts.append(f"Experience: {parsed.years_of_experience} years")
-
-    distilled_text = "\n".join(parts) if parts else None
-    if distilled_text:
-        profile.distilled_text = distilled_text
-
-    overrides = dict(profile.config_overrides or {})
-    overrides["career_intent"] = career_intent
-
-    if profile.target_roles:
-        overrides.setdefault("profile_intent", {})["roles"] = profile.target_roles
-
-    if structured_locations:
-        profile.preferred_locations = structured_locations
-        overrides.setdefault("scraping", {})["locations"] = structured_locations
-    elif suggested_locations:
-        profile.preferred_locations = suggested_locations
-        overrides.setdefault("scraping", {})["locations"] = suggested_locations
-    else:
-        enterprise_locations = _enterprise_locations(parsed)
-        if enterprise_locations:
-            profile.preferred_locations = enterprise_locations
-            overrides.setdefault("scraping", {})["locations"] = enterprise_locations
-
-    if structured_negatives:
-        overrides["title_blocklist"] = structured_negatives
-    elif suggested_exclusions:
-        overrides["title_blocklist"] = suggested_exclusions
-
-    suggested_search_queries = _normalize_str_list(parsed.suggested_search_queries)
-    query_terms = _normalize_str_list(
-        (query_plan.get("title_queries") or [])
-        + (query_plan.get("skill_queries") or [])
-        + (query_plan.get("domain_queries") or [])
-    )
-    if query_terms:
-        profile.custom_search_queries = query_terms
-    elif suggested_search_queries:
-        profile.custom_search_queries = suggested_search_queries
-
-    if overrides != (profile.config_overrides or {}):
-        profile.config_overrides = overrides
-
-    if parsed.salary_lpa:
-        profile.target_lpa = float(parsed.salary_lpa)
-
-    inferred_min_yoe, inferred_max_yoe = _infer_yoe_range(parsed.years_of_experience)
-    if inferred_min_yoe is not None:
-        profile.min_yoe = inferred_min_yoe
-    if inferred_max_yoe is not None:
-        profile.max_yoe = inferred_max_yoe
-
-    _sync_career_intent_override(profile)
-    profile.candidate_profile = build_candidate_profile(
-        parsed=parsed,
-        profile=profile,
-        resume_text=profile.resume_text,
-    )
-    return distilled_text
 
 
 def _extract_text_from_pdf(content: bytes) -> str:
@@ -592,14 +212,14 @@ async def _parse_and_update_profile(
                 candidate = profile.config_overrides.get("resume_editor")
                 if isinstance(candidate, dict):
                     existing_editor = candidate
-            distilled = _apply_parsed_profile_updates(profile, parsed)
+            distilled = apply_parsed_profile_updates(profile, parsed)
             overrides = dict(profile.config_overrides or {})
             merged = merge_resume_editor(merged_editor, existing_editor)
             if has_resume_editor_content(merged):
                 overrides["resume_editor"] = merged
                 profile.config_overrides = overrides
-            _set_onboarding_parse_status(profile, "done")
-            await db.commit()
+            profile.config_overrides = merge_profile_patch(profile.config_overrides, build_profile_patch(parse_status="done"))
+            await commit_with_runtime_schema_compatibility(db)
             return distilled, merged
 
     try:
@@ -637,13 +257,7 @@ async def _parse_and_update_profile(
         from domain.resume_verifier import verify_against_reference
         llm_editor = verify_against_reference(llm_editor, resume_text)
         merged_editor = merge_resume_editor(llm_editor, parse_resume_editor(resume_text))
-        try:
-            distilled_text, merged_editor = await _commit_profile_changes()
-        except Exception as exc:
-            if "UndefinedColumnError" not in str(exc) and "does not exist" not in str(exc):
-                raise
-            await ensure_runtime_schema_compatibility()
-            distilled_text, merged_editor = await _commit_profile_changes()
+        distilled_text, merged_editor = await _commit_profile_changes()
 
         logger.info(
             "Background parse complete for user=%s (%d skills, roles=%s, locs=%s, queries=%s, editor=%s)",
@@ -659,7 +273,7 @@ async def _parse_and_update_profile(
                 result = await db.execute(select(Profile).where(Profile.user_id == user_id))
                 profile = result.scalar_one_or_none()
                 if profile:
-                    _set_onboarding_parse_status(profile, "failed")
+                    profile.config_overrides = merge_profile_patch(profile.config_overrides, build_profile_patch(parse_status="failed"))
                     await db.commit()
         except Exception:
             logger.warning("Failed to record parse failure for user=%s", user_id, exc_info=True)
@@ -714,10 +328,11 @@ async def upload_resume(
         overrides = dict(profile.config_overrides or {})
         overrides["resume_editor"] = deterministic_editor
         profile.config_overrides = overrides
-    _apply_parsed_profile_updates(profile, deterministic_parsed)
+    apply_parsed_profile_updates(profile, deterministic_parsed)
 
-    should_run_llm = _should_run_onboarding_llm(profile.candidate_profile, deterministic_parsed)
-    _set_onboarding_parse_status(profile, "pending" if should_run_llm else "done")
+    should_run_llm = should_run_onboarding_llm(profile.candidate_profile, deterministic_parsed)
+    patch = build_profile_patch(parse_status="pending" if should_run_llm else "done")
+    profile.config_overrides = merge_profile_patch(profile.config_overrides, patch)
     await db.commit()
 
     if should_run_llm:

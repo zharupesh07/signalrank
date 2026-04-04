@@ -15,6 +15,7 @@ from api.database import AsyncSessionLocal, get_db
 from api.deps import get_current_user
 from api.deps_hunter import get_hunter_client
 from api.deps_llm import get_llm_client
+from api.stats_cache import get_cached_stats, invalidate_stats_cache, set_cached_stats
 from api.models import Application, GenerationQueue, JobRaw, JobResult, Profile, Recruiter, User
 from batch.recruiter_finder import find_recruiters
 
@@ -108,13 +109,19 @@ async def tracked_job_ids(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    cache_key = f"tracked_job_ids:{current_user.id}"
+    cached = get_cached_stats(cache_key)
+    if cached is not None:
+        return cached
     result = await db.execute(
         select(Application.job_id).where(
             Application.user_id == current_user.id,
             Application.job_id.is_not(None),
         )
     )
-    return {"job_ids": [r[0] for r in result.all()]}
+    payload = {"job_ids": [r[0] for r in result.all()]}
+    set_cached_stats(cache_key, payload)
+    return payload
 
 
 @router.get("")
@@ -243,6 +250,8 @@ async def create_application(
         )
         _background_tasks.add(bg)
         bg.add_done_callback(_on_task_done)
+    invalidate_stats_cache(f"application_stats:{current_user.id}")
+    invalidate_stats_cache(f"tracked_job_ids:{current_user.id}")
     return {"id": app.id, "status": app.status}
 
 
@@ -278,6 +287,8 @@ async def update_application(
     if body.offer_lpa is not None:
         app.offer_lpa = body.offer_lpa
     await db.commit()
+    invalidate_stats_cache(f"application_stats:{current_user.id}")
+    invalidate_stats_cache(f"tracked_job_ids:{current_user.id}")
     return {"status": "updated"}
 
 
@@ -319,6 +330,7 @@ async def patch_recruiter(
 
     app.recruiter_id = recruiter.id
     await db.commit()
+    invalidate_stats_cache(f"application_stats:{current_user.id}")
     return {"recruiter_id": recruiter.id}
 
 
@@ -336,6 +348,8 @@ async def delete_application(
         raise HTTPException(status_code=404, detail="Application not found")
     await db.delete(app)
     await db.commit()
+    invalidate_stats_cache(f"application_stats:{current_user.id}")
+    invalidate_stats_cache(f"tracked_job_ids:{current_user.id}")
 
 
 class ImportFromRunBody(BaseModel):
@@ -390,6 +404,8 @@ async def import_from_run(
         created += 1
 
     await db.commit()
+    invalidate_stats_cache(f"application_stats:{current_user.id}")
+    invalidate_stats_cache(f"tracked_job_ids:{current_user.id}")
     return {"created": created, "skipped": skipped}
 
 
@@ -423,6 +439,10 @@ async def application_stats(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    cache_key = f"application_stats:{current_user.id}"
+    cached = get_cached_stats(cache_key)
+    if cached is not None:
+        return cached
     from sqlalchemy import case, literal
 
     base = Application.user_id == current_user.id
@@ -461,7 +481,7 @@ async def application_stats(
     )
     target_lpa = profile_result.scalar_one_or_none()
 
-    return {
+    payload = {
         "total": total,
         "by_priority": by_priority,
         "by_status": by_status,
@@ -469,3 +489,5 @@ async def application_stats(
         "best_offer_lpa": offer_row[1],
         "target_lpa": target_lpa,
     }
+    set_cached_stats(cache_key, payload)
+    return payload

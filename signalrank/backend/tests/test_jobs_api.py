@@ -141,6 +141,38 @@ async def test_list_jobs_returns_isoformatted_date_posted(client, auth_token, db
     assert "explanation_summary" in jobs[0]
 
 
+async def test_list_jobs_uses_requested_timezone(client, auth_token, db: AsyncSession):
+    me = await client.get("/api/profile", headers={"Authorization": f"Bearer {auth_token}"})
+    user_id = me.json()["user_id"]
+
+    posted_at = datetime(2026, 3, 29, 12, 0, tzinfo=timezone.utc)
+    run = Run(user_id=user_id, status="success")
+    job = JobRaw(
+        job_url="https://example.com/jobs/tz",
+        title="Timezone Job",
+        company="Example Corp",
+        description="Role",
+        location="Remote",
+        site="manual",
+        date_posted=posted_at,
+    )
+    db.add_all([run, job])
+    await db.flush()
+    db.add(JobResult(run_id=run.id, user_id=user_id, job_id=job.id, final_score=81.0))
+    await db.commit()
+
+    response = await client.get(
+        "/api/jobs",
+        headers={
+            "Authorization": f"Bearer {auth_token}",
+            "X-User-Timezone": "America/New_York",
+        },
+    )
+    assert response.status_code == 200
+    jobs = response.json()["jobs"]
+    assert jobs[0]["date_posted"].endswith("-04:00")
+
+
 async def test_list_jobs_sorts_by_date_posted_desc(client, auth_token, db: AsyncSession):
     me = await client.get("/api/profile", headers={"Authorization": f"Bearer {auth_token}"})
     user_id = me.json()["user_id"]
@@ -243,6 +275,47 @@ async def test_jobs_analytics_returns_expected_aggregates(client, auth_token, db
     ]
     assert payload["top_companies"][0] == {"company": "Acme", "count": 2}
     assert {"site": "manual", "count": 2} in payload["sites"]
+
+
+async def test_jobs_analytics_uses_cached_payload(client, auth_token, db: AsyncSession, monkeypatch):
+    me = await client.get("/api/profile", headers={"Authorization": f"Bearer {auth_token}"})
+    user_id = me.json()["user_id"]
+
+    run = Run(user_id=user_id, status="success", mode="quick")
+    job = JobRaw(
+        job_url="https://example.com/jobs/cache",
+        title="Cache",
+        company="Acme",
+        description="Role",
+        location="Remote",
+        site="manual",
+    )
+    db.add_all([run, job])
+    await db.flush()
+    db.add(JobResult(run_id=run.id, user_id=user_id, job_id=job.id, final_score=75.0))
+    await db.commit()
+
+    call_count = {"count": 0}
+    original_execute = db.execute
+
+    async def tracking_execute(*args, **kwargs):
+        call_count["count"] += 1
+        return await original_execute(*args, **kwargs)
+
+    monkeypatch.setattr(db, "execute", tracking_execute)
+
+    first = await client.get(
+        "/api/jobs/analytics",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    second = await client.get(
+        "/api/jobs/analytics",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert call_count["count"] > 0
 
 
 async def test_get_job_includes_agentic_summary_fields(client, auth_token, db: AsyncSession):

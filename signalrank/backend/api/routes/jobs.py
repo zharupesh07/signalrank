@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func, select, or_, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.database import get_db
 from api.deps import get_current_user
 from api.models import Application, ArchivalQueue, JobRaw, JobResult, Run, User
+from api.stats_cache import get_cached_stats, set_cached_stats
+from api.timezone import format_datetime_local
 from api.routes.admin import require_admin
 
 ARCHIVAL_TIERS = {"tier_ss", "tier_s", "tier_a"}
@@ -18,6 +20,7 @@ router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 @router.get("")
 async def list_jobs(
+    request: Request,
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
     sort: Literal["final_score", "semantic_score", "skills_score", "company_score", "seniority_score", "location_score", "recency_score", "title_relevance_score", "date_posted"] = Query("final_score"),
@@ -32,6 +35,7 @@ async def list_jobs(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    tz_name = request.headers.get("X-User-Timezone")
     latest_run = await db.execute(
         select(Run)
         .where(Run.user_id == current_user.id, Run.status == "success")
@@ -41,6 +45,29 @@ async def list_jobs(
     run = latest_run.scalar_one_or_none()
     if not run:
         return {"jobs": [], "total": 0, "page": page, "limit": limit, "new_good_matches": 0}
+
+    cache_key = "::".join(
+        [
+            "jobs_list",
+            str(current_user.id),
+            str(run.id),
+            str(page),
+            str(limit),
+            sort,
+            sort_dir,
+            search,
+            str(show_archived),
+            str(min_score),
+            ",".join(sorted(tiers)),
+            job_type,
+            ",".join(sorted(sites)),
+            date_range,
+            tz_name or "utc",
+        ]
+    )
+    cached = get_cached_stats(cache_key)
+    if cached is not None:
+        return cached
 
     sort_col = JobRaw.date_posted if sort == "date_posted" else getattr(JobResult, sort)
     order_expr = sort_col.asc().nulls_last() if sort_dir == "asc" else sort_col.desc().nulls_last()
@@ -139,7 +166,7 @@ async def list_jobs(
             "company": job.company,
             "location": job.location,
             "site": job.site,
-            "date_posted": job.date_posted.isoformat() if job.date_posted else None,
+            "date_posted": format_datetime_local(job.date_posted, tz_name),
             "is_new_find": bool(result.run_id == run.id and job.ingested_at and job.ingested_at >= run.started_at),
             "final_score": result.final_score / 100 if result.final_score is not None else None,
             "semantic_score": result.semantic_score,
@@ -158,7 +185,7 @@ async def list_jobs(
             "archival_reason": result.archival_reason,
         })
 
-    return {
+    payload = {
         "jobs": jobs,
         "total": total,
         "run_total": run_total,
@@ -167,6 +194,8 @@ async def list_jobs(
         "limit": limit,
         "new_good_matches": new_good_matches,
     }
+    set_cached_stats(cache_key, payload)
+    return payload
 
 
 @router.post("/archive-unsuitable", status_code=200)
@@ -240,9 +269,11 @@ async def archive_status(
 
 @router.get("/analytics")
 async def get_analytics(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    tz_name = request.headers.get("X-User-Timezone")
     latest_run = await db.execute(
         select(Run)
         .where(Run.user_id == current_user.id, Run.status == "success")
@@ -252,6 +283,10 @@ async def get_analytics(
     run = latest_run.scalar_one_or_none()
     if not run:
         return {"score_distribution": [], "top_companies": [], "sites": []}
+    cache_key = f"jobs_analytics:{current_user.id}:{run.id}:{tz_name or 'utc'}"
+    cached = get_cached_stats(cache_key)
+    if cached is not None:
+        return cached
 
     analytics = (
         await db.execute(
@@ -342,20 +377,24 @@ async def get_analytics(
         )
     ).mappings().one()
 
-    return {
+    payload = {
         "score_distribution": analytics["score_distribution"] or [],
         "top_companies": analytics["top_companies"] or [],
         "sites": analytics["sites"] or [],
         "total": analytics["total"] or 0,
     }
+    set_cached_stats(cache_key, payload)
+    return payload
 
 
 @router.get("/{job_id}")
 async def get_job(
     job_id: str,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    tz_name = request.headers.get("X-User-Timezone")
     result = await db.execute(
         select(JobResult, JobRaw)
         .join(JobResult, JobResult.job_id == JobRaw.id)
@@ -373,7 +412,7 @@ async def get_job(
         "description": job.description,
         "location": job.location,
         "site": job.site,
-        "date_posted": job.date_posted.isoformat() if job.date_posted else None,
+        "date_posted": format_datetime_local(job.date_posted, tz_name),
         "fit_band": job_result.fit_band,
         "confidence_band": job_result.confidence_band,
         "explanation_summary": job_result.explanation_summary,

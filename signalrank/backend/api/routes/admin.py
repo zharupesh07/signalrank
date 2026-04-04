@@ -1,4 +1,5 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from datetime import datetime, timezone
 from pydantic import BaseModel
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,7 +8,9 @@ from api.config import api_runtime_flags
 from api.database import get_db
 from api.deps import get_current_user
 from api.deps_llm import get_llm_client
+from api.stats_cache import get_cached_stats, invalidate_stats_cache, set_cached_stats
 from batch.context import deep_merge, load_base_config
+from batch.maintenance import prune_once
 from batch.resume_worker import force_regenerate_all
 from batch.quality_report import compute_global_quality_metrics, compute_user_quality_metrics
 from api.models import (
@@ -53,6 +56,12 @@ class AdminRunResponse(BaseModel):
     job_count: int | None
     started_at: str | None
     finished_at: str | None
+
+
+class AdminStopRunResponse(BaseModel):
+    stopped: bool
+    status: str
+    message: str | None = None
 
 
 class UpdateUserRequest(BaseModel):
@@ -130,6 +139,10 @@ async def get_stats(
     _: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
+    cache_key = "admin_stats"
+    cached = get_cached_stats(cache_key)
+    if cached is not None:
+        return cached
     stats = (
         await db.execute(
             select(
@@ -140,12 +153,14 @@ async def get_stats(
             )
         )
     ).one()
-    return AdminStatsResponse(
+    payload = AdminStatsResponse(
         total_users=stats.total_users or 0,
         total_jobs=stats.total_jobs or 0,
         total_runs=stats.total_runs or 0,
         total_applications=stats.total_applications or 0,
     )
+    set_cached_stats(cache_key, payload)
+    return payload
 
 
 @router.get("/users")
@@ -226,6 +241,7 @@ async def update_user(
     if body.is_admin is not None:
         user.is_admin = body.is_admin
     await db.commit()
+    invalidate_stats_cache("admin_stats")
     return {"status": "updated"}
 
 
@@ -305,6 +321,7 @@ async def update_user_profile_config(
         )
 
     await db.commit()
+    invalidate_stats_cache("admin_stats")
     return {"status": "updated"}
 
 
@@ -330,6 +347,7 @@ async def delete_user(
     await db.execute(delete(Profile).where(Profile.user_id == user_id))
     await db.execute(delete(User).where(User.id == user_id))
     await db.commit()
+    invalidate_stats_cache("admin_stats")
     return {"status": "deleted"}
 
 
@@ -361,6 +379,7 @@ async def reset_jobs_for_user(
     ).rowcount or 0
 
     await db.commit()
+    invalidate_stats_cache("admin_stats")
     return ResetProfileJobsResponse(
         status="reset",
         user_email=user.email,
@@ -424,6 +443,10 @@ class TriggerRunRequest(BaseModel):
     force_scrape: bool = False
 
 
+class MaintenanceResponse(BaseModel):
+    deleted: dict[str, int]
+
+
 @router.post("/users/{user_id}/trigger-run", status_code=202)
 async def trigger_run_for_user(
     user_id: str,
@@ -451,6 +474,16 @@ async def trigger_run_for_user(
     return {"run_id": run.id, "status": "pending", "mode": mode, "user_email": user.email}
 
 
+@router.post("/maintenance/prune", response_model=MaintenanceResponse)
+async def trigger_maintenance_prune(
+    _: User = Depends(require_admin),
+):
+    from api.database import AsyncSessionLocal
+
+    summary = await prune_once(AsyncSessionLocal)
+    return MaintenanceResponse(deleted=summary.deleted)
+
+
 @router.get("/runs", response_model=list[AdminRunResponse])
 async def list_all_runs(
     _: User = Depends(require_admin),
@@ -474,6 +507,24 @@ async def list_all_runs(
         )
         for r, email in rows
     ]
+
+
+@router.post("/runs/{run_id}/stop", response_model=AdminStopRunResponse)
+async def stop_run(
+    run_id: str,
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Run).where(Run.id == run_id))
+    run = result.scalar_one_or_none()
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+    if run.status not in {"pending", "scraping", "ranking"}:
+        return AdminStopRunResponse(stopped=False, status=run.status, message=f"Run is already {run.status}")
+    run.status = "cancelled"
+    run.finished_at = datetime.now(timezone.utc)
+    await db.commit()
+    return AdminStopRunResponse(stopped=True, status="cancelled")
 
 
 @router.post("/users/{user_id}/force-regenerate-resumes", status_code=202)

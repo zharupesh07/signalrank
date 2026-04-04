@@ -225,6 +225,12 @@ async def ingest_confirm(
         except ValueError:
             pass
 
+    existing_job = None
+    if not job_url.startswith("manual://"):
+        existing_job = (
+            await db.execute(select(JobRaw).where(JobRaw.job_url == job_url))
+        ).scalar_one_or_none()
+
     # Look up company tier from job_results (any run, this user)
     tier_result = await db.execute(
         select(JobResult.company_tier)
@@ -241,21 +247,34 @@ async def ingest_confirm(
     company_tier = tier_result.scalar_one_or_none()
 
     priority = _compute_priority(date_posted, company_tier)
+    if (
+        existing_job
+        and isinstance(existing_job.job_profile, dict)
+        and existing_job.title == (body.title or None)
+        and existing_job.company == (body.company or None)
+        and existing_job.description == (body.description or None)
+        and existing_job.location == (body.location or None)
+        and existing_job.site == "manual"
+        and existing_job.date_posted == date_posted
+    ):
+        job_profile = existing_job.job_profile
+        inferred_clusters = list(existing_job.role_clusters or [])
+    else:
+        from domain.role_clusters import infer_clusters_from_job_text
 
-    from domain.role_clusters import infer_clusters_from_job_text
-    inferred_clusters = sorted(
-        infer_clusters_from_job_text(body.title or None, body.description or None) - {"general"}
-    )
-    job_profile = build_job_profile(
-        title=body.title,
-        company=body.company,
-        description=body.description,
-        location=body.location,
-        site="manual",
-        date_posted=date_posted,
-        role_clusters=inferred_clusters,
-        cfg=load_base_config(),
-    )
+        inferred_clusters = sorted(
+            infer_clusters_from_job_text(body.title or None, body.description or None) - {"general"}
+        )
+        job_profile = build_job_profile(
+            title=body.title,
+            company=body.company,
+            description=body.description,
+            location=body.location,
+            site="manual",
+            date_posted=date_posted,
+            role_clusters=inferred_clusters,
+            cfg=load_base_config(),
+        )
 
     # Upsert JobRaw (shared across users) — tag by job content, not by the current user's profile.
     insert_stmt = pg_insert(JobRaw).values(

@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     llm_response_cache_max: int = 1000
     llm_semaphore: int = 3
     resume_preview_cache_max: int = 16
+    stats_cache_ttl_seconds: int = 30
     resume_worker_concurrency: int = 1
     archival_worker_concurrency: int = 1
     run_api_worker: bool = True

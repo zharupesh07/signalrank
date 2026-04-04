@@ -117,6 +117,12 @@ function parseHeaderJson<T>(res: Response, name: string, fallback: T): T {
   }
 }
 
+function userTimezoneHeader() {
+  if (typeof window === "undefined") return {};
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return tz ? { "X-User-Timezone": tz } : {};
+}
+
 async function request<T>(
   path: string,
   options: RequestInit & { token?: string } = {}
@@ -126,6 +132,7 @@ async function request<T>(
   const headers: Record<string, string> = {
     ...(init.headers as Record<string, string>),
   };
+  Object.assign(headers, userTimezoneHeader());
   if (token) headers["Authorization"] = `Bearer ${token}`;
   if (!(init.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
@@ -447,6 +454,8 @@ export const api = {
       request<{ queued: number }>("/api/admin/reparse-all-resumes", { method: "POST", token }),
     runs: (token: string) =>
       request<{ run_id: string; user_email: string; status: string; job_count: number | null; started_at: string | null; finished_at: string | null }[]>("/api/admin/runs", { token }),
+    stopRun: (token: string, runId: string) =>
+      request<{ stopped: boolean; status: string; message?: string }>(`/api/admin/runs/${runId}/stop`, { method: "POST", token }),
     topJobs: (token: string, userId: string) =>
       request<{ job_id: string; title: string | null; company: string | null; location: string | null; final_score: number | null; semantic_score: number | null; skills_score: number | null; job_url: string }[]>(`/api/admin/users/${userId}/top-jobs`, { token }),
     profileConfig: (token: string, userId: string) =>

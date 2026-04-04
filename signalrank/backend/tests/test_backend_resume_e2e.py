@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from api.models import JobRaw, Profile
 from api.routes.onboarding import _extract_text_from_pdf
 from domain.resume_editor import has_resume_editor_content
+from domain.onboarding_profile import build_profile_patch
 from batch.scraper import RawJob
 from batch.worker import process_run
 from llm.resume_parser import ResumeParseResult
@@ -424,11 +425,11 @@ async def test_resume_fixture_backend_chain_allows_results_and_tracker_import(
         await db.execute(select(Profile).where(Profile.user_id == uploaded_profile["user_id"]))
     ).scalar_one()
     onboarding_route._apply_parsed_profile_updates(profile, parsed)
-    overrides = dict(profile.config_overrides or {})
-    if has_resume_editor_content(editor):
-        overrides["resume_editor"] = editor
-    profile.config_overrides = overrides
-    onboarding_route._set_onboarding_parse_status(profile, "done")
+    overrides = build_profile_patch(
+        parse_status="done",
+        resume_editor=editor if has_resume_editor_content(editor) else None,
+    )
+    profile.config_overrides = {**(profile.config_overrides or {}), **overrides}
     await db.commit()
 
     prefill = await _wait_for_prefill(client, token, db)

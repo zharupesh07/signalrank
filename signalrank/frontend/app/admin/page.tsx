@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/toast";
 import { TagInput } from "@/components/tag-input";
-import { Users, Activity, BarChart2, Play, Trash2, Shield, ShieldOff, CheckCircle, XCircle, ChevronDown, ChevronRight, ExternalLink, RefreshCw, RotateCcw, FileText, ScanText } from "lucide-react";
+import { Users, Activity, BarChart2, Play, Trash2, Shield, ShieldOff, CheckCircle, XCircle, ChevronDown, ChevronRight, ExternalLink, RefreshCw, RotateCcw, FileText, ScanText, Square } from "lucide-react";
 
 type AdminUser = {
   id: string;
@@ -197,6 +197,7 @@ export default function AdminPage() {
   const [loadingJobs, setLoadingJobs] = useState<string | null>(null);
   const [loadingConfig, setLoadingConfig] = useState<string | null>(null);
   const [savingConfig, setSavingConfig] = useState<string | null>(null);
+  const [stoppingRunId, setStoppingRunId] = useState<string | null>(null);
 
   useEffect(() => {
     if (session && !isAdmin) {
@@ -262,6 +263,24 @@ export default function AdminPage() {
       );
     } catch (err) {
       toast(err instanceof Error ? err.message : "Failed to reset jobs", "error");
+    }
+  }
+
+  async function stopRun(runId: string) {
+    setStoppingRunId(runId);
+    try {
+      const result = await api.admin.stopRun(token, runId);
+      if (!result.stopped) {
+        toast(result.message ?? `Run is already ${result.status}`, "info");
+      } else {
+        const refreshed = await api.admin.runs(token);
+        setRuns(refreshed);
+        toast("Run stopping...", "success");
+      }
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to stop run", "error");
+    } finally {
+      setStoppingRunId(null);
     }
   }
 
@@ -790,6 +809,7 @@ export default function AdminPage() {
                     <th className="px-4 py-3 text-left font-normal">Jobs</th>
                     <th className="px-4 py-3 text-left font-normal">Started</th>
                     <th className="px-4 py-3 text-left font-normal">Finished</th>
+                    <th className="px-4 py-3 text-left font-normal">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -805,6 +825,16 @@ export default function AdminPage() {
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">
                         {r.finished_at ? new Date(r.finished_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => stopRun(r.run_id)}
+                          disabled={stoppingRunId === r.run_id || !["pending", "scraping", "ranking"].includes(r.status)}
+                          className="inline-flex items-center gap-1.5 border border-[var(--terminal-yellow)]/30 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--terminal-yellow)] hover:bg-[var(--terminal-yellow)]/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          <Square size={10} />
+                          {stoppingRunId === r.run_id ? "Stopping" : "Stop"}
+                        </button>
                       </td>
                     </tr>
                   ))}

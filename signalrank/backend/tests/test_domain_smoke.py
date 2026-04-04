@@ -30,10 +30,16 @@ def test_company_scorer():
             "default_weight": 1.0,
             "tier_s": ["Google"],
             "tier_a": ["Infosys"],
+            "aliases": {
+                "google llc": "google",
+            },
         },
     }
     scorer = CompanyScorer(cfg)
     assert scorer.classify("Google") == "tier_s"
+    assert scorer.classify("Google LLC") == "tier_s"
+    assert scorer.classify("Google Cloud") == "default"
+    assert scorer.classify("Prosapiens HR Solutions") == "default"
 
 
 def test_fingerprint():

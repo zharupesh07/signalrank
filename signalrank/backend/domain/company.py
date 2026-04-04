@@ -53,12 +53,14 @@ class CompanyScorer:
         return self.aliases.get(name, name)
 
     def classify(self, company: str) -> str:
-        """Returns tier name or 'default'."""
+        """Returns tier name or 'default'.
+
+        Matching is exact on normalized company strings after alias resolution.
+        This avoids broad substring hits like matching unrelated companies that
+        merely contain a tiered brand token.
+        """
         name = self._canonical(company)
-        for key, tier in self._tier_lookup.items():
-            if key and key in name:
-                return tier
-        return "default"
+        return self._tier_lookup.get(name, "default")
 
     def score(self, company: str) -> float:
         """Legacy weight for backward compatibility."""

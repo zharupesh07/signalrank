@@ -72,6 +72,19 @@ async def _archival_worker_watchdog(session_factory, llm) -> None:
             await asyncio.sleep(10)
 
 
+async def _maintenance_worker_watchdog(session_factory) -> None:
+    from batch.maintenance import maintenance_loop
+
+    while True:
+        try:
+            await maintenance_loop(session_factory)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Maintenance worker crashed — restarting in 10s")
+            await asyncio.sleep(10)
+
+
 async def main() -> None:
     tasks: list[asyncio.Task] = []
     llm = None
@@ -92,6 +105,8 @@ async def main() -> None:
         from batch.worker import worker_loop
         logger.info("Starting queue worker")
         tasks.append(asyncio.create_task(worker_loop(AsyncSessionLocal)))
+        logger.info("Starting maintenance worker")
+        tasks.append(asyncio.create_task(_maintenance_worker_watchdog(AsyncSessionLocal)))
 
     if runtime_flags["run_resume_worker"]:
         from batch.resume_worker import recover_stuck_generation_tasks

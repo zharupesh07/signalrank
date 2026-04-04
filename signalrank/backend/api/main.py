@@ -35,6 +35,7 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 _worker_task: asyncio.Task | None = None
 _resume_worker_task: asyncio.Task | None = None
 _archival_worker_task: asyncio.Task | None = None
+_maintenance_worker_task: asyncio.Task | None = None
 _boot_tasks: list[asyncio.Task] = []
 _schema_heal_lock = asyncio.Lock()
 
@@ -98,9 +99,22 @@ async def _archival_worker_watchdog(session_factory, llm) -> None:
             await asyncio.sleep(10)
 
 
+async def _maintenance_worker_watchdog(session_factory) -> None:
+    from batch.maintenance import maintenance_loop
+
+    while True:
+        try:
+            await maintenance_loop(session_factory)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Maintenance worker crashed — restarting in 10s")
+            await asyncio.sleep(10)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _worker_task, _resume_worker_task, _archival_worker_task, _boot_tasks
+    global _worker_task, _resume_worker_task, _archival_worker_task, _maintenance_worker_task, _boot_tasks
     _boot_tasks = []
     runtime_flags = api_runtime_flags()
     logger.info("API startup — runtime flags: %s", runtime_flags)
@@ -116,6 +130,7 @@ async def lifespan(app: FastAPI):
     if runtime_flags["run_api_worker"]:
         from batch.worker import worker_loop
         _worker_task = asyncio.create_task(worker_loop(AsyncSessionLocal))
+        _maintenance_worker_task = asyncio.create_task(_maintenance_worker_watchdog(AsyncSessionLocal))
 
     llm = None
     if runtime_flags["run_resume_worker"] or runtime_flags["run_archival_worker"]:
@@ -175,7 +190,7 @@ async def lifespan(app: FastAPI):
         )
 
     yield
-    for t in (_worker_task, _resume_worker_task, _archival_worker_task, *_boot_tasks):
+    for t in (_worker_task, _resume_worker_task, _archival_worker_task, _maintenance_worker_task, *_boot_tasks):
         if t:
             t.cancel()
             try:

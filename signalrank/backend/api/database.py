@@ -54,9 +54,10 @@ def _log_url_guidance(label: str, url: str) -> None:
 def _build_engine(url: str, *, label: str = "runtime"):
     clean_url, connect_args = _parse_url(url)
     _log_url_guidance(label, url)
-    # command_timeout: asyncpg cancels any single DB query taking >120s and
-    # releases the connection cleanly (guards against runaway queries).
-    connect_args = {**connect_args, "command_timeout": 120}
+    if clean_url.startswith("postgresql"):
+        # command_timeout: asyncpg cancels any single DB query taking >120s and
+        # releases the connection cleanly (guards against runaway queries).
+        connect_args = {**connect_args, "command_timeout": 120}
     eng = create_async_engine(
         clean_url,
         echo=False,
@@ -232,8 +233,18 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
             await conn.execute(text("ALTER TABLE job_results ADD COLUMN IF NOT EXISTS match_report JSONB"))
         if ("job_results", "verification_report") in missing:
             await conn.execute(text("ALTER TABLE job_results ADD COLUMN IF NOT EXISTS verification_report JSONB"))
-    if target is _active_engine:
-        _schema_compat_checked = True
+        if target is _active_engine:
+            _schema_compat_checked = True
+
+
+async def commit_with_runtime_schema_compatibility(session: AsyncSession) -> None:
+    try:
+        await session.commit()
+    except Exception as exc:
+        if "UndefinedColumnError" not in str(exc) and "does not exist" not in str(exc):
+            raise
+        await ensure_runtime_schema_compatibility()
+        await session.commit()
 
 
 async def ensure_session_schema_compatibility(session: AsyncSession) -> None:

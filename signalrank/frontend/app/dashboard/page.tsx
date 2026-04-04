@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
-import { swr } from "@/lib/cache";
 import { scoreColor } from "@/lib/formatting";
 import { makeQueuedRun, upsertRunCaches } from "@/lib/run-cache";
 import type { Job, Run } from "@/types";
@@ -133,14 +132,13 @@ export default function DashboardPage() {
     }
     setLoading(true);
     Promise.all([
-      swr("dash:jobs", async () => {
-        const response = await api.jobs.list(token, { page: 1, limit: 10 });
+      api.jobs.list(token, { page: 1, limit: 10 }).then((response) => {
+        setJobs(response.jobs);
         setNewGoodMatches(response.new_good_matches);
-        return response.jobs;
-      }, setJobs),
-      swr("dash:run", () => api.runs.latest(token), setRun),
-      swr("analytics", () => api.jobs.analytics(token), setAnalytics),
-      swr("dash:tracked", () => api.applications.list(token).then((apps) => new Set(apps.filter((a) => a.job_id).map((a) => a.job_id!))), setTracked),
+      }),
+      api.runs.latest(token).then(setRun),
+      api.jobs.analytics(token).then(setAnalytics),
+      api.applications.trackedJobIds(token).then((ids) => setTracked(new Set(ids))),
       api.profile.get(token).then((p) => setOnboardingComplete(p.onboarding_complete)).catch(() => null),
     ]).finally(() => setLoading(false));
   }, [token]);
@@ -175,10 +173,14 @@ export default function DashboardPage() {
   async function handleRunComplete(completed: Run) {
     setRun(completed);
     upsertRunCaches(completed);
+    setTracked((prev) => new Set(prev));
     const jobsResponse = token ? await api.jobs.list(token, { page: 1, limit: 10 }) : null;
     if (jobsResponse) {
       setJobs(jobsResponse.jobs);
       setNewGoodMatches(jobsResponse.new_good_matches);
+    }
+    if (token) {
+      api.applications.trackedJobIds(token).then((ids) => setTracked(new Set(ids))).catch(() => null);
     }
     loadAnalytics();
     if (completed.status === "done" && jobsResponse?.new_good_matches) {
