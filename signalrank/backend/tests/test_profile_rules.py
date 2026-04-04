@@ -323,6 +323,32 @@ def test_innovation_profile_alignment_penalizes_platform_and_ai_delivery_titles(
     assert ai_job < 1.0
 
 
+def test_innovation_profile_alignment_penalizes_generic_rd_without_innovation_signals():
+    cfg = load_base_config()
+    enriched = enrich_config_with_profile_rules(
+        cfg,
+        resume_text=(
+            "Innovation and R&D consultant focused on emerging technologies, IoT, robotics, "
+            "rapid POCs, MVPs, workshop facilitation, and GTM experiments."
+        ),
+        profile_roles=["Innovation Engineer", "Emerging Technologies Engineer"],
+    )
+
+    true_innovation_job = profile_description_alignment_multiplier(
+        "Technology Research & Innovation Engineer",
+        "Drive emerging technologies, prototypes, IoT experiments, and rapid PoCs.",
+        enriched,
+    )
+    generic_rd_job = profile_description_alignment_multiplier(
+        "R&D Engineer",
+        "Own verification tooling, software maintenance, and design workflows for product delivery.",
+        enriched,
+    )
+
+    assert true_innovation_job > generic_rd_job
+    assert generic_rd_job < 1.0
+
+
 def test_network_automation_role_refinement_excludes_generic_ai_and_backend_titles():
     refined = refine_profile_roles_for_ranking(
         ["Network Automation Engineer", "AI Engineer", "Backend Engineer", "Platform Engineer", "Cloud Network Engineer"],

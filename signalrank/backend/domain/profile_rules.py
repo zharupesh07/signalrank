@@ -750,23 +750,34 @@ def profile_description_alignment_multiplier(
     if "innovation_rd_engineer" in archetypes:
         title_text = (title or "").lower()
         desc_text = (description or "").lower()
-        innovation_terms = [
+        innovation_core_terms = [
             "innovation engineer", "innovation technologist", "technical innovation consultant",
-            "emerging technologies", "emerging technologies engineer", "r&d", "r&d engineer",
-            "research and development engineer", "prototype", "poc", "mvp",
+            "emerging technologies", "emerging technologies engineer",
+            "prototype", "poc", "mvp",
             "iot", "robotics", "innovation lab", "workshop", "go-to-market", "gtm",
+        ]
+        innovation_rd_terms = [
+            "r&d", "r&d engineer", "research and development engineer",
+        ]
+        innovation_terms = [
+            *innovation_core_terms,
+            *innovation_rd_terms,
         ]
         generic_delivery_terms = [
             "software engineer", "ai engineer", "solutions engineer", "customer engineer",
             "site reliability", "data engineer", "application engineer",
         ]
         innovation_hits = _match_count(f"{title_text} {desc_text}", innovation_terms)
+        innovation_core_hits = _match_count(f"{title_text} {desc_text}", innovation_core_terms)
+        innovation_rd_hits = _match_count(f"{title_text} {desc_text}", innovation_rd_terms)
         generic_hits = _match_count(title_text, generic_delivery_terms)
 
-        if innovation_hits >= 2:
+        if innovation_core_hits >= 2:
             multiplier *= 1.10
-        elif innovation_hits == 1:
+        elif innovation_core_hits == 1:
             multiplier *= 1.04
+        elif innovation_rd_hits >= 1 and innovation_core_hits == 0:
+            multiplier *= 0.90
         elif generic_hits >= 1:
             multiplier *= 0.65
         elif _has_any(title_text, ["ai engineer", "software engineer", "platform engineer", "site reliability", "sre", "devops", "security"]):
