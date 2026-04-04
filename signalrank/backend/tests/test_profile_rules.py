@@ -225,6 +225,10 @@ def test_innovation_positive_terms_filter_generic_ai_job_text():
         "Senior Software Engineer Python GenAI with backend APIs and RAG pipelines",
         enriched,
     ) is False
+    assert text_matches_profile_positive_terms(
+        "Platform Engineer driving cloud services and delivery systems",
+        enriched,
+    ) is False
 
 
 def test_refine_profile_roles_for_ranking_prunes_generic_roles_for_innovation_resume():
@@ -266,6 +270,57 @@ def test_innovation_profile_alignment_penalizes_generic_engineering_titles():
 
     assert innovation_job > 1.0
     assert generic_job < 1.0
+
+
+def test_network_automation_positive_terms_reject_generic_network_titles_without_automation_signals():
+    cfg = load_base_config()
+    enriched = enrich_config_with_profile_rules(
+        cfg,
+        resume_text=(
+            "Network automation engineer focused on Python tooling, infrastructure automation, "
+            "cloud networking, firewall rules, load balancers, and network operations."
+        ),
+        profile_roles=["Network Automation Engineer", "Infrastructure Automation Engineer"],
+    )
+
+    assert text_matches_profile_positive_terms(
+        "Network Automation Engineer building cloud network automation with firewalls",
+        enriched,
+    ) is True
+    assert text_matches_profile_positive_terms(
+        "Senior Network Engineer for network operations and incident escalation",
+        enriched,
+    ) is False
+    assert text_matches_profile_positive_terms(
+        "Platform Engineer for observability, CI/CD, and backend services",
+        enriched,
+    ) is False
+
+
+def test_innovation_profile_alignment_penalizes_platform_and_ai_delivery_titles():
+    cfg = load_base_config()
+    enriched = enrich_config_with_profile_rules(
+        cfg,
+        resume_text=(
+            "Innovation and R&D consultant focused on emerging technologies, IoT, robotics, "
+            "rapid POCs, MVPs, workshop facilitation, and GTM experiments."
+        ),
+        profile_roles=["Innovation Engineer", "Emerging Technologies Engineer"],
+    )
+
+    platform_job = profile_description_alignment_multiplier(
+        "Platform Engineer",
+        "Build cloud platforms, CI/CD pipelines, and infrastructure operations.",
+        enriched,
+    )
+    ai_job = profile_description_alignment_multiplier(
+        "AI Engineer",
+        "Build LLM pipelines, evaluation workflows, and backend APIs.",
+        enriched,
+    )
+
+    assert platform_job < 1.0
+    assert ai_job < 1.0
 
 
 def test_network_automation_role_refinement_excludes_generic_ai_and_backend_titles():

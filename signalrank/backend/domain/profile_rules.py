@@ -510,16 +510,23 @@ def build_profile_positive_terms(archetypes: Iterable[str]) -> dict[str, list[st
 
     if "innovation_rd_engineer" in archetypes:
         core.extend([
-            "innovation",
+            "innovation engineer",
+            "innovation technologist",
             "emerging technologies",
+            "emerging technologies engineer",
             "r&d",
+            "r&d engineer",
+            "research and development engineer",
+            "technical innovation consultant",
             "prototype",
             "poc",
             "mvp",
             "iot",
             "robotics",
+            "innovation lab",
         ])
         broad.extend([
+            "innovation",
             "conversational ai",
             "blockchain",
             "ar/vr",
@@ -531,20 +538,26 @@ def build_profile_positive_terms(archetypes: Iterable[str]) -> dict[str, list[st
     if "network_automation_engineer" in archetypes:
         core.extend([
             "network automation",
+            "network automation engineer",
             "infrastructure automation",
+            "infrastructure automation engineer",
             "cloud network",
             "cloud networking",
-            "network engineer",
-            "network operations",
+            "cloud network engineer",
+            "network reliability",
+            "network reliability engineer",
+            "network devops engineer",
+            "network operations automation",
             "firewall",
             "load balancer",
         ])
         broad.extend([
+            "network engineer",
+            "network operations",
             "ansible",
             "python",
             "servicenow",
             "ssl certificate",
-            "network reliability",
         ])
 
     return {
@@ -738,7 +751,9 @@ def profile_description_alignment_multiplier(
         title_text = (title or "").lower()
         desc_text = (description or "").lower()
         innovation_terms = [
-            "innovation", "emerging technologies", "r&d", "prototype", "poc", "mvp",
+            "innovation engineer", "innovation technologist", "technical innovation consultant",
+            "emerging technologies", "emerging technologies engineer", "r&d", "r&d engineer",
+            "research and development engineer", "prototype", "poc", "mvp",
             "iot", "robotics", "innovation lab", "workshop", "go-to-market", "gtm",
         ]
         generic_delivery_terms = [
@@ -753,22 +768,26 @@ def profile_description_alignment_multiplier(
         elif innovation_hits == 1:
             multiplier *= 1.04
         elif generic_hits >= 1:
-            multiplier *= 0.80
+            multiplier *= 0.65
         elif _has_any(title_text, ["ai engineer", "software engineer", "platform engineer", "site reliability", "sre", "devops", "security"]):
-            multiplier *= 0.78
+            multiplier *= 0.62
 
     if "network_automation_engineer" in archetypes:
         title_text = (title or "").lower()
         desc_text = (description or "").lower()
         network_terms = [
             "network automation",
+            "network automation engineer",
             "infrastructure automation",
+            "infrastructure automation engineer",
             "cloud network",
             "cloud networking",
+            "cloud network engineer",
             "firewall",
             "load balancer",
-            "network operations",
+            "network operations automation",
             "network reliability",
+            "network reliability engineer",
         ]
         off_target_terms = [
             "qa",
@@ -802,7 +821,7 @@ def profile_description_alignment_multiplier(
         elif off_target_hits >= 1:
             multiplier *= 0.82
         elif generic_title_hits >= 1:
-            multiplier *= 0.72
+            multiplier *= 0.55
 
     return max(0.80, min(multiplier, 1.10))
 

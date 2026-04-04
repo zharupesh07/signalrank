@@ -11,7 +11,7 @@ import pandas as pd
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.models import JobRaw, Profile
+from api.models import JobRaw, JobResult, Profile
 from api.config import settings
 from batch.context import build_context, get_batch, load_base_config
 from batch.embedding_cache import PgEmbeddingCache, clear_vector_cache, store_job_embeddings
@@ -32,6 +32,16 @@ from domain.embeddings import (
     unload_embedding_engine,
 )
 from domain.job_profile import build_job_profile
+from domain.artifact_versions import (
+    MATCH_JUDGE_PROMPT_VERSION,
+    MATCH_REPORT_VERSION,
+    MATCH_VERIFIER_PROMPT_VERSION,
+    SCHEMA_VERSION,
+    VERIFICATION_REPORT_VERSION,
+    match_report_cache_key,
+    stable_digest,
+    verification_report_cache_key,
+)
 from domain.match_judge import judge_match_report
 from domain.match_verifier import verify_match_report
 from domain.profile_rules import enrich_config_with_profile_rules, title_rule_flags
@@ -267,6 +277,36 @@ def _dedupe_before_embedding(df: pd.DataFrame) -> pd.DataFrame:
     return working
 
 
+def _resolve_profile_roles(cfg: dict, profile: Profile | None = None) -> list[str]:
+    roles = [
+        str(role).strip()
+        for role in ((cfg.get("profile_intent", {}) or {}).get("roles") or [])
+        if str(role).strip()
+    ]
+    if roles:
+        return roles
+
+    if profile is not None:
+        roles = [str(role).strip() for role in (profile.target_roles or []) if str(role).strip()]
+        if roles:
+            return roles
+        if getattr(profile, "role_intent", None):
+            role_intent = str(profile.role_intent).strip()
+            if role_intent:
+                return [role_intent]
+
+    career_intent = cfg.get("career_intent", {}) or {}
+    parsed_roles: list[str] = []
+    for item in career_intent.get("target_roles") or []:
+        if isinstance(item, dict):
+            value = str(item.get("title") or "").strip()
+        else:
+            value = str(item or "").strip()
+        if value:
+            parsed_roles.append(value)
+    return parsed_roles
+
+
 def _apply_semantic_gates(df: pd.DataFrame, cfg: dict, role_intent: str) -> pd.DataFrame:
     mask_non_ic = df["title"].astype(str).apply(requires_high_semantic_floor)
     mask_semantic = df["semantic_score"] >= 0.75
@@ -318,6 +358,71 @@ def _apply_semantic_gates(df: pd.DataFrame, cfg: dict, role_intent: str) -> pd.D
             axis=1,
         )
         mask &= positive_mask
+
+    archetypes = set((cfg.get("ranking", {}) or {}).get("profile_archetypes", []))
+    title_text = df["title"].fillna("").astype(str).str.lower()
+    desc_text = df["description"].fillna("").astype(str).str.lower()
+    combined_text = title_text + " " + desc_text
+
+    if "innovation_rd_engineer" in archetypes:
+        innovation_specific = (
+            combined_text.str.contains(r"\binnovation engineer\b", regex=True)
+            | combined_text.str.contains(r"\binnovation technologist\b", regex=True)
+            | combined_text.str.contains(r"\bemerging technologies\b", regex=True)
+            | combined_text.str.contains(r"\br&d\b", regex=True)
+            | combined_text.str.contains(r"\bresearch and development\b", regex=True)
+            | combined_text.str.contains(r"\bprototype\b", regex=True)
+            | combined_text.str.contains(r"\bpoc\b", regex=True)
+            | combined_text.str.contains(r"\bmvp\b", regex=True)
+            | combined_text.str.contains(r"\biot\b", regex=True)
+            | combined_text.str.contains(r"\brobotics\b", regex=True)
+            | combined_text.str.contains(r"\binnovation lab\b", regex=True)
+        )
+        generic_delivery = (
+            title_text.str.contains(r"\bsoftware engineer\b", regex=True)
+            | title_text.str.contains(r"\bai engineer\b", regex=True)
+            | title_text.str.contains(r"\bplatform engineer\b", regex=True)
+            | title_text.str.contains(r"\bsite reliability\b", regex=True)
+            | title_text.str.contains(r"\bsre\b", regex=True)
+            | title_text.str.contains(r"\bdevops\b", regex=True)
+            | title_text.str.contains(r"\bcustomer engineer\b", regex=True)
+            | title_text.str.contains(r"\bsolutions engineer\b", regex=True)
+        )
+        mask &= innovation_specific | ~generic_delivery
+
+    if "network_automation_engineer" in archetypes:
+        network_specific = (
+            combined_text.str.contains(r"\bnetwork automation\b", regex=True)
+            | combined_text.str.contains(r"\binfrastructure automation\b", regex=True)
+            | combined_text.str.contains(r"\bcloud network(?:ing)?\b", regex=True)
+            | combined_text.str.contains(r"\bnetwork reliability\b", regex=True)
+            | combined_text.str.contains(r"\bnetwork devops engineer\b", regex=True)
+            | combined_text.str.contains(r"\bnetwork operations automation\b", regex=True)
+            | combined_text.str.contains(r"\bfirewall\b", regex=True)
+            | combined_text.str.contains(r"\bload balancer\b", regex=True)
+        )
+        title_has_network = title_text.str.contains(r"\bnetwork\b", regex=True)
+        desc_has_network_automation = (
+            desc_text.str.contains(r"\bautomation\b", regex=True)
+            | desc_text.str.contains(r"\bfirewall\b", regex=True)
+            | desc_text.str.contains(r"\bload balancer\b", regex=True)
+            | desc_text.str.contains(r"\bcloud network(?:ing)?\b", regex=True)
+            | desc_text.str.contains(r"\broute(?:r|rs)?\b", regex=True)
+            | desc_text.str.contains(r"\bswitch(?:es)?\b", regex=True)
+        )
+        generic_infra_or_ai = (
+            title_text.str.contains(r"\bsoftware engineer\b", regex=True)
+            | title_text.str.contains(r"\bai\b", regex=True)
+            | title_text.str.contains(r"\bllm\b", regex=True)
+            | title_text.str.contains(r"\bgenai\b", regex=True)
+            | title_text.str.contains(r"\bplatform engineer\b", regex=True)
+            | title_text.str.contains(r"\bbackend engineer\b", regex=True)
+            | title_text.str.contains(r"\bsecurity engineer\b", regex=True)
+            | title_text.str.contains(r"\bsite reliability\b", regex=True)
+            | title_text.str.contains(r"\bsre\b", regex=True)
+            | title_text.str.contains(r"\bdevops\b", regex=True)
+        )
+        mask &= network_specific | (title_has_network & desc_has_network_automation) | ~generic_infra_or_ai
 
     title_relevance_floor = ranking.get("title_relevance_floor", 0.0)
     if title_relevance_floor > 0 and "title_relevance" in df:
@@ -494,6 +599,70 @@ def _agentic_client_or_none() -> OpenRouterClient | None:
         return None
 
 
+def _llm_model_version(llm_client: OpenRouterClient | None) -> str:
+    if llm_client is None:
+        return "heuristic"
+    models = list(getattr(llm_client, "models", []) or [])
+    preferred = list(getattr(llm_client, "preferred_models", []) or [])
+    if not models and not preferred:
+        return "heuristic"
+    return stable_digest({"models": models, "preferred_models": preferred})
+
+
+def _match_cache_key(candidate_profile: dict, job_profile: dict, model_version: str) -> str:
+    candidate_fp = str(candidate_profile.get("profile_fingerprint") or candidate_profile.get("profile_cache_key") or "")
+    job_fp = str(job_profile.get("job_fingerprint") or job_profile.get("job_cache_key") or "")
+    return match_report_cache_key(
+        candidate_profile_fingerprint=candidate_fp,
+        job_profile_fingerprint=job_fp,
+        judge_model_version=model_version,
+        prompt_version=MATCH_JUDGE_PROMPT_VERSION,
+    )
+
+
+def _verification_cache_key(candidate_profile: dict, job_profile: dict, model_version: str) -> str:
+    candidate_fp = str(candidate_profile.get("profile_fingerprint") or candidate_profile.get("profile_cache_key") or "")
+    job_fp = str(job_profile.get("job_fingerprint") or job_profile.get("job_cache_key") or "")
+    return verification_report_cache_key(
+        candidate_profile_fingerprint=candidate_fp,
+        job_profile_fingerprint=job_fp,
+        verifier_model_version=model_version,
+        prompt_version=MATCH_VERIFIER_PROMPT_VERSION,
+    )
+
+
+def _is_valid_match_report(report: dict | None, candidate_profile: dict, job_profile: dict, model_version: str) -> bool:
+    if not isinstance(report, dict):
+        return False
+    if report.get("artifact_version") != MATCH_REPORT_VERSION or report.get("schema_version") != SCHEMA_VERSION:
+        return False
+    if report.get("prompt_version") != MATCH_JUDGE_PROMPT_VERSION:
+        return False
+    return str(report.get("match_cache_key") or "") == _match_cache_key(candidate_profile, job_profile, model_version)
+
+
+def _is_valid_verification_report(
+    report: dict | None,
+    candidate_profile: dict,
+    job_profile: dict,
+    model_version: str,
+) -> bool:
+    if not isinstance(report, dict):
+        return False
+    if report.get("artifact_version") != VERIFICATION_REPORT_VERSION or report.get("schema_version") != SCHEMA_VERSION:
+        return False
+    if report.get("prompt_version") != MATCH_VERIFIER_PROMPT_VERSION:
+        return False
+    return str(report.get("verification_cache_key") or "") == _verification_cache_key(candidate_profile, job_profile, model_version)
+
+
+def _cache_hit_report(report: dict, *, key_name: str) -> dict:
+    cached = dict(report)
+    cached.setdefault("cache_hit", True)
+    cached.setdefault(key_name, report.get(key_name))
+    return cached
+
+
 def _row_job_profile(row: pd.Series, cfg: dict, persisted_job_profile: dict | None = None) -> dict:
     job_profile = persisted_job_profile or row.get("job_profile")
     if isinstance(job_profile, dict) and job_profile:
@@ -563,24 +732,40 @@ async def _judge_selected_jobs(
     resume_text: str,
     cfg: dict,
     llm_client: OpenRouterClient | None,
+    model_version: str,
     persisted_job_profiles: dict[str, dict] | None = None,
+    cached_match_reports: dict[str, dict] | None = None,
 ) -> list[dict]:
-    tasks = []
-    for idx in selected_indices:
+    reports: list[dict | None] = [None] * len(selected_indices)
+    cached_match_reports = cached_match_reports or {}
+    tasks: list[tuple[int, asyncio.Future]] = []
+    for position, idx in enumerate(selected_indices):
         row = df.loc[idx]
         job_profile = _row_job_profile(row, cfg, (persisted_job_profiles or {}).get(str(row["id"])))
+        cached_report = cached_match_reports.get(str(row["id"]))
+        if _is_valid_match_report(cached_report, candidate_profile, job_profile, model_version):
+            reports[position] = _cache_hit_report(cached_report, key_name="match_cache_key")
+            continue
         job_text = _row_match_payload(row)
         tasks.append(
-            judge_match_report(
-                candidate_profile=candidate_profile,
-                job_profile=job_profile,
-                resume_text=resume_text,
-                job_text=job_text,
-                llm_client=llm_client,
-                max_tokens=cfg.get("ranking", {}).get("agentic_matching", {}).get("max_judge_tokens", 1200),
+            (
+                position,
+                judge_match_report(
+                    candidate_profile=candidate_profile,
+                    job_profile=job_profile,
+                    resume_text=resume_text,
+                    job_text=job_text,
+                    llm_client=llm_client,
+                    max_tokens=cfg.get("ranking", {}).get("agentic_matching", {}).get("max_judge_tokens", 1200),
+                    model_version=model_version,
+                ),
             )
         )
-    return await asyncio.gather(*tasks)
+    if tasks:
+        results = await asyncio.gather(*[task for _, task in tasks])
+        for (position, _), report in zip(tasks, results):
+            reports[position] = report
+    return [report or {} for report in reports]
 
 
 async def _verify_selected_jobs(
@@ -590,21 +775,23 @@ async def _verify_selected_jobs(
     candidate_profile: dict,
     cfg: dict,
     llm_client: OpenRouterClient | None,
+    model_version: str,
     persisted_job_profiles: dict[str, dict] | None = None,
     verifier_indices: list[int] | None = None,
+    cached_verification_reports: dict[str, dict] | None = None,
 ) -> list[dict]:
     if verifier_indices is None:
         verifier_indices = list(range(len(selected_rows)))
     verifier_set = set(verifier_indices)
     reports: list[dict | None] = [None] * len(selected_rows)
-    tasks = []
-    task_positions = []
+    tasks: list[tuple[int, asyncio.Future]] = []
+    cached_verification_reports = cached_verification_reports or {}
     for idx, (match_report, row) in enumerate(zip(match_reports, selected_rows)):
         if idx not in verifier_set:
             reports[idx] = {
-                "artifact_version": "verification_report_v2",
-                "schema_version": 1,
-                "prompt_version": "match_verifier_prompt_v1",
+                "artifact_version": VERIFICATION_REPORT_VERSION,
+                "schema_version": SCHEMA_VERSION,
+                "prompt_version": MATCH_VERIFIER_PROMPT_VERSION,
                 "verification_cache_key": None,
                 "evidence_grounded": True,
                 "unsupported_claims": [],
@@ -613,20 +800,27 @@ async def _verify_selected_jobs(
             }
             continue
         job_profile = _row_job_profile(row, cfg, (persisted_job_profiles or {}).get(str(row["id"])))
+        cached_report = cached_verification_reports.get(str(row["id"]))
+        if bool(match_report.get("cache_hit")) and _is_valid_verification_report(cached_report, candidate_profile, job_profile, model_version):
+            reports[idx] = _cache_hit_report(cached_report, key_name="verification_cache_key")
+            continue
         tasks.append(
-            verify_match_report(
-                match_report=match_report,
-                candidate_profile=candidate_profile,
-                job_profile=job_profile,
-                llm_client=llm_client,
-                max_tokens=cfg.get("ranking", {}).get("agentic_matching", {}).get("max_verifier_tokens", 700),
+            (
+                idx,
+                verify_match_report(
+                    match_report=match_report,
+                    candidate_profile=candidate_profile,
+                    job_profile=job_profile,
+                    llm_client=llm_client,
+                    max_tokens=cfg.get("ranking", {}).get("agentic_matching", {}).get("max_verifier_tokens", 700),
+                    model_version=model_version,
+                ),
             )
         )
-        task_positions.append(idx)
 
     if tasks:
-        results = await asyncio.gather(*tasks)
-        for idx, report in zip(task_positions, results):
+        results = await asyncio.gather(*[task for _, task in tasks])
+        for (idx, _), report in zip(tasks, results):
             reports[idx] = report
     return [report or {} for report in reports]
 
@@ -664,6 +858,7 @@ async def _apply_agentic_matching(
     if llm_client is None:
         llm_client = _agentic_client_or_none()
         created_client = llm_client is not None
+    model_version = _llm_model_version(llm_client)
 
     try:
         judge_top_n = int(agentic_cfg.get("judge_top_n", 20))
@@ -681,7 +876,21 @@ async def _apply_agentic_matching(
         selected_rows = [df.loc[idx] for idx in selected_indices]
         selected_job_ids = [str(df.at[idx, "id"]) for idx in selected_indices]
         persisted_job_profiles: dict[str, dict] = {}
+        cached_match_reports: dict[str, dict] = {}
+        cached_verification_reports: dict[str, dict] = {}
         if selected_job_ids:
+            profile_rows = await db.execute(
+                select(JobResult.job_id, JobResult.match_report, JobResult.verification_report)
+                .where(
+                    JobResult.user_id == user_id,
+                    JobResult.job_id.in_(selected_job_ids),
+                )
+            )
+            for job_id, match_report, verification_report in profile_rows.all():
+                if isinstance(match_report, dict):
+                    cached_match_reports[str(job_id)] = match_report
+                if isinstance(verification_report, dict):
+                    cached_verification_reports[str(job_id)] = verification_report
             profile_rows = await db.execute(
                 select(JobRaw.id, JobRaw.job_profile).where(JobRaw.id.in_(selected_job_ids))
             )
@@ -695,7 +904,9 @@ async def _apply_agentic_matching(
             resume_text=resume_text,
             cfg=cfg,
             llm_client=llm_client,
+            model_version=model_version,
             persisted_job_profiles=persisted_job_profiles,
+            cached_match_reports=cached_match_reports,
         )
         verifier_indices = _select_verifier_indices(df, selected_indices, match_reports, cfg)
         verification_reports = await _verify_selected_jobs(
@@ -704,8 +915,10 @@ async def _apply_agentic_matching(
             candidate_profile=candidate_profile,
             cfg=cfg,
             llm_client=llm_client,
+            model_version=model_version,
             persisted_job_profiles=persisted_job_profiles,
             verifier_indices=verifier_indices,
+            cached_verification_reports=cached_verification_reports,
         )
 
         for idx, row, match_report, verification_report in zip(selected_indices, selected_rows, match_reports, verification_reports):
@@ -748,6 +961,7 @@ async def _compute_embeddings(
     persisted_resume_embedding: list[float] | None = None,
     distilled_text: str | None = None,
     *,
+    profile: Profile | None = None,
     canon: SkillCanonicalizer | None = None,
     base_cfg_fp: str | None = None,
 ) -> pd.DataFrame:
@@ -892,7 +1106,7 @@ async def _compute_embeddings(
         df["semantic_score"] = df["semantic_score"].fillna(0.0)
 
     # Title-role relevance: embed job titles and compare to target roles
-    target_roles = cfg.get("profile_intent", {}).get("roles") or []
+    target_roles = _resolve_profile_roles(cfg, profile)
     if target_roles:
         if engine is None:
             engine = EmbeddingEngine(cfg)
@@ -941,7 +1155,15 @@ async def score_jobs_for_user(
         if job_urls:
             logger.info("Ranking against %d freshly scraped jobs (filtered mode)", len(job_urls))
         ctx = build_context(user_id, resume_text, config_overrides)
-        profile_roles = ctx.config.get("profile_intent", {}).get("roles", [])
+        profile = None
+        persisted_resume_embedding = None
+        if _is_uuid_like(user_id):
+            profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+            profile = profile_result.scalar_one_or_none()
+            if profile and profile.resume_embedding is not None:
+                persisted_resume_embedding = list(profile.resume_embedding)
+
+        profile_roles = _resolve_profile_roles(ctx.config, profile)
         clusters = roles_to_clusters(profile_roles) if profile_roles else None
         cfg = enrich_config_with_profile_rules(
             ctx.config,
@@ -964,14 +1186,6 @@ async def score_jobs_for_user(
             or cfg.get("ranking", {}).get("default_role")
             or "software_general"
         )
-
-        profile = None
-        persisted_resume_embedding = None
-        if _is_uuid_like(user_id):
-            profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
-            profile = profile_result.scalar_one_or_none()
-            if profile and profile.resume_embedding is not None:
-                persisted_resume_embedding = list(profile.resume_embedding)
 
         if cfg.get("ranking", {}).get("agentic_matching", {}).get("enabled", False):
             llm_client = _agentic_client_or_none()
@@ -1109,8 +1323,11 @@ async def _score_loaded_jobs_dataframe(
     ctx = build_context(user_id, resume_text, config_overrides)
     if cfg is None:
         cfg = ctx.config
+    if profile is None and _is_uuid_like(user_id):
+        profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+        profile = profile_result.scalar_one_or_none()
     if not skip_context_enrichment:
-        profile_roles = cfg.get("profile_intent", {}).get("roles", [])
+        profile_roles = _resolve_profile_roles(cfg, profile)
         cfg = enrich_config_with_profile_rules(
             cfg,
             resume_text=resume_text,
@@ -1127,10 +1344,6 @@ async def _score_loaded_jobs_dataframe(
                 },
             },
         )
-
-    if profile is None and _is_uuid_like(user_id):
-        profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
-        profile = profile_result.scalar_one_or_none()
 
     if df.empty:
         return pd.DataFrame(columns=["final_score"])
@@ -1166,6 +1379,7 @@ async def _score_loaded_jobs_dataframe(
         resume_text,
         persisted_resume_embedding=effective_persisted_resume_embedding,
         distilled_text=distilled_text,
+        profile=profile,
         canon=canon,
         base_cfg_fp=base_cfg_fp,
     )
