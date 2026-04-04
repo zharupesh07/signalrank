@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 
+from api.models import JobRaw
 from batch.scraper import scrape, ScraperConfig, RawJob, _is_blocked
 from batch.query_builder import SearchQuery
 
@@ -111,3 +112,69 @@ def test_config_from_env(monkeypatch):
     assert cfg.rapidapi_key == "test-key"
     assert cfg.max_results_per_query == 10
     assert cfg.title_blocklist == ["qa"]
+
+
+@pytest.mark.asyncio
+async def test_scrape_reuses_jobspy_cache_across_calls(db):
+    queries = [SearchQuery(term="SAP SD Consultant", location="", country="India")]
+    config = ScraperConfig(sources=["indeed"], hours_old=24)
+    scraped_jobs = [
+        _make_job("https://example.com/cache-1"),
+        _make_job("https://example.com/cache-2"),
+    ]
+
+    async def on_persist(jobs):
+        for job in jobs:
+            db.add(
+                JobRaw(
+                    job_url=job.job_url,
+                    title=job.title,
+                    company=job.company,
+                    description=job.description,
+                    location=job.location,
+                    site=job.site,
+                    date_posted=job.date_posted,
+                )
+            )
+        await db.commit()
+
+    with patch("batch.sources.jobspy_source._scrape_sync", return_value=scraped_jobs) as mock_scrape:
+        first = await scrape(queries, config, on_persist=on_persist, db=db)
+    assert mock_scrape.call_count == 1
+    assert [job.job_url for job in first] == [job.job_url for job in scraped_jobs]
+
+    with patch("batch.sources.jobspy_source._scrape_sync", side_effect=AssertionError("cache miss")):
+        second = await scrape(queries, config, db=db)
+    assert [job.job_url for job in second] == [job.job_url for job in scraped_jobs]
+
+
+@pytest.mark.asyncio
+async def test_scrape_cache_is_scoped_by_hours_old(db):
+    queries = [SearchQuery(term="SAP SD Consultant", location="", country="India")]
+    first_jobs = [_make_job("https://example.com/hours-24")]
+    second_jobs = [_make_job("https://example.com/hours-48")]
+
+    async def on_persist(jobs):
+        for job in jobs:
+            db.add(
+                JobRaw(
+                    job_url=job.job_url,
+                    title=job.title,
+                    company=job.company,
+                    description=job.description,
+                    location=job.location,
+                    site=job.site,
+                    date_posted=job.date_posted,
+                )
+            )
+        await db.commit()
+
+    with patch("batch.sources.jobspy_source._scrape_sync", return_value=first_jobs) as first_scrape:
+        result_24 = await scrape(queries, ScraperConfig(sources=["indeed"], hours_old=24), on_persist=on_persist, db=db)
+    assert first_scrape.call_count == 1
+    assert [job.job_url for job in result_24] == ["https://example.com/hours-24"]
+
+    with patch("batch.sources.jobspy_source._scrape_sync", return_value=second_jobs) as second_scrape:
+        result_48 = await scrape(queries, ScraperConfig(sources=["indeed"], hours_old=48), on_persist=on_persist, db=db)
+    assert second_scrape.call_count == 1
+    assert [job.job_url for job in result_48] == ["https://example.com/hours-48"]

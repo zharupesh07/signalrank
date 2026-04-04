@@ -57,17 +57,22 @@ def build_queries(profile, *, max_terms: int | None = None) -> list[SearchQuery]
 
     custom = list(profile.custom_search_queries or [])
     custom = list(query_plan.get("title_queries") or []) + list(query_plan.get("skill_queries") or []) + list(query_plan.get("domain_queries") or []) + custom
+    negative_terms = [str(term).strip().lower() for term in (query_plan.get("negative_keywords") or []) if str(term).strip()]
     seen: set[str] = set()
     terms: list[str] = []
     for t in roles:
         for expanded in _expand_role_terms(t):
             key = expanded.strip().lower()
             if key and key not in seen:
+                if any(neg in key for neg in negative_terms):
+                    continue
                 seen.add(key)
                 terms.append(expanded.strip())
     for t in custom:
         key = t.strip().lower()
         if key and key not in seen:
+            if any(neg in key for neg in negative_terms):
+                continue
             seen.add(key)
             terms.append(t.strip())
 

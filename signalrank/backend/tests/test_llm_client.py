@@ -247,6 +247,26 @@ async def test_probe_models_uses_lock_no_thundering_herd():
 
 
 @pytest.mark.asyncio
+async def test_llm_json_prefers_configured_models_only():
+    client = OpenRouterClient(
+        api_key="test-key",
+        models=["model-a", "model-b", "model-c"],
+        preferred_models=["model-b"],
+    )
+
+    mock_resp = _mock_success_response('{"result":"ok"}')
+    mock_post = AsyncMock(return_value=mock_resp)
+
+    with patch.object(client, "_ensure_healthy", AsyncMock(return_value=["model-a", "model-b", "model-c"])):
+        with patch.object(client._http, "post", mock_post):
+            result = await client.llm_json("test prompt")
+
+    assert result == {"result": "ok"}
+    assert mock_post.call_count == 1
+    assert mock_post.call_args.kwargs["json"]["model"] == "model-b"
+
+
+@pytest.mark.asyncio
 async def test_fetch_free_vision_models_filters_and_sorts():
     client = AsyncMock()
     response = MagicMock(spec=httpx.Response)

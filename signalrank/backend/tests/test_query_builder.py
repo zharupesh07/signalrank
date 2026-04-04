@@ -120,3 +120,26 @@ def test_career_intent_query_plan_is_included():
     assert "Infrastructure Automation Engineer" in terms
     assert "Ansible Python Network Automation" in terms
     assert "Cloud Networking" in terms
+
+
+def test_negative_keywords_are_filtered_from_queries():
+    p = _mock_profile(
+        target_roles=["Innovation Engineer", "AI Engineer", "Network Automation Engineer"],
+        preferred_locations=["Pune"],
+        custom_search_queries=[],
+        config_overrides={
+            "career_intent": {
+                "query_plan": {
+                    "title_queries": ["Innovation Engineer", "AI Platform Engineer"],
+                    "skill_queries": ["Kubernetes"],
+                    "domain_queries": ["R&D"],
+                    "negative_keywords": ["AI", "Platform", "Data Scientist"],
+                }
+            }
+        },
+    )
+    queries = build_queries(p, max_terms=10)
+    terms = {q.term for q in queries}
+    assert "Innovation Engineer" in terms
+    assert "AI Platform Engineer" not in terms
+    assert "AI Engineer" not in terms

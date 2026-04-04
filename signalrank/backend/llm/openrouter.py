@@ -275,12 +275,13 @@ class OpenRouterClient:
         self,
         api_key: str,
         models: list[str] | None = None,
+        preferred_models: list[str] | None = None,
         timeout: float = 90.0,
     ):
         self.api_key = api_key
         self.models = models or FALLBACK_MODELS
+        self.preferred_models = preferred_models or []
         self._http = httpx.AsyncClient(timeout=timeout)
-        self._preferred_models = self.models[:1]
 
     async def probe_models(self) -> list[str]:
         """Probe all models concurrently; cache and return healthy ones."""
@@ -476,8 +477,8 @@ class OpenRouterClient:
 
         healthy = await self._ensure_healthy()
         models_to_try = healthy if healthy else self.models
-        if self._preferred_models:
-            preferred = [m for m in self._preferred_models if m in models_to_try]
+        if self.preferred_models:
+            preferred = [m for m in self.preferred_models if m in models_to_try]
             if preferred:
                 models_to_try = preferred
 
@@ -529,8 +530,8 @@ class OpenRouterClient:
 
         healthy = await self._ensure_healthy()
         models_to_try = healthy if healthy else self.models
-        if self._preferred_models:
-            preferred = [m for m in self._preferred_models if m in models_to_try]
+        if self.preferred_models:
+            preferred = [m for m in self.preferred_models if m in models_to_try]
             if preferred:
                 models_to_try = preferred
 

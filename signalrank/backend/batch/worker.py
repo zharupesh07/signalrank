@@ -377,6 +377,7 @@ async def process_run(
                     config,
                     on_progress=_update_progress,
                     on_persist=_persist_jobs,
+                    db=db,
                     return_mode="urls",
                 )
                 logger.info("Run %s scrape done", run_id,

@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Callable
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from api.config import settings
 from batch.query_builder import SearchQuery
 
@@ -75,6 +77,7 @@ async def scrape(
     config: ScraperConfig,
     on_progress: Callable | None = None,
     on_persist: Callable | None = None,
+    db: AsyncSession | None = None,
     *,
     return_mode: str = "jobs",
 ) -> list[RawJob] | list[str]:
@@ -116,7 +119,7 @@ async def scrape(
                     jobs_found=0, message="Scanning Indeed...",
                 )
             try:
-                results = await asyncio.wait_for(search_jobspy(queries, config, site="indeed"), timeout=config.jobspy_timeout)
+                results = await asyncio.wait_for(search_jobspy(queries, config, site="indeed", db=db), timeout=config.jobspy_timeout)
                 logger.info("Phase jobspy/indeed: %d jobs", len(results))
                 await _persist_phase(results)
             except asyncio.TimeoutError:
@@ -133,7 +136,7 @@ async def scrape(
                     jobs_found=len(all_results), message="Scanning LinkedIn...",
                 )
             try:
-                results = await asyncio.wait_for(search_jobspy(linkedin_queries, config, site="linkedin"), timeout=config.jobspy_timeout)
+                results = await asyncio.wait_for(search_jobspy(linkedin_queries, config, site="linkedin", db=db), timeout=config.jobspy_timeout)
                 logger.info("Phase jobspy/linkedin: %d jobs", len(results))
                 await _persist_phase(results)
             except asyncio.TimeoutError:

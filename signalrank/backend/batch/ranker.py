@@ -419,6 +419,27 @@ def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     )
     df["final_score"] = df["final_score"] * tr_multiplier
 
+    archetypes = set((cfg.get("ranking", {}) or {}).get("profile_archetypes", []))
+    if "network_automation_engineer" in archetypes:
+        title_text = df["title"].fillna("").astype(str).str.lower()
+        network_title_mask = (
+            title_text.str.contains(r"\bnetwork\b", regex=True)
+            | title_text.str.contains(r"\binfrastructure automation\b", regex=True)
+            | title_text.str.contains(r"\bcloud networking\b", regex=True)
+            | title_text.str.contains(r"\bcloud network\b", regex=True)
+        )
+        generic_title_mask = (
+            title_text.str.contains(r"\bai\b", regex=True)
+            | title_text.str.contains(r"\bmachine learning\b", regex=True)
+            | title_text.str.contains(r"\bplatform\b", regex=True)
+            | title_text.str.contains(r"\bbackend\b", regex=True)
+            | title_text.str.contains(r"\bdevops\b", regex=True)
+            | title_text.str.contains(r"\bsre\b", regex=True)
+            | title_text.str.contains(r"\bsecurity\b", regex=True)
+        )
+        mask = ~network_title_mask & generic_title_mask
+        df.loc[mask, "final_score"] *= 0.68
+
     title_rule_cfg = cfg.get("ranking", {}).get("profile_title_rule_scoring", {})
     strong_cfg = title_rule_cfg.get("strong", {})
     adjacent_cfg = title_rule_cfg.get("adjacent", {})

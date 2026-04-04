@@ -102,7 +102,8 @@ async def _scrape_and_rank(email: str | None, user_id: str | None, limit: int) -
 
     logger.info("Starting 24h scrape")
     started_at = datetime.now(timezone.utc)
-    raw_jobs = await scrape(queries, scraper_cfg)
+    async with AsyncSessionLocal() as db:
+        raw_jobs = await scrape(queries, scraper_cfg, db=db)
     logger.info("Scrape complete: %d jobs", len(raw_jobs))
 
     role_clusters = sorted(roles_to_clusters(profile.target_roles or []))

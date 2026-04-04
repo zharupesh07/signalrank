@@ -490,6 +490,7 @@ concurrency:
   llm_semaphore: 3
   rapidapi_semaphore: 4
   worker_queue_size: 100
+  agentic_llm_semaphore: 2
 
 # ============================================================
 # CACHING

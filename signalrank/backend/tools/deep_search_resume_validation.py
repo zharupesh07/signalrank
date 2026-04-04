@@ -43,6 +43,8 @@ class ResumeTarget:
 TARGETS = {
     "aditya": ResumeTarget("aditya", "aditya.pdf"),
     "ayush": ResumeTarget("ayush", "ayush_resume_new.pdf"),
+    "vivek": ResumeTarget("vivek", "Vivek-Gupta-Emerging-Technologies.pdf"),
+    "example": ResumeTarget("example", "Example_Candidate_Resume_V2_2.pdf"),
 }
 
 
@@ -163,7 +165,7 @@ async def _run_target(target: ResumeTarget, days: int, limit: int, quick_search:
         scraper_cfg.sources = ["indeed"] if quick_search else ["indeed", "linkedin", "rapidapi", "free_apis", "google_jobs"]
 
         logger.info("Deep search for %s using %d queries", target.key, len(queries))
-        jobs = await scrape(queries, scraper_cfg, return_mode="jobs")
+        jobs = await scrape(queries, scraper_cfg, db=db, return_mode="jobs")
         job_ids = await _persist_jobs(db, jobs, cfg)
         del jobs
         gc.collect()
