@@ -5,8 +5,10 @@ import logging
 from datetime import datetime
 
 import httpx
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from batch.query_builder import SearchQuery
+from batch.scrape_cache import load_cached_jobs, store_cached_jobs
 from batch.scraper import RawJob, ScraperConfig
 
 logger = logging.getLogger(__name__)
@@ -90,7 +92,7 @@ async def _fetch_jobicy(client: httpx.AsyncClient, query: SearchQuery) -> list[R
     return jobs
 
 
-async def search(queries: list[SearchQuery], config: ScraperConfig) -> list[RawJob]:
+async def search(queries: list[SearchQuery], config: ScraperConfig, db: AsyncSession | None = None) -> list[RawJob]:
     # Deduplicate by term — location is irrelevant for these remote-job APIs
     seen_terms: set[str] = set()
     unique_queries: list[SearchQuery] = []
@@ -104,7 +106,13 @@ async def search(queries: list[SearchQuery], config: ScraperConfig) -> list[RawJ
     async with httpx.AsyncClient() as client:
         # Himalayas returns the same feed regardless of query — fetch once
         try:
-            himalayas_jobs = await _fetch_himalayas(client, unique_queries[0] if unique_queries else queries[0])
+            query = unique_queries[0] if unique_queries else queries[0]
+            cached = await load_cached_jobs(db, provider="free_apis", site="himalayas", query=query, config=config)
+            if cached is None:
+                himalayas_jobs = await _fetch_himalayas(client, query)
+                await store_cached_jobs(db, provider="free_apis", site="himalayas", query=query, config=config, jobs=himalayas_jobs)
+            else:
+                himalayas_jobs = cached
             all_jobs.extend(himalayas_jobs)
         except Exception:
             logger.exception("Free API fetcher failed for himalayas")
@@ -113,7 +121,13 @@ async def search(queries: list[SearchQuery], config: ScraperConfig) -> list[RawJ
         for query in unique_queries:
             for fetcher in [_fetch_remotive, _fetch_jobicy]:
                 try:
-                    results = await fetcher(client, query)
+                    site = "remotive" if fetcher is _fetch_remotive else "jobicy"
+                    cached = await load_cached_jobs(db, provider="free_apis", site=site, query=query, config=config)
+                    if cached is None:
+                        results = await fetcher(client, query)
+                        await store_cached_jobs(db, provider="free_apis", site=site, query=query, config=config, jobs=results)
+                    else:
+                        results = cached
                     all_jobs.extend(results)
                 except Exception:
                     logger.exception("Free API fetcher failed")

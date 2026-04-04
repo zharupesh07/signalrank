@@ -5,8 +5,10 @@ import logging
 from datetime import datetime
 
 import httpx
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from batch.query_builder import SearchQuery
+from batch.scrape_cache import load_cached_jobs, store_cached_jobs
 from batch.scraper import RawJob, ScraperConfig
 
 logger = logging.getLogger(__name__)
@@ -259,9 +261,7 @@ def _partition_queries(
     results and preserving free-tier quota across all APIs.
     """
     return [(source_names[i % len(source_names)], q) for i, q in enumerate(queries)]
-
-
-async def search(queries: list[SearchQuery], config: ScraperConfig) -> list[RawJob]:
+async def search(queries: list[SearchQuery], config: ScraperConfig, db: AsyncSession | None = None) -> list[RawJob]:
     if not config.rapidapi_key:
         logger.info("RAPIDAPI_KEY not set, skipping RapidAPI sources")
         return []
@@ -276,15 +276,25 @@ async def search(queries: list[SearchQuery], config: ScraperConfig) -> list[RawJ
 
     sem = asyncio.Semaphore(SEMAPHORE_LIMIT)
     all_jobs: list[RawJob] = []
+    pending: list[tuple[str, SearchQuery]] = []
+
+    for src_name, query in assignments:
+        cached = await load_cached_jobs(db, provider="rapidapi", site=src_name, query=query, config=config)
+        if cached is not None:
+            all_jobs.extend(cached)
+            logger.info("  %s [%s @ %s]: cache hit %d jobs", src_name, query.term, query.location, len(cached))
+        else:
+            pending.append((src_name, query))
 
     async with httpx.AsyncClient() as client:
         tasks = [
             _fetch_source(client, src_name, query, config, sem)
-            for src_name, query in assignments
+            for src_name, query in pending
         ]
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        for (src_name, query), r in zip(assignments, results):
+        for (src_name, query), r in zip(pending, results):
             if isinstance(r, list):
+                await store_cached_jobs(db, provider="rapidapi", site=src_name, query=query, config=config, jobs=r)
                 all_jobs.extend(r)
                 logger.info("  %s [%s @ %s]: %d jobs", src_name, query.term, query.location, len(r))
             elif isinstance(r, Exception):

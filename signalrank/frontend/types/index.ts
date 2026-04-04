@@ -173,6 +173,7 @@ export interface Run {
   job_count: number | null;
   scrape_count: number | null;
   progress: RunProgress | null;
+   jobs_snapshot?: JobsResponse | null;
   error?: string | null;
 }
 

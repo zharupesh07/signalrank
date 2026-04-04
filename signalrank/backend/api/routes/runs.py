@@ -21,12 +21,23 @@ def _display_status(db_status: str) -> str:
     return "done" if db_status == "success" else db_status
 
 
+def _jobs_snapshot(progress: dict | None) -> dict | None:
+    if not isinstance(progress, dict):
+        return None
+    cache = progress.get("jobs_cache")
+    if not isinstance(cache, dict):
+        return None
+    default = cache.get("default")
+    return default if isinstance(default, dict) else None
+
+
 class RunResponse(BaseModel):
     run_id: str
     status: str
     job_count: int | None = None
     scrape_count: int | None = None
     progress: dict | None = None
+    jobs_snapshot: dict | None = None
     error: str | None = None
     started_at: str | None = None
     finished_at: str | None = None
@@ -94,6 +105,7 @@ async def get_latest_run(
         job_count=run.job_count,
         scrape_count=run.scrape_count,
         progress=run.progress,
+        jobs_snapshot=_jobs_snapshot(run.progress),
         error=run.error,
         started_at=str(run.started_at) if run.started_at else None,
         finished_at=str(run.finished_at) if run.finished_at else None,
@@ -119,6 +131,7 @@ async def list_runs(
             job_count=r.job_count,
             scrape_count=r.scrape_count,
             progress=r.progress,
+            jobs_snapshot=_jobs_snapshot(r.progress),
             error=r.error,
             started_at=str(r.started_at) if r.started_at else None,
             finished_at=str(r.finished_at) if r.finished_at else None,
@@ -146,6 +159,7 @@ async def get_run_status(
         job_count=run.job_count,
         scrape_count=run.scrape_count,
         progress=run.progress,
+        jobs_snapshot=_jobs_snapshot(run.progress),
         error=run.error,
         started_at=str(run.started_at) if run.started_at else None,
         finished_at=str(run.finished_at) if run.finished_at else None,

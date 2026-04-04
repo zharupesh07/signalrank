@@ -88,6 +88,8 @@ _RUNS_MODE_SCHEMA_LOCK_KEY = 1_947_017_466
 _PROFILES_CANDIDATE_PROFILE_LOCK_KEY = 1_947_017_467
 _JOBS_RAW_JOB_PROFILE_LOCK_KEY = 1_947_017_468
 _JOB_RESULTS_REPORTS_LOCK_KEY = 1_947_017_469
+_QUERY_PLAN_CACHE_LOCK_KEY = 1_947_017_470
+_SCRAPE_QUERY_CACHE_LOCK_KEY = 1_947_017_471
 
 
 class Base(DeclarativeBase):
@@ -150,6 +152,8 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
             ("job_results", "explanation_summary"),
             ("job_results", "match_report"),
             ("job_results", "verification_report"),
+            ("query_plan_cache", "cache_key"),
+            ("scrape_query_cache", "provider"),
         ]
         existing = {
             (table_name, column_name)
@@ -165,11 +169,12 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
                             SELECT table_name, column_name
                             FROM information_schema.columns
                             WHERE table_schema = current_schema()
-                              AND table_name IN ('runs', 'profiles', 'jobs_raw', 'job_results')
+                              AND table_name IN ('runs', 'profiles', 'jobs_raw', 'job_results', 'query_plan_cache', 'scrape_query_cache')
                               AND column_name IN (
                                   'error', 'mode', 'candidate_profile', 'job_profile',
                                   'fit_band', 'confidence_band', 'explanation_summary',
-                                  'match_report', 'verification_report'
+                                  'match_report', 'verification_report',
+                                  'cache_key', 'provider'
                               )
                             """
                         )
@@ -195,6 +200,8 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
                 ("job_results", "explanation_summary"): _JOB_RESULTS_REPORTS_LOCK_KEY,
                 ("job_results", "match_report"): _JOB_RESULTS_REPORTS_LOCK_KEY,
                 ("job_results", "verification_report"): _JOB_RESULTS_REPORTS_LOCK_KEY,
+                ("query_plan_cache", "cache_key"): _QUERY_PLAN_CACHE_LOCK_KEY,
+                ("scrape_query_cache", "provider"): _SCRAPE_QUERY_CACHE_LOCK_KEY,
             }
             for table_name, column_name in missing:
                 lock_key = lock_map.get((table_name, column_name))
@@ -233,6 +240,68 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
             await conn.execute(text("ALTER TABLE job_results ADD COLUMN IF NOT EXISTS match_report JSONB"))
         if ("job_results", "verification_report") in missing:
             await conn.execute(text("ALTER TABLE job_results ADD COLUMN IF NOT EXISTS verification_report JSONB"))
+        if ("query_plan_cache", "cache_key") in missing:
+            await conn.execute(
+                text(
+                    """
+                    CREATE TABLE IF NOT EXISTS query_plan_cache (
+                        id UUID PRIMARY KEY,
+                        cache_key TEXT NOT NULL UNIQUE,
+                        profile_fingerprint TEXT NOT NULL,
+                        search_window_days INTEGER NOT NULL,
+                        source_filter TEXT NOT NULL,
+                        query_version VARCHAR(100) NOT NULL,
+                        max_terms INTEGER NOT NULL,
+                        query_payload JSONB DEFAULT '[]'::jsonb,
+                        created_at TIMESTAMPTZ DEFAULT now(),
+                        updated_at TIMESTAMPTZ DEFAULT now()
+                    )
+                    """
+                )
+            )
+            await conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_query_plan_cache_profile_window ON query_plan_cache (profile_fingerprint, search_window_days)"
+                )
+            )
+            await conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_query_plan_cache_source_filter ON query_plan_cache (source_filter)"
+                )
+            )
+        if ("scrape_query_cache", "provider") in missing:
+            await conn.execute(
+                text(
+                    """
+                    CREATE TABLE IF NOT EXISTS scrape_query_cache (
+                        id UUID PRIMARY KEY,
+                        provider VARCHAR(50) NOT NULL,
+                        site VARCHAR(50) NOT NULL,
+                        term_normalized VARCHAR(255) NOT NULL,
+                        location_normalized VARCHAR(255) NOT NULL DEFAULT '',
+                        country_normalized VARCHAR(100) NOT NULL DEFAULT '',
+                        hours_old INTEGER NOT NULL,
+                        result_job_urls JSONB DEFAULT '[]'::jsonb,
+                        result_count INTEGER NOT NULL DEFAULT 0,
+                        searched_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                        fresh_until TIMESTAMPTZ NOT NULL
+                    )
+                    """
+                )
+            )
+            await conn.execute(
+                text(
+                    """
+                    CREATE UNIQUE INDEX IF NOT EXISTS uq_scrape_query_cache_key
+                    ON scrape_query_cache (provider, site, term_normalized, location_normalized, country_normalized, hours_old)
+                    """
+                )
+            )
+            await conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_scrape_query_cache_fresh_until ON scrape_query_cache (provider, site, fresh_until)"
+                )
+            )
         if target is _active_engine:
             _schema_compat_checked = True
 

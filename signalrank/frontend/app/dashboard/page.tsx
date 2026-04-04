@@ -106,21 +106,37 @@ export default function DashboardPage() {
   const token = (session as { accessToken?: string })?.accessToken ?? "";
   const { toast } = useToast();
 
-  const cachedJobsResponse = typeof window !== "undefined" ? getCached<{ jobs: Job[]; new_good_matches: number }>(DASHBOARD_CACHE_KEYS.jobs, 600_000) : null;
-  const [jobs, setJobs] = useState<Job[]>(() => cachedJobsResponse?.jobs ?? []);
-  const [run, setRun] = useState<Run | null>(() => (typeof window !== "undefined" ? getCached<Run | null>("dash:run", 600_000) ?? null : null));
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [run, setRun] = useState<Run | null>(null);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
-  const [analytics, setAnalytics] = useState<Analytics | null>(() => (typeof window !== "undefined" ? getCached<Analytics>(DASHBOARD_CACHE_KEYS.analytics, 600_000) ?? null : null));
-  const [tracked, setTracked] = useState<Set<string>>(() => (typeof window !== "undefined" ? new Set(getCached<string[]>(DASHBOARD_CACHE_KEYS.tracked, 600_000) ?? []) : new Set()));
-  const [newGoodMatches, setNewGoodMatches] = useState(() => cachedJobsResponse?.new_good_matches ?? 0);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [tracked, setTracked] = useState<Set<string>>(new Set());
+  const [newGoodMatches, setNewGoodMatches] = useState(0);
   const [addJobOpen, setAddJobOpen] = useState(false);
-  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(() => (typeof window !== "undefined" ? getCached<boolean>(DASHBOARD_CACHE_KEYS.onboarding, 600_000) ?? null : null));
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    const cachedJobsResponse = getCached<{ jobs: Job[]; new_good_matches: number }>(DASHBOARD_CACHE_KEYS.jobs, 600_000);
+    if (cachedJobsResponse) {
+      setJobs(cachedJobsResponse.jobs);
+      setNewGoodMatches(cachedJobsResponse.new_good_matches);
+    }
+    const cachedRun = getCached<Run | null>("dash:run", 600_000);
+    if (cachedRun) setRun(cachedRun);
+    const cachedAnalytics = getCached<Analytics>(DASHBOARD_CACHE_KEYS.analytics, 600_000);
+    if (cachedAnalytics) setAnalytics(cachedAnalytics);
+    const cachedTracked = getCached<string[]>(DASHBOARD_CACHE_KEYS.tracked, 600_000);
+    if (cachedTracked) setTracked(new Set(cachedTracked));
+    const cachedOnboarding = getCached<boolean>(DASHBOARD_CACHE_KEYS.onboarding, 600_000);
+    if (cachedOnboarding != null) setOnboardingComplete(cachedOnboarding);
+  }, [mounted]);
 
   const loadJobs = useCallback(async () => {
     if (!token) return;
@@ -148,15 +164,23 @@ export default function DashboardPage() {
       return;
     }
     setLoading(false);
+    void api.runs.latest(token).then((latest) => {
+      setRun(latest);
+      setCache("dash:run", latest);
+      if (latest.jobs_snapshot) {
+        setJobs(latest.jobs_snapshot.jobs);
+        setNewGoodMatches(latest.jobs_snapshot.new_good_matches);
+        setCache(DASHBOARD_CACHE_KEYS.jobs, {
+          jobs: latest.jobs_snapshot.jobs,
+          new_good_matches: latest.jobs_snapshot.new_good_matches,
+        });
+      }
+    }).catch(() => null);
     void api.jobs.list(token, { page: 1, limit: 10 }).then((response) => {
       setJobs(response.jobs);
       setNewGoodMatches(response.new_good_matches);
       setCache(DASHBOARD_CACHE_KEYS.jobs, { jobs: response.jobs, new_good_matches: response.new_good_matches });
     });
-    void api.runs.latest(token).then((latest) => {
-      setRun(latest);
-      setCache("dash:run", latest);
-    }).catch(() => null);
     void api.jobs.analytics(token).then((payload) => {
       setAnalytics(payload);
       setCache(DASHBOARD_CACHE_KEYS.analytics, payload);

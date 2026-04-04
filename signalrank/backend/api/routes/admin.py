@@ -1,5 +1,6 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from datetime import datetime, timezone
+from typing import Literal
 from pydantic import BaseModel
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,11 +11,12 @@ from api.deps import get_current_user
 from api.deps_llm import get_llm_client
 from api.stats_cache import get_cached_stats, invalidate_stats_cache, set_cached_stats
 from batch.context import deep_merge, load_base_config
+from batch.scrape_cache import normalize_cache_value
 from batch.maintenance import prune_current_session, prune_once
 from batch.resume_worker import force_regenerate_all
 from batch.quality_report import compute_global_quality_metrics, compute_user_quality_metrics
 from api.models import (
-    Application, ArchivalQueue, GenerationQueue, JobRaw, JobResult,
+    Application, ArchivalQueue, GenerationQueue, JobRaw, JobResult, QueryPlanCache, ScrapeQueryCache,
     Profile, RecruiterRefreshTask, Run, TailoredResume, User,
 )
 from domain.profile_rules import enrich_config_with_profile_rules
@@ -447,6 +449,34 @@ class MaintenanceResponse(BaseModel):
     deleted: dict[str, int]
 
 
+class CacheSummaryResponse(BaseModel):
+    scrape_query_cache_count: int
+    query_plan_cache_count: int
+    sample_scrape_query_keys: list[dict]
+    sample_query_plan_keys: list[dict]
+
+
+class CacheInvalidateRequest(BaseModel):
+    kind: Literal["scrape_query_cache", "query_plan_cache"]
+    clear_all: bool = False
+    provider: str | None = None
+    site: str | None = None
+    term: str | None = None
+    location: str | None = None
+    country: str | None = None
+    hours_old: int | None = None
+    profile_fingerprint: str | None = None
+    search_window_days: int | None = None
+    source_filter: str | None = None
+    query_version: str | None = None
+
+
+class CacheInvalidateResponse(BaseModel):
+    kind: str
+    deleted: int
+    clear_all: bool
+
+
 @router.post("/users/{user_id}/trigger-run", status_code=202)
 async def trigger_run_for_user(
     user_id: str,
@@ -481,6 +511,127 @@ async def trigger_maintenance_prune(
 ):
     summary = await prune_current_session(db)
     return MaintenanceResponse(deleted=summary.deleted)
+
+
+@router.get("/caches", response_model=CacheSummaryResponse)
+async def list_caches(
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    scrape_count = (await db.execute(select(func.count()).select_from(ScrapeQueryCache))).scalar_one() or 0
+    query_plan_count = (await db.execute(select(func.count()).select_from(QueryPlanCache))).scalar_one() or 0
+    scrape_rows = (
+        await db.execute(
+            select(
+                ScrapeQueryCache.provider,
+                ScrapeQueryCache.site,
+                ScrapeQueryCache.term_normalized,
+                ScrapeQueryCache.location_normalized,
+                ScrapeQueryCache.country_normalized,
+                ScrapeQueryCache.hours_old,
+                ScrapeQueryCache.result_count,
+                ScrapeQueryCache.fresh_until,
+            )
+            .order_by(ScrapeQueryCache.searched_at.desc())
+            .limit(20)
+        )
+    ).all()
+    plan_rows = (
+        await db.execute(
+            select(
+                QueryPlanCache.profile_fingerprint,
+                QueryPlanCache.search_window_days,
+                QueryPlanCache.source_filter,
+                QueryPlanCache.query_version,
+                QueryPlanCache.max_terms,
+                QueryPlanCache.created_at,
+            )
+            .order_by(QueryPlanCache.updated_at.desc())
+            .limit(20)
+        )
+    ).all()
+    return CacheSummaryResponse(
+        scrape_query_cache_count=int(scrape_count),
+        query_plan_cache_count=int(query_plan_count),
+        sample_scrape_query_keys=[
+            {
+                "provider": row.provider,
+                "site": row.site,
+                "term": row.term_normalized,
+                "location": row.location_normalized,
+                "country": row.country_normalized,
+                "hours_old": row.hours_old,
+                "result_count": row.result_count,
+                "fresh_until": str(row.fresh_until) if row.fresh_until else None,
+            }
+            for row in scrape_rows
+        ],
+        sample_query_plan_keys=[
+            {
+                "profile_fingerprint": row.profile_fingerprint,
+                "search_window_days": row.search_window_days,
+                "source_filter": row.source_filter,
+                "query_version": row.query_version,
+                "max_terms": row.max_terms,
+                "created_at": str(row.created_at) if row.created_at else None,
+            }
+            for row in plan_rows
+        ],
+    )
+
+
+@router.post("/caches/invalidate", response_model=CacheInvalidateResponse)
+async def invalidate_cache(
+    body: CacheInvalidateRequest,
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    deleted = 0
+    if body.kind == "scrape_query_cache":
+        stmt = delete(ScrapeQueryCache)
+        if not body.clear_all:
+            clauses = []
+            if body.provider:
+                clauses.append(ScrapeQueryCache.provider == body.provider)
+            if body.site:
+                clauses.append(ScrapeQueryCache.site == body.site)
+            if body.term:
+                clauses.append(ScrapeQueryCache.term_normalized == normalize_cache_value(body.term))
+            if body.location:
+                clauses.append(ScrapeQueryCache.location_normalized == normalize_cache_value(body.location))
+            if body.country:
+                clauses.append(ScrapeQueryCache.country_normalized == normalize_cache_value(body.country))
+            if body.hours_old is not None:
+                clauses.append(ScrapeQueryCache.hours_old == body.hours_old)
+            if not clauses:
+                raise HTTPException(status_code=400, detail="Provide clear_all or at least one scrape cache filter")
+            for clause in clauses:
+                stmt = stmt.where(clause)
+        result = await db.execute(stmt)
+        deleted = int(result.rowcount or 0)
+    elif body.kind == "query_plan_cache":
+        stmt = delete(QueryPlanCache)
+        if not body.clear_all:
+            clauses = []
+            if body.profile_fingerprint:
+                clauses.append(QueryPlanCache.profile_fingerprint == body.profile_fingerprint)
+            if body.search_window_days is not None:
+                clauses.append(QueryPlanCache.search_window_days == body.search_window_days)
+            if body.source_filter:
+                clauses.append(QueryPlanCache.source_filter == body.source_filter)
+            if body.query_version:
+                clauses.append(QueryPlanCache.query_version == body.query_version)
+            if not clauses:
+                raise HTTPException(status_code=400, detail="Provide clear_all or at least one query plan cache filter")
+            for clause in clauses:
+                stmt = stmt.where(clause)
+        result = await db.execute(stmt)
+        deleted = int(result.rowcount or 0)
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported cache kind")
+
+    await db.commit()
+    return CacheInvalidateResponse(kind=body.kind, deleted=deleted, clear_all=body.clear_all)
 
 
 @router.get("/runs", response_model=list[AdminRunResponse])

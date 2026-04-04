@@ -178,3 +178,68 @@ async def test_scrape_cache_is_scoped_by_hours_old(db):
         result_48 = await scrape(queries, ScraperConfig(sources=["indeed"], hours_old=48), on_persist=on_persist, db=db)
     assert second_scrape.call_count == 1
     assert [job.job_url for job in result_48] == ["https://example.com/hours-48"]
+
+
+@pytest.mark.asyncio
+async def test_google_jobs_results_are_cached_across_calls(db):
+    queries = [SearchQuery(term="ML Engineer", location="Pune", country="India")]
+    config = ScraperConfig(sources=["google_jobs"], hours_old=24)
+    cached_jobs = [_make_job("https://example.com/google-cache")]
+
+    async def on_persist(jobs):
+        for job in jobs:
+            db.add(
+                JobRaw(
+                    job_url=job.job_url,
+                    title=job.title,
+                    company=job.company,
+                    description=job.description,
+                    location=job.location,
+                    site=job.site,
+                    date_posted=job.date_posted,
+                )
+            )
+        await db.commit()
+
+    with patch("batch.sources.google_jobs._scrape_sync", return_value=cached_jobs) as mock_scrape:
+        first = await scrape(queries, config, on_persist=on_persist, db=db)
+    assert mock_scrape.call_count == 1
+    assert [job.job_url for job in first] == [job.job_url for job in cached_jobs]
+
+    with patch("batch.sources.google_jobs._scrape_sync", side_effect=AssertionError("cache miss")):
+        second = await scrape(queries, config, db=db)
+    assert [job.job_url for job in second] == [job.job_url for job in cached_jobs]
+
+
+@pytest.mark.asyncio
+async def test_rapidapi_results_are_cached_across_calls(db, monkeypatch):
+    queries = [SearchQuery(term="ML Engineer", location="Pune", country="India")]
+    config = ScraperConfig(sources=["rapidapi"], hours_old=24, rapidapi_key="test-key")
+    cached_jobs = [_make_job("https://example.com/rapidapi-cache")]
+
+    async def on_persist(jobs):
+        for job in jobs:
+            db.add(
+                JobRaw(
+                    job_url=job.job_url,
+                    title=job.title,
+                    company=job.company,
+                    description=job.description,
+                    location=job.location,
+                    site=job.site,
+                    date_posted=job.date_posted,
+                )
+            )
+        await db.commit()
+
+    async def fake_fetch(*args, **kwargs):
+        return cached_jobs
+
+    monkeypatch.setattr("batch.sources.rapidapi._fetch_source", AsyncMock(side_effect=fake_fetch))
+
+    first = await scrape(queries, config, on_persist=on_persist, db=db)
+    assert [job.job_url for job in first] == [job.job_url for job in cached_jobs]
+
+    with patch("batch.sources.rapidapi._fetch_source", side_effect=AssertionError("cache miss")):
+        second = await scrape(queries, config, db=db)
+    assert [job.job_url for job in second] == [job.job_url for job in cached_jobs]

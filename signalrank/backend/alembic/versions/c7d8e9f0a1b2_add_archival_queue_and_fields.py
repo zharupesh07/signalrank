@@ -19,8 +19,8 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("job_results", sa.Column("archived_by_llm", sa.Boolean(), nullable=True))
-    op.add_column("job_results", sa.Column("archival_reason", sa.String(500), nullable=True))
+    op.execute("ALTER TABLE job_results ADD COLUMN IF NOT EXISTS archived_by_llm BOOLEAN")
+    op.execute("ALTER TABLE job_results ADD COLUMN IF NOT EXISTS archival_reason VARCHAR(500)")
 
     op.create_table(
         "archival_queue",

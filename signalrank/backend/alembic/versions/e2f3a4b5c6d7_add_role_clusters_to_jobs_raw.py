@@ -16,10 +16,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "jobs_raw",
-        sa.Column("role_clusters", JSONB, nullable=True, server_default=sa.text("'[]'::jsonb")),
-    )
+    op.execute("ALTER TABLE jobs_raw ADD COLUMN IF NOT EXISTS role_clusters JSONB DEFAULT '[]'::jsonb")
     op.create_index(
         "ix_jobs_raw_role_clusters",
         "jobs_raw",

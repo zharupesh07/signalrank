@@ -8,6 +8,7 @@ from domain.artifact_versions import (
     SCHEMA_VERSION,
     VERIFICATION_REPORT_VERSION,
     verification_report_cache_key,
+    stable_digest,
 )
 from domain.match_judge import _build_prompt as _build_judge_prompt
 
@@ -149,11 +150,28 @@ async def verify_match_report(
     job_profile: dict,
     llm_client=None,
     max_tokens: int = 700,
+    model_version: str | None = None,
 ) -> dict:
+    if model_version is None:
+        if llm_client is None:
+            model_version = "heuristic"
+        else:
+            model_version = stable_digest(
+                {
+                    "models": list(getattr(llm_client, "models", []) or []),
+                    "preferred_models": list(getattr(llm_client, "preferred_models", []) or []),
+                }
+            )
     fallback = heuristic_verification_report(
         match_report=match_report,
         candidate_profile=candidate_profile,
         job_profile=job_profile,
+    )
+    fallback["verification_cache_key"] = verification_report_cache_key(
+        candidate_profile_fingerprint=str(candidate_profile.get("profile_fingerprint") or candidate_profile.get("profile_cache_key") or ""),
+        job_profile_fingerprint=str(job_profile.get("job_fingerprint") or job_profile.get("job_cache_key") or ""),
+        verifier_model_version=model_version,
+        prompt_version=MATCH_VERIFIER_PROMPT_VERSION,
     )
     if llm_client is None:
         return fallback
@@ -173,5 +191,14 @@ async def verify_match_report(
 
     if not isinstance(response, dict) or response.get("_error"):
         return fallback
-
-    return _normalize(response, fallback)
+    output = _normalize(response, fallback)
+    output["verification_cache_key"] = verification_report_cache_key(
+        candidate_profile_fingerprint=str(candidate_profile.get("profile_fingerprint") or candidate_profile.get("profile_cache_key") or ""),
+        job_profile_fingerprint=str(job_profile.get("job_fingerprint") or job_profile.get("job_cache_key") or ""),
+        verifier_model_version=model_version,
+        prompt_version=MATCH_VERIFIER_PROMPT_VERSION,
+    )
+    output["artifact_version"] = VERIFICATION_REPORT_VERSION
+    output["schema_version"] = SCHEMA_VERSION
+    output["prompt_version"] = MATCH_VERIFIER_PROMPT_VERSION
+    return output

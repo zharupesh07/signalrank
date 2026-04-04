@@ -18,9 +18,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("profiles", sa.Column("custom_search_queries", JSONB, nullable=True))
-    op.add_column("runs", sa.Column("scrape_count", sa.Integer, nullable=True))
-    op.add_column("runs", sa.Column("progress", JSONB, nullable=True))
+    op.execute("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS custom_search_queries JSONB")
+    op.execute("ALTER TABLE runs ADD COLUMN IF NOT EXISTS scrape_count INTEGER")
+    op.execute("ALTER TABLE runs ADD COLUMN IF NOT EXISTS progress JSONB")
 
 
 def downgrade() -> None:

@@ -18,13 +18,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("applications", sa.Column("priority", sa.String(10), nullable=True))
-    op.add_column("applications", sa.Column("location_group", sa.String(100), nullable=True))
-    op.add_column("applications", sa.Column("interview_date", sa.DateTime(timezone=True), nullable=True))
-    op.add_column("applications", sa.Column("offer_lpa", sa.Float(), nullable=True))
-    op.add_column("applications", sa.Column("system_score", sa.Float(), nullable=True))
-    op.add_column("applications", sa.Column("resume_match_pct", sa.Float(), nullable=True))
-    op.add_column("profiles", sa.Column("target_lpa", sa.Float(), nullable=True))
+    op.execute("ALTER TABLE applications ADD COLUMN IF NOT EXISTS priority VARCHAR(10)")
+    op.execute("ALTER TABLE applications ADD COLUMN IF NOT EXISTS location_group VARCHAR(100)")
+    op.execute("ALTER TABLE applications ADD COLUMN IF NOT EXISTS interview_date TIMESTAMPTZ")
+    op.execute("ALTER TABLE applications ADD COLUMN IF NOT EXISTS offer_lpa FLOAT")
+    op.execute("ALTER TABLE applications ADD COLUMN IF NOT EXISTS system_score FLOAT")
+    op.execute("ALTER TABLE applications ADD COLUMN IF NOT EXISTS resume_match_pct FLOAT")
+    op.execute("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS target_lpa FLOAT")
 
 
 def downgrade() -> None:

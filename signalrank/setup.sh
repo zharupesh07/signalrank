@@ -123,6 +123,22 @@ if [[ $NO_DOCKER -eq 0 ]] && docker ps --format '{{.Names}}' | grep -q "^${PG_CO
   bash "$SCRIPT_DIR/backup.sh" || warn "Backup failed — continuing anyway."
 fi
 
+# ── Alembic preflight ─────────────────────────────────────────────────────────
+
+info "Checking Alembic revision graph..."
+ALEMBIC_HEADS=()
+while IFS= read -r line; do
+  [[ -n "$line" ]] && ALEMBIC_HEADS+=("$line")
+done < <(cd "$BACKEND_DIR" && uv run alembic heads)
+if [[ ${#ALEMBIC_HEADS[@]} -eq 0 ]]; then
+  die "No Alembic heads found. Check the migration scripts."
+fi
+if [[ ${#ALEMBIC_HEADS[@]} -gt 1 ]]; then
+  printf '%s\n' "${ALEMBIC_HEADS[@]}" | sed 's/^/[setup] alembic head: /'
+  die "Multiple Alembic heads are present. Merge them before running setup."
+fi
+info "Alembic head: ${ALEMBIC_HEADS[0]}"
+
 # ── Alembic migrations ────────────────────────────────────────────────────────
 
 info "Running database migrations..."

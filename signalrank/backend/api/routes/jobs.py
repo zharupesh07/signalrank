@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 
@@ -14,6 +15,19 @@ from api.timezone import format_datetime_local
 from api.routes.admin import require_admin
 
 ARCHIVAL_TIERS = {"tier_ss", "tier_s", "tier_a"}
+DEFAULT_JOBS_CACHE_PARAMS = {
+    "page": 1,
+    "limit": 10,
+    "sort": "final_score",
+    "sort_dir": "desc",
+    "search": "",
+    "show_archived": True,
+    "min_score": 0,
+    "tiers": [],
+    "job_type": "all",
+    "sites": [],
+    "date_range": "any",
+}
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
@@ -29,45 +43,272 @@ async def warm_default_jobs_cache(db: AsyncSession, *, user_id: str, tz_name: st
     if not run:
         return
 
-    cache_key = "::".join(
-        [
-            "jobs_list",
-            str(user_id),
-            str(run.id),
-            "1",
-            "10",
-            "final_score",
-            "desc",
-            "",
-            "True",
-            "0",
-            "",
-            "all",
-            "",
-            "any",
-            tz_name or "utc",
-        ]
-    )
+    cache_key = _jobs_cache_key(user_id=user_id, run_id=run.id, tz_name=tz_name, **DEFAULT_JOBS_CACHE_PARAMS)
     if get_cached_stats(cache_key) is not None:
         return
 
-    payload = await list_jobs(
+    payload = await _build_jobs_payload(
         request=type("Request", (), {"headers": {"X-User-Timezone": tz_name}})(),
-        page=1,
-        limit=10,
-        sort="final_score",
-        sort_dir="desc",
-        search="",
-        show_archived=True,
-        min_score=0,
-        tiers=[],
-        job_type="all",
-        sites=[],
-        date_range="any",
+        run=run,
+        page=DEFAULT_JOBS_CACHE_PARAMS["page"],
+        limit=DEFAULT_JOBS_CACHE_PARAMS["limit"],
+        sort=DEFAULT_JOBS_CACHE_PARAMS["sort"],
+        sort_dir=DEFAULT_JOBS_CACHE_PARAMS["sort_dir"],
+        search=DEFAULT_JOBS_CACHE_PARAMS["search"],
+        show_archived=DEFAULT_JOBS_CACHE_PARAMS["show_archived"],
+        min_score=DEFAULT_JOBS_CACHE_PARAMS["min_score"],
+        tiers=DEFAULT_JOBS_CACHE_PARAMS["tiers"],
+        job_type=DEFAULT_JOBS_CACHE_PARAMS["job_type"],
+        sites=DEFAULT_JOBS_CACHE_PARAMS["sites"],
+        date_range=DEFAULT_JOBS_CACHE_PARAMS["date_range"],
         current_user=type("User", (), {"id": user_id})(),
         db=db,
     )
     set_cached_stats(cache_key, payload)
+    await _persist_default_jobs_cache(db, user_id=user_id, run_id=run.id, tz_name=tz_name, payload=payload)
+
+
+def _jobs_cache_key(
+    *,
+    user_id: str,
+    run_id: str,
+    page: int,
+    limit: int,
+    sort: str,
+    sort_dir: str,
+    search: str,
+    show_archived: bool,
+    min_score: int,
+    tiers: list[str],
+    job_type: str,
+    sites: list[str],
+    date_range: str,
+    tz_name: str | None,
+) -> str:
+    return "::".join(
+        [
+            "jobs_list",
+            str(user_id),
+            str(run_id),
+            str(page),
+            str(limit),
+            sort,
+            sort_dir,
+            search,
+            str(show_archived),
+            str(min_score),
+            ",".join(sorted(tiers)),
+            job_type,
+            ",".join(sorted(sites)),
+            date_range,
+            tz_name or "utc",
+        ]
+    )
+
+
+async def _persist_default_jobs_cache(db: AsyncSession, *, user_id: str, run_id: str, tz_name: str | None, payload: dict) -> None:
+    result = await db.execute(select(Run).where(Run.id == run_id, Run.user_id == user_id))
+    run = result.scalar_one_or_none()
+    if not run:
+        return
+    progress = dict(run.progress or {})
+    progress["jobs_cache"] = {"default": payload, "tz": tz_name or "utc"}
+    progress["jobs_summary"] = {
+        "total": int(payload.get("total") or 0),
+        "new_good_matches": int(payload.get("new_good_matches") or 0),
+        "available_sites": list(payload.get("available_sites") or []),
+    }
+    run.progress = progress
+    await db.commit()
+
+
+async def _load_default_jobs_cache(db: AsyncSession, *, user_id: str, run_id: str, tz_name: str | None) -> dict | None:
+    result = await db.execute(
+        select(Run.progress).where(Run.id == run_id, Run.user_id == user_id)
+    )
+    progress = result.scalar_one_or_none()
+    if not isinstance(progress, dict):
+        return None
+    cache = progress.get("jobs_cache")
+    if not isinstance(cache, dict):
+        return None
+    if cache.get("tz") not in {tz_name or "utc", None}:
+        return None
+    default = cache.get("default")
+    return default if isinstance(default, dict) else None
+
+
+def _extract_cached_run_summary(run: Run) -> dict:
+    progress = run.progress if isinstance(run.progress, dict) else {}
+    summary = progress.get("jobs_summary")
+    return summary if isinstance(summary, dict) else {}
+
+
+async def _build_jobs_payload(
+    *,
+    request: Request,
+    run: Run,
+    page: int,
+    limit: int,
+    sort: str,
+    sort_dir: str,
+    search: str,
+    show_archived: bool,
+    min_score: int,
+    tiers: list[str],
+    job_type: str,
+    sites: list[str],
+    date_range: str,
+    current_user: User,
+    db: AsyncSession,
+) -> dict:
+    tz_name = request.headers.get("X-User-Timezone")
+    sort_col = JobRaw.date_posted if sort == "date_posted" else getattr(JobResult, sort)
+    order_expr = sort_col.asc().nulls_last() if sort_dir == "asc" else sort_col.desc().nulls_last()
+
+    base_filters = [JobResult.user_id == current_user.id]
+    run_total = run.job_count or 0
+    cached_summary = _extract_cached_run_summary(run)
+
+    if not show_archived:
+        base_filters.append(
+            or_(JobResult.archived_by_llm.is_(None), JobResult.archived_by_llm == False)
+        )
+    if search:
+        pattern = f"%{search}%"
+        base_filters.append(
+            or_(JobRaw.title.ilike(pattern), JobRaw.company.ilike(pattern))
+        )
+
+    if min_score > 0:
+        base_filters.append(JobResult.final_score >= min_score)
+
+    if tiers:
+        normalized_tiers = [tier for tier in tiers if tier and tier != "unknown"]
+        wants_unknown = "unknown" in tiers
+        tier_clauses = []
+        if normalized_tiers:
+            tier_clauses.append(JobResult.company_tier.in_(normalized_tiers))
+        if wants_unknown:
+            tier_clauses.append(JobResult.company_tier.is_(None))
+            tier_clauses.append(JobResult.company_tier.in_(["default", ""]))
+        if tier_clauses:
+            base_filters.append(or_(*tier_clauses))
+
+    if job_type == "contract":
+        base_filters.append(JobResult.is_contract.is_(True))
+    elif job_type == "fte":
+        base_filters.append(or_(JobResult.is_contract.is_(False), JobResult.is_contract.is_(None)))
+
+    if date_range != "any":
+        hours = {"24h": 24, "week": 24 * 7, "month": 24 * 30}[date_range]
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+        base_filters.append(JobRaw.date_posted.is_not(None))
+        base_filters.append(JobRaw.date_posted >= cutoff)
+
+    site_filters = list(base_filters)
+    if sites:
+        site_filters.append(JobRaw.site.in_(sites))
+
+    is_default_filters = (
+        page == DEFAULT_JOBS_CACHE_PARAMS["page"]
+        and limit == DEFAULT_JOBS_CACHE_PARAMS["limit"]
+        and sort == DEFAULT_JOBS_CACHE_PARAMS["sort"]
+        and sort_dir == DEFAULT_JOBS_CACHE_PARAMS["sort_dir"]
+        and search == DEFAULT_JOBS_CACHE_PARAMS["search"]
+        and show_archived == DEFAULT_JOBS_CACHE_PARAMS["show_archived"]
+        and min_score == DEFAULT_JOBS_CACHE_PARAMS["min_score"]
+        and tiers == DEFAULT_JOBS_CACHE_PARAMS["tiers"]
+        and job_type == DEFAULT_JOBS_CACHE_PARAMS["job_type"]
+        and sites == DEFAULT_JOBS_CACHE_PARAMS["sites"]
+        and date_range == DEFAULT_JOBS_CACHE_PARAMS["date_range"]
+    )
+
+    if is_default_filters:
+        total = int(cached_summary.get("total") or run_total)
+        new_good_matches = int(cached_summary.get("new_good_matches") or 0)
+        available_sites = cached_summary.get("available_sites")
+        if not isinstance(available_sites, list):
+            available_sites = []
+    else:
+        count_query = select(func.count()).select_from(JobResult).join(JobRaw, JobResult.job_id == JobRaw.id).where(*site_filters)
+        total_result = await db.execute(count_query)
+        total = total_result.scalar() or 0
+
+        new_good_matches_result = await db.execute(
+            select(func.count())
+            .select_from(JobResult)
+            .join(JobRaw, JobResult.job_id == JobRaw.id)
+            .where(
+                JobResult.run_id == run.id,
+                JobResult.user_id == current_user.id,
+                JobResult.final_score >= 70,
+                JobRaw.ingested_at >= run.started_at,
+                ~select(Application.job_id).where(
+                    Application.user_id == current_user.id,
+                    Application.job_id == JobResult.job_id,
+                    Application.job_id.isnot(None),
+                ).exists(),
+            )
+        )
+        new_good_matches = new_good_matches_result.scalar() or 0
+
+        sites_query = await db.execute(
+            select(JobRaw.site)
+            .join(JobResult, JobResult.job_id == JobRaw.id)
+            .where(*base_filters, JobRaw.site.is_not(None))
+            .distinct()
+            .order_by(JobRaw.site.asc())
+        )
+        available_sites = [site for site in sites_query.scalars().all() if site]
+
+    results = await db.execute(
+        select(JobResult, JobRaw)
+        .join(JobRaw, JobResult.job_id == JobRaw.id)
+        .where(*site_filters)
+        .order_by(order_expr)
+        .offset((page - 1) * limit)
+        .limit(limit)
+    )
+    rows = results.all()
+
+    jobs = []
+    for result, job in rows:
+        jobs.append({
+            "id": job.id,
+            "job_url": job.job_url,
+            "title": job.title,
+            "company": job.company,
+            "location": job.location,
+            "site": job.site,
+            "date_posted": format_datetime_local(job.date_posted, tz_name),
+            "is_new_find": bool(result.run_id == run.id and job.ingested_at and job.ingested_at >= run.started_at),
+            "final_score": result.final_score / 100 if result.final_score is not None else None,
+            "semantic_score": result.semantic_score,
+            "skills_score": result.skills_score / 100 if result.skills_score is not None else None,
+            "company_score": result.company_score / 100 if result.company_score is not None else None,
+            "seniority_score": result.seniority_score / 100 if result.seniority_score is not None else None,
+            "location_score": result.location_score / 100 if result.location_score is not None else None,
+            "recency_score": result.recency_score / 100 if result.recency_score is not None else None,
+            "title_relevance_score": result.title_relevance_score / 100 if result.title_relevance_score is not None else None,
+            "fit_band": result.fit_band,
+            "confidence_band": result.confidence_band,
+            "explanation_summary": result.explanation_summary,
+            "company_tier": result.company_tier if result.company_tier not in ("default", "", None) else None,
+            "is_contract": result.is_contract,
+            "archived_by_llm": result.archived_by_llm,
+            "archival_reason": result.archival_reason,
+        })
+
+    return {
+        "jobs": jobs,
+        "total": total,
+        "run_total": run_total,
+        "available_sites": available_sites,
+        "page": page,
+        "limit": limit,
+        "new_good_matches": new_good_matches,
+    }
 
 
 @router.get("")
@@ -98,29 +339,99 @@ async def list_jobs(
     if not run:
         return {"jobs": [], "total": 0, "page": page, "limit": limit, "new_good_matches": 0}
 
-    cache_key = "::".join(
-        [
-            "jobs_list",
-            str(current_user.id),
-            str(run.id),
-            str(page),
-            str(limit),
-            sort,
-            sort_dir,
-            search,
-            str(show_archived),
-            str(min_score),
-            ",".join(sorted(tiers)),
-            job_type,
-            ",".join(sorted(sites)),
-            date_range,
-            tz_name or "utc",
-        ]
+    cache_key = _jobs_cache_key(
+        user_id=current_user.id,
+        run_id=run.id,
+        page=page,
+        limit=limit,
+        sort=sort,
+        sort_dir=sort_dir,
+        search=search,
+        show_archived=show_archived,
+        min_score=min_score,
+        tiers=tiers,
+        job_type=job_type,
+        sites=sites,
+        date_range=date_range,
+        tz_name=tz_name,
     )
     cached = get_cached_stats(cache_key)
     if cached is not None:
         return cached
+    if (
+        page == DEFAULT_JOBS_CACHE_PARAMS["page"]
+        and limit == DEFAULT_JOBS_CACHE_PARAMS["limit"]
+        and sort == DEFAULT_JOBS_CACHE_PARAMS["sort"]
+        and sort_dir == DEFAULT_JOBS_CACHE_PARAMS["sort_dir"]
+        and search == DEFAULT_JOBS_CACHE_PARAMS["search"]
+        and show_archived == DEFAULT_JOBS_CACHE_PARAMS["show_archived"]
+        and min_score == DEFAULT_JOBS_CACHE_PARAMS["min_score"]
+        and tiers == DEFAULT_JOBS_CACHE_PARAMS["tiers"]
+        and job_type == DEFAULT_JOBS_CACHE_PARAMS["job_type"]
+        and sites == DEFAULT_JOBS_CACHE_PARAMS["sites"]
+        and date_range == DEFAULT_JOBS_CACHE_PARAMS["date_range"]
+    ):
+        persisted = await _load_default_jobs_cache(db, user_id=current_user.id, run_id=run.id, tz_name=tz_name)
+        if persisted is not None:
+            set_cached_stats(cache_key, persisted)
+            return persisted
 
+    is_default_filters = (
+        page == DEFAULT_JOBS_CACHE_PARAMS["page"]
+        and limit == DEFAULT_JOBS_CACHE_PARAMS["limit"]
+        and sort == DEFAULT_JOBS_CACHE_PARAMS["sort"]
+        and sort_dir == DEFAULT_JOBS_CACHE_PARAMS["sort_dir"]
+        and search == DEFAULT_JOBS_CACHE_PARAMS["search"]
+        and show_archived == DEFAULT_JOBS_CACHE_PARAMS["show_archived"]
+        and min_score == DEFAULT_JOBS_CACHE_PARAMS["min_score"]
+        and tiers == DEFAULT_JOBS_CACHE_PARAMS["tiers"]
+        and job_type == DEFAULT_JOBS_CACHE_PARAMS["job_type"]
+        and sites == DEFAULT_JOBS_CACHE_PARAMS["sites"]
+        and date_range == DEFAULT_JOBS_CACHE_PARAMS["date_range"]
+    )
+
+    payload = await _build_jobs_payload(
+        request=request,
+        run=run,
+        page=page,
+        limit=limit,
+        sort=sort,
+        sort_dir=sort_dir,
+        search=search,
+        show_archived=show_archived,
+        min_score=min_score,
+        tiers=tiers,
+        job_type=job_type,
+        sites=sites,
+        date_range=date_range,
+        current_user=current_user,
+        db=db,
+    )
+    set_cached_stats(cache_key, payload)
+    if is_default_filters:
+        await _persist_default_jobs_cache(db, user_id=current_user.id, run_id=run.id, tz_name=tz_name, payload=payload)
+    return payload
+
+
+async def _build_jobs_payload(
+    *,
+    request: Request,
+    run: Run,
+    page: int,
+    limit: int,
+    sort: str,
+    sort_dir: str,
+    search: str,
+    show_archived: bool,
+    min_score: int,
+    tiers: list[str],
+    job_type: str,
+    sites: list[str],
+    date_range: str,
+    current_user: User,
+    db: AsyncSession,
+) -> dict:
+    tz_name = request.headers.get("X-User-Timezone")
     sort_col = JobRaw.date_posted if sort == "date_posted" else getattr(JobResult, sort)
     order_expr = sort_col.asc().nulls_last() if sort_dir == "asc" else sort_col.desc().nulls_last()
 
@@ -237,7 +548,7 @@ async def list_jobs(
             "archival_reason": result.archival_reason,
         })
 
-    payload = {
+    return {
         "jobs": jobs,
         "total": total,
         "run_total": run_total,
@@ -246,8 +557,6 @@ async def list_jobs(
         "limit": limit,
         "new_good_matches": new_good_matches,
     }
-    set_cached_stats(cache_key, payload)
-    return payload
 
 
 @router.post("/archive-unsuitable", status_code=200)

@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import pytest
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +10,9 @@ from api.models import (
     GenerationQueue,
     JobRaw,
     JobResult,
+    QueryPlanCache,
     Profile,
+    ScrapeQueryCache,
     Run,
     TailoredResume,
     User,
@@ -240,3 +244,65 @@ async def test_admin_trigger_run_does_not_require_local_queue_when_api_worker_di
     assert run.status == "pending"
     assert run.mode == "full"
     assert run.progress == {"requested_mode": "full", "force_scrape": True}
+
+
+async def test_admin_cache_summary_and_invalidation(client, admin_token, db: AsyncSession):
+    scrape_row = ScrapeQueryCache(
+        provider="jobspy",
+        site="indeed",
+        term_normalized="ml engineer",
+        location_normalized="pune",
+        country_normalized="india",
+        hours_old=24,
+        result_job_urls=["https://example.com/a"],
+        result_count=1,
+        fresh_until=datetime.now(timezone.utc),
+    )
+    plan_row = QueryPlanCache(
+        cache_key="plan-key",
+        profile_fingerprint="profile-fp",
+        search_window_days=7,
+        source_filter="indeed",
+        query_version="query_plan_v1",
+        max_terms=3,
+        query_payload=[{"term": "ML Engineer", "location": "Pune", "country": "India"}],
+    )
+    db.add_all([scrape_row, plan_row])
+    await db.commit()
+
+    summary = await client.get("/api/admin/caches", headers={"Authorization": f"Bearer {admin_token}"})
+    assert summary.status_code == 200
+    payload = summary.json()
+    assert payload["scrape_query_cache_count"] >= 1
+    assert payload["query_plan_cache_count"] >= 1
+    assert payload["sample_scrape_query_keys"]
+    assert payload["sample_query_plan_keys"]
+
+    invalidate = await client.post(
+        "/api/admin/caches/invalidate",
+        headers={"Authorization": f"Bearer {admin_token}"},
+        json={
+            "kind": "query_plan_cache",
+            "profile_fingerprint": "profile-fp",
+            "search_window_days": 7,
+            "source_filter": "indeed",
+        },
+    )
+    assert invalidate.status_code == 200
+    assert invalidate.json()["deleted"] == 1
+
+    invalidate_scrape = await client.post(
+        "/api/admin/caches/invalidate",
+        headers={"Authorization": f"Bearer {admin_token}"},
+        json={
+            "kind": "scrape_query_cache",
+            "provider": "jobspy",
+            "site": "indeed",
+            "term": "ml engineer",
+            "location": "pune",
+            "country": "india",
+            "hours_old": 24,
+        },
+    )
+    assert invalidate_scrape.status_code == 200
+    assert invalidate_scrape.json()["deleted"] == 1

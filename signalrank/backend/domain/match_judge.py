@@ -10,6 +10,7 @@ from domain.artifact_versions import (
     MATCH_REPORT_VERSION,
     SCHEMA_VERSION,
     match_report_cache_key,
+    stable_digest,
 )
 from domain.score_synthesis import fit_band_from_verdict
 
@@ -449,12 +450,29 @@ async def judge_match_report(
     job_text: str,
     llm_client=None,
     max_tokens: int = 1200,
+    model_version: str | None = None,
 ) -> dict:
+    if model_version is None:
+        if llm_client is None:
+            model_version = "heuristic"
+        else:
+            model_version = stable_digest(
+                {
+                    "models": list(getattr(llm_client, "models", []) or []),
+                    "preferred_models": list(getattr(llm_client, "preferred_models", []) or []),
+                }
+            )
     fallback = heuristic_match_report(
         candidate_profile=candidate_profile,
         job_profile=job_profile,
         resume_text=resume_text,
         job_text=job_text,
+    )
+    fallback["match_cache_key"] = match_report_cache_key(
+        candidate_profile_fingerprint=str(candidate_profile.get("profile_fingerprint") or candidate_profile.get("profile_cache_key") or ""),
+        job_profile_fingerprint=str(job_profile.get("job_fingerprint") or job_profile.get("job_cache_key") or ""),
+        judge_model_version=model_version,
+        prompt_version=MATCH_JUDGE_PROMPT_VERSION,
     )
     if llm_client is None:
         return fallback
@@ -474,5 +492,14 @@ async def judge_match_report(
 
     if not isinstance(response, dict) or response.get("_error"):
         return fallback
-
-    return _normalize_match_report(response, fallback)
+    output = _normalize_match_report(response, fallback)
+    output["match_cache_key"] = match_report_cache_key(
+        candidate_profile_fingerprint=str(candidate_profile.get("profile_fingerprint") or candidate_profile.get("profile_cache_key") or ""),
+        job_profile_fingerprint=str(job_profile.get("job_fingerprint") or job_profile.get("job_cache_key") or ""),
+        judge_model_version=model_version,
+        prompt_version=MATCH_JUDGE_PROMPT_VERSION,
+    )
+    output["artifact_version"] = MATCH_REPORT_VERSION
+    output["schema_version"] = SCHEMA_VERSION
+    output["prompt_version"] = MATCH_JUDGE_PROMPT_VERSION
+    return output

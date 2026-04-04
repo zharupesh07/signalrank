@@ -160,7 +160,7 @@ async def scrape(
             ]
             if allowed:
                 parallel_sources = [(n, fn) for n, fn in parallel_sources if n in allowed]
-            tasks = [fn(queries, config) for _, fn in parallel_sources]
+            tasks = [fn(queries, config, db=db) for _, fn in parallel_sources]
             results_list = await asyncio.gather(*tasks, return_exceptions=True)
             for (name, _), res in zip(parallel_sources, results_list):
                 if isinstance(res, Exception):

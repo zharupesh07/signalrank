@@ -16,11 +16,11 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column("job_results", sa.Column("fit_band", sa.String(length=50), nullable=True))
-    op.add_column("job_results", sa.Column("confidence_band", sa.String(length=50), nullable=True))
-    op.add_column("job_results", sa.Column("explanation_summary", sa.Text(), nullable=True))
-    op.add_column("job_results", sa.Column("match_report", postgresql.JSONB(astext_type=sa.Text()), nullable=True))
-    op.add_column("job_results", sa.Column("verification_report", postgresql.JSONB(astext_type=sa.Text()), nullable=True))
+    op.execute("ALTER TABLE job_results ADD COLUMN IF NOT EXISTS fit_band VARCHAR(50)")
+    op.execute("ALTER TABLE job_results ADD COLUMN IF NOT EXISTS confidence_band VARCHAR(50)")
+    op.execute("ALTER TABLE job_results ADD COLUMN IF NOT EXISTS explanation_summary TEXT")
+    op.execute("ALTER TABLE job_results ADD COLUMN IF NOT EXISTS match_report JSONB")
+    op.execute("ALTER TABLE job_results ADD COLUMN IF NOT EXISTS verification_report JSONB")
 
 
 def downgrade() -> None:

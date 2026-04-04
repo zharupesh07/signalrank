@@ -46,6 +46,35 @@ type Stats = {
   total_applications: number;
 };
 
+type CacheSummary = {
+  scrape_query_cache_count: number;
+  query_plan_cache_count: number;
+  sample_scrape_query_keys: {
+    provider: string;
+    site: string;
+    term: string;
+    location: string;
+    country: string;
+    hours_old: number;
+    result_count: number;
+    fresh_until: string | null;
+  }[];
+  sample_query_plan_keys: {
+    profile_fingerprint: string;
+    search_window_days: number;
+    source_filter: string;
+    query_version: string;
+    max_terms: number;
+    created_at: string | null;
+  }[];
+};
+
+type CacheInvalidateResponse = {
+  kind: string;
+  deleted: number;
+  clear_all: boolean;
+};
+
 type UserProfileConfig = {
   user_id: string;
   email: string;
@@ -185,11 +214,13 @@ export default function AdminPage() {
   const isAdmin = (session as { isAdmin?: boolean })?.isAdmin ?? false;
   const { toast } = useToast();
 
-  const [tab, setTab] = useState<"users" | "runs">("users");
+  const [tab, setTab] = useState<"users" | "runs" | "caches">("users");
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [runs, setRuns] = useState<AdminRun[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [cacheSummary, setCacheSummary] = useState<CacheSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingCaches, setLoadingCaches] = useState(false);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [topJobsCache, setTopJobsCache] = useState<Record<string, TopJob[]>>({});
   const [profileConfigCache, setProfileConfigCache] = useState<Record<string, UserProfileConfig>>({});
@@ -198,6 +229,7 @@ export default function AdminPage() {
   const [loadingConfig, setLoadingConfig] = useState<string | null>(null);
   const [savingConfig, setSavingConfig] = useState<string | null>(null);
   const [stoppingRunId, setStoppingRunId] = useState<string | null>(null);
+  const [cacheAction, setCacheAction] = useState<string | null>(null);
 
   useEffect(() => {
     if (session && !isAdmin) {
@@ -221,6 +253,21 @@ export default function AdminPage() {
       )
       .finally(() => setLoading(false));
   }, [token, isAdmin, toast]);
+
+  useEffect(() => {
+    if (!token || !isAdmin || tab !== "caches" || cacheSummary || loadingCaches) return;
+    setLoadingCaches(true);
+    api.admin
+      .caches(token)
+      .then(setCacheSummary)
+      .catch((err) =>
+        toast(
+          err instanceof Error ? `Failed to load cache summary: ${err.message}` : "Failed to load cache summary",
+          "error",
+        )
+      )
+      .finally(() => setLoadingCaches(false));
+  }, [token, isAdmin, tab, cacheSummary, loadingCaches, toast]);
 
   async function toggleAdmin(userId: string, current: boolean) {
     await api.admin.updateUser(token, userId, { is_admin: !current });
@@ -282,6 +329,44 @@ export default function AdminPage() {
     } finally {
       setStoppingRunId(null);
     }
+  }
+
+  async function loadCacheSummary(force = false) {
+    if (!token || !isAdmin) return;
+    if (!force && cacheSummary) return;
+    setLoadingCaches(true);
+    try {
+      const summary = await api.admin.caches(token);
+      setCacheSummary(summary);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to load cache summary", "error");
+    } finally {
+      setLoadingCaches(false);
+    }
+  }
+
+  async function invalidateCache(payload: Parameters<typeof api.admin.invalidateCache>[1], label: string) {
+    const actionKey = `${payload.kind}:${label}`;
+    setCacheAction(actionKey);
+    try {
+      const result: CacheInvalidateResponse = await api.admin.invalidateCache(token, payload);
+      await loadCacheSummary(true);
+      toast(
+        result.clear_all
+          ? `Cleared all ${result.kind.replace("_", " ")} rows`
+          : `Deleted ${result.deleted} ${result.kind.replace("_", " ")} row${result.deleted === 1 ? "" : "s"}`,
+        "success",
+      );
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to invalidate cache", "error");
+    } finally {
+      setCacheAction(null);
+    }
+  }
+
+  async function clearAllCache(kind: "scrape_query_cache" | "query_plan_cache") {
+    if (!confirm(`Clear all ${kind.replace("_", " ")} rows?`)) return;
+    await invalidateCache({ kind, clear_all: true }, "all");
   }
 
   async function toggleExpand(userId: string) {
@@ -437,7 +522,7 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="flex items-center gap-1 border-b border-border">
-          {(["users", "runs"] as const).map((t) => (
+          {(["users", "runs", "caches"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -798,7 +883,7 @@ export default function AdminPage() {
               </table>
             </div>
           </div>
-        ) : (
+        ) : tab === "runs" ? (
           <div className="overflow-hidden border border-border bg-card">
             <div className="overflow-x-auto">
               <table className="min-w-[920px] w-full text-sm">
@@ -843,6 +928,218 @@ export default function AdminPage() {
             </div>
             {runs.length === 0 && (
               <div className="text-center py-8 text-muted-foreground text-sm">No runs yet</div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border border-border bg-card px-4 py-3">
+              <div className="space-y-1">
+                <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Cache hygiene</div>
+                <div className="text-sm text-foreground">Inspect and invalidate scrape result caches and query-plan caches.</div>
+              </div>
+              <button
+                onClick={() => loadCacheSummary(true)}
+                className="inline-flex items-center gap-2 px-3 py-2 text-[11px] uppercase tracking-widest border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+              >
+                <RefreshCw size={12} />
+                Refresh
+              </button>
+            </div>
+
+            {loadingCaches && !cacheSummary ? (
+              <div className="text-center py-12 text-muted-foreground text-sm">Loading cache summary...</div>
+            ) : cacheSummary ? (
+              <div className="space-y-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="border border-border bg-card p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Scrape query cache</div>
+                        <div className="text-2xl font-bold tabular-nums text-foreground">{cacheSummary.scrape_query_cache_count}</div>
+                      </div>
+                      <button
+                        onClick={() => clearAllCache("scrape_query_cache")}
+                        disabled={cacheAction === "scrape_query_cache:all"}
+                        className="inline-flex items-center gap-2 px-3 py-2 text-[11px] uppercase tracking-widest border border-[var(--terminal-yellow)]/30 text-[var(--terminal-yellow)] hover:bg-[var(--terminal-yellow)]/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <Trash2 size={12} />
+                        {cacheAction === "scrape_query_cache:all" ? "Clearing..." : "Clear All"}
+                      </button>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Shared across users when provider, site, term, location, country, and freshness window match.
+                    </div>
+                  </div>
+
+                  <div className="border border-border bg-card p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Query plan cache</div>
+                        <div className="text-2xl font-bold tabular-nums text-foreground">{cacheSummary.query_plan_cache_count}</div>
+                      </div>
+                      <button
+                        onClick={() => clearAllCache("query_plan_cache")}
+                        disabled={cacheAction === "query_plan_cache:all"}
+                        className="inline-flex items-center gap-2 px-3 py-2 text-[11px] uppercase tracking-widest border border-[var(--terminal-yellow)]/30 text-[var(--terminal-yellow)] hover:bg-[var(--terminal-yellow)]/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <Trash2 size={12} />
+                        {cacheAction === "query_plan_cache:all" ? "Clearing..." : "Clear All"}
+                      </button>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Shared across reruns when profile fingerprint and query version still match.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <div className="border border-border bg-card p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Scrape cache samples</div>
+                        <div className="text-xs text-muted-foreground mt-1">Exact-match invalidate is available per row.</div>
+                      </div>
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                        {cacheSummary.sample_scrape_query_keys.length} shown
+                      </span>
+                    </div>
+                    {cacheSummary.sample_scrape_query_keys.length ? (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-[860px] w-full text-xs">
+                          <thead>
+                            <tr className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
+                              <th className="pb-2 pr-3 font-normal">Provider</th>
+                              <th className="pb-2 pr-3 font-normal">Site</th>
+                              <th className="pb-2 pr-3 font-normal">Term</th>
+                              <th className="pb-2 pr-3 font-normal">Location</th>
+                              <th className="pb-2 pr-3 font-normal">Country</th>
+                              <th className="pb-2 pr-3 font-normal">Hours</th>
+                              <th className="pb-2 pr-3 font-normal">Hits</th>
+                              <th className="pb-2 pr-3 font-normal">Fresh Until</th>
+                              <th className="pb-2 font-normal text-right">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {cacheSummary.sample_scrape_query_keys.map((row) => {
+                              const key = `${row.provider}:${row.site}:${row.term}:${row.location}:${row.country}:${row.hours_old}`;
+                              return (
+                                <tr key={key} className="border-t border-border/60">
+                                  <td className="py-2 pr-3 text-foreground">{row.provider}</td>
+                                  <td className="py-2 pr-3 text-muted-foreground">{row.site}</td>
+                                  <td className="py-2 pr-3 text-muted-foreground truncate max-w-[160px]">{row.term}</td>
+                                  <td className="py-2 pr-3 text-muted-foreground truncate max-w-[140px]">{row.location || "—"}</td>
+                                  <td className="py-2 pr-3 text-muted-foreground">{row.country || "—"}</td>
+                                  <td className="py-2 pr-3 tabular-nums text-muted-foreground">{row.hours_old}</td>
+                                  <td className="py-2 pr-3 tabular-nums text-foreground">{row.result_count}</td>
+                                  <td className="py-2 pr-3 text-muted-foreground whitespace-nowrap">
+                                    {row.fresh_until ? new Date(row.fresh_until).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                                  </td>
+                                  <td className="py-2 text-right">
+                                    <button
+                                      onClick={() =>
+                                        invalidateCache(
+                                          {
+                                            kind: "scrape_query_cache",
+                                            provider: row.provider,
+                                            site: row.site,
+                                            term: row.term,
+                                            location: row.location,
+                                            country: row.country,
+                                            hours_old: row.hours_old,
+                                          },
+                                          key,
+                                        )
+                                      }
+                                      disabled={cacheAction === `scrape_query_cache:${key}`}
+                                      className="inline-flex items-center gap-1.5 border border-border px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground hover:border-foreground/30 disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                      <RotateCcw size={10} />
+                                      {cacheAction === `scrape_query_cache:${key}` ? "..." : "Invalidate"}
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground py-2">No scrape cache samples available.</div>
+                    )}
+                  </div>
+
+                  <div className="border border-border bg-card p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Query plan samples</div>
+                        <div className="text-xs text-muted-foreground mt-1">Exact-match invalidate is available per row.</div>
+                      </div>
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                        {cacheSummary.sample_query_plan_keys.length} shown
+                      </span>
+                    </div>
+                    {cacheSummary.sample_query_plan_keys.length ? (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-[760px] w-full text-xs">
+                          <thead>
+                            <tr className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
+                              <th className="pb-2 pr-3 font-normal">Profile</th>
+                              <th className="pb-2 pr-3 font-normal">Window</th>
+                              <th className="pb-2 pr-3 font-normal">Source Filter</th>
+                              <th className="pb-2 pr-3 font-normal">Version</th>
+                              <th className="pb-2 pr-3 font-normal">Terms</th>
+                              <th className="pb-2 pr-3 font-normal">Created</th>
+                              <th className="pb-2 font-normal text-right">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {cacheSummary.sample_query_plan_keys.map((row) => {
+                              const key = `${row.profile_fingerprint}:${row.search_window_days}:${row.source_filter}:${row.query_version}`;
+                              return (
+                                <tr key={key} className="border-t border-border/60">
+                                  <td className="py-2 pr-3 text-foreground truncate max-w-[180px]">{row.profile_fingerprint}</td>
+                                  <td className="py-2 pr-3 tabular-nums text-muted-foreground">{row.search_window_days}</td>
+                                  <td className="py-2 pr-3 text-muted-foreground truncate max-w-[140px]">{row.source_filter}</td>
+                                  <td className="py-2 pr-3 text-muted-foreground">{row.query_version}</td>
+                                  <td className="py-2 pr-3 tabular-nums text-foreground">{row.max_terms}</td>
+                                  <td className="py-2 pr-3 text-muted-foreground whitespace-nowrap">
+                                    {row.created_at ? new Date(row.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                                  </td>
+                                  <td className="py-2 text-right">
+                                    <button
+                                      onClick={() =>
+                                        invalidateCache(
+                                          {
+                                            kind: "query_plan_cache",
+                                            profile_fingerprint: row.profile_fingerprint,
+                                            search_window_days: row.search_window_days,
+                                            source_filter: row.source_filter,
+                                            query_version: row.query_version,
+                                          },
+                                          key,
+                                        )
+                                      }
+                                      disabled={cacheAction === `query_plan_cache:${key}`}
+                                      className="inline-flex items-center gap-1.5 border border-border px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground hover:border-foreground/30 disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                      <RotateCcw size={10} />
+                                      {cacheAction === `query_plan_cache:${key}` ? "..." : "Invalidate"}
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground py-2">No query plan samples available.</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground text-sm">No cache summary loaded.</div>
             )}
           </div>
         )}

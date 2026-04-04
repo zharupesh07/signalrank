@@ -63,6 +63,44 @@ type AdminUserProfileConfig = {
   };
 };
 
+type CacheSummaryResponse = {
+  scrape_query_cache_count: number;
+  query_plan_cache_count: number;
+  sample_scrape_query_keys: {
+    provider: string;
+    site: string;
+    term: string;
+    location: string;
+    country: string;
+    hours_old: number;
+    result_count: number;
+    fresh_until: string | null;
+  }[];
+  sample_query_plan_keys: {
+    profile_fingerprint: string;
+    search_window_days: number;
+    source_filter: string;
+    query_version: string;
+    max_terms: number;
+    created_at: string | null;
+  }[];
+};
+
+type CacheInvalidateRequest = {
+  kind: "scrape_query_cache" | "query_plan_cache";
+  clear_all?: boolean;
+  provider?: string;
+  site?: string;
+  term?: string;
+  location?: string;
+  country?: string;
+  hours_old?: number;
+  profile_fingerprint?: string;
+  search_window_days?: number;
+  source_filter?: string;
+  query_version?: string;
+};
+
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const BACKEND_PROXY_PREFIX = "/api/backend";
 
@@ -85,7 +123,7 @@ function requestTimeoutMs() {
       : process.env.NEXT_PUBLIC_API_REQUEST_TIMEOUT_MS) ?? "";
   const parsed = Number(raw);
   if (Number.isFinite(parsed) && parsed >= 1000) return parsed;
-  return typeof window === "undefined" ? 20000 : 15000;
+  return typeof window === "undefined" ? 30000 : 25000;
 }
 
 type ResumePreviewValidation = {
@@ -249,7 +287,7 @@ export const api = {
 
   runs: {
     list: (token: string) =>
-      request<{ run_id: string; status: string; job_count: number | null; scrape_count: number | null; started_at: string | null; finished_at: string | null; progress: RunProgress | null; error: string | null }[]>("/api/runs", { token }),
+      request<{ run_id: string; status: string; job_count: number | null; scrape_count: number | null; started_at: string | null; finished_at: string | null; progress: RunProgress | null; jobs_snapshot?: JobsResponse | null; error: string | null }[]>("/api/runs", { token }),
     trigger: (token: string, mode: "quick" | "full" = "quick") =>
       request<{ run_id: string; status: string }>("/api/runs/trigger", {
         method: "POST",
@@ -262,14 +300,14 @@ export const api = {
         token,
       }),
     latest: async (token: string): Promise<Run> => {
-      const r = await request<{ run_id: string; status: string; job_count: number | null; scrape_count: number | null; started_at: string | null; finished_at: string | null; progress: RunProgress | null; error: string | null }>("/api/runs/latest", { token });
+      const r = await request<{ run_id: string; status: string; job_count: number | null; scrape_count: number | null; started_at: string | null; finished_at: string | null; progress: RunProgress | null; jobs_snapshot?: JobsResponse | null; error: string | null }>("/api/runs/latest", { token });
       const status = r.status === "success" ? "done" : r.status as Run["status"];
-      return { id: r.run_id, status, job_count: r.job_count, scrape_count: r.scrape_count, started_at: r.started_at ?? "", finished_at: r.finished_at, progress: r.progress, error: r.error };
+      return { id: r.run_id, status, job_count: r.job_count, scrape_count: r.scrape_count, started_at: r.started_at ?? "", finished_at: r.finished_at, progress: r.progress, jobs_snapshot: r.jobs_snapshot, error: r.error };
     },
     status: async (token: string, runId: string): Promise<Run> => {
-      const r = await request<{ run_id: string; status: string; job_count: number | null; scrape_count: number | null; started_at: string | null; finished_at: string | null; progress: RunProgress | null; error: string | null }>(`/api/runs/${runId}/status`, { token });
+      const r = await request<{ run_id: string; status: string; job_count: number | null; scrape_count: number | null; started_at: string | null; finished_at: string | null; progress: RunProgress | null; jobs_snapshot?: JobsResponse | null; error: string | null }>(`/api/runs/${runId}/status`, { token });
       const status = r.status === "success" ? "done" : r.status as Run["status"];
-      return { id: r.run_id, status, job_count: r.job_count, scrape_count: r.scrape_count, started_at: r.started_at ?? "", finished_at: r.finished_at, progress: r.progress, error: r.error };
+      return { id: r.run_id, status, job_count: r.job_count, scrape_count: r.scrape_count, started_at: r.started_at ?? "", finished_at: r.finished_at, progress: r.progress, jobs_snapshot: r.jobs_snapshot, error: r.error };
     },
   },
 
@@ -456,6 +494,14 @@ export const api = {
       request<{ run_id: string; user_email: string; status: string; job_count: number | null; started_at: string | null; finished_at: string | null }[]>("/api/admin/runs", { token }),
     stopRun: (token: string, runId: string) =>
       request<{ stopped: boolean; status: string; message?: string }>(`/api/admin/runs/${runId}/stop`, { method: "POST", token }),
+    caches: (token: string) =>
+      request<CacheSummaryResponse>("/api/admin/caches", { token }),
+    invalidateCache: (token: string, data: CacheInvalidateRequest) =>
+      request<{ kind: string; deleted: number; clear_all: boolean }>("/api/admin/caches/invalidate", {
+        method: "POST",
+        token,
+        body: JSON.stringify(data),
+      }),
     topJobs: (token: string, userId: string) =>
       request<{ job_id: string; title: string | null; company: string | null; location: string | null; final_score: number | null; semantic_score: number | null; skills_score: number | null; job_url: string }[]>(`/api/admin/users/${userId}/top-jobs`, { token }),
     profileConfig: (token: string, userId: string) =>

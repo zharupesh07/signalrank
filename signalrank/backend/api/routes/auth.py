@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr, field_validator
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import create_access_token, hash_password, verify_password
@@ -64,6 +64,8 @@ async def login(request: Request, body: LoginRequest, db: AsyncSession = Depends
     user = result.scalar_one_or_none()
     if not user or not user.password_hash or not verify_password(body.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    user.last_login = datetime.now(timezone.utc)
+    await db.execute(
+        update(User).where(User.id == user.id).values(last_login=datetime.now(timezone.utc))
+    )
     await db.commit()
     return TokenResponse(access_token=create_access_token(user.id, user.email, is_admin=user.is_admin))

@@ -16,8 +16,12 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column("profiles", sa.Column("candidate_profile", postgresql.JSONB(astext_type=sa.Text()), nullable=True))
-    op.add_column("jobs_raw", sa.Column("job_profile", postgresql.JSONB(astext_type=sa.Text()), nullable=True))
+    op.execute(
+        "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS candidate_profile JSONB"
+    )
+    op.execute(
+        "ALTER TABLE jobs_raw ADD COLUMN IF NOT EXISTS job_profile JSONB"
+    )
 
 
 def downgrade() -> None:

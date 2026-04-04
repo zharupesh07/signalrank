@@ -116,3 +116,41 @@ async def test_ensure_runtime_schema_compatibility_skips_alter_when_runs_error_c
 
     assert any("information_schema.columns" in statement for statement in statements)
     assert not any("ALTER TABLE runs ADD COLUMN IF NOT EXISTS error TEXT" in statement for statement in statements)
+
+
+async def test_ensure_runtime_schema_compatibility_adds_query_plan_cache_table(test_engine):
+    async with test_engine.begin() as conn:
+        await conn.execute(text("DROP TABLE IF EXISTS query_plan_cache"))
+
+    await ensure_runtime_schema_compatibility(test_engine)
+
+    async with test_engine.begin() as conn:
+        result = await conn.execute(
+            text(
+                """
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_name = 'query_plan_cache'
+                """
+            )
+        )
+        assert result.scalar_one() == "query_plan_cache"
+
+
+async def test_ensure_runtime_schema_compatibility_adds_scrape_query_cache_table(test_engine):
+    async with test_engine.begin() as conn:
+        await conn.execute(text("DROP TABLE IF EXISTS scrape_query_cache"))
+
+    await ensure_runtime_schema_compatibility(test_engine)
+
+    async with test_engine.begin() as conn:
+        result = await conn.execute(
+            text(
+                """
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_name = 'scrape_query_cache'
+                """
+            )
+        )
+        assert result.scalar_one() == "scrape_query_cache"

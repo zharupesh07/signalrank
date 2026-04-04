@@ -9,10 +9,12 @@ from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from api.config import settings
 from api.models import JobRaw, JobResult, Profile, Run
 from batch.context import build_context, get_batch, get_retry
 from batch.embedding_cache import PgEmbeddingCache, clear_vector_cache, store_job_embeddings
 from batch.memory import log_rss, release_memory
+from domain.candidate_profile import build_candidate_profile
 
 logger = logging.getLogger(__name__)
 
@@ -240,7 +242,7 @@ async def process_run(
             ctx = build_context(user_id=user_id, resume_text=resume_text, config_overrides=config_overrides)
             cfg = ctx.config
 
-            from batch.query_builder import build_queries
+            from batch.query_plan_cache import get_cached_queries
             from batch.scraper import ScraperConfig, scrape, raw_job_to_dict
 
             if mode == "quick":
@@ -249,7 +251,23 @@ async def process_run(
             else:
                 scraper_max_terms = profile.scraper_max_terms if profile else None
                 scraper_hours_old = profile.scraper_hours_old or 168  # 7 days
-            queries = build_queries(profile, max_terms=scraper_max_terms) if profile else []
+            scraper_cfg = ScraperConfig.from_env(title_blocklist=(config_overrides or {}).get("title_blocklist", []))
+            scraper_cfg.hours_old = scraper_hours_old
+            if mode == "quick":
+                scraper_cfg.sources = ["indeed"]
+            if profile:
+                candidate_profile = build_candidate_profile(profile=profile, resume_text=resume_text, cfg=cfg)
+                profile_fingerprint = str(candidate_profile.get("profile_fingerprint") or candidate_profile.get("profile_cache_key") or "")
+                queries = await get_cached_queries(
+                    db,
+                    profile=profile,
+                    profile_fingerprint=profile_fingerprint,
+                    search_window_days=max(1, scraper_hours_old // 24),
+                    source_filter=",".join(sorted(scraper_cfg.sources or [])),
+                    max_terms=scraper_max_terms or settings.scraper_max_terms,
+                )
+            else:
+                queries = []
             async def _update_progress(**kwargs):
                 async with session_factory() as pdb:
                     await pdb.execute(
@@ -308,11 +326,7 @@ async def process_run(
             freshly_scraped_job_urls = None
             if queries and not skip_scrape:
                 scrape_executed = True
-                title_blocklist = (config_overrides or {}).get("title_blocklist", [])
-                config = ScraperConfig.from_env(title_blocklist=title_blocklist)
-                config.hours_old = scraper_hours_old
-                if mode == "quick":
-                    config.sources = ["indeed"]
+                config = scraper_cfg
 
                 # Check cancellation before scraping
                 run_check_result = await db.execute(select(Run).where(Run.id == run_id))

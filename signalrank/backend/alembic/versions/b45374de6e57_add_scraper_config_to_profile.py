@@ -17,8 +17,8 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column('profiles', sa.Column('scraper_hours_old', sa.Integer(), nullable=True))
-    op.add_column('profiles', sa.Column('scraper_max_terms', sa.Integer(), nullable=True))
+    op.execute("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS scraper_hours_old INTEGER")
+    op.execute("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS scraper_max_terms INTEGER")
 
 
 def downgrade() -> None:

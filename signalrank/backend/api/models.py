@@ -200,6 +200,26 @@ class RecruiterSearch(Base):
     raw_candidates: Mapped[dict | None] = mapped_column(JSONB)
 
 
+class QueryPlanCache(Base):
+    __tablename__ = "query_plan_cache"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    cache_key: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    profile_fingerprint: Mapped[str] = mapped_column(Text, nullable=False)
+    search_window_days: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_filter: Mapped[str] = mapped_column(Text, nullable=False)
+    query_version: Mapped[str] = mapped_column(String(100), nullable=False)
+    max_terms: Mapped[int] = mapped_column(Integer, nullable=False)
+    query_payload: Mapped[dict | None] = mapped_column(JSONB, server_default=text("'[]'::jsonb"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        Index("ix_query_plan_cache_profile_window", "profile_fingerprint", "search_window_days"),
+        Index("ix_query_plan_cache_source_filter", "source_filter"),
+    )
+
+
 class ScrapeQueryCache(Base):
     __tablename__ = "scrape_query_cache"
 

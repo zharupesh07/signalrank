@@ -21,6 +21,7 @@ def _ensure_schema():
         engine = create_async_engine(TEST_DB_URL)
         async with engine.begin() as conn:
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            await conn.execute(text("DROP TABLE IF EXISTS query_plan_cache CASCADE"))
             await conn.run_sync(Base.metadata.create_all)
             await conn.execute(text("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS candidate_profile JSONB"))
             await conn.execute(text("ALTER TABLE jobs_raw ADD COLUMN IF NOT EXISTS job_profile JSONB"))

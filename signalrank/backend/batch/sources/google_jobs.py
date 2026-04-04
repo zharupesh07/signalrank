@@ -4,7 +4,10 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from batch.query_builder import SearchQuery
+from batch.scrape_cache import load_cached_jobs, store_cached_jobs
 from batch.scraper import RawJob, ScraperConfig
 
 logger = logging.getLogger(__name__)
@@ -60,14 +63,19 @@ def _scrape_sync(term: str, location: str, config: ScraperConfig) -> list[RawJob
     return jobs
 
 
-async def search(queries: list[SearchQuery], config: ScraperConfig) -> list[RawJob]:
+async def search(queries: list[SearchQuery], config: ScraperConfig, db: AsyncSession | None = None) -> list[RawJob]:
     all_jobs: list[RawJob] = []
     for query in queries:
+        cached = await load_cached_jobs(db, provider="google_jobs", site="google", query=query, config=config)
+        if cached is not None:
+            all_jobs.extend(cached)
+            continue
         try:
             result = await asyncio.wait_for(
                 asyncio.to_thread(_scrape_sync, query.term, query.location, config),
                 timeout=180,
             )
+            await store_cached_jobs(db, provider="google_jobs", site="google", query=query, config=config, jobs=result)
             all_jobs.extend(result)
         except asyncio.TimeoutError:
             logger.warning("Google Jobs timeout for %s / %s", query.term, query.location)

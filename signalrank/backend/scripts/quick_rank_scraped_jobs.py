@@ -10,9 +10,10 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from api.database import AsyncSessionLocal
 from api.models import JobRaw, Profile, User
 from batch.context import build_context
-from batch.query_builder import build_queries
+from batch.query_plan_cache import get_cached_queries
 from batch.ranker import score_job_ids_for_user
 from batch.scraper import ScraperConfig, raw_job_to_dict, scrape
+from domain.candidate_profile import build_candidate_profile
 from domain.job_profile import build_job_profile
 from domain.role_clusters import roles_to_clusters
 
@@ -93,8 +94,10 @@ async def _scrape_and_rank(email: str | None, user_id: str | None, limit: int) -
     resume_text = profile.resume_text or ""
     distilled_text = profile.distilled_text
     config_overrides = profile.config_overrides or {}
+    ctx = build_context(resolved_user_id, resume_text, config_overrides)
+    cfg = ctx.config
+    candidate_profile = build_candidate_profile(profile=profile, resume_text=resume_text, cfg=cfg)
 
-    queries = build_queries(profile, max_terms=1)
     title_blocklist = config_overrides.get("title_blocklist", [])
     scraper_cfg = ScraperConfig.from_env(title_blocklist=title_blocklist)
     scraper_cfg.hours_old = 24
@@ -103,6 +106,14 @@ async def _scrape_and_rank(email: str | None, user_id: str | None, limit: int) -
     logger.info("Starting 24h scrape")
     started_at = datetime.now(timezone.utc)
     async with AsyncSessionLocal() as db:
+        queries = await get_cached_queries(
+            db,
+            profile=profile,
+            profile_fingerprint=str(candidate_profile.get("profile_fingerprint") or candidate_profile.get("profile_cache_key") or ""),
+            search_window_days=1,
+            source_filter="indeed",
+            max_terms=1,
+        )
         raw_jobs = await scrape(queries, scraper_cfg, db=db)
     logger.info("Scrape complete: %d jobs", len(raw_jobs))
 
