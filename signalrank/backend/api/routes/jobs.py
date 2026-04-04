@@ -18,6 +18,58 @@ ARCHIVAL_TIERS = {"tier_ss", "tier_s", "tier_a"}
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 
+async def warm_default_jobs_cache(db: AsyncSession, *, user_id: str, tz_name: str | None = None) -> None:
+    latest_run = await db.execute(
+        select(Run)
+        .where(Run.user_id == user_id, Run.status == "success")
+        .order_by(Run.finished_at.desc())
+        .limit(1)
+    )
+    run = latest_run.scalar_one_or_none()
+    if not run:
+        return
+
+    cache_key = "::".join(
+        [
+            "jobs_list",
+            str(user_id),
+            str(run.id),
+            "1",
+            "10",
+            "final_score",
+            "desc",
+            "",
+            "True",
+            "0",
+            "",
+            "all",
+            "",
+            "any",
+            tz_name or "utc",
+        ]
+    )
+    if get_cached_stats(cache_key) is not None:
+        return
+
+    payload = await list_jobs(
+        request=type("Request", (), {"headers": {"X-User-Timezone": tz_name}})(),
+        page=1,
+        limit=10,
+        sort="final_score",
+        sort_dir="desc",
+        search="",
+        show_archived=True,
+        min_score=0,
+        tiers=[],
+        job_type="all",
+        sites=[],
+        date_range="any",
+        current_user=type("User", (), {"id": user_id})(),
+        db=db,
+    )
+    set_cached_stats(cache_key, payload)
+
+
 @router.get("")
 async def list_jobs(
     request: Request,

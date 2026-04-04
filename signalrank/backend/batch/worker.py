@@ -562,6 +562,11 @@ async def process_run(
                 )
             )
             await db.commit()
+            try:
+                from api.routes.jobs import warm_default_jobs_cache
+                await warm_default_jobs_cache(db, user_id=user_id)
+            except Exception:
+                logger.debug("Skipping jobs cache warm-up after run completion", exc_info=True)
             logger.info("Run %s (%s) completed: %d scraped, %d ranked", run_id, mode, scrape_count, len(ranked_df))
             del ranked_df
             gc.collect()
