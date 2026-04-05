@@ -1964,7 +1964,7 @@ async def main_async() -> None:
             candidate_name=args.candidate_name or "",
             current_focus=args.current_focus,
         )
-        for _i, _r in enumerate(_results, 1):
+        for _i, _r in enumerate(_results[:30], 1):
             print(f"{_i:>3}. [{_r['score']:.3f}] {_r.get('title', '')} — {_r.get('company', '')}")
         return
     logging.basicConfig(level=logging.INFO)
