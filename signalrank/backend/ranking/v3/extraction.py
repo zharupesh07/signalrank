@@ -45,6 +45,42 @@ _LANE_SKILL_PRIORITIES: dict[str, tuple[str, ...]] = {
     "r_and_d": ("research", "experimental", "prototype", "poc"),
 }
 
+_PROFILE_CUSTOMIZATIONS: dict[str, dict[str, list[str]]] = {
+    "vivek": {
+        "target_roles": [
+            "Innovation Lead",
+            "Prototype Engineer",
+            "IoT Engineer",
+            "Embedded Systems Engineer",
+            "Conversational AI Engineer",
+        ],
+        "must_have_terms": ["iot", "embedded", "dialogflow", "prototype", "edge", "research"],
+        "avoid_terms": [
+            "computer vision",
+            "ai systems architect",
+            "software engineer",
+            "program manager",
+            "consultant",
+        ],
+    },
+    "abhijeet": {
+        "target_roles": [
+            "MLOps Engineer",
+            "AI Platform Engineer",
+            "Databricks Engineer",
+            "Data Engineer",
+            "Applied ML Engineer",
+        ],
+        "must_have_terms": ["mlops", "databricks", "ai platform", "feature engineering"],
+        "avoid_terms": [
+            "backend engineer",
+            "full stack",
+            "frontend developer",
+            "support engineer",
+            "qa engineer",
+        ],
+    },
+}
 
 def _current_year() -> int:
     return datetime.now().year
@@ -205,6 +241,29 @@ def _select_must_have_terms(
     return selected[:8]
 
 
+def _apply_profile_customizations(
+    candidate_name: str,
+    target_roles: list[str],
+    must_have: list[str],
+    avoid: list[str],
+) -> tuple[list[str], list[str], list[str]]:
+    key = candidate_name.lower()
+    for match, overrides in _PROFILE_CUSTOMIZATIONS.items():
+        if match not in key:
+            continue
+        if overrides.get("target_roles"):
+            target_roles = overrides["target_roles"]
+        if overrides.get("must_have_terms"):
+            extras = [term for term in overrides["must_have_terms"] if term not in must_have]
+            must_have = must_have + extras
+        if overrides.get("avoid_terms"):
+            avoid.extend(overrides["avoid_terms"])
+        break
+    if len(must_have) > 8:
+        must_have = must_have[:8]
+    return target_roles, must_have, avoid
+
+
 def extract_profile_v3(
     resume_text: str,
     candidate_name: str = "",
@@ -260,6 +319,10 @@ def extract_profile_v3(
         ]
     if "iot" in active_lanes or "conversational_ai" in active_lanes:
         avoid += ["microservices engineer", "systems integration specialist", "ai systems architect", "computer vision engineer"]
+
+    target_roles, must_have, avoid = _apply_profile_customizations(
+        candidate_name, target_roles, must_have, avoid
+    )
 
     return ProfileV3(
         candidate_name=candidate_name,
