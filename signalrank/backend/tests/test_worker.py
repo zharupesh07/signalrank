@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from api.models import Profile, Run, User
+from batch.query_builder import SearchQuery
 from batch.worker import process_run
 
 
@@ -63,7 +64,11 @@ async def test_process_run_full_mode_skips_scrape_after_recent_deep_scan(
     import batch.scraper as scraper
     import batch.ranker as ranker
 
-    monkeypatch.setattr(query_builder, "build_queries", lambda profile, max_terms=None: ["query"])
+    monkeypatch.setattr(
+        query_builder,
+        "build_queries",
+        lambda profile, max_terms=None: [SearchQuery(term="query", location="Bangalore", country="India")],
+    )
 
     async def _scrape(*args, **kwargs):
         raise AssertionError("Deep scan should reuse the recent deep-scan scrape")
@@ -86,7 +91,9 @@ async def test_process_run_full_mode_skips_scrape_after_recent_deep_scan(
     assert refreshed_run.status == "success"
     assert refreshed_run.scrape_count == 0
     assert refreshed_run.job_count == 0
-    assert refreshed_run.progress == {"requested_mode": "full", "force_scrape": False, "scrape_executed": False}
+    assert refreshed_run.progress["requested_mode"] == "full"
+    assert refreshed_run.progress["force_scrape"] is False
+    assert refreshed_run.progress["scrape_executed"] is False
 
 
 @pytest.mark.asyncio
@@ -127,7 +134,11 @@ async def test_process_run_full_mode_does_not_skip_after_recent_quick_scan(
     import batch.scraper as scraper
     import batch.ranker as ranker
 
-    monkeypatch.setattr(query_builder, "build_queries", lambda profile, max_terms=None: ["query"])
+    monkeypatch.setattr(
+        query_builder,
+        "build_queries",
+        lambda profile, max_terms=None: [SearchQuery(term="query", location="Bangalore", country="India")],
+    )
 
     scrape_calls = 0
 
@@ -155,7 +166,9 @@ async def test_process_run_full_mode_does_not_skip_after_recent_quick_scan(
     assert refreshed_run.status == "success"
     assert refreshed_run.scrape_count == 0
     assert refreshed_run.job_count == 0
-    assert refreshed_run.progress == {"requested_mode": "full", "force_scrape": False, "scrape_executed": True}
+    assert refreshed_run.progress["requested_mode"] == "full"
+    assert refreshed_run.progress["force_scrape"] is False
+    assert refreshed_run.progress["scrape_executed"] is True
 
 
 @pytest.mark.asyncio

@@ -12,7 +12,7 @@ async def test_get_cached_queries_uses_existing_cache(monkeypatch):
     cached = [SearchQuery(term="Engineer", location="Pune", country="India")]
     monkeypatch.setattr("batch.query_plan_cache.load_query_plan_cache", AsyncMock(return_value=cached))
     build_queries = MagicMock()
-    monkeypatch.setattr("batch.query_plan_cache.build_queries", build_queries)
+    monkeypatch.setattr("batch.query_plan_cache.query_builder.build_queries", build_queries)
 
     db = MagicMock()
     result = await get_cached_queries(
@@ -34,7 +34,7 @@ async def test_get_cached_queries_builds_and_stores_when_missing(monkeypatch):
     monkeypatch.setattr("batch.query_plan_cache.load_query_plan_cache", AsyncMock(return_value=cached))
     build_queries = MagicMock(return_value=[SearchQuery(term="Engineer", location="", country="India")])
     store_query_plan_cache = AsyncMock()
-    monkeypatch.setattr("batch.query_plan_cache.build_queries", build_queries)
+    monkeypatch.setattr("batch.query_plan_cache.query_builder.build_queries", build_queries)
     monkeypatch.setattr("batch.query_plan_cache.store_query_plan_cache", store_query_plan_cache)
 
     db = MagicMock()

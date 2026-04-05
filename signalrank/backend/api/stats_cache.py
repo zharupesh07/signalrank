@@ -7,6 +7,7 @@ from api.config import settings
 
 _STATS_CACHE_TTL_SECONDS = int(getattr(settings, "stats_cache_ttl_seconds", 30))
 _stats_cache: dict[str, tuple[float, Any]] = {}
+_MONOTONIC = time.monotonic
 
 
 def get_cached_stats(key: str):
@@ -14,14 +15,14 @@ def get_cached_stats(key: str):
     if not cached:
         return None
     stored_at, payload = cached
-    if (time.monotonic() - stored_at) >= _STATS_CACHE_TTL_SECONDS:
+    if (_MONOTONIC() - stored_at) >= _STATS_CACHE_TTL_SECONDS:
         _stats_cache.pop(key, None)
         return None
     return payload
 
 
 def set_cached_stats(key: str, payload: Any) -> None:
-    _stats_cache[key] = (time.monotonic(), payload)
+    _stats_cache[key] = (_MONOTONIC(), payload)
 
 
 def invalidate_stats_cache(*keys: str) -> None:

@@ -1,5 +1,6 @@
 import time
 
+import api.stats_cache as stats_cache
 from api.stats_cache import get_cached_stats, invalidate_stats_cache, set_cached_stats
 
 
@@ -23,5 +24,5 @@ def test_stats_cache_expires(monkeypatch):
     set_cached_stats(key, payload)
     assert get_cached_stats(key) == payload
 
-    monkeypatch.setattr("api.stats_cache.time.monotonic", lambda: time.monotonic() + 10_000)
+    monkeypatch.setattr(stats_cache, "_MONOTONIC", lambda: time.monotonic() + 10_000)
     assert get_cached_stats(key) is None
