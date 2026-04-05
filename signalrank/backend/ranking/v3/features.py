@@ -61,7 +61,7 @@ def title_similarity(job: dict, profile: ProfileV3) -> float:
             if any(term in raw_title for term in ("ai", "machine learning", "computer vision")) and not any(
                 term in raw_title for term in ("conversational", "iot", "embedded", "prototype", "research", "dialogflow")
             ):
-                ratio = min(ratio, 0.25)
+                ratio = min(ratio, 0.20)
         best = max(best, ratio)
     return best
 

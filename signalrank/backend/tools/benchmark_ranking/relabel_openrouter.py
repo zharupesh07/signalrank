@@ -156,9 +156,11 @@ async def relabel_snapshot(snapshot: Path, resume: str, labels_path: Path, api_k
     if labels_path.exists():
         labels_by_resume = json.loads(labels_path.read_text(encoding="utf-8"))
 
-    resume_labels: dict[str, str] = {}
+    resume_labels: dict[str, str] = dict(labels_by_resume.get(resume, {}))
     status_counts: Counter[str] = Counter()
-    for idx, job in enumerate(jobs[: limit or len(jobs)], start=1):
+    start_idx = len(resume_labels)
+    end_idx = min(len(jobs), limit) if limit is not None else len(jobs)
+    for idx, job in enumerate(jobs[start_idx:end_idx], start=start_idx + 1):
         result, label = await _label_job(resume_text, job, api_key)
         resume_labels[_job_id(job)] = label
         status_counts[result["status"]] += 1

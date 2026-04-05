@@ -259,7 +259,7 @@ def extract_profile_v3(
             "devops",
         ]
     if "iot" in active_lanes or "conversational_ai" in active_lanes:
-        avoid += ["microservices engineer", "systems integration specialist"]
+        avoid += ["microservices engineer", "systems integration specialist", "ai systems architect", "computer vision engineer"]
 
     return ProfileV3(
         candidate_name=candidate_name,
