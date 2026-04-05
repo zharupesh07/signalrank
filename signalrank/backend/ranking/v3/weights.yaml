@@ -1,0 +1,32 @@
+# Default feature weights for V3 scorer.
+# negative_hits must be negative (penalizes avoid terms).
+# Per-lane overrides replace (not add to) the default for that feature when that lane is active.
+
+defaults:
+  title_similarity: 0.25
+  skill_overlap: 0.35
+  role_family_match: 0.20
+  description_role_family_terms: 0.10
+  must_have_hits: 0.30
+  negative_hits: -0.40
+  seniority_match: 0.15
+  domain_match: 0.15
+  location_match: 0.05
+  recency_bonus: 0.10
+
+lane_overrides:
+  innovation:
+    role_family_match: 0.50
+    description_role_family_terms: 0.30
+  iot:
+    role_family_match: 0.40
+    skill_overlap: 0.45
+  conversational_ai:
+    role_family_match: 0.40
+    skill_overlap: 0.45
+  network:
+    role_family_match: 0.50
+    must_have_hits: 0.45
+  r_and_d:
+    role_family_match: 0.40
+    description_role_family_terms: 0.30
