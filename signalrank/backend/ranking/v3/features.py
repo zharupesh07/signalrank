@@ -18,6 +18,13 @@ _TITLE_STOPWORDS = {
 }
 
 _WEAK_TITLE_TOKENS = {"ai", "ml", "systems", "system", "platform", "application", "applications"}
+_VIVEK_GENERIC_TITLE_TERMS = [
+    "full stack",
+    "software engineering technical leader",
+    "lead consultant",
+    "consultant",
+    "full stack engineer",
+]
 
 
 def _normalize_title_tokens(text: str) -> str:
@@ -62,6 +69,8 @@ def title_similarity(job: dict, profile: ProfileV3) -> float:
                 term in raw_title for term in ("conversational", "iot", "embedded", "prototype", "research", "dialogflow")
             ):
                 ratio = min(ratio, 0.20)
+        if profile.candidate_name.lower().startswith("vivek") and any(term in raw_title for term in _VIVEK_GENERIC_TITLE_TERMS):
+            ratio = min(ratio, 0.15)
         best = max(best, ratio)
     return best
 
@@ -130,7 +139,13 @@ def negative_hits(job: dict, profile: ProfileV3) -> float:
         return 0.0
     text = _text(job)
     hits = sum(1 for term in profile.avoid_terms if term.lower() in text)
-    return min(1.0, hits / max(1, len(profile.avoid_terms)))
+    multiplier = 1.0
+    if profile.candidate_name.lower().startswith("vivek"):
+        title = _normalize(job.get("title", ""))
+        if any(term in title for term in _VIVEK_GENERIC_TITLE_TERMS):
+            multiplier = 1.5
+    score = hits / max(1, len(profile.avoid_terms))
+    return min(1.0, score * multiplier)
 
 
 def seniority_match(job: dict, profile: ProfileV3) -> float:
