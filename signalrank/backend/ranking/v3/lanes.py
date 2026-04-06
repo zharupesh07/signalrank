@@ -15,6 +15,34 @@ class Lane:
 
 
 LANE_REGISTRY: dict[str, Lane] = {
+    "mlops_platform": Lane(
+        name="mlops_platform",
+        detection_keywords=[
+            "mlops", "ml platform", "model serving", "model deployment",
+            "feature store", "model registry", "kubeflow", "mlflow", "databricks",
+            "ai platform", "llmops", "model monitoring", "ml infrastructure",
+            "inference", "pipeline orchestration", "data pipeline",
+        ],
+        query_templates=[
+            "MLOps engineer", "ML platform engineer", "AI platform engineer",
+            "model deployment engineer", "ML infrastructure engineer",
+            "LLMOps engineer", "feature engineering", "databricks engineer",
+        ],
+        must_have_terms=[
+            "mlops", "ml platform", "model serving", "kubeflow", "mlflow",
+            "databricks", "feature store", "model registry",
+        ],
+        negative_terms=[
+            "data scientist", "research scientist", "data analyst",
+            "business analyst", "qa engineer", "support engineer",
+        ],
+        weight_overrides={
+            "must_have_hits": 0.50,
+            "skill_overlap": 0.40,
+            "role_family_match": 0.30,
+            "negative_hits": -0.50,
+        },
+    ),
     "innovation": Lane(
         name="innovation",
         detection_keywords=[

@@ -8,8 +8,8 @@ from ranking.v3.lanes import LANE_REGISTRY
 from ranking.v3.profile import ProfileV3
 
 
-def _normalize(text: str) -> str:
-    return re.sub(r"\s+", " ", text.lower().strip())
+def _normalize(text: str | None) -> str:
+    return re.sub(r"\s+", " ", (text or "").lower().strip())
 
 
 _TITLE_STOPWORDS = {

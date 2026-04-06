@@ -15,6 +15,11 @@ defaults:
   recency_bonus: 0.10
 
 lane_overrides:
+  mlops_platform:
+    must_have_hits: 0.50
+    skill_overlap: 0.40
+    role_family_match: 0.30
+    negative_hits: -0.50
   innovation:
     role_family_match: 0.50
     description_role_family_terms: 0.30

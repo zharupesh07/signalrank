@@ -43,6 +43,7 @@ _LANE_SKILL_PRIORITIES: dict[str, tuple[str, ...]] = {
     "conversational_ai": ("dialogflow", "rasa", "nlp", "llm", "gpt"),
     "innovation": ("prototype", "prototyping", "innovation", "mvp"),
     "r_and_d": ("research", "experimental", "prototype", "poc"),
+    "mlops_platform": ("mlflow", "kubeflow", "databricks", "mlops", "sagemaker", "airflow"),
 }
 
 _PROFILE_CUSTOMIZATIONS: dict[str, dict[str, list[str]]] = {
@@ -68,14 +69,36 @@ _PROFILE_CUSTOMIZATIONS: dict[str, dict[str, list[str]]] = {
             "MLOps Engineer",
             "AI Platform Engineer",
             "Databricks Engineer",
-            "Data Engineer",
+            "ML Infrastructure Engineer",
             "Applied ML Engineer",
         ],
-        "must_have_terms": ["mlops", "databricks", "ai platform", "feature engineering"],
+        "must_have_terms": ["mlops", "databricks", "ai platform", "feature engineering", "kubeflow", "mlflow"],
         "avoid_terms": [
+            "data scientist",
+            "research scientist",
+            "data analyst",
             "backend engineer",
             "full stack",
             "frontend developer",
+            "support engineer",
+            "qa engineer",
+        ],
+    },
+    "example": {
+        "target_roles": [
+            "AI Platform Engineer",
+            "Senior AI Engineer",
+            "MLOps Engineer",
+            "Senior ML Engineer",
+            "AI Infrastructure Engineer",
+        ],
+        "must_have_terms": ["mlops", "ai platform", "model serving", "mlflow", "llm", "inference"],
+        "avoid_terms": [
+            "data scientist",
+            "data analyst",
+            "research scientist",
+            "junior",
+            "entry level",
             "support engineer",
             "qa engineer",
         ],
