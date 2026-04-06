@@ -137,19 +137,19 @@ def test_negative_hits_absent():
 
 def test_seniority_match_exact():
     profile = _make_profile(seniority_band="senior")
-    job = _make_job(seniority_band="senior")
+    job = _make_job(title="Senior ML Engineer")
     assert seniority_match(job, profile) == 1.0
 
 
 def test_seniority_match_mismatch():
     profile = _make_profile(seniority_band="senior")
-    job = _make_job(seniority_band="junior")
+    job = _make_job(title="Junior ML Engineer")
     assert seniority_match(job, profile) == -1.0
 
 
 def test_seniority_match_unknown():
     profile = _make_profile(seniority_band="senior")
-    job = _make_job(seniority_band="unknown")
+    job = _make_job(title="ML Engineer")
     assert seniority_match(job, profile) == 0.0
 
 

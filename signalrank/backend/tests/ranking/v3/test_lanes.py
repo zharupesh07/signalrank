@@ -17,11 +17,12 @@ def test_aditya_activates_network_lane():
     assert "innovation" not in lanes
 
 
-def test_example_no_special_lanes():
+def test_example_activates_mlops_platform_lane():
     resume_text = "Machine learning engineer with PyTorch, deep learning, data pipelines"
     target_roles = ["ML Engineer", "AI Platform Engineer"]
     lanes = detect_active_lanes(resume_text, target_roles, current_focus=None)
-    assert lanes == []
+    assert "mlops_platform" in lanes
+    assert "network" not in lanes
 
 
 def test_current_focus_overrides_resume():

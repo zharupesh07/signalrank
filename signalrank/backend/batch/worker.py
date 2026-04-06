@@ -461,6 +461,10 @@ async def process_run(
                     from sqlalchemy.dialects.postgresql import insert as pg_insert
                     from domain.job_profile import build_job_profile
                     from domain.role_clusters import infer_clusters_from_job_text
+                    # Quality filter: skip stub jobs (no title or very short description)
+                    jobs = [j for j in jobs if j.title and len(j.description or "") >= 20]
+                    if not jobs:
+                        return
                     async with session_factory() as pdb:
                         batch_size = 2000
                         for i in range(0, len(jobs), batch_size):
@@ -598,7 +602,12 @@ async def process_run(
 
             t_rank = time.monotonic()
             try:
-                from batch.ranker import score_jobs_for_user
+                _scorer_version = os.environ.get("SCORER_VERSION", "v2").lower()
+                if _scorer_version == "v4":
+                    from ranking.v4.db_scorer import score_jobs_for_user
+                else:
+                    from batch.ranker import score_jobs_for_user
+                logger.info("Using scorer version: %s", _scorer_version, extra={"run_id": run_id})
                 ranked_df = await asyncio.wait_for(
                     score_jobs_for_user(
                         db=db,

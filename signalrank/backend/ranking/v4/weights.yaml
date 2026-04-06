@@ -1,0 +1,54 @@
+# V4 feature weights. negative_hits must be negative (penalizes avoid terms).
+# Per-lane overrides replace (not add to) the default for that feature.
+# semantic_similarity weight is reduced in specialist lanes where keyword
+# matching is more reliable than embedding proximity.
+
+defaults:
+  semantic_similarity: 0.20
+  title_similarity: 0.15
+  skill_overlap: 0.15
+  must_have_hits: 0.15
+  role_family_match: 0.10
+  company_tier_score: 0.08
+  seniority_match: 0.10
+  recency_score: 0.08
+  negative_hits: -0.30
+  location_match: 0.05
+  description_role_family_terms: 0.05
+  description_quality: 0.03
+
+lane_overrides:
+  mlops_platform:
+    semantic_similarity: 0.12
+    must_have_hits: 0.25
+    skill_overlap: 0.20
+    role_family_match: 0.15
+    negative_hits: -0.40
+  network:
+    semantic_similarity: 0.08
+    role_family_match: 0.25
+    must_have_hits: 0.25
+    skill_overlap: 0.15
+    negative_hits: -0.35
+  sap_erp:
+    semantic_similarity: 0.08
+    role_family_match: 0.25
+    must_have_hits: 0.25
+    skill_overlap: 0.15
+  iot:
+    semantic_similarity: 0.12
+    role_family_match: 0.20
+    skill_overlap: 0.20
+    must_have_hits: 0.18
+  conversational_ai:
+    role_family_match: 0.20
+    skill_overlap: 0.20
+    must_have_hits: 0.18
+  innovation:
+    role_family_match: 0.25
+    description_role_family_terms: 0.15
+    must_have_hits: 0.15
+  r_and_d:
+    role_family_match: 0.20
+    description_role_family_terms: 0.12
+    must_have_hits: 0.15

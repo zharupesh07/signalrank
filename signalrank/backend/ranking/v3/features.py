@@ -148,10 +148,26 @@ def negative_hits(job: dict, profile: ProfileV3) -> float:
     return min(1.0, score * multiplier)
 
 
+_SENIORITY_TITLE_PATTERNS: list[tuple[list[str], str]] = [
+    (["principal", "distinguished", "architect", "head of"], "principal"),
+    (["staff", "lead", "manager", "director", "vp", "vice president"], "senior"),
+    (["senior", "sr.", "sr "], "senior"),
+    (["junior", "entry", "associate", "intern", "entry-level"], "junior"),
+]
+
+
+def _infer_job_seniority(title: str) -> str:
+    t = title.lower()
+    for keywords, band in _SENIORITY_TITLE_PATTERNS:
+        if any(kw in t for kw in keywords):
+            return band
+    return "mid"
+
+
 def seniority_match(job: dict, profile: ProfileV3) -> float:
-    """-1 mismatch, 0 unknown, 1 match."""
-    job_band = str(job.get("seniority_band", "unknown")).lower()
-    if job_band == "unknown":
+    """-1 mismatch, 0 unknown/mid, 1 match. Infers from title when seniority_band column absent."""
+    job_band = _infer_job_seniority(job.get("title") or "")
+    if job_band == "mid":
         return 0.0
     return 1.0 if job_band == profile.seniority_band.lower() else -1.0
 
