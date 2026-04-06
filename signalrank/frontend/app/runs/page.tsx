@@ -108,6 +108,7 @@ function duration(start: string | null, end: string | null) {
 export default function RunsPage() {
   const { data: session } = useSession();
   const token = (session as { accessToken?: string })?.accessToken ?? "";
+  const isAdmin = (session as { isAdmin?: boolean })?.isAdmin ?? false;
 
   const { toast } = useToast();
   const [runs, setRuns] = useState<RunRecord[]>([]);
@@ -115,6 +116,18 @@ export default function RunsPage() {
   const [triggering, setTriggering] = useState(false);
   const [stoppingRunId, setStoppingRunId] = useState<string | null>(null);
   const [activeRun, setActiveRun] = useState<Run | null>(null);
+  const [executorType, setExecutorType] = useState<"local" | "cloud">(
+    () =>
+      typeof window !== "undefined"
+        ? ((localStorage.getItem("signalrank:executor_type") as "local" | "cloud" | null) ??
+           "cloud")
+        : "cloud"
+  );
+
+  const handleExecutorChange = (value: "local" | "cloud") => {
+    setExecutorType(value);
+    localStorage.setItem("signalrank:executor_type", value);
+  };
 
   async function refreshList() {
     const r = await api.runs.list(token);
@@ -150,7 +163,7 @@ export default function RunsPage() {
       ...prev.filter((run) => run.run_id !== optimisticRun.id),
     ]);
     try {
-      const res = await api.runs.trigger(token);
+      const res = await api.runs.trigger(token, undefined, undefined, isAdmin ? executorType : undefined);
       const newRun = makeQueuedRun(res.run_id);
       setActiveRun(newRun);
       setRuns((prev) => [
@@ -220,6 +233,30 @@ export default function RunsPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {isAdmin && (
+              <div className="flex items-center gap-1 rounded-md border p-1">
+                <button
+                  onClick={() => handleExecutorChange("cloud")}
+                  className={`px-2 py-1 text-xs rounded ${
+                    executorType === "cloud"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  Cloud
+                </button>
+                <button
+                  onClick={() => handleExecutorChange("local")}
+                  className={`px-2 py-1 text-xs rounded ${
+                    executorType === "local"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  Local
+                </button>
+              </div>
+            )}
             <button
               onClick={triggerRun}
               disabled={triggering || (activeRun != null && LIVE.includes(activeRun.status))}
