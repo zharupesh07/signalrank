@@ -162,17 +162,23 @@ info "Running database migrations..."
 
 # ── Kill any stale processes ──────────────────────────────────────────────────
 
+# Kill stale worker processes first (no port to find them by)
+pkill -f "batch.worker_main" 2>/dev/null || true
+
 for port in 8000 3000; do
-  pid=$(lsof -ti tcp:$port 2>/dev/null) || true
-  if [[ -n "$pid" ]]; then
-    info "Killing stale process on port $port (PID $pid)..."
-    kill "$pid" 2>/dev/null || true
-    sleep 0.5
+  local_pids=$(lsof -ti tcp:$port 2>/dev/null) || true
+  if [[ -n "$local_pids" ]]; then
+    info "Killing stale process(es) on port $port (PIDs: $(echo "$local_pids" | tr '\n' ' '))..."
+    echo "$local_pids" | xargs kill -9 2>/dev/null || true
   fi
 done
-
-# Kill stale worker processes (they don't bind a port so lsof can't find them)
-pkill -f "batch.worker_main" 2>/dev/null || true
+# Wait until both ports are actually free
+for port in 8000 3000; do
+  for _ in $(seq 1 10); do
+    lsof -ti tcp:$port &>/dev/null || break
+    sleep 0.5
+  done
+done
 
 info "Starting backend on http://localhost:8000 ..."
 (cd "$BACKEND_DIR" && uv run uvicorn api.main:app --port 8000 --reload) &
