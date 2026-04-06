@@ -663,6 +663,10 @@ async def process_run(
                 logger.info("Run %s stopped before saving results (%s)", run_id, stop_state)
                 return
 
+            # Normalize scorer output: V2 uses seniority_score_dim, V4 uses seniority_score
+            if "seniority_score_dim" in ranked_df.columns and "seniority_score" not in ranked_df.columns:
+                ranked_df = ranked_df.rename(columns={"seniority_score_dim": "seniority_score"})
+
             insert_batch: list[dict] = []
             for row in ranked_df.itertuples(index=False):
                 insert_batch.append({
@@ -672,7 +676,7 @@ async def process_run(
                     "semantic_score": float(row.semantic_score or 0),
                     "skills_score": float(row.skills_score or 0),
                     "company_score": float(row.company_score or 0),
-                    "seniority_score": float(getattr(row, "seniority_score", None) or getattr(row, "seniority_score_dim", None) or 0),
+                    "seniority_score": float(row.seniority_score or 0),
                     "location_score": float(row.location_score or 0),
                     "recency_score": float(row.recency_score or 0),
                     "final_score": float(row.final_score or 0),
