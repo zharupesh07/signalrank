@@ -311,7 +311,9 @@ def _looks_like_location_line(line: str) -> bool:
         return False
     if re.fullmatch(r"[,/–—\- ]+", cleaned):
         return False
-    return len(cleaned) <= 80 and not cleaned.lower().startswith("tech:")
+    if cleaned.lower().startswith("tech:"):
+        return False
+    return _looks_like_location(cleaned)
 
 
 def _split_title_company(header: str) -> tuple[str, str]:

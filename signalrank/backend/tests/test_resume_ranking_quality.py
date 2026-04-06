@@ -10,9 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.models import JobRaw, Profile, User
 from api.routes.onboarding import _extract_text_from_pdf
 from batch.ranker import score_jobs_for_user
+from tests._paths import repo_resumes_dir
 
 
-RESUMES_DIR = Path(__file__).resolve().parents[3] / "resumes"
+RESUMES_DIR = repo_resumes_dir()
 SAMPLE_PDFS = sorted(RESUMES_DIR.glob("*.pdf"))
 
 CASES = (

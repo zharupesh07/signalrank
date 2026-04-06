@@ -14,9 +14,10 @@ from domain.resume_editor import (
 from llm.resume_tailor import _normalize_tailored_content, TailoredContent
 from llm.resume_parser import parse_resume_from_images, parse_resume_structure
 from llm.resume_tailor import check_page_count, render_and_compile_content, validate_resume_artifacts
+from tests._paths import repo_resumes_dir
 
 
-RESUMES_DIR = Path(__file__).resolve().parents[3] / "resumes"
+RESUMES_DIR = repo_resumes_dir()
 SAMPLE_PDFS = sorted(RESUMES_DIR.glob("*.pdf"))
 
 _EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)

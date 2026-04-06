@@ -6,9 +6,10 @@ from pathlib import Path
 from api.models import Profile
 from api.routes.onboarding import _extract_text_from_pdf
 from domain.onboarding_profile import extract_resume_seed_signals, should_run_onboarding_llm
+from tests._paths import repo_resumes_dir
 
 
-RESUMES_DIR = Path(__file__).resolve().parents[3] / "resumes"
+RESUMES_DIR = repo_resumes_dir()
 
 
 @pytest.fixture

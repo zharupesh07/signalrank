@@ -19,9 +19,10 @@ from domain.onboarding_profile import build_profile_patch
 from batch.scraper import RawJob
 from batch.worker import process_run
 from llm.resume_parser import ResumeParseResult
+from tests._paths import repo_resumes_dir
 
 
-RESUMES_DIR = Path(__file__).resolve().parents[3] / "resumes"
+RESUMES_DIR = repo_resumes_dir()
 _EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)
 
 

@@ -7,7 +7,8 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models import QueryPlanCache, gen_uuid
-from batch.query_builder import SearchQuery, build_queries
+from batch import query_builder
+from batch.query_builder import SearchQuery
 from domain.artifact_versions import QUERY_PLAN_VERSION, query_plan_cache_key
 
 
@@ -120,7 +121,7 @@ async def get_cached_queries(
     )
     if cached is not None:
         return cached
-    queries = build_queries(profile, max_terms=max_terms)
+    queries = query_builder.build_queries(profile, max_terms=max_terms)
     if profile_fingerprint:
         await store_query_plan_cache(
             db,

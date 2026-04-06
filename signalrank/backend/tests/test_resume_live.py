@@ -18,9 +18,10 @@ from domain.resume_editor import editor_to_tailored_content, merge_resume_editor
 from llm.openrouter import OpenRouterClient
 from llm.resume_parser import parse_resume_from_images
 from llm.resume_tailor import check_page_count, render_and_compile_content, validate_resume_artifacts
+from tests._paths import repo_resumes_dir
 
 
-RESUMES_DIR = Path(__file__).resolve().parents[3] / "resumes"
+RESUMES_DIR = repo_resumes_dir()
 SAMPLE_PDFS = sorted(RESUMES_DIR.glob("*.pdf"))
 LIVE_VISION_MODELS = [
     "nvidia/nemotron-nano-12b-v2-vl:free",
@@ -35,7 +36,7 @@ def _digits_only(value: str) -> str:
 
 def _selected_sample_pdfs() -> list[Path]:
     if not SAMPLE_PDFS:
-        pytest.skip("No sample PDFs found")
+        pytest.skip("No sample PDFs found", allow_module_level=True)
     raw_idx = os.getenv("LIVE_RESUME_SAMPLE_INDEX", "").strip()
     if not raw_idx:
         return SAMPLE_PDFS
