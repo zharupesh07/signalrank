@@ -1,7 +1,7 @@
 [build]
 builder = "dockerfile"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "Dockerfile.ranking-worker"
 
 [deploy]
-startCommand = "python -m api.worker_main"
+startCommand = "python -m batch.worker_main poll"
 restartPolicyType = "on_failure"
