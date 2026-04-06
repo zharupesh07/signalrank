@@ -133,6 +133,10 @@ set -a
 source "$BACKEND_ENV"
 set +a
 
+# LOCAL_WORKER in .env controls Docker-based split-DB mode (Railway→local).
+# Always unset it here so local dev processes don't enter that mode.
+unset LOCAL_WORKER
+
 # ── Alembic preflight ─────────────────────────────────────────────────────────
 
 info "Checking Alembic revision graph..."
@@ -155,6 +159,17 @@ info "Running database migrations..."
 (cd "$BACKEND_DIR" && uv run alembic upgrade head)
 
 # ── Start services ────────────────────────────────────────────────────────────
+
+# ── Kill any stale processes on our ports ────────────────────────────────────
+
+for port in 8000 3000; do
+  pid=$(lsof -ti tcp:$port 2>/dev/null) || true
+  if [[ -n "$pid" ]]; then
+    info "Killing stale process on port $port (PID $pid)..."
+    kill "$pid" 2>/dev/null || true
+    sleep 0.5
+  fi
+done
 
 info "Starting backend on http://localhost:8000 ..."
 (cd "$BACKEND_DIR" && uv run uvicorn api.main:app --port 8000 --reload) &

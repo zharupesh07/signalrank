@@ -498,6 +498,7 @@ async def process_run(
                                         "date_posted": insert_stmt.excluded.date_posted,
                                         "role_clusters": insert_stmt.excluded.role_clusters,
                                         "job_profile": insert_stmt.excluded.job_profile,
+                                        "ingested_at": insert_stmt.excluded.ingested_at,
                                     },
                                 )
                             )
