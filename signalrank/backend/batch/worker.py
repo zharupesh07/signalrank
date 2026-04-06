@@ -989,6 +989,13 @@ async def _claim_pending_run(session_factory: async_sessionmaker, mode: str, loc
 
         if local_worker:
             executor_filter = Run.executor_type == "local"
+        elif os.environ.get("CLAIM_ALL_EXECUTOR_TYPES", "").lower() == "true":
+            # Local dev: plain worker claims all runs regardless of executor_type
+            executor_filter = or_(
+                Run.executor_type.is_(None),
+                Run.executor_type == "cloud",
+                Run.executor_type == "local",
+            )
         else:
             executor_filter = or_(
                 Run.executor_type.is_(None),

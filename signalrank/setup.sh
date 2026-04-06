@@ -169,7 +169,7 @@ if [[ $_START_WORKER -eq 1 ]]; then
   # Run a plain poll worker against the local postgres (DATABASE_URL).
   # LOCAL_WORKER=true is for Railway-triggered runs only; local dev uses a regular worker.
   info "Starting worker (SCORER_VERSION=v4) against local DB..."
-  (cd "$BACKEND_DIR" && LOCAL_WORKER=false SCORER_VERSION=v4 RUN_API_WORKER=false uv run python -m batch.worker_main poll) &
+  (cd "$BACKEND_DIR" && LOCAL_WORKER=false CLAIM_ALL_EXECUTOR_TYPES=true SCORER_VERSION=v4 RUN_API_WORKER=false uv run python -m batch.worker_main poll) &
   WORKER_PID=$!
 fi
 
