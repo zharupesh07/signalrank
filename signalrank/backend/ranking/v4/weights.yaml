@@ -6,16 +6,16 @@
 defaults:
   semantic_similarity: 0.20
   title_similarity: 0.15
-  skill_overlap: 0.15
-  must_have_hits: 0.15
-  role_family_match: 0.10
-  company_tier_score: 0.08
+  skill_overlap: 0.12
+  must_have_hits: 0.12
+  role_family_match: 0.08
+  company_tier_score: 0.15
   seniority_match: 0.10
   recency_score: 0.08
   negative_hits: -0.30
   location_match: 0.05
-  description_role_family_terms: 0.05
-  description_quality: 0.03
+  description_role_family_terms: 0.04
+  description_quality: 0.02
 
 lane_overrides:
   mlops_platform:

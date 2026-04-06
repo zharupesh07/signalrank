@@ -189,18 +189,25 @@ def recency_score(job: dict, profile: CandidateProfile) -> float:
 
 
 def company_tier_score(job: dict, profile: CandidateProfile) -> float:
-    """Company tier lookup, normalized to [0, 1].
+    """Company tier lookup via CompanyScorer, normalized to [0, 1].
 
-    Checks job['company_tier'] (pre-computed at ingest via job_profile JSONB),
-    then profile.company_tier_map, then falls back to _DEFAULT_COMPANY_SCORE.
+    Uses the same CompanyScorer(cfg).classify() path as V2, reading tier lists
+    from config/base.yaml. The scorer instance is cached on profile.company_tier_map
+    as a pre-built {normalized_name: tier} dict to avoid reloading config per job.
+    Falls back to _DEFAULT_COMPANY_SCORE (0.40) for unknown companies.
     """
-    tier = (job.get("company_tier") or "").lower().strip()
-    if not tier and job.get("job_profile"):
-        jp = job.get("job_profile") or {}
-        tier = (jp.get("company_tier") or "").lower().strip()
-    if not tier and profile.company_tier_map:
-        company = _normalize(job.get("company", ""))
-        tier = profile.company_tier_map.get(company, "")
+    company = job.get("company") or ""
+    if not company:
+        return _DEFAULT_COMPANY_SCORE
+
+    # profile.company_tier_map holds pre-classified tiers: company_name -> tier
+    # Built once in extraction.py via CompanyScorer
+    if profile.company_tier_map:
+        from domain.company import _norm
+        tier = profile.company_tier_map.get(_norm(company), "default")
+    else:
+        tier = "default"
+
     return _COMPANY_TIER_SCORES.get(tier, _DEFAULT_COMPANY_SCORE)
 
 

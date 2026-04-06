@@ -272,6 +272,9 @@ def extract_profile_v4(
     if profile_cfg.get("avoid_terms"):
         avoid.extend(profile_cfg["avoid_terms"])
 
+    # Build company tier lookup from base config (same as V2's CompanyScorer)
+    company_tier_map = _build_company_tier_map()
+
     return CandidateProfile(
         target_roles=target_roles,
         weighted_skills=weighted_skills,
@@ -284,4 +287,17 @@ def extract_profile_v4(
         current_focus=current_focus,
         active_lanes=active_lanes,
         years_of_experience=None,
+        company_tier_map=company_tier_map,
     )
+
+
+def _build_company_tier_map() -> dict[str, str]:
+    """Load company tier lookup from base config using CompanyScorer's normalization."""
+    try:
+        from batch.context import build_context
+        from domain.company import CompanyScorer
+        cfg = build_context(user_id="__base__", resume_text="").config
+        scorer = CompanyScorer(cfg)
+        return dict(scorer._tier_lookup)
+    except Exception:
+        return {}
