@@ -1,0 +1,26 @@
+# Local worker: runs scraping + ONNX embedding + V4 ranking locally.
+# Syncs top-100 job_results to Railway for the production frontend.
+#
+# Usage:
+#   # Poll mode (picks up runs triggered from frontend):
+#   docker compose -f docker-compose.local.yml up
+#
+#   # Manual one-shot (creates and processes a run for a specific user):
+#   docker compose -f docker-compose.local.yml run --rm local-worker \
+#     python -m batch.worker_main once-local --user-id <uuid>
+
+services:
+  local-worker:
+    build:
+      context: ./signalrank/backend
+      dockerfile: Dockerfile.ranking-worker
+    env_file:
+      - ./signalrank/backend/.env
+    environment:
+      LOCAL_WORKER: "true"
+      SCORER_VERSION: "v4"
+      RUN_API_WORKER: "false"
+      # DATABASE_URL should point to local signalrank-pg (set in .env)
+      # DATABASE_URL_RAILWAY should point to Railway (set in .env)
+    network_mode: host
+    restart: "no"
