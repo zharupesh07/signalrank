@@ -61,13 +61,20 @@ def score_job(job: dict, profile: CandidateProfile, weights: dict[str, float]) -
 
 
 def score_jobs(jobs: list[dict], profile: CandidateProfile) -> list[dict]:
-    """Score all jobs, deduplicate, return sorted list with score and features."""
+    """Score all jobs, deduplicate, return sorted list with score and features.
+
+    Scores are normalized to [0, 1] against the theoretical maximum (sum of
+    positive weights), not relative to the batch top. This ensures a score of
+    1.0 means a perfect match, not just "best in a bad batch".
+    """
     weights = load_weights(active_lanes=profile.active_lanes)
+    max_possible = sum(w for w in weights.values() if w > 0) or 1.0
     results: list[dict] = []
     for job in jobs:
         features = compute_features(job, profile)
         total = sum(features[feat] * weights.get(feat, 0.0) for feat in features)
-        results.append({**job, "score": total, "features": features})
+        normalized = max(0.0, min(1.0, total / max_possible))
+        results.append({**job, "score": normalized, "features": features})
     return sorted(results, key=lambda x: x["score"], reverse=True)
 
 
@@ -96,13 +103,6 @@ def rank_jobs_v4(
     )
     fresh = _dedup_jobs([j for j in jobs if not _is_stale(j)])
     scored = score_jobs(fresh, profile)
-
-    # Normalize to [0, 1] relative to top result
-    if scored:
-        max_score = scored[0]["score"]
-        if max_score > 0:
-            for r in scored:
-                r["score"] = r["score"] / max_score
 
     profile_dict = dataclasses.asdict(profile)
     for r in scored:

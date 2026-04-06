@@ -178,15 +178,8 @@ async def score_jobs_for_user(
         attach_embeddings_to_jobs(jobs, emb_map)
         logger.info("V4: attached embeddings for %d/%d jobs", len(emb_map), len(jobs))
 
-    # Score all jobs
+    # Score all jobs (scores already normalized to [0,1] absolute by score_jobs)
     scored = score_jobs(jobs, profile)
-
-    # Normalize scores to [0, 1]
-    if scored:
-        max_score = scored[0]["score"]
-        if max_score > 0:
-            for r in scored:
-                r["score"] = r["score"] / max_score
 
     # Convert to DataFrame for job_results insertion (keeps V2 interface)
     df = _results_to_dataframe(scored)
