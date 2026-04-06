@@ -90,10 +90,13 @@ async def _run_poll(args: argparse.Namespace) -> None:
     _, session_factory = _build_engine(db_url)
 
     if args.once:
-        await asyncio.gather(*[
-            _worker_loop_for_mode(session_factory, mode)
-            for mode in args.scan_modes
-        ])
+        sem = asyncio.Semaphore(args.concurrency)
+
+        async def _run_with_sem(mode: str) -> None:
+            async with sem:
+                await _worker_loop_for_mode(session_factory, mode)
+
+        await asyncio.gather(*[_run_with_sem(mode) for mode in args.scan_modes])
     else:
         await worker_loop(session_factory)
 
@@ -134,7 +137,6 @@ async def _run_enqueue_cron(args: argparse.Namespace) -> None:
             enqueued += 1
         await session.commit()
         logger.info("Cron enqueue: %d enqueued, %d skipped (already active)", enqueued, skipped)
-        print(f"Enqueued {enqueued} runs, skipped {skipped} (already active)")
 
 
 def main() -> None:
