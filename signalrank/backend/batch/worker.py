@@ -672,7 +672,7 @@ async def process_run(
                     "semantic_score": float(row.semantic_score or 0),
                     "skills_score": float(row.skills_score or 0),
                     "company_score": float(row.company_score or 0),
-                    "seniority_score": float(row.seniority_score_dim or 0),
+                    "seniority_score": float(getattr(row, "seniority_score", None) or getattr(row, "seniority_score_dim", None) or 0),
                     "location_score": float(row.location_score or 0),
                     "recency_score": float(row.recency_score or 0),
                     "final_score": float(row.final_score or 0),
