@@ -90,6 +90,7 @@ _JOBS_RAW_JOB_PROFILE_LOCK_KEY = 1_947_017_468
 _JOB_RESULTS_REPORTS_LOCK_KEY = 1_947_017_469
 _QUERY_PLAN_CACHE_LOCK_KEY = 1_947_017_470
 _SCRAPE_QUERY_CACHE_LOCK_KEY = 1_947_017_471
+_RUNS_CLAIM_FIELDS_LOCK_KEY = 1_947_017_472
 
 
 class Base(DeclarativeBase):
@@ -145,6 +146,14 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
         checks = [
             ("runs", "error"),
             ("runs", "mode"),
+            ("runs", "claimed_by"),
+            ("runs", "claim_token"),
+            ("runs", "lease_expires_at"),
+            ("runs", "last_heartbeat_at"),
+            ("runs", "attempt_count"),
+            ("runs", "cancel_requested"),
+            ("runs", "trigger_source"),
+            ("runs", "executor_type"),
             ("profiles", "candidate_profile"),
             ("jobs_raw", "job_profile"),
             ("job_results", "fit_band"),
@@ -171,7 +180,10 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
                             WHERE table_schema = current_schema()
                               AND table_name IN ('runs', 'profiles', 'jobs_raw', 'job_results', 'query_plan_cache', 'scrape_query_cache')
                               AND column_name IN (
-                                  'error', 'mode', 'candidate_profile', 'job_profile',
+                                  'error', 'mode', 'claimed_by', 'claim_token',
+                                  'lease_expires_at', 'last_heartbeat_at', 'attempt_count',
+                                  'cancel_requested', 'trigger_source', 'executor_type',
+                                  'candidate_profile', 'job_profile',
                                   'fit_band', 'confidence_band', 'explanation_summary',
                                   'match_report', 'verification_report',
                                   'cache_key', 'provider'
@@ -184,15 +196,19 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
         }
 
         missing = [item for item in checks if item not in existing]
-        if not missing:
-            if target is _active_engine:
-                _schema_compat_checked = True
-            return
 
         if conn.dialect.name == "postgresql":
             lock_map = {
                 ("runs", "error"): _RUNS_ERROR_SCHEMA_LOCK_KEY,
                 ("runs", "mode"): _RUNS_MODE_SCHEMA_LOCK_KEY,
+                ("runs", "claimed_by"): _RUNS_CLAIM_FIELDS_LOCK_KEY,
+                ("runs", "claim_token"): _RUNS_CLAIM_FIELDS_LOCK_KEY,
+                ("runs", "lease_expires_at"): _RUNS_CLAIM_FIELDS_LOCK_KEY,
+                ("runs", "last_heartbeat_at"): _RUNS_CLAIM_FIELDS_LOCK_KEY,
+                ("runs", "attempt_count"): _RUNS_CLAIM_FIELDS_LOCK_KEY,
+                ("runs", "cancel_requested"): _RUNS_CLAIM_FIELDS_LOCK_KEY,
+                ("runs", "trigger_source"): _RUNS_CLAIM_FIELDS_LOCK_KEY,
+                ("runs", "executor_type"): _RUNS_CLAIM_FIELDS_LOCK_KEY,
                 ("profiles", "candidate_profile"): _PROFILES_CANDIDATE_PROFILE_LOCK_KEY,
                 ("jobs_raw", "job_profile"): _JOBS_RAW_JOB_PROFILE_LOCK_KEY,
                 ("job_results", "fit_band"): _JOB_RESULTS_REPORTS_LOCK_KEY,
@@ -226,6 +242,28 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
             )
             await conn.execute(text("ALTER TABLE runs ALTER COLUMN mode SET DEFAULT 'quick'"))
             await conn.execute(text("ALTER TABLE runs ALTER COLUMN mode SET NOT NULL"))
+        if ("runs", "claimed_by") in missing:
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS claimed_by VARCHAR(255)"))
+        if ("runs", "claim_token") in missing:
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS claim_token VARCHAR(64)"))
+        if ("runs", "lease_expires_at") in missing:
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS lease_expires_at TIMESTAMPTZ"))
+        if ("runs", "last_heartbeat_at") in missing:
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS last_heartbeat_at TIMESTAMPTZ"))
+        if ("runs", "attempt_count") in missing:
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS attempt_count INTEGER"))
+            await conn.execute(text("UPDATE runs SET attempt_count = 0 WHERE attempt_count IS NULL"))
+            await conn.execute(text("ALTER TABLE runs ALTER COLUMN attempt_count SET DEFAULT 0"))
+            await conn.execute(text("ALTER TABLE runs ALTER COLUMN attempt_count SET NOT NULL"))
+        if ("runs", "cancel_requested") in missing:
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS cancel_requested BOOLEAN"))
+            await conn.execute(text("UPDATE runs SET cancel_requested = false WHERE cancel_requested IS NULL"))
+            await conn.execute(text("ALTER TABLE runs ALTER COLUMN cancel_requested SET DEFAULT false"))
+            await conn.execute(text("ALTER TABLE runs ALTER COLUMN cancel_requested SET NOT NULL"))
+        if ("runs", "trigger_source") in missing:
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS trigger_source VARCHAR(50)"))
+        if ("runs", "executor_type") in missing:
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS executor_type VARCHAR(50)"))
         if ("profiles", "candidate_profile") in missing:
             await conn.execute(text("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS candidate_profile JSONB"))
         if ("jobs_raw", "job_profile") in missing:
@@ -284,16 +322,10 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
                         result_job_urls JSONB DEFAULT '[]'::jsonb,
                         result_count INTEGER NOT NULL DEFAULT 0,
                         searched_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                        fresh_until TIMESTAMPTZ NOT NULL
+                        fresh_until TIMESTAMPTZ NOT NULL,
+                        CONSTRAINT uq_scrape_query_cache_key UNIQUE
+                        (provider, site, term_normalized, location_normalized, country_normalized, hours_old)
                     )
-                    """
-                )
-            )
-            await conn.execute(
-                text(
-                    """
-                    CREATE UNIQUE INDEX IF NOT EXISTS uq_scrape_query_cache_key
-                    ON scrape_query_cache (provider, site, term_normalized, location_normalized, country_normalized, hours_old)
                     """
                 )
             )
@@ -302,6 +334,52 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
                     "CREATE INDEX IF NOT EXISTS ix_scrape_query_cache_fresh_until ON scrape_query_cache (provider, site, fresh_until)"
                 )
             )
+        scrape_cache_table_present = ("scrape_query_cache", "provider") in existing or ("scrape_query_cache", "provider") in missing
+        if conn.dialect.name == "postgresql" and scrape_cache_table_present:
+            constraint_exists = bool(
+                (
+                    await conn.execute(
+                        text(
+                            """
+                            SELECT 1
+                            FROM information_schema.table_constraints
+                            WHERE table_schema = current_schema()
+                              AND table_name = 'scrape_query_cache'
+                              AND constraint_name = 'uq_scrape_query_cache_key'
+                            LIMIT 1
+                            """
+                        )
+                    )
+                ).scalar_one_or_none()
+            )
+            if not constraint_exists:
+                index_exists = bool(
+                    (
+                        await conn.execute(
+                            text("SELECT to_regclass(current_schema() || '.uq_scrape_query_cache_key')")
+                        )
+                    ).scalar_one_or_none()
+                )
+                if index_exists:
+                    await conn.execute(
+                        text(
+                            """
+                            ALTER TABLE scrape_query_cache
+                            ADD CONSTRAINT uq_scrape_query_cache_key
+                            UNIQUE USING INDEX uq_scrape_query_cache_key
+                            """
+                        )
+                    )
+                else:
+                    await conn.execute(
+                        text(
+                            """
+                            ALTER TABLE scrape_query_cache
+                            ADD CONSTRAINT uq_scrape_query_cache_key UNIQUE
+                            (provider, site, term_normalized, location_normalized, country_normalized, hours_old)
+                            """
+                        )
+                    )
         if target is _active_engine:
             _schema_compat_checked = True
 

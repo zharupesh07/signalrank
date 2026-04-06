@@ -94,6 +94,7 @@ class Run(Base):
         Index("ix_runs_user_started", "user_id", "started_at"),
         Index("ix_runs_status", "status"),
         Index("ix_runs_status_mode_started", "status", "mode", "started_at"),
+        Index("ix_runs_claim", "status", "mode", "lease_expires_at", "started_at"),
     )
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
@@ -106,6 +107,14 @@ class Run(Base):
     scrape_count: Mapped[int | None] = mapped_column(Integer)
     progress: Mapped[dict | None] = mapped_column(JSONB)
     error: Mapped[str | None] = mapped_column(Text)
+    claimed_by: Mapped[str | None] = mapped_column(String(255))
+    claim_token: Mapped[str | None] = mapped_column(String(64))
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"), nullable=False)
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"), nullable=False)
+    trigger_source: Mapped[str | None] = mapped_column(String(50))
+    executor_type: Mapped[str | None] = mapped_column(String(50))
 
     user: Mapped["User"] = relationship(back_populates="runs")
     results: Mapped[list["JobResult"]] = relationship(back_populates="run")

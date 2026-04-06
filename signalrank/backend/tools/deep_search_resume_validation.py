@@ -16,6 +16,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from api.config import settings
 from api.database import AsyncSessionLocal
 from api.models import JobRaw, Profile, User
+from experiment_cleanup import delete_user_ids
 from batch.context import build_context
 from batch.query_plan_cache import get_cached_queries
 from batch.ranker import score_job_ids_for_user
@@ -128,97 +129,107 @@ async def _run_target(target: ResumeTarget, days: int, limit: int, quick_search:
     resume_text = _extract_text_from_pdf(pdf_path.read_bytes())
     parsed = _parse_from_spec(spec)
     career_intent = build_career_intent_profile(parsed)
+    cleanup_user_id: str | None = None
+    success = False
 
-    async with AsyncSessionLocal() as db:
-        user = User(
-            email=f"deep-search-{target.key}-{run_id}@test.com",
-            password_hash="x",
-            provider="credentials",
-        )
-        db.add(user)
-        await db.flush()
-
-        profile = Profile(
-            user_id=user.id,
-            resume_text=resume_text,
-            target_roles=[r["title"] for r in career_intent.get("target_roles", []) if r.get("title")],
-            preferred_locations=[loc for loc in career_intent.get("suggested_locations", []) if loc],
-            onboarding_complete=True,
-            scraper_max_terms=8,
-            scraper_hours_old=days * 24,
-            config_overrides={"career_intent": career_intent},
-        )
-        db.add(profile)
-        await db.commit()
-
-        ctx = build_context(user_id=user.id, resume_text=resume_text, config_overrides=profile.config_overrides)
-        cfg = ctx.config
-        if quick_search:
-            cfg.setdefault("ranking", {}).setdefault("agentic_matching", {})["enabled"] = False
-        candidate_profile = build_candidate_profile(
-            parsed=parsed,
-            profile=profile,
-            resume_text=resume_text,
-            cfg=cfg,
-        )
-        scraper_cfg = ScraperConfig.from_env(title_blocklist=(profile.config_overrides or {}).get("title_blocklist", []))
-        scraper_cfg.hours_old = days * 24
-        scraper_cfg.sources = ["indeed"] if quick_search else ["indeed", "linkedin", "rapidapi", "free_apis", "google_jobs"]
-
-        queries = await get_cached_queries(
-            db,
-            profile=profile,
-            profile_fingerprint=str(candidate_profile.get("profile_fingerprint") or candidate_profile.get("profile_cache_key") or ""),
-            search_window_days=days,
-            source_filter=",".join(sorted(scraper_cfg.sources or [])),
-            max_terms=profile.scraper_max_terms or settings.scraper_max_terms,
-        )
-        logger.info("Deep search for %s using %d queries", target.key, len(queries))
-        jobs = await scrape(queries, scraper_cfg, db=db, return_mode="jobs")
-        job_ids = await _persist_jobs(db, jobs, cfg)
-        del jobs
-        gc.collect()
-
-        ranked = await score_job_ids_for_user(
-            db=db,
-            user_id=user.id,
-            resume_text=resume_text,
-            job_ids=job_ids,
-            config_overrides=profile.config_overrides,
-            distilled_text=profile.distilled_text,
-        )
-        ranked = ranked.sort_values("final_score", ascending=False).head(limit).reset_index(drop=True)
-        top_ids = [str(row["id"]) for _, row in ranked.iterrows()]
-        job_rows = await db.execute(select(JobRaw).where(JobRaw.id.in_(top_ids)))
-        job_map = {str(row.id): row for row in job_rows.scalars().all()}
-
-        resume_skill_set = set(candidate_profile.get("must_have_skills") or [])
-        if not resume_skill_set:
-            resume_skill_set = set(parsed.skills or [])
-
-        print(f"\n=== {target.key.upper()} ===")
-        print(f"queries={len(queries)} scraped={len(job_ids)} top20={len(ranked)}")
-        for idx, row in ranked.iterrows():
-            job = job_map.get(str(row["id"]))
-            job_profile = job.job_profile if job else {}
-            required_skills = set(job_profile.get("required_skills") or [])
-            jd_text = (job.description or "") if job else ""
-            overlap = sorted(resume_skill_set & required_skills)
-            print(
-                {
-                    "rank": idx + 1,
-                    "title": row["title"],
-                    "company": row["company"],
-                    "final_score": round(float(row["final_score"]), 2),
-                    "semantic_score": round(float(row["semantic_score"]), 3),
-                    "title_relevance_score": round(float(row.get("title_relevance_score", 0.0)), 2),
-                    "job_domain": job_profile.get("domain"),
-                    "job_role_family": job_profile.get("role_family"),
-                    "jd_required_skills": list(required_skills)[:8],
-                    "resume_job_overlap": overlap[:8],
-                    "jd_excerpt": jd_text[:220].replace("\n", " "),
-                }
+    try:
+        async with AsyncSessionLocal() as db:
+            user = User(
+                email=f"deep-search-{target.key}-{run_id}@test.com",
+                password_hash="x",
+                provider="credentials",
             )
+            db.add(user)
+            await db.flush()
+            cleanup_user_id = user.id
+
+            profile = Profile(
+                user_id=user.id,
+                resume_text=resume_text,
+                target_roles=[r["title"] for r in career_intent.get("target_roles", []) if r.get("title")],
+                preferred_locations=[loc for loc in career_intent.get("suggested_locations", []) if loc],
+                onboarding_complete=True,
+                scraper_max_terms=8,
+                scraper_hours_old=days * 24,
+                config_overrides={"career_intent": career_intent},
+            )
+            db.add(profile)
+            await db.commit()
+
+            ctx = build_context(user_id=user.id, resume_text=resume_text, config_overrides=profile.config_overrides)
+            cfg = ctx.config
+            if quick_search:
+                cfg.setdefault("ranking", {}).setdefault("agentic_matching", {})["enabled"] = False
+            candidate_profile = build_candidate_profile(
+                parsed=parsed,
+                profile=profile,
+                resume_text=resume_text,
+                cfg=cfg,
+            )
+            scraper_cfg = ScraperConfig.from_env(title_blocklist=(profile.config_overrides or {}).get("title_blocklist", []))
+            scraper_cfg.hours_old = days * 24
+            scraper_cfg.sources = ["indeed"] if quick_search else ["indeed", "linkedin", "rapidapi", "free_apis", "google_jobs"]
+
+            queries = await get_cached_queries(
+                db,
+                profile=profile,
+                profile_fingerprint=str(candidate_profile.get("profile_fingerprint") or candidate_profile.get("profile_cache_key") or ""),
+                search_window_days=days,
+                source_filter=",".join(sorted(scraper_cfg.sources or [])),
+                max_terms=profile.scraper_max_terms or settings.scraper_max_terms,
+            )
+            logger.info("Deep search for %s using %d queries", target.key, len(queries))
+            jobs = await scrape(queries, scraper_cfg, db=db, return_mode="jobs")
+            job_ids = await _persist_jobs(db, jobs, cfg)
+            del jobs
+            gc.collect()
+
+            ranked = await score_job_ids_for_user(
+                db=db,
+                user_id=user.id,
+                resume_text=resume_text,
+                job_ids=job_ids,
+                config_overrides=profile.config_overrides,
+                distilled_text=profile.distilled_text,
+            )
+            ranked = ranked.sort_values("final_score", ascending=False).head(limit).reset_index(drop=True)
+            top_ids = [str(row["id"]) for _, row in ranked.iterrows()]
+            job_rows = await db.execute(select(JobRaw).where(JobRaw.id.in_(top_ids)))
+            job_map = {str(row.id): row for row in job_rows.scalars().all()}
+
+            resume_skill_set = set(candidate_profile.get("must_have_skills") or [])
+            if not resume_skill_set:
+                resume_skill_set = set(parsed.skills or [])
+
+            print(f"\n=== {target.key.upper()} ===")
+            print(f"queries={len(queries)} scraped={len(job_ids)} top20={len(ranked)}")
+            for idx, row in ranked.iterrows():
+                job = job_map.get(str(row["id"]))
+                job_profile = job.job_profile if job else {}
+                required_skills = set(job_profile.get("required_skills") or [])
+                jd_text = (job.description or "") if job else ""
+                overlap = sorted(resume_skill_set & required_skills)
+                print(
+                    {
+                        "rank": idx + 1,
+                        "title": row["title"],
+                        "company": row["company"],
+                        "final_score": round(float(row["final_score"]), 2),
+                        "semantic_score": round(float(row["semantic_score"]), 3),
+                        "title_relevance_score": round(float(row.get("title_relevance_score", 0.0)), 2),
+                        "job_domain": job_profile.get("domain"),
+                        "job_role_family": job_profile.get("role_family"),
+                        "jd_required_skills": list(required_skills)[:8],
+                        "resume_job_overlap": overlap[:8],
+                        "jd_excerpt": jd_text[:220].replace("\n", " "),
+                    }
+                )
+            success = True
+    finally:
+        if cleanup_user_id and not success:
+            await delete_user_ids(AsyncSessionLocal, [cleanup_user_id])
+    if cleanup_user_id:
+        await delete_user_ids(AsyncSessionLocal, [cleanup_user_id])
 
 
 async def main() -> None:

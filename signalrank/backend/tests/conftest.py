@@ -32,6 +32,14 @@ def _ensure_schema():
             await conn.execute(text("ALTER TABLE job_results ADD COLUMN IF NOT EXISTS verification_report JSONB"))
             await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS error TEXT"))
             await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS mode VARCHAR(20)"))
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS claimed_by VARCHAR(255)"))
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS claim_token VARCHAR(64)"))
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS lease_expires_at TIMESTAMPTZ"))
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS last_heartbeat_at TIMESTAMPTZ"))
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS attempt_count INTEGER"))
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS cancel_requested BOOLEAN"))
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS trigger_source VARCHAR(50)"))
+            await conn.execute(text("ALTER TABLE runs ADD COLUMN IF NOT EXISTS executor_type VARCHAR(50)"))
             await conn.execute(
                 text(
                     """
@@ -43,6 +51,12 @@ def _ensure_schema():
             )
             await conn.execute(text("ALTER TABLE runs ALTER COLUMN mode SET DEFAULT 'quick'"))
             await conn.execute(text("ALTER TABLE runs ALTER COLUMN mode SET NOT NULL"))
+            await conn.execute(text("UPDATE runs SET attempt_count = 0 WHERE attempt_count IS NULL"))
+            await conn.execute(text("ALTER TABLE runs ALTER COLUMN attempt_count SET DEFAULT 0"))
+            await conn.execute(text("ALTER TABLE runs ALTER COLUMN attempt_count SET NOT NULL"))
+            await conn.execute(text("UPDATE runs SET cancel_requested = false WHERE cancel_requested IS NULL"))
+            await conn.execute(text("ALTER TABLE runs ALTER COLUMN cancel_requested SET DEFAULT false"))
+            await conn.execute(text("ALTER TABLE runs ALTER COLUMN cancel_requested SET NOT NULL"))
         await engine.dispose()
 
     asyncio.run(_create())

@@ -20,6 +20,8 @@ _JOB_PROFILE_CACHE: dict[str, dict] = {}
 _ROLE_FAMILY_MAP = {
     "sap_erp": "SAP / ERP",
     "ai_ml": "AI / ML",
+    "innovation": "Innovation / Emerging Tech",
+    "network_auto": "Network / Infrastructure Automation",
     "backend": "Backend / Product Engineering",
     "infra": "Platform / Infrastructure",
     "product_eng": "QA / Product Engineering",
@@ -105,6 +107,10 @@ def _infer_domain(title: str, description: str, clusters: Iterable[str]) -> str:
         return "SAP / ERP"
     if any(term in text for term in ("machine learning", "llm", "genai", "mlops", "data scientist")):
         return "AI / ML"
+    if any(term in text for term in ("innovation", "emerging technologies", "prototype", "creative technologist", "iot", "robotics", "r&d")):
+        return "Innovation / Emerging Tech"
+    if any(term in text for term in ("network automation", "cloud network", "network reliability", "firewall", "routing", "switching", "load balancer")):
+        return "Network / Infrastructure Automation"
     if any(term in text for term in ("backend", "full stack", "api", "integrations")):
         return "Backend / Product Engineering"
     if any(term in text for term in ("platform", "devops", "sre", "infrastructure", "cloud")):

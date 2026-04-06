@@ -1,11 +1,14 @@
 import asyncio
 import gc
 import logging
+import os
+import socket
 import time
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import func, select, update
+from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -21,6 +24,7 @@ logger = logging.getLogger(__name__)
 _TRANSIENT_EXCEPTIONS = (asyncio.TimeoutError, ConnectionError, OSError)
 _RUN_MAX_RETRIES = 3
 _RUN_BACKOFF_BASE = 2  # seconds: 2, 4, 8
+_RUN_LEASE_SECONDS = 15 * 60
 
 
 @dataclass
@@ -29,6 +33,8 @@ class RunRequest:
     user_id: str
     mode: str = "quick"
     force_scrape: bool = False
+    disable_scraping: bool = False
+    claim_token: str | None = None
 
 
 def _should_log_embed_progress(done: int, total: int, last_logged: int) -> bool:
@@ -47,20 +53,73 @@ def _format_run_error(exc: Exception) -> str:
     return message[:1000]
 
 
-def _run_progress_meta(mode: str, force_scrape: bool, *, scrape_executed: bool | None = None) -> dict:
+def _run_progress_meta(
+    mode: str,
+    force_scrape: bool,
+    disable_scraping: bool,
+    *,
+    scrape_executed: bool | None = None,
+) -> dict:
     progress = {
         "requested_mode": mode,
         "force_scrape": force_scrape,
+        "disable_scraping": disable_scraping,
     }
     if scrape_executed is not None:
         progress["scrape_executed"] = scrape_executed
     return progress
 
 
-def _merge_run_progress(mode: str, force_scrape: bool, *, scrape_executed: bool | None = None, **kwargs) -> dict:
-    progress = _run_progress_meta(mode, force_scrape, scrape_executed=scrape_executed)
+def _merge_run_progress(
+    mode: str,
+    force_scrape: bool,
+    disable_scraping: bool,
+    *,
+    scrape_executed: bool | None = None,
+    **kwargs,
+) -> dict:
+    progress = _run_progress_meta(
+        mode,
+        force_scrape,
+        disable_scraping,
+        scrape_executed=scrape_executed,
+    )
     progress.update(kwargs)
     return progress
+
+
+def _worker_identity() -> str:
+    return f"{socket.gethostname()}:{os.getpid()}"
+
+
+def _lease_until(now: datetime | None = None) -> datetime:
+    base = now or datetime.now(timezone.utc)
+    return base + timedelta(seconds=_RUN_LEASE_SECONDS)
+
+
+async def _update_run_row(
+    session_factory: async_sessionmaker,
+    run_id: str,
+    *,
+    values: dict,
+    claim_token: str | None = None,
+) -> bool:
+    async with session_factory() as db:
+        stmt = update(Run).where(Run.id == run_id)
+        if claim_token is not None:
+            stmt = stmt.where(Run.claim_token == claim_token)
+        result = await db.execute(stmt.values(**values))
+        await db.commit()
+        return bool(result.rowcount)
+
+
+async def _fetch_run(
+    session_factory: async_sessionmaker,
+    run_id: str,
+) -> Run | None:
+    async with session_factory() as db:
+        result = await db.execute(select(Run).where(Run.id == run_id))
+        return result.scalar_one_or_none()
 
 
 async def _embed_new_jobs(
@@ -202,6 +261,24 @@ async def _embed_new_jobs(
     clear_vector_cache()
     release_memory(logger, "embed_release_error")
 
+
+async def _check_run_stop_state(
+    session_factory: async_sessionmaker,
+    run_id: str,
+    *,
+    claim_token: str | None = None,
+) -> str | None:
+    run = await _fetch_run(session_factory, run_id)
+    if not run:
+        return "missing"
+    if claim_token is not None and run.claim_token != claim_token:
+        return "lost_claim"
+    if run.status == "cancelled":
+        return "cancelled"
+    if run.cancel_requested:
+        return "cancel_requested"
+    return None
+
 _queues: dict[str, asyncio.Queue] = {}
 
 
@@ -215,21 +292,48 @@ async def process_run(
     run_id: str, user_id: str, session_factory: async_sessionmaker,
     mode: str = "quick",
     force_scrape: bool = False,
+    disable_scraping: bool = False,
+    claim_token: str | None = None,
 ) -> None:
     async with session_factory() as db:
         scrape_executed = False
         try:
             log_rss(logger, "run_start", run_id=run_id, user_id=user_id, mode=mode)
-            # Check if run was cancelled before it even started
             run_check_result = await db.execute(select(Run).where(Run.id == run_id))
             run_check = run_check_result.scalar_one_or_none()
-            if not run_check or run_check.status == "cancelled":
+            if not run_check:
+                logger.info("Run %s not found before starting, skipping", run_id)
+                return
+            if claim_token is not None and run_check.claim_token != claim_token:
+                logger.info("Run %s claim token no longer owned, skipping", run_id)
+                return
+            if run_check.status == "cancelled" or run_check.cancel_requested:
+                if run_check.cancel_requested and claim_token is not None:
+                    await _update_run_row(
+                        session_factory,
+                        run_id,
+                        claim_token=claim_token,
+                        values={
+                            "status": "cancelled",
+                            "finished_at": datetime.now(timezone.utc),
+                            "claim_token": None,
+                            "claimed_by": None,
+                            "lease_expires_at": None,
+                        },
+                    )
                 logger.info("Run %s not found or cancelled before starting, skipping", run_id)
                 return
 
-            await db.execute(
-                update(Run).where(Run.id == run_id).values(status="scraping")
-            )
+            initial_values = {
+                "status": "scraping",
+                "lease_expires_at": _lease_until(),
+                "last_heartbeat_at": datetime.now(timezone.utc),
+                "executor_type": "worker",
+            }
+            stmt = update(Run).where(Run.id == run_id)
+            if claim_token is not None:
+                stmt = stmt.where(Run.claim_token == claim_token)
+            await db.execute(stmt.values(**initial_values))
             await db.commit()
 
             profile_result = await db.execute(
@@ -269,22 +373,28 @@ async def process_run(
             else:
                 queries = []
             async def _update_progress(**kwargs):
-                async with session_factory() as pdb:
-                    await pdb.execute(
-                        update(Run).where(Run.id == run_id).values(
-                            progress=_merge_run_progress(
-                                mode,
-                                force_scrape,
-                                scrape_executed=scrape_executed,
-                                **kwargs,
-                            )
-                        )
-                    )
-                    await pdb.commit()
+                await _update_run_row(
+                    session_factory,
+                    run_id,
+                    claim_token=claim_token,
+                    values={
+                        "progress": _merge_run_progress(
+                            mode,
+                            force_scrape,
+                            disable_scraping,
+                            scrape_executed=scrape_executed,
+                            **kwargs,
+                        ),
+                        "last_heartbeat_at": datetime.now(timezone.utc),
+                        "lease_expires_at": _lease_until(),
+                    },
+                )
 
             now = datetime.now(timezone.utc)
-            skip_scrape = False
-            if not force_scrape:
+            skip_scrape = disable_scraping
+            if disable_scraping:
+                logger.info("Run %s skipping scrape because disable_scraping=true", run_id)
+            elif not force_scrape:
                 if mode == "full":
                     deep_scan_cutoff = now - timedelta(hours=48)
                     recent_runs_result = await db.execute(
@@ -318,8 +428,9 @@ async def process_run(
                     skip_scrape = recent_scrape.scalar_one_or_none() is not None
             if skip_scrape:
                 logger.info(
-                    "Run %s skipping scrape — recent scrape within %dh threshold",
-                    run_id, scrape_threshold_hours,
+                    "Run %s skipping scrape%s",
+                    run_id,
+                    "" if disable_scraping else f" - recent scrape within {scrape_threshold_hours}h threshold",
                 )
 
             scrape_count = 0
@@ -328,18 +439,22 @@ async def process_run(
                 scrape_executed = True
                 config = scraper_cfg
 
-                # Check cancellation before scraping
-                run_check_result = await db.execute(select(Run).where(Run.id == run_id))
-                run_check = run_check_result.scalar_one_or_none()
-                if not run_check or run_check.status == "cancelled":
-                    if run_check:
-                        await db.execute(
-                            update(Run).where(Run.id == run_id).values(
-                                status="cancelled", finished_at=datetime.now(timezone.utc)
-                            )
+                stop_state = await _check_run_stop_state(session_factory, run_id, claim_token=claim_token)
+                if stop_state:
+                    if stop_state == "cancel_requested":
+                        await _update_run_row(
+                            session_factory,
+                            run_id,
+                            claim_token=claim_token,
+                            values={
+                                "status": "cancelled",
+                                "finished_at": datetime.now(timezone.utc),
+                                "claim_token": None,
+                                "claimed_by": None,
+                                "lease_expires_at": None,
+                            },
                         )
-                        await db.commit()
-                    logger.info("Run %s not found or cancelled before scraping", run_id)
+                    logger.info("Run %s stopped before scraping (%s)", run_id, stop_state)
                     return
 
                 async def _persist_jobs(jobs):
@@ -400,11 +515,22 @@ async def process_run(
                                    "jobs_found": len(scraped_job_urls)})
                 log_rss(logger, "after_scrape", run_id=run_id, jobs_found=len(scraped_job_urls))
 
-                # Check cancellation after scraping
-                run_check_result = await db.execute(select(Run).where(Run.id == run_id))
-                run_check = run_check_result.scalar_one_or_none()
-                if not run_check or run_check.status == "cancelled":
-                    logger.info("Run %s not found or cancelled after scraping", run_id)
+                stop_state = await _check_run_stop_state(session_factory, run_id, claim_token=claim_token)
+                if stop_state:
+                    if stop_state == "cancel_requested":
+                        await _update_run_row(
+                            session_factory,
+                            run_id,
+                            claim_token=claim_token,
+                            values={
+                                "status": "cancelled",
+                                "finished_at": datetime.now(timezone.utc),
+                                "claim_token": None,
+                                "claimed_by": None,
+                                "lease_expires_at": None,
+                            },
+                        )
+                    logger.info("Run %s stopped after scraping (%s)", run_id, stop_state)
                     return
 
                 scrape_count = len(scraped_job_urls)
@@ -428,20 +554,35 @@ async def process_run(
                 gc.collect()
                 release_memory(logger, "after_scrape_cleanup", run_id=run_id)
 
-            # Check cancellation before ranking
-            run_check_result = await db.execute(select(Run).where(Run.id == run_id))
-            run_check = run_check_result.scalar_one_or_none()
-            if not run_check or run_check.status == "cancelled":
-                logger.info("Run %s not found or cancelled before ranking", run_id)
+            stop_state = await _check_run_stop_state(session_factory, run_id, claim_token=claim_token)
+            if stop_state:
+                if stop_state == "cancel_requested":
+                    await _update_run_row(
+                        session_factory,
+                        run_id,
+                        claim_token=claim_token,
+                        values={
+                            "status": "cancelled",
+                            "finished_at": datetime.now(timezone.utc),
+                            "claim_token": None,
+                            "claimed_by": None,
+                            "lease_expires_at": None,
+                        },
+                    )
+                logger.info("Run %s stopped before ranking (%s)", run_id, stop_state)
                 return
 
-            await db.execute(
-                update(Run).where(Run.id == run_id).values(
-                    status="ranking",
-                    scrape_count=scrape_count,
-                    progress=_merge_run_progress(
+            await _update_run_row(
+                session_factory,
+                run_id,
+                claim_token=claim_token,
+                values={
+                    "status": "ranking",
+                    "scrape_count": scrape_count,
+                    "progress": _merge_run_progress(
                         mode,
                         force_scrape,
+                        disable_scraping,
                         scrape_executed=scrape_executed,
                         phase="ranking",
                         phase_num=1,
@@ -449,9 +590,10 @@ async def process_run(
                         jobs_found=scrape_count,
                         message="Ranking jobs...",
                     ),
-                )
+                    "last_heartbeat_at": datetime.now(timezone.utc),
+                    "lease_expires_at": _lease_until(),
+                },
             )
-            await db.commit()
             log_rss(logger, "before_rank", run_id=run_id, scrape_count=scrape_count)
 
             t_rank = time.monotonic()
@@ -470,24 +612,46 @@ async def process_run(
                 )
             except asyncio.TimeoutError:
                 logger.error("Run %s ranking timed out after 600s", run_id)
-                await db.execute(
-                    update(Run).where(Run.id == run_id).values(
-                        status="failed", finished_at=datetime.now(timezone.utc),
-                        progress=_run_progress_meta(mode, force_scrape, scrape_executed=scrape_executed),
-                        error="TimeoutError: Ranking timed out after 600s",
-                    )
+                await _update_run_row(
+                    session_factory,
+                    run_id,
+                    claim_token=claim_token,
+                    values={
+                        "status": "failed",
+                        "finished_at": datetime.now(timezone.utc),
+                        "progress": _run_progress_meta(
+                            mode,
+                            force_scrape,
+                            disable_scraping,
+                            scrape_executed=scrape_executed,
+                        ),
+                        "error": "TimeoutError: Ranking timed out after 600s",
+                        "claim_token": None,
+                        "claimed_by": None,
+                        "lease_expires_at": None,
+                    },
                 )
-                await db.commit()
                 raise
             logger.info("Run %s ranking done in %.1fs, %d jobs",
                         run_id, time.monotonic() - t_rank, len(ranked_df))
             log_rss(logger, "after_rank", run_id=run_id, ranked_jobs=len(ranked_df))
 
-            # Check cancellation after ranking (before inserting results)
-            run_check_result = await db.execute(select(Run).where(Run.id == run_id))
-            run_check = run_check_result.scalar_one_or_none()
-            if not run_check or run_check.status == "cancelled":
-                logger.info("Run %s not found or cancelled before saving results", run_id)
+            stop_state = await _check_run_stop_state(session_factory, run_id, claim_token=claim_token)
+            if stop_state:
+                if stop_state == "cancel_requested":
+                    await _update_run_row(
+                        session_factory,
+                        run_id,
+                        claim_token=claim_token,
+                        values={
+                            "status": "cancelled",
+                            "finished_at": datetime.now(timezone.utc),
+                            "claim_token": None,
+                            "claimed_by": None,
+                            "lease_expires_at": None,
+                        },
+                    )
+                logger.info("Run %s stopped before saving results (%s)", run_id, stop_state)
                 return
 
             insert_batch: list[dict] = []
@@ -562,21 +726,32 @@ async def process_run(
                     )
                 )
                 insert_batch.clear()
+            await db.commit()
             release_memory(logger, "result_rows_release", run_id=run_id)
 
-            await db.execute(
-                update(Run)
-                .where(Run.id == run_id)
-                .values(
-                    status="success",
-                    finished_at=datetime.now(timezone.utc),
-                    job_count=len(ranked_df),
-                    progress=_run_progress_meta(mode, force_scrape, scrape_executed=scrape_executed),
-                    error=None,
-                )
+            await _update_run_row(
+                session_factory,
+                run_id,
+                claim_token=claim_token,
+                values={
+                    "status": "success",
+                    "finished_at": datetime.now(timezone.utc),
+                    "job_count": len(ranked_df),
+                    "progress": _run_progress_meta(
+                        mode,
+                        force_scrape,
+                        disable_scraping,
+                        scrape_executed=scrape_executed,
+                    ),
+                    "error": None,
+                    "claim_token": None,
+                    "claimed_by": None,
+                    "lease_expires_at": None,
+                    "last_heartbeat_at": datetime.now(timezone.utc),
+                },
             )
-            await db.commit()
             try:
+                db.expire_all()
                 from api.routes.jobs import warm_default_jobs_cache
                 await warm_default_jobs_cache(db, user_id=user_id)
             except Exception:
@@ -592,17 +767,25 @@ async def process_run(
             logger.warning("Run %s transient failure", run_id, exc_info=True)
             try:
                 await db.rollback()
-                await db.execute(
-                    update(Run)
-                    .where(Run.id == run_id)
-                    .values(
-                        status="failed",
-                        finished_at=datetime.now(timezone.utc),
-                        progress=_run_progress_meta(mode, force_scrape, scrape_executed=scrape_executed),
-                        error=_format_run_error(exc),
-                    )
+                await _update_run_row(
+                    session_factory,
+                    run_id,
+                    claim_token=claim_token,
+                    values={
+                        "status": "failed",
+                        "finished_at": datetime.now(timezone.utc),
+                        "progress": _run_progress_meta(
+                            mode,
+                            force_scrape,
+                            disable_scraping,
+                            scrape_executed=scrape_executed,
+                        ),
+                        "error": _format_run_error(exc),
+                        "claim_token": None,
+                        "claimed_by": None,
+                        "lease_expires_at": None,
+                    },
                 )
-                await db.commit()
             except Exception:
                 logger.warning("Run %s: failed to update status after transient error", run_id, exc_info=True)
             raise
@@ -610,17 +793,25 @@ async def process_run(
             logger.exception("Run %s failed", run_id)
             try:
                 await db.rollback()
-                await db.execute(
-                    update(Run)
-                    .where(Run.id == run_id)
-                    .values(
-                        status="failed",
-                        finished_at=datetime.now(timezone.utc),
-                        progress=_run_progress_meta(mode, force_scrape, scrape_executed=scrape_executed),
-                        error=_format_run_error(exc),
-                    )
+                await _update_run_row(
+                    session_factory,
+                    run_id,
+                    claim_token=claim_token,
+                    values={
+                        "status": "failed",
+                        "finished_at": datetime.now(timezone.utc),
+                        "progress": _run_progress_meta(
+                            mode,
+                            force_scrape,
+                            disable_scraping,
+                            scrape_executed=scrape_executed,
+                        ),
+                        "error": _format_run_error(exc),
+                        "claim_token": None,
+                        "claimed_by": None,
+                        "lease_expires_at": None,
+                    },
                 )
-                await db.commit()
             except Exception:
                 logger.warning("Run %s: failed to update status after error", run_id, exc_info=True)
 
@@ -741,30 +932,34 @@ async def boot_embed_uncached_jobs(session_factory: async_sessionmaker) -> None:
 
 async def _cleanup_stale_runs(session_factory: async_sessionmaker) -> None:
     async with session_factory() as db:
+        now = datetime.now(timezone.utc)
         stale = await db.execute(
-            select(Run).where(Run.status.in_(["scraping", "ranking"]))
+            select(Run).where(Run.status.in_(["claimed", "scraping", "ranking"]))
         )
         for run in stale.scalars().all():
-            run.status = "failed"
-            run.finished_at = datetime.now(timezone.utc)
-            run.progress = None
-            run.error = "Worker interrupted before run completion"
-            logger.warning("Marked stale run %s as failed", run.id)
+            if run.lease_expires_at and run.lease_expires_at > now:
+                continue
+            run.status = "pending"
+            run.claimed_by = None
+            run.claim_token = None
+            run.lease_expires_at = None
+            run.last_heartbeat_at = None
+            run.error = "Recovered stale run for retry"
+            logger.warning("Re-queued stale run %s", run.id)
         await db.commit()
 
 
 async def _claim_pending_run(session_factory: async_sessionmaker, mode: str) -> RunRequest | None:
-    """Claim the oldest pending run of the given mode, only if no run of that mode is already active.
-
-    This enforces at most 1 quick scan and at most 1 full scan running at any time, globally across
-    all users and all worker processes.
-    """
+    """Claim the oldest runnable run for the given mode using a short DB transaction."""
     async with session_factory() as db:
+        now = datetime.now(timezone.utc)
         # DB-level guard: don't claim if a run of this mode is already active.
         active_count = await db.scalar(
             select(func.count(Run.id)).where(
-                Run.status.in_(["scraping", "ranking", "embedding", "running"]),
+                Run.status.in_(["claimed", "scraping", "ranking", "embedding", "running"]),
                 Run.mode == mode,
+                Run.lease_expires_at.is_not(None),
+                Run.lease_expires_at > now,
             )
         )
         if active_count:
@@ -786,8 +981,14 @@ async def _claim_pending_run(session_factory: async_sessionmaker, mode: str) -> 
         result = await db.execute(
             select(Run)
             .where(
-                Run.status == "pending",
                 Run.mode == mode,
+                or_(
+                    Run.status == "pending",
+                    and_(
+                        Run.status.in_(["claimed", "scraping", "ranking"]),
+                        or_(Run.lease_expires_at.is_(None), Run.lease_expires_at <= now),
+                    ),
+                ),
             )
             .order_by(Run.started_at.asc())
             .limit(1)
@@ -800,13 +1001,60 @@ async def _claim_pending_run(session_factory: async_sessionmaker, mode: str) -> 
 
         progress = run.progress if isinstance(run.progress, dict) else {}
         force_scrape = bool(progress.get("force_scrape", False))
-        run.status = "scraping"
+        disable_scraping = bool(progress.get("disable_scraping", False))
+        run.status = "claimed"
+        run.claimed_by = _worker_identity()
+        run.claim_token = uuid.uuid4().hex
+        run.lease_expires_at = _lease_until(now)
+        run.last_heartbeat_at = now
+        run.attempt_count = (run.attempt_count or 0) + 1
+        run.cancel_requested = False
+        run.executor_type = "worker"
         await db.commit()
         logger.info(
-            "Claimed pending %s run %s from DB poll (user_id=%s force_scrape=%s)",
-            mode, run.id, run.user_id, force_scrape,
+            "Claimed %s run %s from DB poll (user_id=%s force_scrape=%s disable_scraping=%s worker=%s)",
+            mode, run.id, run.user_id, force_scrape, disable_scraping, run.claimed_by,
         )
-        return RunRequest(str(run.id), str(run.user_id), mode, force_scrape)
+        return RunRequest(str(run.id), str(run.user_id), mode, force_scrape, disable_scraping, run.claim_token)
+
+
+async def _claim_run_by_id(session_factory: async_sessionmaker, req: RunRequest) -> RunRequest | None:
+    async with session_factory() as db:
+        now = datetime.now(timezone.utc)
+        result = await db.execute(
+            select(Run)
+            .where(Run.id == req.run_id, Run.mode == req.mode)
+            .limit(1)
+            .with_for_update(skip_locked=True)
+        )
+        run = result.scalar_one_or_none()
+        if not run:
+            await db.rollback()
+            return None
+        if run.status not in {"pending", "claimed", "scraping", "ranking"}:
+            await db.rollback()
+            return None
+        if run.status in {"claimed", "scraping", "ranking"} and run.lease_expires_at and run.lease_expires_at > now:
+            await db.rollback()
+            return None
+        progress = run.progress if isinstance(run.progress, dict) else {}
+        run.status = "claimed"
+        run.claimed_by = _worker_identity()
+        run.claim_token = uuid.uuid4().hex
+        run.lease_expires_at = _lease_until(now)
+        run.last_heartbeat_at = now
+        run.attempt_count = (run.attempt_count or 0) + 1
+        run.cancel_requested = False
+        run.executor_type = "worker"
+        await db.commit()
+        return RunRequest(
+            str(run.id),
+            str(run.user_id),
+            run.mode,
+            bool(progress.get("force_scrape", req.force_scrape)),
+            bool(progress.get("disable_scraping", req.disable_scraping)),
+            run.claim_token,
+        )
 
 
 async def _worker_loop_for_mode(session_factory: async_sessionmaker, mode: str) -> None:
@@ -833,6 +1081,10 @@ async def _worker_loop_for_mode(session_factory: async_sessionmaker, mode: str) 
 
         if isinstance(item, RunRequest):
             req = item
+        elif len(item) == 6:
+            req = RunRequest(*item)
+        elif len(item) == 5:
+            req = RunRequest(*item)
         elif len(item) == 4:
             req = RunRequest(*item)
         elif len(item) == 3:
@@ -842,13 +1094,26 @@ async def _worker_loop_for_mode(session_factory: async_sessionmaker, mode: str) 
 
         if from_queue:
             logger.info(
-                "Dequeued %s run %s from in-process queue (user_id=%s force_scrape=%s)",
-                mode, req.run_id, req.user_id, req.force_scrape,
+                "Dequeued %s run %s from in-process queue (user_id=%s force_scrape=%s disable_scraping=%s)",
+                mode, req.run_id, req.user_id, req.force_scrape, req.disable_scraping,
             )
+            claimed_req = await _claim_run_by_id(session_factory, req)
+            if claimed_req is None:
+                logger.info("Run %s could not be claimed from queue; skipping", req.run_id)
+                continue
+            req = claimed_req
         try:
             for attempt in range(1, _RUN_MAX_RETRIES + 1):
                 try:
-                    await process_run(req.run_id, req.user_id, session_factory, mode=req.mode, force_scrape=req.force_scrape)
+                    await process_run(
+                        req.run_id,
+                        req.user_id,
+                        session_factory,
+                        mode=req.mode,
+                        force_scrape=req.force_scrape,
+                        disable_scraping=req.disable_scraping,
+                        claim_token=req.claim_token,
+                    )
                     break
                 except _TRANSIENT_EXCEPTIONS as exc:
                     if attempt < _RUN_MAX_RETRIES:

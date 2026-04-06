@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from api.database import Base
 from api.models import JobRaw, Profile, User
+from experiment_cleanup import delete_user_ids
 from batch.ranker import score_jobs_for_user
 
 TEST_DB_URLS = [
@@ -112,49 +113,55 @@ async def _run_for_db_url(db_url: str, embed_threads: int, embed_batch_size: int
 
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     user_id, resume_text = await _seed(session_factory)
+    cleaned_up = False
 
-    print({
-        "stage": "before_score_jobs_for_user",
-        "db_url": db_url,
-        "embed_threads": embed_threads,
-        "embed_batch_size": embed_batch_size,
-        "model_name": model_name,
-        "rss_mb": rss_mb(),
-        "jobs": JOB_COUNT,
-    })
-    t0 = time.monotonic()
-    async with session_factory() as db:
-        ranked = await score_jobs_for_user(
-            db=db,
-            user_id=user_id,
-            resume_text=resume_text,
-            config_overrides={
-                "embeddings": {
-                    "model_name": model_name,
-                    "session_intra_op_threads": embed_threads,
-                    "session_inter_op_threads": 1,
-                },
-                "batch": {
-                    "embed_batch_size": embed_batch_size,
-                },
-                "ranking": {"agentic_matching": {"enabled": ENABLE_AGENTIC}},
-            },
-        )
-    duration_s = round(time.monotonic() - t0, 2)
-    print(
-        {
-            "stage": "after_score_jobs_for_user",
+    try:
+        print({
+            "stage": "before_score_jobs_for_user",
             "db_url": db_url,
             "embed_threads": embed_threads,
             "embed_batch_size": embed_batch_size,
             "model_name": model_name,
             "rss_mb": rss_mb(),
             "jobs": JOB_COUNT,
-            "ranked_rows": len(ranked),
-            "duration_s": duration_s,
-        }
-    )
-    await engine.dispose()
+        })
+        t0 = time.monotonic()
+        async with session_factory() as db:
+            ranked = await score_jobs_for_user(
+                db=db,
+                user_id=user_id,
+                resume_text=resume_text,
+                config_overrides={
+                    "embeddings": {
+                        "model_name": model_name,
+                        "session_intra_op_threads": embed_threads,
+                        "session_inter_op_threads": 1,
+                    },
+                    "batch": {
+                        "embed_batch_size": embed_batch_size,
+                    },
+                    "ranking": {"agentic_matching": {"enabled": ENABLE_AGENTIC}},
+                },
+            )
+        duration_s = round(time.monotonic() - t0, 2)
+        print(
+            {
+                "stage": "after_score_jobs_for_user",
+                "db_url": db_url,
+                "embed_threads": embed_threads,
+                "embed_batch_size": embed_batch_size,
+                "model_name": model_name,
+                "rss_mb": rss_mb(),
+                "jobs": JOB_COUNT,
+                "ranked_rows": len(ranked),
+                "duration_s": duration_s,
+            }
+        )
+        cleaned_up = True
+    finally:
+        if user_id and not cleaned_up:
+            await delete_user_ids(session_factory, [user_id])
+        await engine.dispose()
 
 
 async def main() -> None:

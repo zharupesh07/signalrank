@@ -58,6 +58,9 @@ FALLBACK_MODELS = [
     "nvidia/nemotron-3-super-120b-a12b:free",    # 4.3s — largest
 ]
 
+# Keep text parsing on the fastest reliable free models by default.
+FAST_TEXT_MODELS = FALLBACK_MODELS[:3]
+
 # Free vision-capable models on OpenRouter, in preference order.
 # Updated by fetch_free_vision_models() at runtime; this is the static fallback.
 VISION_MODELS = [
@@ -279,13 +282,18 @@ class OpenRouterClient:
         timeout: float = 90.0,
     ):
         self.api_key = api_key
-        self.models = models or FALLBACK_MODELS
+        self.models = models or FAST_TEXT_MODELS
         self.preferred_models = preferred_models or []
         self._http = httpx.AsyncClient(timeout=timeout)
 
-    async def probe_models(self) -> list[str]:
-        """Probe all models concurrently; cache and return healthy ones."""
-        key = tuple(self.models)
+    async def probe_models(self, *, limit: int | None = None) -> list[str]:
+        """Probe models concurrently; cache and return healthy ones.
+
+        When limit is set, only the first N models are probed. This keeps the
+        common text-parsing path from spending time on low-priority fallbacks.
+        """
+        models = self.models[:limit] if limit else self.models
+        key = tuple(models)
 
         async def _try(model: str) -> str | None:
             try:
@@ -309,19 +317,20 @@ class OpenRouterClient:
             except Exception:
                 return None
 
-        results = await asyncio.gather(*[_try(m) for m in self.models])
+        results = await asyncio.gather(*[_try(m) for m in models])
         healthy = [m for m in results if m is not None]
         _probe_cache[key] = healthy
         _probe_cache_at[key] = _time.monotonic()
         if not healthy:
-            logger.warning("Probe: all %d models failed, will use full list as fallback", len(self.models))
+            logger.warning("Probe: all %d models failed, will use full list as fallback", len(models))
         else:
-            logger.info("Probe found %d/%d healthy models: %s", len(healthy), len(self.models), healthy)
+            logger.info("Probe found %d/%d healthy models: %s", len(healthy), len(models), healthy)
         return healthy
 
-    async def _ensure_healthy(self) -> list[str]:
-        """Return cached healthy models, re-probing if cache expired. Uses lock to prevent thundering herd."""
-        key = tuple(self.models)
+    async def _ensure_healthy(self, *, limit: int | None = None) -> list[str]:
+        """Return cached healthy models for the requested model slice."""
+        models = self.models[:limit] if limit else self.models
+        key = tuple(models)
         if key in _probe_cache and (_time.monotonic() - _probe_cache_at.get(key, 0)) < _PROBE_TTL:
             return _probe_cache[key]
 
@@ -329,7 +338,7 @@ class OpenRouterClient:
         async with lock:
             if key in _probe_cache and (_time.monotonic() - _probe_cache_at.get(key, 0)) < _PROBE_TTL:
                 return _probe_cache[key]
-            return await self.probe_models()
+            return await self.probe_models(limit=limit)
 
     async def _call(
         self,
@@ -475,8 +484,8 @@ class OpenRouterClient:
             logger.info("llm_json cache hit")
             return cached  # type: ignore[return-value]
 
-        healthy = await self._ensure_healthy()
-        models_to_try = healthy if healthy else self.models
+        healthy = await self._ensure_healthy(limit=3)
+        models_to_try = healthy if healthy else self.models[:3]
         if self.preferred_models:
             preferred = [m for m in self.preferred_models if m in models_to_try]
             if preferred:
@@ -528,8 +537,8 @@ class OpenRouterClient:
             logger.info("llm_text cache hit")
             return cached  # type: ignore[return-value]
 
-        healthy = await self._ensure_healthy()
-        models_to_try = healthy if healthy else self.models
+        healthy = await self._ensure_healthy(limit=3)
+        models_to_try = healthy if healthy else self.models[:3]
         if self.preferred_models:
             preferred = [m for m in self.preferred_models if m in models_to_try]
             if preferred:

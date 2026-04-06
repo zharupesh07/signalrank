@@ -77,7 +77,7 @@ async def test_trigger_run_does_not_require_local_queue_when_api_worker_disabled
     ).scalar_one()
     assert run.status == "pending"
     assert run.mode == "quick"
-    assert run.progress == {"requested_mode": "quick", "force_scrape": False}
+    assert run.progress == {"requested_mode": "quick", "force_scrape": False, "disable_scraping": False}
 
 
 async def test_trigger_full_run_persists_mode(client, auth_token, db: AsyncSession):
@@ -91,6 +91,65 @@ async def test_trigger_full_run_persists_mode(client, auth_token, db: AsyncSessi
         await db.execute(select(Run).where(Run.id == response.json()["run_id"]))
     ).scalar_one()
     assert run.mode == "full"
+
+
+async def test_trigger_run_can_disable_scraping(client, auth_token, db: AsyncSession):
+    response = await client.post(
+        "/api/runs/trigger",
+        headers={"Authorization": f"Bearer {auth_token}"},
+        json={"disable_scraping": True},
+    )
+    assert response.status_code == 202
+    run = (
+        await db.execute(select(Run).where(Run.id == response.json()["run_id"]))
+    ).scalar_one()
+    assert run.progress == {"requested_mode": "quick", "force_scrape": False, "disable_scraping": True}
+
+
+async def test_trigger_run_reuses_existing_active_run(client, auth_token, db: AsyncSession):
+    user = (await db.execute(select(User).where(User.email == "runner@test.com"))).scalar_one()
+    existing = Run(
+        user_id=user.id,
+        status="pending",
+        mode="quick",
+        progress={"requested_mode": "quick", "force_scrape": False, "disable_scraping": False},
+    )
+    db.add(existing)
+    await db.commit()
+
+    response = await client.post(
+        "/api/runs/trigger",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 202
+    assert response.json()["run_id"] == existing.id
+
+
+async def test_rank_existing_jobs_defaults_to_quick_without_scraping(client, auth_token, db: AsyncSession):
+    response = await client.post(
+        "/api/runs/rank-existing",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 202
+    run = (
+        await db.execute(select(Run).where(Run.id == response.json()["run_id"]))
+    ).scalar_one()
+    assert run.mode == "quick"
+    assert run.progress == {"requested_mode": "quick", "force_scrape": False, "disable_scraping": True}
+
+
+async def test_rank_existing_jobs_can_request_full_mode(client, auth_token, db: AsyncSession):
+    response = await client.post(
+        "/api/runs/rank-existing",
+        headers={"Authorization": f"Bearer {auth_token}"},
+        json={"mode": "full", "disable_scraping": False},
+    )
+    assert response.status_code == 202
+    run = (
+        await db.execute(select(Run).where(Run.id == response.json()["run_id"]))
+    ).scalar_one()
+    assert run.mode == "full"
+    assert run.progress == {"requested_mode": "full", "force_scrape": False, "disable_scraping": True}
 
 
 async def test_get_run_status(client, auth_token):
@@ -158,6 +217,24 @@ async def test_stop_pending_run(client, auth_token):
     )
     assert status_r.status_code == 200
     assert status_r.json()["status"] == "cancelled"
+
+
+async def test_stop_active_run_marks_cancel_requested(client, auth_token, db: AsyncSession):
+    user = (await db.execute(select(User).where(User.email == "runner@test.com"))).scalar_one()
+    run = Run(user_id=user.id, status="scraping", mode="quick")
+    db.add(run)
+    await db.commit()
+
+    response = await client.post(
+        f"/api/runs/{run.id}/stop",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "cancelling"
+
+    refreshed = (await db.execute(select(Run).where(Run.id == run.id))).scalar_one()
+    assert refreshed.cancel_requested is True
+    assert refreshed.status == "scraping"
 
 
 async def test_stop_nonexistent_run(client, auth_token):

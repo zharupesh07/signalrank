@@ -45,25 +45,50 @@ class RunResponse(BaseModel):
 
 class TriggerRunRequest(BaseModel):
     mode: Literal["quick", "full"] = "quick"
+    disable_scraping: bool = False
 
 
-@router.post("/trigger", status_code=202)
-async def trigger_run(
-    body: TriggerRunRequest | None = None,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    requested_mode = (body.mode if body else "quick")
+async def _create_run(
+    *,
+    requested_mode: str,
+    disable_scraping: bool,
+    current_user: User,
+    db: AsyncSession,
+) -> dict[str, str]:
     result = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
     profile = result.scalar_one_or_none()
     if not profile or not profile.onboarding_complete:
         raise HTTPException(status_code=400, detail="Please complete onboarding before triggering a run")
 
+    existing_result = await db.execute(
+        select(Run)
+        .where(
+            Run.user_id == current_user.id,
+            Run.mode == requested_mode,
+            Run.status.in_(["pending", "claimed", "scraping", "ranking"]),
+        )
+        .order_by(Run.started_at.desc())
+    )
+    existing_run = next(
+        (
+            run for run in existing_result.scalars().all()
+            if bool((run.progress or {}).get("disable_scraping", False)) == disable_scraping
+        ),
+        None,
+    )
+    if existing_run:
+        return {"run_id": existing_run.id, "status": existing_run.status}
+
     run = Run(
         user_id=current_user.id,
         status="pending",
         mode=requested_mode,
-        progress={"requested_mode": requested_mode, "force_scrape": False},
+        trigger_source="manual",
+        progress={
+            "requested_mode": requested_mode,
+            "force_scrape": False,
+            "disable_scraping": disable_scraping,
+        },
     )
     db.add(run)
     await db.commit()
@@ -71,7 +96,15 @@ async def trigger_run(
 
     if api_runtime_flags()["run_api_worker"]:
         queue = get_queue(requested_mode)
-        await queue.put(RunRequest(run.id, current_user.id, requested_mode, False))
+        await queue.put(
+            RunRequest(
+                run.id,
+                current_user.id,
+                requested_mode,
+                False,
+                disable_scraping,
+            )
+        )
         logger.info("Run %s queued in-process by API worker (mode=%s user_id=%s)", run.id, requested_mode, current_user.id)
     else:
         logger.info(
@@ -82,6 +115,36 @@ async def trigger_run(
         )
 
     return {"run_id": run.id, "status": "pending"}
+
+
+@router.post("/trigger", status_code=202)
+async def trigger_run(
+    body: TriggerRunRequest | None = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    requested_mode = (body.mode if body else "quick")
+    return await _create_run(
+        requested_mode=requested_mode,
+        disable_scraping=bool(body.disable_scraping) if body else False,
+        current_user=current_user,
+        db=db,
+    )
+
+
+@router.post("/rank-existing", status_code=202)
+async def rank_existing_jobs(
+    body: TriggerRunRequest | None = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    requested_mode = (body.mode if body else "quick")
+    return await _create_run(
+        requested_mode=requested_mode,
+        disable_scraping=True,
+        current_user=current_user,
+        db=db,
+    )
 
 
 @router.get("/latest", response_model=RunResponse)
@@ -180,15 +243,15 @@ async def stop_run(
         raise HTTPException(status_code=404, detail="Run not found")
 
     # Can only cancel runs that are pending, scraping, or ranking
-    cancellable_statuses = {"pending", "scraping", "ranking"}
+    cancellable_statuses = {"pending", "claimed", "scraping", "ranking"}
     if run.status not in cancellable_statuses:
         return {"stopped": False, "status": run.status, "message": f"Run is already {run.status}"}
 
-    # If run is pending (queued but not started), we need to try to remove it from the queue
-    # If run is already processing, we mark it as cancelled in the DB; the worker will check
-    await db.execute(
-        update(Run).where(Run.id == run_id).values(status="cancelled", finished_at=datetime.now(timezone.utc))
-    )
+    original_status = run.status
+    values = {"cancel_requested": True}
+    if original_status == "pending":
+        values.update({"status": "cancelled", "finished_at": datetime.now(timezone.utc)})
+    await db.execute(update(Run).where(Run.id == run_id).values(**values))
     await db.commit()
 
-    return {"stopped": True, "status": "cancelled"}
+    return {"stopped": True, "status": "cancelled" if original_status == "pending" else "cancelling"}

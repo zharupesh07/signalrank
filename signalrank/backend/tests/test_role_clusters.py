@@ -14,6 +14,16 @@ def test_roles_to_clusters_maps_role_aliases():
     assert roles_to_clusters(["SDET"]) == {"product_eng"}
 
 
+def test_roles_to_clusters_maps_innovation_roles():
+    assert roles_to_clusters(["Innovation Engineer"]) == {"innovation"}
+    assert roles_to_clusters(["Emerging Technologies Engineer"]) == {"innovation"}
+
+
+def test_roles_to_clusters_maps_network_automation_roles():
+    assert roles_to_clusters(["Network Automation Engineer"]) == {"network_auto"}
+    assert roles_to_clusters(["Infrastructure Automation Engineer"]) == {"network_auto"}
+
+
 def test_infer_clusters_from_job_text_detects_sap_jobs():
     clusters = infer_clusters_from_job_text(
         "Senior SAP SD Consultant",
@@ -38,6 +48,24 @@ def test_infer_clusters_from_job_text_detects_qa_jobs():
     )
     assert "product_eng" in clusters
     assert "ai_ml" not in clusters
+
+
+def test_infer_clusters_from_job_text_detects_innovation_jobs():
+    clusters = infer_clusters_from_job_text(
+        "Innovation Engineer",
+        "Drive rapid POCs, prototype development, IoT experiments, and emerging technology validation.",
+    )
+    assert "innovation" in clusters
+    assert "product_eng" not in clusters
+
+
+def test_infer_clusters_from_job_text_detects_network_automation_jobs():
+    clusters = infer_clusters_from_job_text(
+        "Network Automation Engineer",
+        "Build Python-based firewall automation, routing workflows, cloud network reliability, and switching automation.",
+    )
+    assert "network_auto" in clusters
+    assert "product_eng" not in clusters
 
 
 def test_infer_clusters_from_job_text_avoids_short_token_false_positive():

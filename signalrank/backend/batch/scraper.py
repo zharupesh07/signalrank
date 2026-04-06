@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Callable
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from api.config import settings
 from batch.query_builder import SearchQuery
@@ -109,6 +109,13 @@ async def scrape(
             all_results.extend(filtered)
 
     allowed = set(config.sources) if config.sources else None
+    isolated_session_factory = async_sessionmaker(bind=db.bind, expire_on_commit=False) if db is not None else None
+
+    async def _run_source_with_isolated_db(fn):
+        if db is None:
+            return await fn(queries, config, db=None)
+        async with isolated_session_factory() as isolated_db:
+            return await fn(queries, config, db=isolated_db)
 
     async def _run():
         # Phase 1: JobSpy Indeed
@@ -160,7 +167,7 @@ async def scrape(
             ]
             if allowed:
                 parallel_sources = [(n, fn) for n, fn in parallel_sources if n in allowed]
-            tasks = [fn(queries, config, db=db) for _, fn in parallel_sources]
+            tasks = [_run_source_with_isolated_db(fn) for _, fn in parallel_sources]
             results_list = await asyncio.gather(*tasks, return_exceptions=True)
             for (name, _), res in zip(parallel_sources, results_list):
                 if isinstance(res, Exception):

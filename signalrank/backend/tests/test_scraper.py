@@ -243,3 +243,31 @@ async def test_rapidapi_results_are_cached_across_calls(db, monkeypatch):
     with patch("batch.sources.rapidapi._fetch_source", side_effect=AssertionError("cache miss")):
         second = await scrape(queries, config, db=db)
     assert [job.job_url for job in second] == [job.job_url for job in cached_jobs]
+
+
+@pytest.mark.asyncio
+async def test_parallel_sources_use_isolated_db_sessions(db, queries):
+    config = ScraperConfig(sources=["rapidapi", "free_apis", "google_jobs"])
+    seen_db_ids = {}
+
+    async def _rapidapi(*args, db=None, **kwargs):
+        seen_db_ids["rapidapi"] = id(db)
+        return []
+
+    async def _free_apis(*args, db=None, **kwargs):
+        seen_db_ids["free_apis"] = id(db)
+        return []
+
+    async def _google_jobs(*args, db=None, **kwargs):
+        seen_db_ids["google_jobs"] = id(db)
+        return []
+
+    with patch("batch.sources.rapidapi.search", new=_rapidapi), \
+         patch("batch.sources.free_apis.search", new=_free_apis), \
+         patch("batch.sources.google_jobs.search", new=_google_jobs), \
+         patch("batch.sources.jobspy_source.search", new_callable=AsyncMock, return_value=[]):
+        await scrape(queries, config, db=db)
+
+    assert len(seen_db_ids) == 3
+    assert all(db_id != id(db) for db_id in seen_db_ids.values())
+    assert len(set(seen_db_ids.values())) == 3
