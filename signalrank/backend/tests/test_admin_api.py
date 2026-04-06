@@ -243,7 +243,116 @@ async def test_admin_trigger_run_does_not_require_local_queue_when_api_worker_di
     ).scalar_one()
     assert run.status == "pending"
     assert run.mode == "full"
-    assert run.progress == {"requested_mode": "full", "force_scrape": True}
+    assert run.progress == {"requested_mode": "full", "force_scrape": True, "disable_scraping": False}
+
+
+async def test_admin_trigger_run_can_disable_scraping(
+    client,
+    admin_token,
+    regular_token,
+    db: AsyncSession,
+):
+    me = await client.get("/api/profile", headers={"Authorization": f"Bearer {regular_token}"})
+    user_id = me.json()["user_id"]
+    await db.execute(update(Profile).where(Profile.user_id == user_id).values(onboarding_complete=True))
+    await db.commit()
+
+    response = await client.post(
+        f"/api/admin/users/{user_id}/trigger-run",
+        headers={"Authorization": f"Bearer {admin_token}"},
+        json={"disable_scraping": True},
+    )
+    assert response.status_code == 202
+
+    run = (
+        await db.execute(select(Run).where(Run.id == response.json()["run_id"]))
+    ).scalar_one()
+    assert run.progress == {"requested_mode": "full", "force_scrape": False, "disable_scraping": True}
+
+
+async def test_worker_health_returns_active_runs(client, admin_token, db: AsyncSession):
+    """GET /admin/worker/health returns list of active (non-terminal) runs."""
+    from api.models import Run
+
+    run = Run(
+        user_id=(await db.execute(select(User).where(User.email == "admin@test.com"))).scalar_one().id,
+        status="scraping",
+        mode="full",
+        claimed_by="worker-abc",
+        claim_token="token-123",
+        lease_expires_at=datetime(2099, 1, 1, tzinfo=timezone.utc),
+        last_heartbeat_at=datetime.now(timezone.utc),
+        trigger_source="manual",
+        executor_type="standalone",
+    )
+    db.add(run)
+    await db.commit()
+
+    resp = await client.get("/api/admin/worker/health", headers={"Authorization": f"Bearer {admin_token}"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert isinstance(data["active_runs"], list)
+    assert any(r["claimed_by"] == "worker-abc" for r in data["active_runs"])
+
+
+async def test_worker_health_empty_when_no_active_runs(client, admin_token):
+    resp = await client.get("/api/admin/worker/health", headers={"Authorization": f"Bearer {admin_token}"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["active_runs"] == []
+
+
+async def test_retry_run_resets_failed_run(client, admin_token, db: AsyncSession):
+    """POST /admin/runs/{run_id}/retry resets a failed run back to pending."""
+    from api.models import Run
+
+    user = (await db.execute(select(User).where(User.email == "admin@test.com"))).scalar_one()
+    run = Run(
+        user_id=user.id,
+        status="failed",
+        mode="full",
+        error="scrape timeout",
+        trigger_source="manual",
+    )
+    db.add(run)
+    await db.commit()
+    await db.refresh(run)
+
+    resp = await client.post(f"/api/admin/runs/{run.id}/retry", headers={"Authorization": f"Bearer {admin_token}"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "pending"
+    assert data["run_id"] == run.id
+
+    await db.refresh(run)
+    assert run.status == "pending"
+    assert run.error is None
+    assert run.claim_token is None
+    assert run.claimed_by is None
+
+
+async def test_retry_run_404_for_nonexistent(client, admin_token):
+    resp = await client.post("/api/admin/runs/00000000-0000-0000-0000-000000000000/retry", headers={"Authorization": f"Bearer {admin_token}"})
+    assert resp.status_code == 404
+
+
+async def test_retry_run_rejects_active_run(client, admin_token, db: AsyncSession):
+    """Retrying a scraping run should return 409 to prevent interrupting it."""
+    from api.models import Run
+
+    user = (await db.execute(select(User).where(User.email == "admin@test.com"))).scalar_one()
+    run = Run(
+        user_id=user.id,
+        status="scraping",
+        mode="full",
+        trigger_source="manual",
+    )
+    db.add(run)
+    await db.commit()
+    await db.refresh(run)
+
+    resp = await client.post(f"/api/admin/runs/{run.id}/retry", headers={"Authorization": f"Bearer {admin_token}"})
+    assert resp.status_code == 409
 
 
 async def test_admin_cache_summary_and_invalidation(client, admin_token, db: AsyncSession):

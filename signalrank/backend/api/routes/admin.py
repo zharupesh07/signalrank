@@ -443,6 +443,7 @@ async def get_user_top_jobs(
 class TriggerRunRequest(BaseModel):
     mode: str = "full"
     force_scrape: bool = False
+    disable_scraping: bool = False
 
 
 class MaintenanceResponse(BaseModel):
@@ -493,14 +494,18 @@ async def trigger_run_for_user(
         user_id=user.id,
         status="pending",
         mode=mode,
-        progress={"requested_mode": mode, "force_scrape": body.force_scrape},
+        progress={
+            "requested_mode": mode,
+            "force_scrape": body.force_scrape,
+            "disable_scraping": body.disable_scraping,
+        },
     )
     db.add(run)
     await db.commit()
     await db.refresh(run)
     if api_runtime_flags()["run_api_worker"]:
         queue = get_queue(mode)
-        await queue.put(RunRequest(run.id, user.id, mode, body.force_scrape))
+        await queue.put(RunRequest(run.id, user.id, mode, body.force_scrape, body.disable_scraping))
     return {"run_id": run.id, "status": "pending", "mode": mode, "user_email": user.email}
 
 
@@ -736,6 +741,84 @@ async def get_user_quality_metrics(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return await compute_user_quality_metrics(db, user_id, k=k)
+
+
+# ── Worker health ──────────────────────────────────────────────────────────
+
+
+class WorkerRunSummary(BaseModel):
+    run_id: str
+    user_id: str
+    status: str
+    mode: str
+    claimed_by: str | None
+    lease_expires_at: str | None
+    last_heartbeat_at: str | None
+    trigger_source: str | None
+    executor_type: str | None
+    started_at: str | None
+
+
+class WorkerHealthResponse(BaseModel):
+    active_runs: list[WorkerRunSummary]
+
+
+@router.get("/worker/health", response_model=WorkerHealthResponse)
+async def worker_health(
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return all runs currently in a non-terminal state (pending/claimed/scraping/ranking)."""
+    result = await db.execute(
+        select(Run)
+        .where(Run.status.in_(["pending", "claimed", "scraping", "ranking"]))
+        .order_by(Run.started_at.desc())
+        .limit(100)
+    )
+    runs = result.scalars().all()
+    return WorkerHealthResponse(
+        active_runs=[
+            WorkerRunSummary(
+                run_id=r.id,
+                user_id=r.user_id,
+                status=r.status,
+                mode=r.mode,
+                claimed_by=r.claimed_by,
+                lease_expires_at=str(r.lease_expires_at) if r.lease_expires_at else None,
+                last_heartbeat_at=str(r.last_heartbeat_at) if r.last_heartbeat_at else None,
+                trigger_source=r.trigger_source,
+                executor_type=r.executor_type,
+                started_at=str(r.started_at) if r.started_at else None,
+            )
+            for r in runs
+        ]
+    )
+
+
+@router.post("/runs/{run_id}/retry", status_code=200)
+async def retry_run(
+    run_id: str,
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Reset a failed/cancelled/timed_out run back to pending so the worker picks it up again."""
+    result = await db.execute(select(Run).where(Run.id == run_id))
+    run = result.scalar_one_or_none()
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+    if run.status in ("pending", "claimed", "scraping", "ranking"):
+        raise HTTPException(status_code=409, detail=f"Run is currently active (status={run.status}). Stop it first.")
+    run.status = "pending"
+    run.error = None
+    run.claim_token = None
+    run.claimed_by = None
+    run.lease_expires_at = None
+    run.last_heartbeat_at = None
+    run.finished_at = None
+    run.trigger_source = "retry"
+    await db.commit()
+    await db.refresh(run)
+    return {"run_id": run.id, "status": run.status}
 
 
 @router.post("/reparse-all-resumes", status_code=202)
