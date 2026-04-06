@@ -50,7 +50,7 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="+",
         default=os.environ.get("WORKER_SCAN_MODES", "quick full").split(),
         metavar="MODE",
-        help="Scan modes to handle (default: quick full)",
+        help="Scan modes to handle when --once is used (default: quick full)",
     )
     poll_p.add_argument(
         "--concurrency",

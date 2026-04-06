@@ -301,7 +301,7 @@ export default function RunsPage() {
               ) : (
                 runs.map((run, idx) => {
                   const dur = duration(run.started_at, run.finished_at);
-                  const canCancel = ["pending", "scraping", "ranking"].includes(run.status);
+                  const canCancel = ["pending", "claimed", "scraping", "ranking"].includes(run.status);
                   const isStopping = stoppingRunId === run.run_id;
                   return (
                     <tr
