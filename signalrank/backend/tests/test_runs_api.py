@@ -261,3 +261,30 @@ async def test_stop_another_users_run(client, auth_token, db: AsyncSession):
         headers={"Authorization": f"Bearer {auth_token}"},
     )
     assert r.status_code == 404  # Should not be able to stop another user's run
+
+
+@pytest.mark.asyncio
+async def test_trigger_run_with_executor_type_local(client, auth_token, db: AsyncSession):
+    r = await client.post(
+        "/api/runs/trigger",
+        headers={"Authorization": f"Bearer {auth_token}"},
+        json={"executor_type": "local"},
+    )
+    assert r.status_code == 202
+    run_id = r.json()["run_id"]
+    from api.models import Run
+    run = (await db.execute(select(Run).where(Run.id == run_id))).scalar_one()
+    assert run.executor_type == "local"
+
+
+@pytest.mark.asyncio
+async def test_trigger_run_defaults_executor_type_to_cloud(client, auth_token, db: AsyncSession):
+    r = await client.post(
+        "/api/runs/trigger",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert r.status_code == 202
+    run_id = r.json()["run_id"]
+    from api.models import Run
+    run = (await db.execute(select(Run).where(Run.id == run_id))).scalar_one()
+    assert run.executor_type in (None, "cloud")
