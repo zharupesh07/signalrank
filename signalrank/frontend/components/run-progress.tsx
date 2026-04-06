@@ -36,7 +36,7 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
   const run = runOverride && runOverride.id === initialRun.id ? runOverride : initialRun;
 
   const isLiveStatus = (s: string) =>
-    s === "pending" || s === "running" || s === "scraping" || s === "ranking";
+    s === "pending" || s === "running" || s === "scraping" || s === "ranking" || s === "syncing";
 
   useEffect(() => {
     if (isLiveStatus(run.status)) {
@@ -118,6 +118,7 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
     p?.message                 ? p.message :
     run.status === "scraping"  ? "Scraping..." :
     run.status === "ranking"   ? "Ranking jobs..." :
+    run.status === "syncing"   ? "Syncing results..." :
     "Running...";
 
   const jobsFound = p?.jobs_found ?? run.scrape_count ?? run.job_count;
@@ -184,6 +185,9 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
       {/* Footer */}
       <div className="flex items-center gap-4 text-[10px] text-muted-foreground flex-wrap">
         <span>RUN {run.id?.slice(0, 8).toUpperCase() ?? "--------"}</span>
+        {run.executor_type === "local" && (
+          <span className="text-xs text-muted-foreground border rounded px-1">Local</span>
+        )}
         {run.started_at && <span>{new Date(run.started_at).toLocaleTimeString()}</span>}
         {run.status === "failed" && run.error && (
           <span className="text-destructive" title={run.error}>

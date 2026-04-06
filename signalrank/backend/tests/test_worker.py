@@ -406,3 +406,41 @@ async def test_process_run_marks_cancel_requested_run_cancelled(
     refreshed_run = (await db.execute(select(Run).where(Run.id == run_id))).scalar_one()
     assert refreshed_run.status == "cancelled"
     assert refreshed_run.claim_token is None
+
+
+@pytest.mark.asyncio
+async def test_claim_pending_run_skips_local_runs_for_cloud_worker(db, test_engine):
+    """Cloud worker (_local_worker=False) should not claim executor_type='local' runs."""
+    from api.models import Run, User, Profile
+    import uuid
+    user = User(id=str(uuid.uuid4()), email="w@test.com", password_hash="x")
+    db.add(user)
+    await db.flush()
+    profile = Profile(user_id=user.id, onboarding_complete=True)
+    db.add(profile)
+    run = Run(user_id=user.id, status="pending", mode="quick", executor_type="local")
+    db.add(run)
+    await db.commit()
+
+    factory = async_sessionmaker(test_engine, expire_on_commit=False)
+    result = await _claim_pending_run(factory, "quick", local_worker=False)
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_claim_pending_run_cloud_worker_claims_null_executor_type(db, test_engine):
+    """Cloud worker claims runs where executor_type is NULL or 'cloud'."""
+    from api.models import Run, User, Profile
+    import uuid
+    user = User(id=str(uuid.uuid4()), email="w2@test.com", password_hash="x")
+    db.add(user)
+    await db.flush()
+    profile = Profile(user_id=user.id, onboarding_complete=True)
+    db.add(profile)
+    run = Run(user_id=user.id, status="pending", mode="quick", executor_type=None)
+    db.add(run)
+    await db.commit()
+
+    factory = async_sessionmaker(test_engine, expire_on_commit=False)
+    result = await _claim_pending_run(factory, "quick", local_worker=False)
+    assert result is not None

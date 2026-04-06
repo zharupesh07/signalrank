@@ -61,6 +61,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("enqueue-cron", help="Enqueue pending runs for all active profiles and exit")
 
+    once_p = sub.add_parser("once-local", help="Run once locally for a specific user and exit")
+    once_p.add_argument("--user-id", required=True, dest="user_id", help="User UUID to run for")
+    once_p.add_argument("--run-mode", default="quick", choices=["quick", "full"], dest="run_mode")
+
     return parser
 
 
@@ -82,7 +86,49 @@ def _ensure_asyncpg(url: str) -> str:
     return url
 
 
+async def _run_once_local(args: argparse.Namespace) -> None:
+    from api.database import _build_engine
+    from batch.local_worker import create_run_in_railway, run_local_once
+
+    local_url = _ensure_asyncpg(os.environ.get("DATABASE_URL", ""))
+    railway_url = _ensure_asyncpg(os.environ.get("DATABASE_URL_RAILWAY", ""))
+    if not local_url or not railway_url:
+        raise RuntimeError(
+            "Both DATABASE_URL and DATABASE_URL_RAILWAY must be set for LOCAL_WORKER mode"
+        )
+
+    _, local_factory = _build_engine(local_url)
+    _, railway_factory = _build_engine(railway_url)
+
+    async with railway_factory() as rw_db:
+        run_id = await create_run_in_railway(rw_db, args.user_id, args.run_mode)
+    logger.info("Created Railway run %s for user %s (mode=%s)", run_id, args.user_id, args.run_mode)
+
+    await run_local_once(
+        run_id, args.user_id,
+        local_factory, railway_factory,
+        mode=args.run_mode,
+    )
+
+
 async def _run_poll(args: argparse.Namespace) -> None:
+    import os as _os
+    local_worker = _os.environ.get("LOCAL_WORKER", "").lower() == "true"
+
+    if local_worker:
+        from api.database import _build_engine
+        from batch.local_worker import local_worker_loop
+        local_url = _ensure_asyncpg(_os.environ.get("DATABASE_URL", ""))
+        railway_url = _ensure_asyncpg(_os.environ.get("DATABASE_URL_RAILWAY", ""))
+        if not local_url or not railway_url:
+            raise RuntimeError(
+                "Both DATABASE_URL and DATABASE_URL_RAILWAY must be set for LOCAL_WORKER mode"
+            )
+        _, local_factory = _build_engine(local_url)
+        _, railway_factory = _build_engine(railway_url)
+        await local_worker_loop(local_factory, railway_factory)
+        return
+
     from api.database import _build_engine
     from batch.worker import worker_loop, _worker_loop_for_mode
 
@@ -153,6 +199,8 @@ def main() -> None:
         asyncio.run(_run_poll(args))
     elif args.mode == "enqueue-cron":
         asyncio.run(_run_enqueue_cron(args))
+    elif args.mode == "once-local":
+        asyncio.run(_run_once_local(args))
     else:
         parser.print_help()
         sys.exit(1)

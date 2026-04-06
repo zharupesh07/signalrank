@@ -167,7 +167,7 @@ export interface RunProgress {
 
 export interface Run {
   id: string;
-  status: "pending" | "scraping" | "ranking" | "running" | "done" | "failed" | "cancelled";
+  status: "pending" | "scraping" | "ranking" | "syncing" | "running" | "done" | "failed" | "cancelled";
   started_at: string;
   finished_at: string | null;
   job_count: number | null;
@@ -175,6 +175,7 @@ export interface Run {
   progress: RunProgress | null;
    jobs_snapshot?: JobsResponse | null;
   error?: string | null;
+  executor_type?: string | null;
 }
 
 export interface OnboardingStatus {

@@ -48,3 +48,17 @@ def test_resolve_db_url_prefers_railway(monkeypatch):
     monkeypatch.setenv("DATABASE_URL_RAILWAY", "postgresql+asyncpg://railway/prod")
     url = resolve_db_url()
     assert "railway/prod" in url
+
+
+def test_build_parser_once_local_mode():
+    parser = build_parser()
+    args = parser.parse_args(["once-local", "--user-id", "abc-123"])
+    assert args.mode == "once-local"
+    assert args.user_id == "abc-123"
+    assert args.run_mode == "quick"
+
+
+def test_build_parser_once_local_full_mode():
+    parser = build_parser()
+    args = parser.parse_args(["once-local", "--user-id", "abc-123", "--run-mode", "full"])
+    assert args.run_mode == "full"

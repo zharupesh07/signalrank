@@ -261,3 +261,53 @@ async def test_stop_another_users_run(client, auth_token, db: AsyncSession):
         headers={"Authorization": f"Bearer {auth_token}"},
     )
     assert r.status_code == 404  # Should not be able to stop another user's run
+
+
+@pytest.mark.asyncio
+async def test_trigger_run_with_executor_type_local_non_admin_forbidden(client, auth_token, db: AsyncSession):
+    r = await client.post(
+        "/api/runs/trigger",
+        headers={"Authorization": f"Bearer {auth_token}"},
+        json={"executor_type": "local"},
+    )
+    assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_trigger_run_with_executor_type_local(client, db: AsyncSession):
+    await client.post("/api/auth/register", json={"email": "admin_runner@test.com", "password": "password123"})
+    from api.models import Profile
+    user = (await db.execute(select(User).where(User.email == "admin_runner@test.com"))).scalar_one()
+    user.is_admin = True
+    profile = (await db.execute(select(Profile).where(Profile.user_id == user.id))).scalar_one_or_none()
+    if profile is None:
+        profile = Profile(user_id=user.id)
+        db.add(profile)
+    profile.onboarding_complete = True
+    await db.commit()
+    r = await client.post("/api/auth/login", json={"email": "admin_runner@test.com", "password": "password123"})
+    admin_token = r.json()["access_token"]
+
+    r = await client.post(
+        "/api/runs/trigger",
+        headers={"Authorization": f"Bearer {admin_token}"},
+        json={"executor_type": "local"},
+    )
+    assert r.status_code == 202
+    run_id = r.json()["run_id"]
+    from api.models import Run
+    run = (await db.execute(select(Run).where(Run.id == run_id))).scalar_one()
+    assert run.executor_type == "local"
+
+
+@pytest.mark.asyncio
+async def test_trigger_run_defaults_executor_type_to_cloud(client, auth_token, db: AsyncSession):
+    r = await client.post(
+        "/api/runs/trigger",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert r.status_code == 202
+    run_id = r.json()["run_id"]
+    from api.models import Run
+    run = (await db.execute(select(Run).where(Run.id == run_id))).scalar_one()
+    assert run.executor_type in (None, "cloud")

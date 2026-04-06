@@ -958,7 +958,7 @@ async def _cleanup_stale_runs(session_factory: async_sessionmaker) -> None:
         await db.commit()
 
 
-async def _claim_pending_run(session_factory: async_sessionmaker, mode: str) -> RunRequest | None:
+async def _claim_pending_run(session_factory: async_sessionmaker, mode: str, local_worker: bool = False) -> RunRequest | None:
     """Claim the oldest runnable run for the given mode using a short DB transaction."""
     async with session_factory() as db:
         now = datetime.now(timezone.utc)
@@ -987,10 +987,19 @@ async def _claim_pending_run(session_factory: async_sessionmaker, mode: str) -> 
                 await db.rollback()
                 return None
 
+        if local_worker:
+            executor_filter = Run.executor_type == "local"
+        else:
+            executor_filter = or_(
+                Run.executor_type.is_(None),
+                Run.executor_type == "cloud",
+            )
+
         result = await db.execute(
             select(Run)
             .where(
                 Run.mode == mode,
+                executor_filter,
                 or_(
                     Run.status == "pending",
                     and_(
@@ -1018,7 +1027,8 @@ async def _claim_pending_run(session_factory: async_sessionmaker, mode: str) -> 
         run.last_heartbeat_at = now
         run.attempt_count = (run.attempt_count or 0) + 1
         run.cancel_requested = False
-        run.executor_type = "worker"
+        if not local_worker:
+            run.executor_type = "worker"
         await db.commit()
         logger.info(
             "Claimed %s run %s from DB poll (user_id=%s force_scrape=%s disable_scraping=%s worker=%s)",
@@ -1027,7 +1037,7 @@ async def _claim_pending_run(session_factory: async_sessionmaker, mode: str) -> 
         return RunRequest(str(run.id), str(run.user_id), mode, force_scrape, disable_scraping, run.claim_token)
 
 
-async def _claim_run_by_id(session_factory: async_sessionmaker, req: RunRequest) -> RunRequest | None:
+async def _claim_run_by_id(session_factory: async_sessionmaker, req: RunRequest, local_worker: bool = False) -> RunRequest | None:
     async with session_factory() as db:
         now = datetime.now(timezone.utc)
         result = await db.execute(
@@ -1054,7 +1064,8 @@ async def _claim_run_by_id(session_factory: async_sessionmaker, req: RunRequest)
         run.last_heartbeat_at = now
         run.attempt_count = (run.attempt_count or 0) + 1
         run.cancel_requested = False
-        run.executor_type = "worker"
+        if not local_worker:
+            run.executor_type = "worker"
         await db.commit()
         return RunRequest(
             str(run.id),
@@ -1066,7 +1077,7 @@ async def _claim_run_by_id(session_factory: async_sessionmaker, req: RunRequest)
         )
 
 
-async def _worker_loop_for_mode(session_factory: async_sessionmaker, mode: str) -> None:
+async def _worker_loop_for_mode(session_factory: async_sessionmaker, mode: str, local_worker: bool = False) -> None:
     """Poll and process runs of a single mode serially.
 
     At most one quick scan and one full scan can run at any time (enforced by
@@ -1084,7 +1095,7 @@ async def _worker_loop_for_mode(session_factory: async_sessionmaker, mode: str) 
             item = await asyncio.wait_for(queue.get(), timeout=5)
             from_queue = True
         except asyncio.TimeoutError:
-            item = await _claim_pending_run(session_factory, mode)
+            item = await _claim_pending_run(session_factory, mode, local_worker=local_worker)
             if item is None:
                 continue
 
@@ -1106,7 +1117,7 @@ async def _worker_loop_for_mode(session_factory: async_sessionmaker, mode: str) 
                 "Dequeued %s run %s from in-process queue (user_id=%s force_scrape=%s disable_scraping=%s)",
                 mode, req.run_id, req.user_id, req.force_scrape, req.disable_scraping,
             )
-            claimed_req = await _claim_run_by_id(session_factory, req)
+            claimed_req = await _claim_run_by_id(session_factory, req, local_worker=local_worker)
             if claimed_req is None:
                 logger.info("Run %s could not be claimed from queue; skipping", req.run_id)
                 continue
@@ -1139,11 +1150,11 @@ async def _worker_loop_for_mode(session_factory: async_sessionmaker, mode: str) 
                 queue.task_done()
 
 
-async def worker_loop(session_factory: async_sessionmaker) -> None:
+async def worker_loop(session_factory: async_sessionmaker, local_worker: bool = False) -> None:
     """Start one worker loop per scan mode and run them concurrently."""
     await _cleanup_stale_runs(session_factory)
     logger.info("Background worker started")
     await asyncio.gather(
-        _worker_loop_for_mode(session_factory, "quick"),
-        _worker_loop_for_mode(session_factory, "full"),
+        _worker_loop_for_mode(session_factory, "quick", local_worker=local_worker),
+        _worker_loop_for_mode(session_factory, "full", local_worker=local_worker),
     )

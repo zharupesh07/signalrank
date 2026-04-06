@@ -46,12 +46,14 @@ class RunResponse(BaseModel):
 class TriggerRunRequest(BaseModel):
     mode: Literal["quick", "full"] = "quick"
     disable_scraping: bool = False
+    executor_type: Literal["local", "cloud"] | None = None
 
 
 async def _create_run(
     *,
     requested_mode: str,
     disable_scraping: bool,
+    executor_type: str | None,
     current_user: User,
     db: AsyncSession,
 ) -> dict[str, str]:
@@ -79,11 +81,15 @@ async def _create_run(
     if existing_run:
         return {"run_id": existing_run.id, "status": existing_run.status}
 
+    if executor_type == "local" and not getattr(current_user, "is_admin", False):
+        raise HTTPException(status_code=403, detail="Local executor requires admin")
+
     run = Run(
         user_id=current_user.id,
         status="pending",
         mode=requested_mode,
         trigger_source="manual",
+        executor_type=executor_type,
         progress={
             "requested_mode": requested_mode,
             "force_scrape": False,
@@ -127,6 +133,7 @@ async def trigger_run(
     return await _create_run(
         requested_mode=requested_mode,
         disable_scraping=bool(body.disable_scraping) if body else False,
+        executor_type=body.executor_type if body else None,
         current_user=current_user,
         db=db,
     )
@@ -142,6 +149,7 @@ async def rank_existing_jobs(
     return await _create_run(
         requested_mode=requested_mode,
         disable_scraping=True,
+        executor_type=body.executor_type if body else None,
         current_user=current_user,
         db=db,
     )
