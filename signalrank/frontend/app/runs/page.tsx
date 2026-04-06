@@ -18,9 +18,11 @@ type RunRecord = {
   started_at: string | null;
   finished_at: string | null;
   error?: string | null;
+  trigger_source?: string | null;
+  executor_type?: string | null;
 };
 
-const LIVE = ["pending", "running", "scraping", "ranking"];
+const LIVE = ["pending", "claimed", "running", "scraping", "ranking"];
 
 function StatusBadge({ status }: { status: string }) {
   if (status === "success" || status === "done") {
@@ -52,6 +54,22 @@ function StatusBadge({ status }: { status: string }) {
       <div className="flex items-center gap-1.5 text-[var(--terminal-yellow)]">
         <span className="pulse-dot" />
         <span className="text-xs uppercase tracking-wider">cancelled</span>
+      </div>
+    );
+  }
+  if (status === "claimed") {
+    return (
+      <div className="flex items-center gap-1.5 text-[var(--terminal-cyan)]">
+        <span className="pulse-dot" />
+        <span className="text-xs uppercase tracking-wider">claimed</span>
+      </div>
+    );
+  }
+  if (status === "timed_out" || status === "stale") {
+    return (
+      <div className="flex items-center gap-1.5 text-[var(--terminal-yellow)]">
+        <XCircle size={11} />
+        <span className="text-xs uppercase tracking-wider">timed out</span>
       </div>
     );
   }
@@ -201,15 +219,46 @@ export default function RunsPage() {
               )}
             </div>
           </div>
-          <button
-            onClick={triggerRun}
-            disabled={triggering || (activeRun != null && LIVE.includes(activeRun.status))}
-            className="flex items-center gap-2 text-[11px] text-primary border border-primary/40 px-3 py-1.5 hover:bg-primary/10 transition-colors uppercase tracking-wider disabled:opacity-50"
-          >
-            <Play size={10} />
-            {triggering ? "Triggering..." : activeRun && LIVE.includes(activeRun.status) ? "Running..." : "Quick Run"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={triggerRun}
+              disabled={triggering || (activeRun != null && LIVE.includes(activeRun.status))}
+              className="flex items-center gap-2 text-[11px] text-primary border border-primary/40 px-3 py-1.5 hover:bg-primary/10 transition-colors uppercase tracking-wider disabled:opacity-50"
+            >
+              <Play size={10} />
+              {triggering ? "Triggering..." : activeRun && LIVE.includes(activeRun.status) ? "Running..." : "Quick Run"}
+            </button>
+            <button
+              className="terminal-btn text-xs px-3 py-1.5"
+              onClick={async () => {
+                try {
+                  await api.runs.trigger(token, "quick", true);
+                  toast("Rank-only run started", "success");
+                } catch {
+                  toast("Failed to start rank-only run", "error");
+                }
+              }}
+              title="Re-rank existing jobs without scraping"
+            >
+              <Play size={11} className="inline mr-1" />
+              Rank only
+            </button>
+          </div>
         </div>
+        {(() => {
+          const pendingRuns = runs.filter((r) => r.status === "pending");
+          if (pendingRuns.length === 0) return null;
+          const oldestPending = pendingRuns[pendingRuns.length - 1];
+          const waitSecs = oldestPending.started_at
+            ? Math.floor((Date.now() - new Date(oldestPending.started_at).getTime()) / 1000)
+            : 0;
+          if (waitSecs < 60) return null;
+          return (
+            <div className="text-xs text-[var(--terminal-yellow)] mt-2 opacity-70">
+              Run has been pending for {waitSecs}s — is a worker running?
+            </div>
+          );
+        })()}
 
         {activeRun && <RunProgress run={activeRun} onComplete={handleRunComplete} />}
 

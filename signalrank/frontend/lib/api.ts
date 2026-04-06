@@ -288,11 +288,11 @@ export const api = {
   runs: {
     list: (token: string) =>
       request<{ run_id: string; status: string; job_count: number | null; scrape_count: number | null; started_at: string | null; finished_at: string | null; progress: RunProgress | null; jobs_snapshot?: JobsResponse | null; error: string | null }[]>("/api/runs", { token }),
-    trigger: (token: string, mode: "quick" | "full" = "quick") =>
+    trigger: (token: string, mode: "quick" | "full" = "quick", disableScraping = false) =>
       request<{ run_id: string; status: string }>("/api/runs/trigger", {
         method: "POST",
         token,
-        body: JSON.stringify({ mode }),
+        body: JSON.stringify({ mode, disable_scraping: disableScraping }),
       }),
     stop: (token: string, runId: string) =>
       request<{ stopped: boolean; status: string; message?: string }>(`/api/runs/${runId}/stop`, {
