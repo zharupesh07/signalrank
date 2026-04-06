@@ -9,10 +9,12 @@ FRONTEND_DIR="$SCRIPT_DIR/frontend"
 
 NO_DOCKER=0
 SKIP_DEPS=0
+_START_WORKER=0
 for arg in "$@"; do
   case $arg in
-    --no-docker) NO_DOCKER=1 ;;
-    --skip-deps) SKIP_DEPS=1 ;;
+    --no-docker)    NO_DOCKER=1 ;;
+    --skip-deps)    SKIP_DEPS=1 ;;
+    --local-worker) _START_WORKER=1 ;;
   esac
 done
 
@@ -123,6 +125,14 @@ if [[ $NO_DOCKER -eq 0 ]] && docker ps --format '{{.Names}}' | grep -q "^${PG_CO
   bash "$SCRIPT_DIR/backup.sh" || warn "Backup failed — continuing anyway."
 fi
 
+# ── Load backend env into shell ──────────────────────────────────────────────
+
+info "Loading $BACKEND_ENV into shell environment..."
+set -a
+# shellcheck source=/dev/null
+source "$BACKEND_ENV"
+set +a
+
 # ── Alembic preflight ─────────────────────────────────────────────────────────
 
 info "Checking Alembic revision graph..."
@@ -154,12 +164,21 @@ info "Starting frontend on http://localhost:3000 ..."
 (cd "$FRONTEND_DIR" && npm run dev) &
 FRONTEND_PID=$!
 
+WORKER_PID=""
+if [[ $_START_WORKER -eq 1 ]]; then
+  # Run a plain poll worker against the local postgres (DATABASE_URL).
+  # LOCAL_WORKER=true is for Railway-triggered runs only; local dev uses a regular worker.
+  info "Starting worker (SCORER_VERSION=v4) against local DB..."
+  (cd "$BACKEND_DIR" && LOCAL_WORKER=false SCORER_VERSION=v4 RUN_API_WORKER=false uv run python -m batch.worker_main poll) &
+  WORKER_PID=$!
+fi
+
 # ── Cleanup on exit ───────────────────────────────────────────────────────────
 
 cleanup() {
   info "Shutting down..."
-  kill "$BACKEND_PID" "$FRONTEND_PID" 2>/dev/null || true
-  wait "$BACKEND_PID" "$FRONTEND_PID" 2>/dev/null || true
+  kill "$BACKEND_PID" "$FRONTEND_PID" ${WORKER_PID:-} 2>/dev/null || true
+  wait "$BACKEND_PID" "$FRONTEND_PID" ${WORKER_PID:-} 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
 
@@ -167,6 +186,11 @@ info "SignalRank running."
 info "  Frontend: http://localhost:3000"
 info "  Backend:  http://localhost:8000"
 info "  API docs: http://localhost:8000/docs"
+[[ -n "$WORKER_PID" ]] && info "  Worker:   local (SCORER_VERSION=v4)"
 info "Press Ctrl+C to stop."
 
-wait "$BACKEND_PID" "$FRONTEND_PID"
+if [[ -n "$WORKER_PID" ]]; then
+  wait "$BACKEND_PID" "$FRONTEND_PID" "$WORKER_PID"
+else
+  wait "$BACKEND_PID" "$FRONTEND_PID"
+fi

@@ -50,3 +50,33 @@ async def test_create_run_in_railway(db: AsyncSession):
     run = (await db.execute(select(Run).where(Run.id == run_id))).scalar_one()
     assert run.executor_type == "local"
     assert run.status == "pending"
+
+
+@pytest.mark.asyncio
+async def test_create_run_in_railway_full_mode(db: AsyncSession):
+    """create_run_in_railway respects run_mode=full."""
+    user_id, _ = await _make_railway_user_profile(db)
+    run_id = await create_run_in_railway(railway_db=db, user_id=user_id, mode="full")
+    run = (await db.execute(select(Run).where(Run.id == run_id))).scalar_one()
+    assert run.mode == "full"
+    assert run.executor_type == "local"
+
+
+@pytest.mark.asyncio
+async def test_mirror_user_and_profile_is_idempotent(db: AsyncSession):
+    """Calling mirror twice does not raise or duplicate rows."""
+    user_id, _ = await _make_railway_user_profile(db)
+    await mirror_user_and_profile(railway_db=db, local_db=db, user_id=user_id)
+    await mirror_user_and_profile(railway_db=db, local_db=db, user_id=user_id)  # second call: no error
+    profiles = (await db.execute(select(Profile).where(Profile.user_id == user_id))).scalars().all()
+    assert len(profiles) == 1  # no duplicates
+
+
+@pytest.mark.asyncio
+async def test_mirror_raises_if_profile_missing(db: AsyncSession):
+    """mirror_user_and_profile raises RuntimeError if profile not in railway_db."""
+    user_id = str(uuid.uuid4())
+    db.add(User(id=user_id, email=f"{user_id}@rw.com", password_hash="x"))
+    await db.commit()
+    with pytest.raises(RuntimeError, match="not found in Railway"):
+        await mirror_user_and_profile(railway_db=db, local_db=db, user_id=user_id)

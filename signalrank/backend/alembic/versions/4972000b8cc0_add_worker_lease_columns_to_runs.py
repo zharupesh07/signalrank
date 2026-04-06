@@ -39,7 +39,8 @@ def upgrade() -> None:
     op.add_column('runs', sa.Column('trigger_source', sa.String(length=50), nullable=True))
     op.add_column('runs', sa.Column('executor_type', sa.String(length=50), nullable=True))
     op.create_index('ix_runs_claim', 'runs', ['status', 'mode', 'lease_expires_at', 'started_at'], unique=False)
-    op.drop_index(op.f('uq_scrape_query_cache_key'), table_name='scrape_query_cache')
+    # Drop as constraint (not index) — Postgres backed this with a constraint, not a plain index
+    op.drop_constraint('uq_scrape_query_cache_key', 'scrape_query_cache', type_='unique')
     op.create_unique_constraint('uq_scrape_query_cache_key', 'scrape_query_cache', ['provider', 'site', 'term_normalized', 'location_normalized', 'country_normalized', 'hours_old'])
     # ### end Alembic commands ###
 

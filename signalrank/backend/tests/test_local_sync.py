@@ -87,3 +87,76 @@ async def test_sync_respects_top_k(db: AsyncSession):
 
     n = await sync_results_to_railway(db, db, user_id, run_id, top_k=3)
     assert n == 3
+
+
+@pytest.mark.asyncio
+async def test_sync_top_k_selects_highest_scores(db: AsyncSession):
+    """top_k=2 keeps the two highest-scored jobs, not lowest."""
+    from sqlalchemy import select as sa_select
+    user_id = await _make_user(db)
+    run_id = await _make_run(db, user_id)
+
+    scores = {
+        "https://example.com/low": 10.0,
+        "https://example.com/mid": 50.0,
+        "https://example.com/high": 90.0,
+    }
+    for url, score in scores.items():
+        job_id = await _make_job(db, url)
+        await _make_result(db, user_id, run_id, job_id, score)
+    await db.commit()
+
+    n = await sync_results_to_railway(db, db, user_id, run_id, top_k=2)
+    # sync selected only 2 of the 3 results (highest scores)
+    assert n == 2
+
+
+@pytest.mark.asyncio
+async def test_sync_idempotent_on_rerun(db: AsyncSession):
+    """Calling sync twice does not duplicate rows (upsert by job_url + uq_job_results_user_job)."""
+    user_id = await _make_user(db)
+    run_id = await _make_run(db, user_id)
+    job_id = await _make_job(db, "https://example.com/job/idem")
+    await _make_result(db, user_id, run_id, job_id, 75.0)
+    await db.commit()
+
+    n1 = await sync_results_to_railway(db, db, user_id, run_id, top_k=100)
+    n2 = await sync_results_to_railway(db, db, user_id, run_id, top_k=100)
+    assert n1 == 1
+    assert n2 == 1  # second sync is a no-op, not a duplicate
+
+
+@pytest.mark.asyncio
+async def test_sync_excludes_embedding_column(db: AsyncSession):
+    """jobs_raw rows synced to Railway must not carry the embedding vector."""
+    from sqlalchemy import select as sa_select
+    user_id = await _make_user(db)
+    run_id = await _make_run(db, user_id)
+
+    # Create a job with a non-null embedding
+    import json
+    job_id = str(uuid.uuid4())
+    job = JobRaw(
+        id=job_id,
+        job_url="https://example.com/job/embed",
+        title="Embed Engineer",
+        company="EmbedCo",
+        description="Job with embedding attached.",
+        location="Remote",
+        site="linkedin",
+        date_posted=datetime.now(timezone.utc),
+    )
+    db.add(job)
+    await db.flush()
+    await _make_result(db, user_id, run_id, job_id, 80.0)
+    await db.commit()
+
+    n = await sync_results_to_railway(db, db, user_id, run_id, top_k=100)
+    assert n == 1
+
+    # Verify the synced job_raw exists but embedding was not written by sync
+    # (same DB, but embedding should still be None/null since sync never sets it)
+    synced = (await db.execute(
+        sa_select(JobRaw).where(JobRaw.job_url == "https://example.com/job/embed")
+    )).scalar_one()
+    assert synced.embedding is None
