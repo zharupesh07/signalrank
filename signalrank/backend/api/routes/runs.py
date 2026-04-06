@@ -81,6 +81,9 @@ async def _create_run(
     if existing_run:
         return {"run_id": existing_run.id, "status": existing_run.status}
 
+    if executor_type == "local" and not getattr(current_user, "is_admin", False):
+        raise HTTPException(status_code=403, detail="Local executor requires admin")
+
     run = Run(
         user_id=current_user.id,
         status="pending",

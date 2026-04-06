@@ -1027,7 +1027,8 @@ async def _claim_pending_run(session_factory: async_sessionmaker, mode: str, loc
         run.last_heartbeat_at = now
         run.attempt_count = (run.attempt_count or 0) + 1
         run.cancel_requested = False
-        run.executor_type = "worker"
+        if not local_worker:
+            run.executor_type = "worker"
         await db.commit()
         logger.info(
             "Claimed %s run %s from DB poll (user_id=%s force_scrape=%s disable_scraping=%s worker=%s)",
@@ -1036,7 +1037,7 @@ async def _claim_pending_run(session_factory: async_sessionmaker, mode: str, loc
         return RunRequest(str(run.id), str(run.user_id), mode, force_scrape, disable_scraping, run.claim_token)
 
 
-async def _claim_run_by_id(session_factory: async_sessionmaker, req: RunRequest) -> RunRequest | None:
+async def _claim_run_by_id(session_factory: async_sessionmaker, req: RunRequest, local_worker: bool = False) -> RunRequest | None:
     async with session_factory() as db:
         now = datetime.now(timezone.utc)
         result = await db.execute(
@@ -1063,7 +1064,8 @@ async def _claim_run_by_id(session_factory: async_sessionmaker, req: RunRequest)
         run.last_heartbeat_at = now
         run.attempt_count = (run.attempt_count or 0) + 1
         run.cancel_requested = False
-        run.executor_type = "worker"
+        if not local_worker:
+            run.executor_type = "worker"
         await db.commit()
         return RunRequest(
             str(run.id),
@@ -1115,7 +1117,7 @@ async def _worker_loop_for_mode(session_factory: async_sessionmaker, mode: str, 
                 "Dequeued %s run %s from in-process queue (user_id=%s force_scrape=%s disable_scraping=%s)",
                 mode, req.run_id, req.user_id, req.force_scrape, req.disable_scraping,
             )
-            claimed_req = await _claim_run_by_id(session_factory, req)
+            claimed_req = await _claim_run_by_id(session_factory, req, local_worker=local_worker)
             if claimed_req is None:
                 logger.info("Run %s could not be claimed from queue; skipping", req.run_id)
                 continue

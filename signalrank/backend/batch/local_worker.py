@@ -129,8 +129,17 @@ async def _mirror_run(
             claim_token=run.claim_token,
             claimed_by=run.claimed_by,
         )
+    _ins = pg_insert(Run).values(**run_values)
     await local_db.execute(
-        pg_insert(Run).values(**run_values).on_conflict_do_nothing(index_elements=["id"])
+        _ins.on_conflict_do_update(
+            index_elements=["id"],
+            set_={
+                "status": _ins.excluded.status,
+                "progress": _ins.excluded.progress,
+                "claim_token": _ins.excluded.claim_token,
+                "claimed_by": _ins.excluded.claimed_by,
+            },
+        )
     )
     await local_db.commit()
 

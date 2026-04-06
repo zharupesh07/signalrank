@@ -22,7 +22,7 @@ type RunRecord = {
   executor_type?: string | null;
 };
 
-const LIVE = ["pending", "claimed", "running", "scraping", "ranking"];
+const LIVE = ["pending", "claimed", "running", "scraping", "ranking", "syncing"];
 
 function StatusBadge({ status }: { status: string }) {
   if (status === "success" || status === "done") {
@@ -269,7 +269,7 @@ export default function RunsPage() {
               className="terminal-btn text-xs px-3 py-1.5"
               onClick={async () => {
                 try {
-                  await api.runs.trigger(token, "quick", true);
+                  await api.runs.trigger(token, "quick", true, isAdmin ? executorType : undefined);
                   toast("Rank-only run started", "success");
                 } catch {
                   toast("Failed to start rank-only run", "error");
