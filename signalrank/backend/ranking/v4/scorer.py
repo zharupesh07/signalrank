@@ -61,7 +61,7 @@ def score_job(job: dict, profile: CandidateProfile, weights: dict[str, float]) -
 
 
 def score_jobs(jobs: list[dict], profile: CandidateProfile) -> list[dict]:
-    """Score all jobs, deduplicate, return sorted list with score and features.
+    """Score all jobs, deduplicate by (title, company), return sorted list.
 
     Scores are normalized to [0, 1] against the theoretical maximum (sum of
     positive weights), not relative to the batch top. This ensures a score of
@@ -69,6 +69,7 @@ def score_jobs(jobs: list[dict], profile: CandidateProfile) -> list[dict]:
     """
     weights = load_weights(active_lanes=profile.active_lanes)
     max_possible = sum(w for w in weights.values() if w > 0) or 1.0
+    jobs = _dedup_jobs(jobs)
     results: list[dict] = []
     for job in jobs:
         features = compute_features(job, profile)
