@@ -11,6 +11,7 @@ from api.config import api_runtime_flags
 from api.database import get_db
 from api.deps import get_current_user
 from api.models import Profile, Run, User
+from api.routes.admin import require_admin
 from batch.worker import RunRequest, get_queue
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
@@ -126,7 +127,7 @@ async def _create_run(
 @router.post("/trigger", status_code=202)
 async def trigger_run(
     body: TriggerRunRequest | None = None,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     requested_mode = (body.mode if body else "quick")
@@ -142,7 +143,7 @@ async def trigger_run(
 @router.post("/rank-existing", status_code=202)
 async def rank_existing_jobs(
     body: TriggerRunRequest | None = None,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     requested_mode = (body.mode if body else "quick")

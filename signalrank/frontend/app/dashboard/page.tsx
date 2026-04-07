@@ -104,6 +104,7 @@ function StatCard({
 export default function DashboardPage() {
   const { data: session } = useSession();
   const token = (session as { accessToken?: string })?.accessToken ?? "";
+  const isAdmin = (session as { isAdmin?: boolean })?.isAdmin ?? false;
   const { toast } = useToast();
 
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -278,15 +279,17 @@ export default function DashboardPage() {
               <Plus size={10} />
               Add Job
             </button>
-            <button
-              onClick={triggerRun}
-              disabled={triggering || isRunActive || onboardingComplete === false}
-              title={onboardingComplete === false ? "Complete onboarding first" : undefined}
-              className="inline-flex items-center justify-center gap-1.5 border border-primary/40 bg-primary/8 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary transition-all duration-150 hover:bg-primary hover:text-background hover:border-primary disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <RefreshCw size={10} className={triggering || isRunActive ? "spin-slow" : ""} />
-              {triggering ? "Queuing..." : isRunActive ? "Scanning..." : "Scan Jobs"}
-            </button>
+            {isAdmin && (
+              <button
+                onClick={triggerRun}
+                disabled={triggering || isRunActive || onboardingComplete === false}
+                title={onboardingComplete === false ? "Complete onboarding first" : undefined}
+                className="inline-flex items-center justify-center gap-1.5 border border-primary/40 bg-primary/8 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary transition-all duration-150 hover:bg-primary hover:text-background hover:border-primary disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <RefreshCw size={10} className={triggering || isRunActive ? "spin-slow" : ""} />
+                {triggering ? "Queuing..." : isRunActive ? "Scanning..." : "Scan Jobs"}
+              </button>
+            )}
             {mounted && run?.started_at && !isRunActive && (
               <span className="text-[10px] text-right text-muted-foreground whitespace-nowrap">
                 Last run {new Date(run.started_at).toLocaleDateString([], { month: "short", day: "numeric" })}
@@ -325,9 +328,6 @@ export default function DashboardPage() {
               </Link>
               <Link href="/tracker" className="inline-flex items-center gap-1.5 px-3 py-2 text-xs border border-border text-foreground hover:border-primary hover:text-primary transition-all uppercase tracking-wider font-bold">
                 Open Tracker
-              </Link>
-              <Link href="/runs" className="inline-flex items-center gap-1.5 px-3 py-2 text-xs border border-border text-muted-foreground hover:border-primary hover:text-primary transition-all uppercase tracking-wider font-bold">
-                Run History
               </Link>
             </div>
           </div>
