@@ -6,4 +6,7 @@ docs/superpowers/
 skills-lock.json
 signalrank/backend/output/
 signalrank/backend/signalrank.db
+signalrank/backend/tmp/
+signalrank/backend/tools/benchmark_ranking/reports/
+signalrank/backend/tools/benchmark_ranking/snapshots/
 .worktrees/
