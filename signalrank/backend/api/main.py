@@ -231,6 +231,18 @@ app.include_router(recruiters.router)
 app.include_router(ingest.router)
 
 
+@app.exception_handler(ConnectionResetError)
+@app.exception_handler(ConnectionRefusedError)
+@app.exception_handler(OSError)
+async def db_connection_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.warning("Database connection error on %s %s: %s", request.method, request.url.path, exc)
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"detail": "Database temporarily unavailable, retry shortly"},
+        headers={"Retry-After": "2"},
+    )
+
+
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     logger.exception("Unhandled error on %s %s", request.method, request.url.path)

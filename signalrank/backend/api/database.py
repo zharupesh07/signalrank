@@ -98,9 +98,20 @@ class Base(DeclarativeBase):
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    async with _active_session_factory() as session:
-        await ensure_session_schema_compatibility(session)
-        yield session
+    last_exc: Exception | None = None
+    for attempt in range(3):
+        try:
+            async with _active_session_factory() as session:
+                await ensure_session_schema_compatibility(session)
+                yield session
+                return
+        except (ConnectionResetError, ConnectionRefusedError, OSError) as exc:
+            last_exc = exc
+            if attempt < 2:
+                logger.warning("DB connection attempt %d failed (%s), retrying...", attempt + 1, exc)
+                await asyncio.sleep(0.5 * (attempt + 1))
+            else:
+                raise
 
 
 async def switch_database(target: str) -> None:
