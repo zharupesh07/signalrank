@@ -176,12 +176,12 @@ export default function DashboardPage() {
           new_good_matches: latest.jobs_snapshot.new_good_matches,
         });
       }
-    }).catch(() => null);
+    }).catch(() => { toast("Failed to load latest run", "error"); });
     void api.jobs.list(token, { page: 1, limit: 10 }).then((response) => {
       setJobs(response.jobs);
       setNewGoodMatches(response.new_good_matches);
       setCache(DASHBOARD_CACHE_KEYS.jobs, { jobs: response.jobs, new_good_matches: response.new_good_matches });
-    });
+    }).catch(() => { toast("Failed to load jobs", "error"); });
     void api.jobs.analytics(token).then((payload) => {
       setAnalytics(payload);
       setCache(DASHBOARD_CACHE_KEYS.analytics, payload);

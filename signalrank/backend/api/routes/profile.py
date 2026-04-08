@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.database import get_db
 from api.deps import get_current_user
 from api.models import Profile, User
+from api.utils import deep_merge_dict, profile_resume_template
 from domain.candidate_profile import build_candidate_profile
 from batch.context import deep_merge, load_base_config
 from domain.profile_rules import enrich_config_with_profile_rules
@@ -16,29 +17,6 @@ from domain.role_taxonomy import CANONICAL_ROLE_OPTIONS, LOCATION_OPTIONS, ROLE_
 
 router = APIRouter(prefix="/api", tags=["profile"])
 
-
-def _deep_merge_dict(base: dict | None, incoming: dict | None) -> dict | None:
-    if base is None:
-        return incoming
-    if incoming is None:
-        return base
-    merged = dict(base)
-    for key, value in incoming.items():
-        if isinstance(value, dict) and isinstance(merged.get(key), dict):
-            merged[key] = _deep_merge_dict(merged.get(key), value)
-        else:
-            merged[key] = value
-    return merged
-
-
-def _profile_resume_template(profile: Profile | None) -> str | None:
-    if not profile or not isinstance(profile.config_overrides, dict):
-        return None
-    resume_cfg = profile.config_overrides.get("resume")
-    if not isinstance(resume_cfg, dict):
-        return None
-    template = resume_cfg.get("template")
-    return template if isinstance(template, str) else None
 
 
 def _profile_resume_editor(profile: Profile | None) -> dict:
@@ -268,7 +246,7 @@ async def get_profile(current_user: User = Depends(get_current_user), db: AsyncS
         "config_overrides": p.config_overrides if p else None,
         "candidate_profile": p.candidate_profile if p else None,
         "career_intent": (p.config_overrides or {}).get("career_intent") if p and isinstance(p.config_overrides, dict) else None,
-        "resume_template": _profile_resume_template(p),
+        "resume_template": profile_resume_template(p),
         "scraper_hours_old": p.scraper_hours_old if p else None,
         "scraper_max_terms": p.scraper_max_terms if p else None,
         "onboarding_complete": p.onboarding_complete if p else False,
@@ -327,11 +305,11 @@ async def update_profile(
 
     for field, value in body.model_dump(exclude_none=True).items():
         if field == "config_overrides":
-            profile.config_overrides = _deep_merge_dict(profile.config_overrides, value)
+            profile.config_overrides = deep_merge_dict(profile.config_overrides, value)
             continue
         if field == "resume_editor":
             editor_payload = value
-            profile.config_overrides = _deep_merge_dict(profile.config_overrides, {"resume_editor": editor_payload})
+            profile.config_overrides = deep_merge_dict(profile.config_overrides, {"resume_editor": editor_payload})
             profile.resume_text = serialize_resume_editor(editor_payload)
             profile.resume_embedding = None
             continue

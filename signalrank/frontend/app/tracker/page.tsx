@@ -154,6 +154,8 @@ export default function TrackerPage() {
   const [gmailLinks, setGmailLinks] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkActing, setBulkActing] = useState(false);
   const COLUMN_LIMIT = 10;
 
   const loadData = useCallback(async () => {
@@ -291,10 +293,54 @@ export default function TrackerPage() {
       return;
     }
     const app = applications.find((a) => a.id === id);
-    await api.applications.delete(token, id);
-    setApplications((apps) => apps.filter((a) => a.id !== id));
-    if (app) toast(`Removed: ${app.title}`, "info");
+    try {
+      await api.applications.delete(token, id);
+      setApplications((apps) => apps.filter((a) => a.id !== id));
+      if (app) toast(`Removed: ${app.title}`, "info");
+    } catch (e) {
+      toast(`Failed to delete: ${e instanceof Error ? e.message : "unknown error"}`, "error");
+    }
     setConfirmDelete(null);
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  async function bulkUpdateStatus(status: ApplicationStatus) {
+    if (selectedIds.size === 0) return;
+    setBulkActing(true);
+    const ids = Array.from(selectedIds);
+    try {
+      await Promise.all(ids.map((id) => api.applications.update(token, id, { status })));
+      setApplications((apps) => apps.map((a) => selectedIds.has(a.id) ? { ...a, status } : a));
+      toast(`Updated ${ids.length} application${ids.length > 1 ? "s" : ""} to ${status.replace("_", " ")}`, "success");
+      setSelectedIds(new Set());
+    } catch (e) {
+      toast(`Bulk update failed: ${e instanceof Error ? e.message : "unknown error"}`, "error");
+    } finally {
+      setBulkActing(false);
+    }
+  }
+
+  async function bulkDelete() {
+    if (selectedIds.size === 0) return;
+    setBulkActing(true);
+    const ids = Array.from(selectedIds);
+    try {
+      await Promise.all(ids.map((id) => api.applications.delete(token, id)));
+      setApplications((apps) => apps.filter((a) => !selectedIds.has(a.id)));
+      toast(`Deleted ${ids.length} application${ids.length > 1 ? "s" : ""}`, "info");
+      setSelectedIds(new Set());
+    } catch (e) {
+      toast(`Bulk delete failed: ${e instanceof Error ? e.message : "unknown error"}`, "error");
+    } finally {
+      setBulkActing(false);
+    }
   }
 
   async function downloadAndEmail(app: Application) {
@@ -406,6 +452,38 @@ export default function TrackerPage() {
           </button>
           </div>
         </div>
+
+        {/* Bulk action bar */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center gap-3 px-4 py-2.5 border border-primary/30 bg-primary/5 text-xs">
+            <span className="text-primary font-semibold tabular-nums">{selectedIds.size} selected</span>
+            <span className="text-border">|</span>
+            <span className="text-muted-foreground">Move to:</span>
+            {(["interested", "applied", "phone_screen", "interview", "offer", "rejected", "archived"] as ApplicationStatus[]).map((s) => (
+              <button
+                key={s}
+                onClick={() => bulkUpdateStatus(s)}
+                disabled={bulkActing}
+                className="text-[10px] px-2 py-1 border border-border hover:border-primary hover:text-primary transition-colors uppercase tracking-wide disabled:opacity-40"
+              >
+                {s.replace("_", " ")}
+              </button>
+            ))}
+            <button
+              onClick={bulkDelete}
+              disabled={bulkActing}
+              className="ml-auto text-[10px] px-2 py-1 border border-destructive/40 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors uppercase tracking-wide disabled:opacity-40"
+            >
+              Delete
+            </button>
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ✕ Clear
+            </button>
+          </div>
+        )}
 
         {/* Import dropdown */}
         {showImport && (
@@ -562,6 +640,13 @@ export default function TrackerPage() {
                     >
                       {/* Title + company + priority */}
                       <div className="flex items-start gap-1.5">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(app.id)}
+                          onChange={() => toggleSelect(app.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-0.5 shrink-0 accent-primary w-3 h-3 cursor-pointer"
+                        />
                         <div className="flex-1 min-w-0">
                           {app.job_url ? (
                             <a href={app.job_url} target="_blank" rel="noreferrer" className="text-sm text-foreground truncate hover:text-primary transition-colors block">{app.title}</a>

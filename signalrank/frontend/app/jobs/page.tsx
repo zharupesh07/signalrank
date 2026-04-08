@@ -16,6 +16,15 @@ import { useToast } from "@/components/toast";
 import { TableRowSkeleton } from "@/components/skeleton";
 import { ExternalLink, ChevronUp, ChevronDown, Search, X, Plus, ChevronRight, ChevronLeft, SlidersHorizontal, XCircle, Archive, Loader2 } from "lucide-react";
 
+const TIER_DESCRIPTIONS: Record<string, string> = {
+  tier_ss: "SS — Elite (FAANG, top-5 unicorns). Best comp & brand.",
+  tier_s:  "S — Excellent (top startups, strong mid-caps). Great comp.",
+  tier_a:  "A — Strong (solid growth-stage companies). Good comp.",
+  tier_b:  "B — Decent (stable mid-size). Market comp.",
+  tier_c:  "C — Fair (small or unknown companies).",
+  tier_d:  "D — Below target (low tier or uncertain).",
+};
+
 
 type JobsSortField =
   | "final_score"
@@ -252,7 +261,7 @@ export default function JobsPage() {
   }, [token, page, pageSize, debouncedSearch, showArchived, filters, sorting, jobs.length]);
 
   useEffect(() => {
-    loadJobs().catch(() => null);
+    loadJobs().catch(() => { toast("Failed to load jobs", "error"); });
   }, [loadJobs]);
 
   const toggleSelectedJob = useCallback(async (job: Job) => {
@@ -489,9 +498,9 @@ export default function JobsPage() {
         </div>
 
         <div className="flex gap-4">
-          {/* Sidebar */}
+          {/* Sidebar — hidden on mobile */}
           <aside
-            className="shrink-0 sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto"
+            className="hidden md:block shrink-0 sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto"
             style={{ width: collapsed ? 40 : 220 }}
           >
             {collapsed ? (
@@ -574,7 +583,7 @@ export default function JobsPage() {
                   <div className="text-xs font-semibold text-[var(--fg-muted,#71717a)] uppercase tracking-wide mb-2">Tier</div>
                   <div className="space-y-1">
                     {TIERS.map((tier) => (
-                      <label key={tier.value || "unknown"} className="flex items-center gap-2 cursor-pointer">
+                      <label key={tier.value || "unknown"} className="flex items-center gap-2 cursor-pointer" title={TIER_DESCRIPTIONS[tier.value] ?? tier.label}>
                         <input
                           type="checkbox"
                           checked={filters.tiers.includes(tier.value)}
@@ -824,7 +833,8 @@ export default function JobsPage() {
               <div className="flex items-center gap-2 flex-wrap">
                 {selectedJob.company_tier && (
                   <span
-                    className="text-[10px] px-1.5 py-0.5 border"
+                    className="text-[10px] px-1.5 py-0.5 border cursor-help"
+                    title={TIER_DESCRIPTIONS[selectedJob.company_tier] ?? "Company tier"}
                     style={{
                       color: TIER_COLORS[selectedJob.company_tier] ?? "var(--muted-foreground)",
                       borderColor: `${TIER_COLORS[selectedJob.company_tier] ?? "var(--muted-foreground)"}60`,

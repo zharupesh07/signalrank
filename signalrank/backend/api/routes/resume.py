@@ -338,5 +338,5 @@ async def regenerate_all_resumes(
 
 
 @router.get("/templates")
-async def list_templates():
+async def list_templates(current_user: User = Depends(get_current_user)):
     return {"templates": sorted(VALID_TEMPLATES)}

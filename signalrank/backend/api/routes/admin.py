@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.config import api_runtime_flags
 from api.database import get_db
 from api.deps import get_current_user
+from api.utils import deep_merge_dict, profile_resume_template
 from api.deps_llm import get_llm_client
 from api.stats_cache import get_cached_stats, invalidate_stats_cache, set_cached_stats
 from batch.context import deep_merge, load_base_config
@@ -111,29 +112,6 @@ class AdminUserProfileConfigUpdate(BaseModel):
     resume_template: str | None = None
     config_overrides: dict | None = None
 
-
-def _deep_merge_dict(base: dict | None, incoming: dict | None) -> dict | None:
-    if base is None:
-        return incoming
-    if incoming is None:
-        return base
-    merged = dict(base)
-    for key, value in incoming.items():
-        if isinstance(value, dict) and isinstance(merged.get(key), dict):
-            merged[key] = _deep_merge_dict(merged.get(key), value)
-        else:
-            merged[key] = value
-    return merged
-
-
-def _profile_resume_template(profile: Profile | None) -> str | None:
-    if not profile or not isinstance(profile.config_overrides, dict):
-        return None
-    resume_cfg = profile.config_overrides.get("resume")
-    if not isinstance(resume_cfg, dict):
-        return None
-    template = resume_cfg.get("template")
-    return template if isinstance(template, str) else None
 
 
 @router.get("/stats", response_model=AdminStatsResponse)
@@ -273,7 +251,7 @@ async def get_user_profile_config(
         max_yoe=profile.max_yoe if profile else None,
         scraper_hours_old=profile.scraper_hours_old if profile else None,
         scraper_max_terms=profile.scraper_max_terms if profile else None,
-        resume_template=_profile_resume_template(profile),
+        resume_template=profile_resume_template(profile),
         config_overrides=dict(profile.config_overrides or {}) if profile else None,
         title_penalty_rules=(
             enrich_config_with_profile_rules(
@@ -314,10 +292,10 @@ async def update_user_profile_config(
         setattr(profile, field, value)
 
     if config_overrides is not None:
-        profile.config_overrides = _deep_merge_dict(profile.config_overrides, config_overrides)
+        profile.config_overrides = deep_merge_dict(profile.config_overrides, config_overrides)
 
     if "resume_template" in body.model_fields_set:
-        profile.config_overrides = _deep_merge_dict(
+        profile.config_overrides = deep_merge_dict(
             profile.config_overrides,
             {"resume": {"template": resume_template}},
         )

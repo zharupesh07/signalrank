@@ -205,7 +205,7 @@ async def find_and_save_recruiters(
     hunter = get_hunter_client()
     bg = asyncio.create_task(_run_find_one(body.company.strip(), body.max_results, AsyncSessionLocal, llm, hunter))
     _background_tasks.add(bg)
-    bg.add_done_callback(_background_tasks.discard)
+    bg.add_done_callback(_on_task_done)
 
     return {"status": "queued", "company": body.company.strip()}
 
