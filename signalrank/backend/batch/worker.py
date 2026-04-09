@@ -53,20 +53,37 @@ def _format_run_error(exc: Exception) -> str:
     return message[:1000]
 
 
+def _run_kind(force_scrape: bool, disable_scraping: bool, *, auto_refresh: bool = False) -> str:
+    if disable_scraping:
+        return "rerank_only"
+    if auto_refresh:
+        return "auto_refresh"
+    if force_scrape:
+        return "manual_refresh"
+    return "manual_run"
+
+
 def _run_progress_meta(
     mode: str,
     force_scrape: bool,
     disable_scraping: bool,
     *,
+    auto_refresh: bool = False,
     scrape_executed: bool | None = None,
+    scrape_reason: str | None = None,
 ) -> dict:
     progress = {
         "requested_mode": mode,
         "force_scrape": force_scrape,
         "disable_scraping": disable_scraping,
+        "run_kind": _run_kind(force_scrape, disable_scraping, auto_refresh=auto_refresh),
     }
+    if auto_refresh:
+        progress["auto_refresh"] = True
     if scrape_executed is not None:
         progress["scrape_executed"] = scrape_executed
+    if scrape_reason:
+        progress["scrape_reason"] = scrape_reason
     return progress
 
 
@@ -75,14 +92,18 @@ def _merge_run_progress(
     force_scrape: bool,
     disable_scraping: bool,
     *,
+    auto_refresh: bool = False,
     scrape_executed: bool | None = None,
+    scrape_reason: str | None = None,
     **kwargs,
 ) -> dict:
     progress = _run_progress_meta(
         mode,
         force_scrape,
         disable_scraping,
+        auto_refresh=auto_refresh,
         scrape_executed=scrape_executed,
+        scrape_reason=scrape_reason,
     )
     progress.update(kwargs)
     return progress
@@ -297,6 +318,7 @@ async def process_run(
 ) -> None:
     async with session_factory() as db:
         scrape_executed = False
+        scrape_reason = "pending"
         try:
             log_rss(logger, "run_start", run_id=run_id, user_id=user_id, mode=mode)
             run_check_result = await db.execute(select(Run).where(Run.id == run_id))
@@ -340,6 +362,7 @@ async def process_run(
                 select(Profile).where(Profile.user_id == user_id)
             )
             profile = profile_result.scalar_one_or_none()
+            auto_refresh = bool((run_check.progress or {}).get("auto_refresh", False))
             resume_text = profile.resume_text if profile else ""
             distilled_text = profile.distilled_text if profile else None
             config_overrides = profile.config_overrides if profile else None
@@ -382,6 +405,7 @@ async def process_run(
                             mode,
                             force_scrape,
                             disable_scraping,
+                            auto_refresh=auto_refresh,
                             scrape_executed=scrape_executed,
                             **kwargs,
                         ),
@@ -392,40 +416,45 @@ async def process_run(
 
             now = datetime.now(timezone.utc)
             skip_scrape = disable_scraping
+            scrape_reason = "forced" if force_scrape else "manual_default"
             if disable_scraping:
+                scrape_reason = "disabled"
                 logger.info("Run %s skipping scrape because disable_scraping=true", run_id)
-            elif not force_scrape:
-                if mode == "full":
-                    deep_scan_cutoff = now - timedelta(hours=48)
-                    recent_runs_result = await db.execute(
-                        select(Run).where(
-                            Run.user_id == user_id,
-                            Run.status == "success",
-                            Run.finished_at >= deep_scan_cutoff,
-                            Run.id != run_id,
-                        ).order_by(Run.finished_at.desc()).limit(20)
-                    )
-                    recent_runs = recent_runs_result.scalars().all()
-                    skip_scrape = any(
-                        recent_run.mode == "full"
-                        and isinstance(recent_run.progress, dict)
-                        and recent_run.progress.get("scrape_executed") is True
-                        for recent_run in recent_runs
-                    )
-                    scrape_threshold_hours = 48
-                else:
-                    scrape_threshold_hours = 1
-                    scrape_cutoff = now - timedelta(hours=scrape_threshold_hours)
-                    recent_scrape = await db.execute(
-                        select(Run.id).where(
-                            Run.user_id == user_id,
-                            Run.status == "success",
-                            Run.scrape_count.is_not(None),
-                            Run.finished_at >= scrape_cutoff,
-                            Run.id != run_id,
-                        ).limit(1)
-                    )
-                    skip_scrape = recent_scrape.scalar_one_or_none() is not None
+            else:
+                if auto_refresh and not force_scrape:
+                    if mode == "full":
+                        deep_scan_cutoff = now - timedelta(hours=48)
+                        recent_runs_result = await db.execute(
+                            select(Run).where(
+                                Run.user_id == user_id,
+                                Run.status == "success",
+                                Run.finished_at >= deep_scan_cutoff,
+                                Run.id != run_id,
+                            ).order_by(Run.finished_at.desc()).limit(20)
+                        )
+                        recent_runs = recent_runs_result.scalars().all()
+                        skip_scrape = any(
+                            recent_run.mode == "full"
+                            and isinstance(recent_run.progress, dict)
+                            and recent_run.progress.get("scrape_executed") is True
+                            for recent_run in recent_runs
+                        )
+                        scrape_threshold_hours = 48
+                    else:
+                        scrape_threshold_hours = 1
+                        scrape_cutoff = now - timedelta(hours=scrape_threshold_hours)
+                        recent_scrape = await db.execute(
+                            select(Run.id).where(
+                                Run.user_id == user_id,
+                                Run.status == "success",
+                                Run.scrape_count.is_not(None),
+                                Run.finished_at >= scrape_cutoff,
+                                Run.id != run_id,
+                            ).limit(1)
+                        )
+                        skip_scrape = recent_scrape.scalar_one_or_none() is not None
+                    if skip_scrape:
+                        scrape_reason = "recent_auto_refresh"
             if skip_scrape:
                 logger.info(
                     "Run %s skipping scrape%s",
@@ -437,6 +466,7 @@ async def process_run(
             freshly_scraped_job_urls = None
             if queries and not skip_scrape:
                 scrape_executed = True
+                scrape_reason = "executed"
                 config = scraper_cfg
 
                 stop_state = await _check_run_stop_state(session_factory, run_id, claim_token=claim_token)
@@ -588,7 +618,9 @@ async def process_run(
                         mode,
                         force_scrape,
                         disable_scraping,
+                        auto_refresh=auto_refresh,
                         scrape_executed=scrape_executed,
+                        scrape_reason=scrape_reason,
                         phase="ranking",
                         phase_num=1,
                         total_phases=1,
@@ -633,7 +665,9 @@ async def process_run(
                             mode,
                             force_scrape,
                             disable_scraping,
+                            auto_refresh=auto_refresh,
                             scrape_executed=scrape_executed,
+                            scrape_reason=scrape_reason,
                         ),
                         "error": "TimeoutError: Ranking timed out after 600s",
                         "claim_token": None,
@@ -755,7 +789,9 @@ async def process_run(
                         mode,
                         force_scrape,
                         disable_scraping,
+                        auto_refresh=auto_refresh,
                         scrape_executed=scrape_executed,
+                        scrape_reason=scrape_reason,
                     ),
                     "error": None,
                     "claim_token": None,
@@ -792,7 +828,9 @@ async def process_run(
                             mode,
                             force_scrape,
                             disable_scraping,
+                            auto_refresh=auto_refresh,
                             scrape_executed=scrape_executed,
+                            scrape_reason=scrape_reason,
                         ),
                         "error": _format_run_error(exc),
                         "claim_token": None,
@@ -818,7 +856,9 @@ async def process_run(
                             mode,
                             force_scrape,
                             disable_scraping,
+                            auto_refresh=auto_refresh,
                             scrape_executed=scrape_executed,
+                            scrape_reason=scrape_reason,
                         ),
                         "error": _format_run_error(exc),
                         "claim_token": None,

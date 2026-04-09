@@ -107,7 +107,7 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
     run.status === "done"      ? 100 :
     run.status === "failed"    ? 0 :
     run.status === "cancelled" ? 0 :
-    p ? Math.round(((p.phase_num - 1) / (p.total_phases + 1)) * 100) :
+    p?.phase_num != null && p?.total_phases != null ? Math.round(((p.phase_num - 1) / (p.total_phases + 1)) * 100) :
     null;
 
   const statusLabel =
@@ -122,6 +122,18 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
     "Running...";
 
   const jobsFound = p?.jobs_found ?? run.scrape_count ?? run.job_count;
+  const runKindLabel =
+    run.run_kind === "manual_refresh" ? "refresh" :
+    run.run_kind === "rerank_only" ? "re-rank" :
+    run.run_kind === "auto_refresh" ? "auto-refresh" :
+    run.run_kind === "manual_run" ? "manual run" :
+    null;
+  const scrapeReasonLabel =
+    run.scrape_reason === "executed" ? "scrape executed" :
+    run.scrape_reason === "disabled" ? "scrape disabled" :
+    run.scrape_reason === "recent_auto_refresh" ? "reused recent scrape" :
+    run.scrape_reason === "forced" ? "forced scrape" :
+    null;
 
   return (
     <div className="border border-border bg-card p-4 space-y-3">
@@ -136,6 +148,8 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
           <span className="text-xs text-muted-foreground uppercase tracking-wider">{statusLabel}</span>
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          {runKindLabel && <span>{runKindLabel}</span>}
+          {scrapeReasonLabel && <span>{scrapeReasonLabel}</span>}
           {jobsFound != null && (
             <span className="text-primary tabular-nums">{jobsFound.toLocaleString()} jobs</span>
           )}

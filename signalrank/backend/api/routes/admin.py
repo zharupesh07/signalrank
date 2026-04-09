@@ -26,6 +26,16 @@ from batch.worker import RunRequest, get_queue
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 
+def _queued_run_kind(force_scrape: bool, disable_scraping: bool, auto_refresh: bool) -> str:
+    if disable_scraping:
+        return "rerank_only"
+    if auto_refresh:
+        return "auto_refresh"
+    if force_scrape:
+        return "manual_refresh"
+    return "manual_run"
+
+
 async def require_admin(
     current_user: User = Depends(get_current_user),
 ) -> User:
@@ -57,6 +67,9 @@ class AdminRunResponse(BaseModel):
     user_email: str
     status: str
     job_count: int | None
+    scrape_count: int | None = None
+    run_kind: str | None = None
+    scrape_reason: str | None = None
     started_at: str | None
     finished_at: str | None
 
@@ -422,6 +435,7 @@ class TriggerRunRequest(BaseModel):
     mode: str = "full"
     force_scrape: bool = False
     disable_scraping: bool = False
+    auto_refresh: bool = False
 
 
 class MaintenanceResponse(BaseModel):
@@ -476,6 +490,8 @@ async def trigger_run_for_user(
             "requested_mode": mode,
             "force_scrape": body.force_scrape,
             "disable_scraping": body.disable_scraping,
+            "auto_refresh": body.auto_refresh,
+            "run_kind": _queued_run_kind(body.force_scrape, body.disable_scraping, body.auto_refresh),
         },
     )
     db.add(run)
@@ -635,6 +651,9 @@ async def list_all_runs(
             user_email=email,
             status=r.status,
             job_count=r.job_count,
+            scrape_count=r.scrape_count,
+            run_kind=str((r.progress or {}).get("run_kind")) if isinstance(r.progress, dict) and (r.progress or {}).get("run_kind") else None,
+            scrape_reason=str((r.progress or {}).get("scrape_reason")) if isinstance(r.progress, dict) and (r.progress or {}).get("scrape_reason") else None,
             started_at=str(r.started_at) if r.started_at else None,
             finished_at=str(r.finished_at) if r.finished_at else None,
         )

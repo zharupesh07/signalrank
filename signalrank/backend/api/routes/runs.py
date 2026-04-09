@@ -18,6 +18,14 @@ router = APIRouter(prefix="/api/runs", tags=["runs"])
 logger = logging.getLogger(__name__)
 
 
+def _queued_run_kind(force_scrape: bool, disable_scraping: bool) -> str:
+    if disable_scraping:
+        return "rerank_only"
+    if force_scrape:
+        return "manual_refresh"
+    return "manual_run"
+
+
 def _display_status(db_status: str) -> str:
     return "done" if db_status == "success" else db_status
 
@@ -32,12 +40,28 @@ def _jobs_snapshot(progress: dict | None) -> dict | None:
     return default if isinstance(default, dict) else None
 
 
+def _run_kind_value(progress: dict | None) -> str | None:
+    if not isinstance(progress, dict):
+        return None
+    value = progress.get("run_kind")
+    return str(value) if value else None
+
+
+def _scrape_reason_value(progress: dict | None) -> str | None:
+    if not isinstance(progress, dict):
+        return None
+    value = progress.get("scrape_reason")
+    return str(value) if value else None
+
+
 class RunResponse(BaseModel):
     run_id: str
     status: str
     job_count: int | None = None
     scrape_count: int | None = None
     progress: dict | None = None
+    run_kind: str | None = None
+    scrape_reason: str | None = None
     jobs_snapshot: dict | None = None
     error: str | None = None
     started_at: str | None = None
@@ -58,6 +82,7 @@ async def _create_run(
     current_user: User,
     db: AsyncSession,
 ) -> dict[str, str]:
+    force_scrape = requested_mode == "full" and not disable_scraping
     result = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
     profile = result.scalar_one_or_none()
     if not profile or not profile.onboarding_complete:
@@ -93,8 +118,9 @@ async def _create_run(
         executor_type=executor_type,
         progress={
             "requested_mode": requested_mode,
-            "force_scrape": False,
+            "force_scrape": force_scrape,
             "disable_scraping": disable_scraping,
+            "run_kind": _queued_run_kind(force_scrape, disable_scraping),
         },
     )
     db.add(run)
@@ -108,7 +134,7 @@ async def _create_run(
                 run.id,
                 current_user.id,
                 requested_mode,
-                False,
+                force_scrape,
                 disable_scraping,
             )
         )
@@ -127,7 +153,7 @@ async def _create_run(
 @router.post("/trigger", status_code=202)
 async def trigger_run(
     body: TriggerRunRequest | None = None,
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     requested_mode = (body.mode if body else "quick")
@@ -143,7 +169,7 @@ async def trigger_run(
 @router.post("/rank-existing", status_code=202)
 async def rank_existing_jobs(
     body: TriggerRunRequest | None = None,
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     requested_mode = (body.mode if body else "quick")
@@ -177,6 +203,8 @@ async def get_latest_run(
         job_count=run.job_count,
         scrape_count=run.scrape_count,
         progress=run.progress,
+        run_kind=_run_kind_value(run.progress),
+        scrape_reason=_scrape_reason_value(run.progress),
         jobs_snapshot=_jobs_snapshot(run.progress),
         error=run.error,
         started_at=str(run.started_at) if run.started_at else None,
@@ -203,6 +231,8 @@ async def list_runs(
             job_count=r.job_count,
             scrape_count=r.scrape_count,
             progress=r.progress,
+            run_kind=_run_kind_value(r.progress),
+            scrape_reason=_scrape_reason_value(r.progress),
             jobs_snapshot=_jobs_snapshot(r.progress),
             error=r.error,
             started_at=str(r.started_at) if r.started_at else None,
@@ -231,6 +261,8 @@ async def get_run_status(
         job_count=run.job_count,
         scrape_count=run.scrape_count,
         progress=run.progress,
+        run_kind=_run_kind_value(run.progress),
+        scrape_reason=_scrape_reason_value(run.progress),
         jobs_snapshot=_jobs_snapshot(run.progress),
         error=run.error,
         started_at=str(run.started_at) if run.started_at else None,

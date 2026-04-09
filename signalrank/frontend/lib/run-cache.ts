@@ -9,6 +9,8 @@ type CachedRunListItem = {
   started_at: string | null;
   finished_at: string | null;
   progress: Run["progress"];
+  run_kind?: string | null;
+  scrape_reason?: string | null;
   error?: string | null;
 };
 
@@ -21,6 +23,8 @@ export function makeQueuedRun(runId: string): Run {
     job_count: null,
     scrape_count: null,
     progress: null,
+    run_kind: null,
+    scrape_reason: null,
     error: null,
   };
 }
@@ -37,6 +41,8 @@ export function upsertRunCaches(run: Run): void {
     started_at: run.started_at,
     finished_at: run.finished_at,
     progress: run.progress,
+    run_kind: run.run_kind,
+    scrape_reason: run.scrape_reason,
     error: run.error,
   };
 

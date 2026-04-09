@@ -35,6 +35,9 @@ type AdminRun = {
   user_email: string;
   status: string;
   job_count: number | null;
+  scrape_count: number | null;
+  run_kind?: string | null;
+  scrape_reason?: string | null;
   started_at: string | null;
   finished_at: string | null;
 };
@@ -450,7 +453,7 @@ export default function AdminPage() {
 
   async function triggerRun(userId: string, forceScrape = false) {
     const res = await api.admin.triggerRun(token, userId, forceScrape);
-    toast(`Run queued for ${res.user_email}${forceScrape ? " (force scrape)" : ""}`, "success");
+    toast(`${forceScrape ? "Refresh jobs" : "Re-rank jobs"} queued for ${res.user_email}`, "success");
     const updated = await api.admin.runs(token);
     setRuns(updated);
   }
@@ -602,14 +605,14 @@ export default function AdminPage() {
                             <button
                               onClick={() => triggerRun(u.id)}
                               className="p-1.5 text-muted-foreground hover:text-primary transition-colors"
-                              title="Trigger run"
+                              title="Re-rank existing jobs"
                             >
                               <Play size={12} />
                             </button>
                             <button
                               onClick={() => triggerRun(u.id, true)}
                               className="p-1.5 text-muted-foreground hover:text-blue-400 transition-colors"
-                              title="Force scrape + run"
+                              title="Refresh jobs and re-rank"
                             >
                               <RefreshCw size={12} />
                             </button>

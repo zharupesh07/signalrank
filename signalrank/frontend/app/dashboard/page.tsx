@@ -205,7 +205,7 @@ export default function DashboardPage() {
       const queuedRun = makeQueuedRun(res.run_id);
       setRun(queuedRun);
       upsertRunCaches(queuedRun);
-      toast("Run queued", "info");
+      toast("Job refresh queued", "info");
     } catch (err) {
       setRun((current) => (current?.id === optimisticRun.id ? null : current));
       toast(err instanceof Error ? err.message : "Failed to trigger run", "error");
@@ -287,7 +287,7 @@ export default function DashboardPage() {
                 className="inline-flex items-center justify-center gap-1.5 border border-primary/40 bg-primary/8 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary transition-all duration-150 hover:bg-primary hover:text-background hover:border-primary disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <RefreshCw size={10} className={triggering || isRunActive ? "spin-slow" : ""} />
-                {triggering ? "Queuing..." : isRunActive ? "Scanning..." : "Scan Jobs"}
+                {triggering ? "Queuing..." : isRunActive ? "Refreshing..." : "Refresh Jobs"}
               </button>
             )}
             {mounted && run?.started_at && !isRunActive && (
@@ -342,8 +342,16 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Jobs found</span>
-                <span className="text-foreground font-medium tabular-nums">{run?.scrape_count ?? analytics?.total ?? 0}</span>
+                <span className="text-muted-foreground">Corpus update</span>
+                <span className="text-foreground font-medium tabular-nums">
+                  {run?.scrape_reason === "executed"
+                    ? `${run.scrape_count ?? 0} scraped`
+                    : run?.run_kind === "rerank_only"
+                      ? "re-rank only"
+                      : run?.scrape_reason === "recent_auto_refresh"
+                        ? "reused recent scrape"
+                        : "pending"}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Top matches ranked</span>
@@ -367,7 +375,7 @@ export default function DashboardPage() {
             <><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /></>
           ) : (
             <>
-              <StatCard label="Jobs Indexed" value={analytics?.total ?? 0} sub={run?.scrape_count != null ? `${run.scrape_count} scraped last run` : "run a scan to populate"} icon={Layers} accent />
+              <StatCard label="Jobs Indexed" value={analytics?.total ?? 0} sub={run?.scrape_reason === "executed" ? `${run.scrape_count ?? 0} scraped last refresh` : run?.run_kind === "rerank_only" ? "last run reused current corpus" : "run a refresh to update corpus"} icon={Layers} accent />
               <StatCard
                 label="Top Score"
                 value={topScore != null ? `${Math.round(topScore * 100)}%` : "—"}
@@ -471,7 +479,7 @@ export default function DashboardPage() {
                 <div>
                   <span className="text-primary/30">│ </span>
                   <span className="text-primary">&gt;</span>
-                  <span className="text-muted-foreground"> Click Refresh Jobs to scan.</span>
+                  <span className="text-muted-foreground"> Click Refresh Jobs to update the corpus.</span>
                   <span className="text-primary/30">  │</span>
                 </div>
                 <div>

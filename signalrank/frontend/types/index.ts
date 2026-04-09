@@ -158,11 +158,18 @@ export interface TrackerStats {
 }
 
 export interface RunProgress {
-  phase: string;
-  phase_num: number;
-  total_phases: number;
-  jobs_found: number;
-  message: string;
+  phase?: string;
+  phase_num?: number;
+  total_phases?: number;
+  jobs_found?: number;
+  message?: string;
+  requested_mode?: "quick" | "full";
+  force_scrape?: boolean;
+  disable_scraping?: boolean;
+  scrape_executed?: boolean;
+  scrape_reason?: string | null;
+  run_kind?: string | null;
+  auto_refresh?: boolean;
 }
 
 export interface Run {
@@ -173,7 +180,9 @@ export interface Run {
   job_count: number | null;
   scrape_count: number | null;
   progress: RunProgress | null;
-   jobs_snapshot?: JobsResponse | null;
+  run_kind?: string | null;
+  scrape_reason?: string | null;
+  jobs_snapshot?: JobsResponse | null;
   error?: string | null;
   executor_type?: string | null;
 }

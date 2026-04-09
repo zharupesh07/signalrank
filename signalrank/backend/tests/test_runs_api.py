@@ -77,7 +77,7 @@ async def test_trigger_run_does_not_require_local_queue_when_api_worker_disabled
     ).scalar_one()
     assert run.status == "pending"
     assert run.mode == "quick"
-    assert run.progress == {"requested_mode": "quick", "force_scrape": False, "disable_scraping": False}
+    assert run.progress == {"requested_mode": "quick", "force_scrape": False, "disable_scraping": False, "run_kind": "manual_run"}
 
 
 async def test_trigger_full_run_persists_mode(client, auth_token, db: AsyncSession):
@@ -91,6 +91,7 @@ async def test_trigger_full_run_persists_mode(client, auth_token, db: AsyncSessi
         await db.execute(select(Run).where(Run.id == response.json()["run_id"]))
     ).scalar_one()
     assert run.mode == "full"
+    assert run.progress == {"requested_mode": "full", "force_scrape": True, "disable_scraping": False, "run_kind": "manual_refresh"}
 
 
 async def test_trigger_run_can_disable_scraping(client, auth_token, db: AsyncSession):
@@ -103,7 +104,7 @@ async def test_trigger_run_can_disable_scraping(client, auth_token, db: AsyncSes
     run = (
         await db.execute(select(Run).where(Run.id == response.json()["run_id"]))
     ).scalar_one()
-    assert run.progress == {"requested_mode": "quick", "force_scrape": False, "disable_scraping": True}
+    assert run.progress == {"requested_mode": "quick", "force_scrape": False, "disable_scraping": True, "run_kind": "rerank_only"}
 
 
 async def test_trigger_run_reuses_existing_active_run(client, auth_token, db: AsyncSession):
@@ -135,7 +136,7 @@ async def test_rank_existing_jobs_defaults_to_quick_without_scraping(client, aut
         await db.execute(select(Run).where(Run.id == response.json()["run_id"]))
     ).scalar_one()
     assert run.mode == "quick"
-    assert run.progress == {"requested_mode": "quick", "force_scrape": False, "disable_scraping": True}
+    assert run.progress == {"requested_mode": "quick", "force_scrape": False, "disable_scraping": True, "run_kind": "rerank_only"}
 
 
 async def test_rank_existing_jobs_can_request_full_mode(client, auth_token, db: AsyncSession):
@@ -149,7 +150,7 @@ async def test_rank_existing_jobs_can_request_full_mode(client, auth_token, db: 
         await db.execute(select(Run).where(Run.id == response.json()["run_id"]))
     ).scalar_one()
     assert run.mode == "full"
-    assert run.progress == {"requested_mode": "full", "force_scrape": False, "disable_scraping": True}
+    assert run.progress == {"requested_mode": "full", "force_scrape": False, "disable_scraping": True, "run_kind": "rerank_only"}
 
 
 async def test_get_run_status(client, auth_token):

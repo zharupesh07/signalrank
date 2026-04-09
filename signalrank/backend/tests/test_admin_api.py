@@ -243,7 +243,13 @@ async def test_admin_trigger_run_does_not_require_local_queue_when_api_worker_di
     ).scalar_one()
     assert run.status == "pending"
     assert run.mode == "full"
-    assert run.progress == {"requested_mode": "full", "force_scrape": True, "disable_scraping": False}
+    assert run.progress == {
+        "requested_mode": "full",
+        "force_scrape": True,
+        "disable_scraping": False,
+        "auto_refresh": False,
+        "run_kind": "manual_refresh",
+    }
 
 
 async def test_admin_trigger_run_can_disable_scraping(
@@ -267,7 +273,13 @@ async def test_admin_trigger_run_can_disable_scraping(
     run = (
         await db.execute(select(Run).where(Run.id == response.json()["run_id"]))
     ).scalar_one()
-    assert run.progress == {"requested_mode": "full", "force_scrape": False, "disable_scraping": True}
+    assert run.progress == {
+        "requested_mode": "full",
+        "force_scrape": False,
+        "disable_scraping": True,
+        "auto_refresh": False,
+        "run_kind": "rerank_only",
+    }
 
 
 async def test_worker_health_returns_active_runs(client, admin_token, db: AsyncSession):
