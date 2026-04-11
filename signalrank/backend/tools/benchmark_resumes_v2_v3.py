@@ -1,12 +1,8 @@
 """
-Compare V2 vs V3 vs V4 ranking for all resumes against the last-30-day job corpus from Railway DB.
+Compare V4 DB scorer vs V4 standalone scorer for all resumes against last-30-day DB corpus.
 
-V2 = score_jobs_for_user (DB-based, embedding + keyword scorer)
-V3 = rank_jobs_v3 (standalone, lane+scorer pipeline)
-V4 = rank_jobs_v4 (standalone, unified lane+embedding scorer)
-
-Users with DB profiles: Example, Aditya, Ayush  (V2 + V3 + V4-DB)
-PDF-only (no DB profile): Abhijeet, Vivek     (V3 + V4-standalone only)
+DB-profile users: compare V4 DB vs V4 standalone.
+PDF-only users: run V4 standalone only.
 
 Usage:
     cd signalrank/backend
@@ -60,28 +56,6 @@ async def _fetch_jobs_from_db(engine, hours_old: int = 720) -> list[dict]:
     return jobs
 
 
-async def _run_v2(session_factory, user_id: str, resume_text: str) -> list[dict]:
-    from batch.ranker import score_jobs_for_user
-    # Disable LLM agentic matching for benchmark — pure deterministic scoring only
-    config_overrides = {"ranking": {"agentic_matching": {"enabled": False}}}
-    async with session_factory() as db:
-        df = await score_jobs_for_user(
-            db=db,
-            user_id=user_id,
-            resume_text=resume_text,
-            config_overrides=config_overrides,
-        )
-    if df is None or df.empty:
-        return []
-    top = df.head(30)
-    return top.to_dict(orient="records")
-
-
-def _run_v3(resume_text: str, jobs: list[dict], candidate_name: str) -> list[dict]:
-    from ranking.v3.pipeline import rank_jobs_v3
-    return rank_jobs_v3(resume_text, jobs, candidate_name=candidate_name, top_k=30)
-
-
 def _run_v4_standalone(resume_text: str, jobs: list[dict]) -> list[dict]:
     from ranking.v4.scorer import rank_jobs_v4
     return rank_jobs_v4(resume_text, jobs, top_k=30)
@@ -111,67 +85,51 @@ def _fmt(job: dict, rank: int) -> str:
     return f"  {rank:2d}. [{float(score):.3f}] {title} @ {company} ({location}) [{date}]"
 
 
-def _write_report(name: str, v2: list[dict], v3: list[dict], v4: list[dict]) -> Path:
+def _write_report(name: str, v4_db: list[dict], v4_standalone: list[dict]) -> Path:
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     path = REPORTS_DIR / f"{name}_{ts}.txt"
 
     def job_key(j):
         return (j.get("title") or j.get("job_title") or "", j.get("company") or j.get("company_name") or "")
 
-    v2_keys = {job_key(j) for j in v2}
-    v3_keys = {job_key(j) for j in v3}
-    v4_keys = {job_key(j) for j in v4}
+    v4_db_keys = {job_key(j) for j in v4_db}
+    v4_standalone_keys = {job_key(j) for j in v4_standalone}
 
     lines = [
         "=" * 70,
         f"CANDIDATE: {name}",
         f"Generated: {datetime.now().isoformat()}",
-        f"Jobs compared: V2={len(v2)}  V3={len(v3)}  V4={len(v4)}",
+        f"Jobs compared: V4_DB={len(v4_db)}  V4_STANDALONE={len(v4_standalone)}",
         "=" * 70,
         "",
     ]
 
-    if v4:
-        lines += ["V4 TOP 30:", "-" * 70]
-        for i, j in enumerate(v4, 1):
+    if v4_db:
+        lines += ["V4 DB TOP 30:", "-" * 70]
+        for i, j in enumerate(v4_db, 1):
             lines.append(_fmt(j, i))
         lines.append("")
 
-    if v3:
-        lines += ["V3 TOP 30:", "-" * 70]
-        for i, j in enumerate(v3, 1):
+    if v4_standalone:
+        lines += ["V4 STANDALONE TOP 30:", "-" * 70]
+        for i, j in enumerate(v4_standalone, 1):
             lines.append(_fmt(j, i))
         lines.append("")
 
-    if v2:
-        lines += ["V2 TOP 30:", "-" * 70]
-        for i, j in enumerate(v2, 1):
-            lines.append(_fmt(j, i))
-        lines.append("")
-
-    if v2 and v4:
-        overlap_24 = v2_keys & v4_keys
+    if v4_db and v4_standalone:
+        overlap = v4_db_keys & v4_standalone_keys
         lines += [
-            f"OVERLAP V2∩V4: {len(overlap_24)}/30",
+            f"OVERLAP V4_DB∩V4_STANDALONE: {len(overlap)}/30",
             "-" * 70,
-            *[f"  = {t} @ {c}" for t, c in sorted(overlap_24)],
+            *[f"  = {t} @ {c}" for t, c in sorted(overlap)],
             "",
-            "NEW in V4 vs V2 (V4 surfaces, V2 missed):",
+            "NEW in V4 DB vs standalone:",
             "-" * 70,
-            *[f"  + {t} @ {c}" for t, c in sorted(v4_keys - v2_keys)],
+            *[f"  + {t} @ {c}" for t, c in sorted(v4_db_keys - v4_standalone_keys)],
             "",
-            "DROPPED by V4 vs V2 (V2 had, V4 skipped):",
+            "Only in standalone vs V4 DB:",
             "-" * 70,
-            *[f"  - {t} @ {c}" for t, c in sorted(v2_keys - v4_keys)],
-            "",
-        ]
-
-    if v3 and v4:
-        overlap_34 = v3_keys & v4_keys
-        lines += [
-            f"OVERLAP V3∩V4: {len(overlap_34)}/30",
-            "-" * 70,
-            *[f"  = {t} @ {c}" for t, c in sorted(overlap_34)],
+            *[f"  - {t} @ {c}" for t, c in sorted(v4_standalone_keys - v4_db_keys)],
             "",
         ]
 
@@ -207,57 +165,41 @@ async def main():
         resume_text = _read_pdf(pdf_path)
         print(f"  Resume text: {len(resume_text)} chars")
 
-        v3 = []
-        print(f"  V3...", end="", flush=True)
+        v4_standalone = []
+        print("  V4 standalone...", end="", flush=True)
         try:
-            v3 = _run_v3(resume_text, jobs, name)
-            print(f" {len(v3)} results")
+            v4_standalone = _run_v4_standalone(resume_text, jobs)
+            print(f" {len(v4_standalone)} results")
         except Exception as e:
             print(f" FAILED: {e}")
 
-        v4 = []
-        print(f"  V4...", end="", flush=True)
-        try:
-            v4 = _run_v4_standalone(resume_text, jobs)
-            print(f" {len(v4)} results")
-        except Exception as e:
-            print(f" FAILED: {e}")
-
-        v2 = []
+        v4_db = []
         if user_id:
-            print(f"  V2...", end="", flush=True)
+            print("  V4 DB...", end="", flush=True)
             try:
-                v2 = await _run_v2(session_factory, user_id, resume_text)
-                print(f" {len(v2)} results")
+                v4_db = await _run_v4_db(session_factory, user_id, resume_text)
+                print(f" {len(v4_db)} results")
             except Exception as e:
                 print(f" FAILED: {e}")
 
-        report = _write_report(name, v2, v3, v4)
+        report = _write_report(name, v4_db, v4_standalone)
         print(f"  Report: {report.name}")
 
-        print(f"\n  V4 Top 10:")
-        for i, j in enumerate(v4[:10], 1):
+        print("\n  V4 standalone Top 10:")
+        for i, j in enumerate(v4_standalone[:10], 1):
             print(_fmt(j, i))
 
-        if v3:
-            print(f"\n  V3 Top 10:")
-            for i, j in enumerate(v3[:10], 1):
-                print(_fmt(j, i))
-
-        if v2:
-            print(f"\n  V2 Top 10:")
-            for i, j in enumerate(v2[:10], 1):
+        if v4_db:
+            print("\n  V4 DB Top 10:")
+            for i, j in enumerate(v4_db[:10], 1):
                 print(_fmt(j, i))
 
         def job_key(j):
             return (j.get("title") or j.get("job_title") or "", j.get("company") or j.get("company_name") or "")
 
-        if v2 and v4:
-            overlap_24 = {job_key(j) for j in v2} & {job_key(j) for j in v4}
-            print(f"\n  Overlap V2∩V4: {len(overlap_24)}/30")
-        if v3 and v4:
-            overlap_34 = {job_key(j) for j in v3} & {job_key(j) for j in v4}
-            print(f"  Overlap V3∩V4: {len(overlap_34)}/30")
+        if v4_db and v4_standalone:
+            overlap = {job_key(j) for j in v4_db} & {job_key(j) for j in v4_standalone}
+            print(f"\n  Overlap V4 DB∩V4 standalone: {len(overlap)}/30")
 
     await engine.dispose()
     print(f"\n\nAll reports saved to: {REPORTS_DIR}")

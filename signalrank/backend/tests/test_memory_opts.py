@@ -167,40 +167,6 @@ def test_clear_vector_cache_empties_process_cache():
     assert ec._VECTOR_CACHE == {}
 
 
-# ---------------------------------------------------------------------------
-# 3. _compute_embeddings pops embedding column immediately
-# ---------------------------------------------------------------------------
-
-def test_compute_embeddings_pops_column_early():
-    """
-    After the pop+convert optimisation, 'embedding' must not appear as a
-    DataFrame column during or after _compute_embeddings.
-
-    We verify this by inspecting the source code — the drop should happen
-    at the very top of the function, before skill extraction.
-    """
-    import inspect
-    from batch.ranker import _compute_embeddings
-
-    src = inspect.getsource(_compute_embeddings)
-    lines = [l.strip() for l in src.splitlines()]
-
-    # Find positions of key operations
-    pop_line = next((i for i, l in enumerate(lines) if "df.pop" in l and '"embedding"' in l), None)
-    skill_line = next((i for i, l in enumerate(lines) if "extract_skills_from_texts" in l), None)
-    drop_line = next((i for i, l in enumerate(lines) if 'drop(columns=["embedding"]' in l), None)
-
-    assert pop_line is not None, "df.pop('embedding') not found in _compute_embeddings"
-    assert skill_line is not None, "extract_skills_from_texts not found in _compute_embeddings"
-    assert pop_line < skill_line, (
-        f"df.pop('embedding') (line {pop_line}) must come before "
-        f"extract_skills_from_texts (line {skill_line})"
-    )
-    assert drop_line is None, (
-        "df.drop(columns=['embedding']) still present — should be removed after pop refactor"
-    )
-
-
 def test_embedding_column_converted_to_float32():
     """
     stored_embeddings list must contain float32 ndarrays (not Python lists)

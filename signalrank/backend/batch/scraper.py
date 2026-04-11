@@ -72,6 +72,143 @@ def _is_blocked(title: str | None, blocklist: list[str]) -> bool:
     return any(b.lower() in lower for b in blocklist)
 
 
+def _dedupe_query_terms(queries: list[SearchQuery]) -> list[SearchQuery]:
+    seen_terms: set[str] = set()
+    unique_queries: list[SearchQuery] = []
+    for query in queries:
+        key = query.term.lower()
+        if key in seen_terms:
+            continue
+        seen_terms.add(key)
+        unique_queries.append(query)
+    return unique_queries
+
+
+async def _cached_urls_for_assignment(
+    db: AsyncSession,
+    *,
+    provider: str,
+    site: str,
+    query: SearchQuery,
+    config: ScraperConfig,
+) -> list[str] | None:
+    from batch.scrape_cache import load_cached_jobs
+
+    cached = await load_cached_jobs(
+        db,
+        provider=provider,
+        site=site,
+        query=query,
+        config=config,
+    )
+    if cached is None:
+        return None
+    return [job.job_url for job in cached if job.job_url]
+
+
+async def plan_incremental_scrape(
+    queries: list[SearchQuery],
+    config: ScraperConfig,
+    db: AsyncSession | None,
+) -> tuple[list[SearchQuery], list[str]]:
+    if db is None or not queries:
+        return queries, []
+
+    allowed = set(config.sources) if config.sources else None
+    stale_indexes: set[int] = set()
+    cached_urls: list[str] = []
+    seen_cached_urls: set[str] = set()
+
+    async def _record_assignment(
+        query_index: int,
+        *,
+        provider: str,
+        site: str,
+        query: SearchQuery,
+    ) -> None:
+        urls = await _cached_urls_for_assignment(
+            db,
+            provider=provider,
+            site=site,
+            query=query,
+            config=config,
+        )
+        if urls is None:
+            stale_indexes.add(query_index)
+            return
+        for url in urls:
+            if url not in seen_cached_urls:
+                seen_cached_urls.add(url)
+                cached_urls.append(url)
+
+    if not allowed or "indeed" in allowed:
+        for idx, query in enumerate(queries):
+            await _record_assignment(idx, provider="jobspy", site="indeed", query=query)
+
+    if (not allowed or "linkedin" in allowed) and config.linkedin_max_queries > 0:
+        for idx, query in enumerate(queries[:config.linkedin_max_queries]):
+            await _record_assignment(idx, provider="jobspy", site="linkedin", query=query)
+
+    if not allowed or "rapidapi" in allowed:
+        from batch.sources.rapidapi import SOURCES, _partition_queries
+
+        assignments = _partition_queries(queries, list(SOURCES.keys()))
+        for idx, (site, query) in enumerate(assignments):
+            await _record_assignment(idx, provider="rapidapi", site=site, query=query)
+
+    if not allowed or "google_jobs" in allowed:
+        for idx, query in enumerate(queries):
+            await _record_assignment(idx, provider="google_jobs", site="google", query=query)
+
+    if not allowed or "free_apis" in allowed:
+        unique_queries = _dedupe_query_terms(queries)
+        if unique_queries:
+            himalayas_urls = await _cached_urls_for_assignment(
+                db,
+                provider="free_apis",
+                site="himalayas",
+                query=unique_queries[0],
+                config=config,
+            )
+            if himalayas_urls is None:
+                stale_indexes.add(0)
+            else:
+                for url in himalayas_urls:
+                    if url not in seen_cached_urls:
+                        seen_cached_urls.add(url)
+                        cached_urls.append(url)
+
+        term_to_indexes: dict[str, list[int]] = {}
+        for idx, query in enumerate(queries):
+            term_to_indexes.setdefault(query.term.lower(), []).append(idx)
+
+        for query in unique_queries:
+            remotive_urls = await _cached_urls_for_assignment(
+                db,
+                provider="free_apis",
+                site="remotive",
+                query=query,
+                config=config,
+            )
+            jobicy_urls = await _cached_urls_for_assignment(
+                db,
+                provider="free_apis",
+                site="jobicy",
+                query=query,
+                config=config,
+            )
+            if remotive_urls is None or jobicy_urls is None:
+                stale_indexes.update(term_to_indexes.get(query.term.lower(), []))
+                continue
+            for url in [*remotive_urls, *jobicy_urls]:
+                if url not in seen_cached_urls:
+                    seen_cached_urls.add(url)
+                    cached_urls.append(url)
+
+    stale_queries = [query for idx, query in enumerate(queries) if idx in stale_indexes]
+    return stale_queries, cached_urls
+
+
 async def scrape(
     queries: list[SearchQuery],
     config: ScraperConfig,

@@ -16,6 +16,8 @@ from batch.scrape_cache import normalize_cache_value
 from batch.maintenance import prune_current_session, prune_once
 from batch.resume_worker import force_regenerate_all
 from batch.quality_report import compute_global_quality_metrics, compute_user_quality_metrics
+from batch.run_kinds import run_kind_from_flags
+from batch.run_progress import progress_int, progress_str
 from api.models import (
     Application, ArchivalQueue, GenerationQueue, JobRaw, JobResult, QueryPlanCache, ScrapeQueryCache,
     Profile, RecruiterRefreshTask, Run, TailoredResume, User,
@@ -24,17 +26,6 @@ from domain.profile_rules import enrich_config_with_profile_rules
 from batch.worker import RunRequest, get_queue
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
-
-
-def _queued_run_kind(force_scrape: bool, disable_scraping: bool, auto_refresh: bool) -> str:
-    if disable_scraping:
-        return "rerank_only"
-    if auto_refresh:
-        return "auto_refresh"
-    if force_scrape:
-        return "manual_refresh"
-    return "manual_run"
-
 
 async def require_admin(
     current_user: User = Depends(get_current_user),
@@ -68,6 +59,10 @@ class AdminRunResponse(BaseModel):
     status: str
     job_count: int | None
     scrape_count: int | None = None
+    corpus_count: int | None = None
+    scored_count: int | None = None
+    shown_count: int | None = None
+    corpus_source: str | None = None
     run_kind: str | None = None
     scrape_reason: str | None = None
     started_at: str | None
@@ -491,7 +486,11 @@ async def trigger_run_for_user(
             "force_scrape": body.force_scrape,
             "disable_scraping": body.disable_scraping,
             "auto_refresh": body.auto_refresh,
-            "run_kind": _queued_run_kind(body.force_scrape, body.disable_scraping, body.auto_refresh),
+            "run_kind": run_kind_from_flags(
+                force_scrape=body.force_scrape,
+                disable_scraping=body.disable_scraping,
+                auto_refresh=body.auto_refresh,
+            ),
         },
     )
     db.add(run)
@@ -652,6 +651,10 @@ async def list_all_runs(
             status=r.status,
             job_count=r.job_count,
             scrape_count=r.scrape_count,
+            corpus_count=progress_int(r.progress, "corpus_job_count"),
+            scored_count=progress_int(r.progress, "scored_job_count"),
+            shown_count=progress_int(r.progress, "shown_job_count"),
+            corpus_source=progress_str(r.progress, "corpus_source"),
             run_kind=str((r.progress or {}).get("run_kind")) if isinstance(r.progress, dict) and (r.progress or {}).get("run_kind") else None,
             scrape_reason=str((r.progress or {}).get("scrape_reason")) if isinstance(r.progress, dict) and (r.progress or {}).get("scrape_reason") else None,
             started_at=str(r.started_at) if r.started_at else None,

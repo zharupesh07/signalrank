@@ -11,7 +11,7 @@ from api.database import AsyncSessionLocal
 from api.models import JobRaw, Profile, User
 from batch.context import build_context
 from batch.query_plan_cache import get_cached_queries
-from batch.ranker import score_job_ids_for_user
+from ranking.v4.db_scorer import score_jobs_for_user
 from batch.scraper import ScraperConfig, raw_job_to_dict, scrape
 from domain.candidate_profile import build_candidate_profile
 from domain.job_profile import build_job_profile
@@ -125,11 +125,11 @@ async def _scrape_and_rank(email: str | None, user_id: str | None, limit: int) -
     gc.collect()
 
     async with AsyncSessionLocal() as db:
-        ranked_df = await score_job_ids_for_user(
+        ranked_df = await score_jobs_for_user(
             db=db,
             user_id=resolved_user_id,
             resume_text=resume_text,
-            job_ids=job_ids,
+            job_urls=[job.job_url for job in raw_jobs],
             config_overrides=config_overrides,
             distilled_text=distilled_text,
         )

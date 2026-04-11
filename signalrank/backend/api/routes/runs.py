@@ -12,19 +12,12 @@ from api.database import get_db
 from api.deps import get_current_user
 from api.models import Profile, Run, User
 from api.routes.admin import require_admin
+from batch.run_kinds import run_kind_from_flags, run_kind_from_progress, scrape_reason_from_progress
+from batch.run_progress import progress_int, progress_str
 from batch.worker import RunRequest, get_queue
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
 logger = logging.getLogger(__name__)
-
-
-def _queued_run_kind(force_scrape: bool, disable_scraping: bool) -> str:
-    if disable_scraping:
-        return "rerank_only"
-    if force_scrape:
-        return "manual_refresh"
-    return "manual_run"
-
 
 def _display_status(db_status: str) -> str:
     return "done" if db_status == "success" else db_status
@@ -39,26 +32,15 @@ def _jobs_snapshot(progress: dict | None) -> dict | None:
     default = cache.get("default")
     return default if isinstance(default, dict) else None
 
-
-def _run_kind_value(progress: dict | None) -> str | None:
-    if not isinstance(progress, dict):
-        return None
-    value = progress.get("run_kind")
-    return str(value) if value else None
-
-
-def _scrape_reason_value(progress: dict | None) -> str | None:
-    if not isinstance(progress, dict):
-        return None
-    value = progress.get("scrape_reason")
-    return str(value) if value else None
-
-
 class RunResponse(BaseModel):
     run_id: str
     status: str
     job_count: int | None = None
     scrape_count: int | None = None
+    corpus_count: int | None = None
+    scored_count: int | None = None
+    shown_count: int | None = None
+    corpus_source: str | None = None
     progress: dict | None = None
     run_kind: str | None = None
     scrape_reason: str | None = None
@@ -120,7 +102,10 @@ async def _create_run(
             "requested_mode": requested_mode,
             "force_scrape": force_scrape,
             "disable_scraping": disable_scraping,
-            "run_kind": _queued_run_kind(force_scrape, disable_scraping),
+            "run_kind": run_kind_from_flags(
+                force_scrape=force_scrape,
+                disable_scraping=disable_scraping,
+            ),
         },
     )
     db.add(run)
@@ -202,9 +187,13 @@ async def get_latest_run(
         status=_status,
         job_count=run.job_count,
         scrape_count=run.scrape_count,
+        corpus_count=progress_int(run.progress, "corpus_job_count"),
+        scored_count=progress_int(run.progress, "scored_job_count"),
+        shown_count=progress_int(run.progress, "shown_job_count"),
+        corpus_source=progress_str(run.progress, "corpus_source"),
         progress=run.progress,
-        run_kind=_run_kind_value(run.progress),
-        scrape_reason=_scrape_reason_value(run.progress),
+        run_kind=run_kind_from_progress(run.progress),
+        scrape_reason=scrape_reason_from_progress(run.progress),
         jobs_snapshot=_jobs_snapshot(run.progress),
         error=run.error,
         started_at=str(run.started_at) if run.started_at else None,
@@ -230,9 +219,13 @@ async def list_runs(
             status=_display_status(r.status),
             job_count=r.job_count,
             scrape_count=r.scrape_count,
+            corpus_count=progress_int(r.progress, "corpus_job_count"),
+            scored_count=progress_int(r.progress, "scored_job_count"),
+            shown_count=progress_int(r.progress, "shown_job_count"),
+            corpus_source=progress_str(r.progress, "corpus_source"),
             progress=r.progress,
-            run_kind=_run_kind_value(r.progress),
-            scrape_reason=_scrape_reason_value(r.progress),
+            run_kind=run_kind_from_progress(r.progress),
+            scrape_reason=scrape_reason_from_progress(r.progress),
             jobs_snapshot=_jobs_snapshot(r.progress),
             error=r.error,
             started_at=str(r.started_at) if r.started_at else None,
@@ -260,9 +253,13 @@ async def get_run_status(
         status=_status,
         job_count=run.job_count,
         scrape_count=run.scrape_count,
+        corpus_count=progress_int(run.progress, "corpus_job_count"),
+        scored_count=progress_int(run.progress, "scored_job_count"),
+        shown_count=progress_int(run.progress, "shown_job_count"),
+        corpus_source=progress_str(run.progress, "corpus_source"),
         progress=run.progress,
-        run_kind=_run_kind_value(run.progress),
-        scrape_reason=_scrape_reason_value(run.progress),
+        run_kind=run_kind_from_progress(run.progress),
+        scrape_reason=scrape_reason_from_progress(run.progress),
         jobs_snapshot=_jobs_snapshot(run.progress),
         error=run.error,
         started_at=str(run.started_at) if run.started_at else None,

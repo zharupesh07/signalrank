@@ -139,7 +139,7 @@ async def trigger_ranking_run(user_email: str, dry_run: bool = False) -> str | N
     from sqlalchemy import select
     from api.database import AsyncSessionLocal
     from api.models import Profile, Run, JobResult, User
-    from batch.ranker import score_jobs_for_user
+    from ranking.v4.db_scorer import score_jobs_for_user
 
     if dry_run:
         logger.info("[DRY-RUN] Would trigger ranking for %s", user_email)

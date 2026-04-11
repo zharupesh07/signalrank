@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from api.database import Base
 from api.models import JobRaw, Profile, User
 from experiment_cleanup import delete_user_ids
-from batch.ranker import score_jobs_for_user
+from ranking.v4.db_scorer import score_jobs_for_user
 
 TEST_DB_URLS = [
     url.strip()

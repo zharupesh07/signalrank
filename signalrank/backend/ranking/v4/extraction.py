@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime
+from pathlib import Path
 
 from ranking.v4.lanes import LANE_REGISTRY, detect_active_lanes
 from ranking.v4.profile import CandidateProfile, WeightedSkill
@@ -13,7 +15,10 @@ _SKILL_PATTERNS = re.compile(
     r"ospf|juniper|firewall|sdn|nfv|iot|embedded|mqtt|arduino|rasa|dialogflow|"
     r"spring\s*boot|fastapi|react|typescript|golang|rust|c\+\+|scala|airflow|"
     r"mlflow|sagemaker|azure|aws|gcp|cobol|fortran|hadoop|hive|sap|abap|"
-    r"s/4hana|otc|gts|fiori|mm|sd)\b",
+    r"s/4hana|otc|gts|fiori|mm|sd|langgraph|langchain|langfuse|chroma|faiss|"
+    r"cloud\s*run|jenkins|github\s*actions|oidc|rbac|pydantic|sqlmodel|"
+    r"seldon(?:\s*core)?|label\s*studio|openai|gemini|claude|mcp|"
+    r"function\s*calling|rag|llmops|genai|agentic(?:\s*ai)?|idp|nbdev)\b",
     re.IGNORECASE,
 )
 
@@ -43,12 +48,289 @@ _LANE_SKILL_PRIORITIES: dict[str, tuple[str, ...]] = {
     "conversational_ai": ("dialogflow", "rasa", "nlp", "llm", "gpt"),
     "innovation": ("prototype", "prototyping", "innovation", "mvp"),
     "r_and_d": ("research", "experimental", "prototype", "poc"),
-    "mlops_platform": ("mlflow", "kubeflow", "databricks", "mlops", "sagemaker", "airflow"),
+    "mlops_platform": ("mlflow", "kubeflow", "databricks", "mlops", "llmops", "sagemaker", "airflow", "kubernetes", "terraform", "cloud run", "langgraph"),
+}
+
+_NORMALIZED_SKILL_ALIASES: dict[str, str] = {
+    "cloud run": "cloud run",
+    "github actions": "github actions",
+    "internal developer platforms": "internal developer platforms",
+    "internal developer platforms (idp)": "internal developer platforms",
+    "vector databases": "vector databases",
+    "vector databases (chroma/faiss)": "vector databases",
+    "function calling": "function calling",
+    "model context protocol": "mcp",
+    "mcp (model context protocol)": "mcp",
+    "generative ai": "genai",
+    "agentic systems": "agentic ai",
+    "agentic ai": "agentic ai",
+    "ci/cd": "cicd",
+    "iac": "infrastructure as code",
+    "hugging face": "hugging face",
+    "openai/gemini/claude apis": "llm apis",
+    "langgraph": "langgraph",
+    "langchain": "langchain",
+    "langfuse": "langfuse",
+    "seldon core": "seldon core",
+    "label studio": "label studio",
+    "mlflow": "mlflow",
+    "terraform": "terraform",
+    "jenkins": "jenkins",
+    "docker": "docker",
+    "kubernetes": "kubernetes",
+    "gcp": "gcp",
+    "aws": "aws",
+    "fastapi": "fastapi",
+    "python": "python",
+}
+
+_ROLE_CANONICAL_ALIASES: dict[str, str] = {
+    "senior ai platform engineer": "AI Platform Engineer",
+    "ai platform engineer": "AI Platform Engineer",
+    "cloud infrastructure": "Cloud Infrastructure Engineer",
+    "cloud infrastructure engineer": "Cloud Infrastructure Engineer",
+    "machine learning engineer": "Machine Learning Engineer",
+    "senior machine learning engineer": "Machine Learning Engineer",
+    "ml engineer": "Machine Learning Engineer",
+    "mlops": "MLOps Engineer",
+    "ml ops": "MLOps Engineer",
+    "mlops engineer": "MLOps Engineer",
+    "llmops": "LLMOps Engineer",
+    "llm ops": "LLMOps Engineer",
+    "llmops engineer": "LLMOps Engineer",
+    "agentic systems": "Agentic AI Engineer",
+    "agentic ai": "Agentic AI Engineer",
+    "agentic ai engineer": "Agentic AI Engineer",
+    "ml platform engineer": "ML Platform Engineer",
+    "platform engineer": "Platform Engineer",
+    "cloud ops engineer": "Cloud Ops Engineer",
+    "devops sre": "DevOps SRE",
+    "devops engineer": "DevOps Engineer",
+}
+
+_ROLE_REJECT_TOKENS = ("intern", "trainee", "qa", "support")
+_SECONDARY_MUST_HAVE_SKILLS = {"oidc", "rbac", "sqlmodel", "langfuse", "label studio", "jenkins"}
+
+_PREFERRED_COMPANY_TIER_GROUPS: dict[str, list[str]] = {
+    "enterprise": ["tier_ss", "tier_s"],
+    "product": ["tier_ss", "tier_s", "tier_a"],
+    "faang": ["tier_ss", "tier_s", "tier_a"],
+    "maang": ["tier_ss", "tier_s", "tier_a"],
 }
 
 
 def _current_year() -> int:
     return datetime.now().year
+
+
+def _dedupe_keep_order(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for value in values:
+        item = str(value or "").strip()
+        key = item.lower()
+        if not item or key in seen:
+            continue
+        seen.add(key)
+        deduped.append(item)
+    return deduped
+
+
+def _normalize_skill_name(skill: str) -> str:
+    normalized = re.sub(r"\s+", " ", str(skill or "").strip().lower())
+    normalized = normalized.replace("/", " / ")
+    normalized = re.sub(r"\s+", " ", normalized).strip(" ,")
+    return _NORMALIZED_SKILL_ALIASES.get(normalized, normalized)
+
+
+def _parse_year(text: str | None) -> int | None:
+    if not text:
+        return None
+    match = re.search(r"(19|20)\d{2}", text)
+    return int(match.group(0)) if match else None
+
+
+def _load_structured_resume(profile_cfg: dict) -> dict | None:
+    inline_payload = profile_cfg.get("structured_resume_json")
+    if isinstance(inline_payload, dict):
+        return inline_payload
+
+    raw_payload = profile_cfg.get("structured_resume")
+    if isinstance(raw_payload, dict):
+        return raw_payload
+
+    raw_path = str(profile_cfg.get("structured_resume_json_path") or "").strip()
+    if not raw_path:
+        return None
+
+    try:
+        path = Path(raw_path).expanduser()
+        if not path.is_absolute():
+            path = (Path.cwd() / path).resolve()
+        data = json.loads(path.read_text())
+        return data if isinstance(data, dict) else None
+    except Exception:
+        return None
+
+
+def _structured_resume_text(data: dict) -> str:
+    parts: list[str] = []
+    for key in ("position", "summary", "location"):
+        value = data.get(key)
+        if isinstance(value, str) and value.strip():
+            parts.append(value.strip())
+    for exp in data.get("experiences", []) or []:
+        if not isinstance(exp, dict):
+            continue
+        for key in ("title", "company", "location", "tech"):
+            value = exp.get(key)
+            if isinstance(value, str) and value.strip():
+                parts.append(value.strip())
+        for bullet in exp.get("bullets", []) or []:
+            if isinstance(bullet, str) and bullet.strip():
+                parts.append(bullet.strip())
+    for group in data.get("skills", []) or []:
+        if not isinstance(group, dict):
+            continue
+        category = group.get("category")
+        if isinstance(category, str) and category.strip():
+            parts.append(category.strip())
+        for item in group.get("items", []) or []:
+            if isinstance(item, str) and item.strip():
+                parts.append(item.strip())
+    return "\n".join(parts)
+
+
+def _structured_skill_weights(data: dict) -> dict[str, float]:
+    weights: dict[str, float] = {}
+
+    def _bump(skill: str, weight: float) -> None:
+        normalized = _normalize_skill_name(skill)
+        if not normalized:
+            return
+        weights[normalized] = max(weights.get(normalized, 0.0), weight)
+
+    for group in data.get("skills", []) or []:
+        if not isinstance(group, dict):
+            continue
+        for item in group.get("items", []) or []:
+            if isinstance(item, str):
+                _bump(item, 1.0)
+
+    for exp in data.get("experiences", []) or []:
+        if not isinstance(exp, dict):
+            continue
+        tech = exp.get("tech")
+        if isinstance(tech, str):
+            for item in tech.split(","):
+                _bump(item, 0.95)
+        exp_text = " ".join(
+            str(part).strip()
+            for part in [exp.get("title"), exp.get("company"), exp.get("location"), *list(exp.get("bullets", []) or [])]
+            if str(part or "").strip()
+        )
+        for match in _SKILL_PATTERNS.finditer(exp_text):
+            _bump(match.group(0), 0.9)
+
+    summary_text = _structured_resume_text(data)
+    for match in _SKILL_PATTERNS.finditer(summary_text):
+        _bump(match.group(0), 0.85)
+
+    return weights
+
+
+def _structured_target_roles(data: dict) -> list[str]:
+    raw_roles: list[str] = []
+
+    position = data.get("position")
+    if isinstance(position, str) and position.strip():
+        raw_roles.extend(part.strip() for part in position.split("|") if part.strip())
+
+    contains = data.get("position_contains")
+    if isinstance(contains, str) and contains.strip():
+        raw_roles.append(contains.strip())
+
+    for exp in data.get("experiences", []) or []:
+        if isinstance(exp, dict):
+            title = exp.get("title")
+            if isinstance(title, str) and title.strip():
+                raw_roles.append(title.strip())
+
+    for marker in data.get("experience_markers", []) or []:
+        if isinstance(marker, dict):
+            title = marker.get("title")
+            if isinstance(title, str) and title.strip():
+                raw_roles.append(title.strip())
+
+    normalized_roles: list[str] = []
+    for role in raw_roles:
+        compact_role = re.sub(r"\([^)]*\)", "", role).strip(" -")
+        key = re.sub(r"\s+", " ", compact_role.lower().strip())
+        if not key or any(token in key for token in _ROLE_REJECT_TOKENS):
+            continue
+        canonical = _ROLE_CANONICAL_ALIASES.get(key)
+        if canonical:
+            normalized_roles.append(canonical)
+            continue
+        if not any(term in key for term in ("engineer", "architect", "platform", "mlops", "llmops", "ai", "cloud")):
+            continue
+        if compact_role:
+            normalized_roles.append(compact_role)
+    return _dedupe_keep_order(normalized_roles)[:8]
+
+
+def _structured_locations(data: dict) -> list[str]:
+    values: list[str] = []
+    location = data.get("location")
+    if isinstance(location, str):
+        values.extend(part.strip() for part in re.split(r"[,|/]", location) if part.strip())
+    for exp in data.get("experiences", []) or []:
+        if isinstance(exp, dict):
+            loc = exp.get("location")
+            if isinstance(loc, str) and loc.strip():
+                values.append(loc.strip())
+    normalized: list[str] = []
+    for value in values:
+        lower = value.lower()
+        if "bangal" in lower or "bengaluru" in lower:
+            normalized.append("Bangalore")
+        elif "pune" in lower:
+            normalized.append("Pune")
+        elif "remote" in lower:
+            normalized.append("Remote")
+        else:
+            normalized.append(value.title())
+    return _dedupe_keep_order(normalized)
+
+
+def _structured_years_of_experience(data: dict) -> int | None:
+    current_year = _current_year()
+    years: list[int] = []
+    for exp in data.get("experiences", []) or []:
+        if not isinstance(exp, dict):
+            continue
+        dates = str(exp.get("dates") or "")
+        start_year = _parse_year(dates)
+        if start_year is None:
+            continue
+        end_years = re.findall(r"(19|20)\d{2}", dates)
+        if re.search(r"present|current|now", dates, re.IGNORECASE):
+            end_year = current_year
+        else:
+            all_years = re.findall(r"(?:19|20)\d{2}", dates)
+            end_year = int(all_years[-1]) if all_years else start_year
+        years.append(max(0, end_year - start_year))
+    if not years:
+        return None
+    return max(years) if len(years) == 1 else sum(years)
+
+
+def _structured_company_preferences(profile_cfg: dict) -> list[str]:
+    tiers = [str(item).strip().lower() for item in profile_cfg.get("preferred_company_tiers", []) or [] if str(item).strip()]
+    tags = [str(item).strip().lower() for item in profile_cfg.get("preferred_company_themes", []) or [] if str(item).strip()]
+    for tag in tags:
+        tiers.extend(_PREFERRED_COMPANY_TIER_GROUPS.get(tag, []))
+    return _dedupe_keep_order(tiers)
 
 
 def parse_role_dates(resume_text: str) -> list[dict]:
@@ -178,10 +460,10 @@ def _extract_locations(resume_text: str) -> list[str]:
     text_lower = resume_text.lower()
     if "remote" in text_lower:
         locations.append("Remote")
-    for city in ("bangalore", "mumbai", "delhi", "hyderabad", "pune", "chennai",
+    for city in ("bangalore", "bengaluru", "mumbai", "delhi", "hyderabad", "pune", "chennai",
                  "new york", "san francisco", "london", "singapore"):
         if city in text_lower:
-            locations.append(city.title())
+            locations.append("Bangalore" if city == "bengaluru" else city.title())
     return locations or ["Remote"]
 
 
@@ -198,7 +480,7 @@ def _select_must_have_terms(
                 selected.append(skill_name)
 
     for skill_name in ordered_skills:
-        if skill_name in selected or skill_name in _GENERIC_SPECIALIST_SKILLS:
+        if skill_name in selected or skill_name in _GENERIC_SPECIALIST_SKILLS or skill_name in _SECONDARY_MUST_HAVE_SKILLS:
             continue
         selected.append(skill_name)
 
@@ -220,25 +502,37 @@ def extract_profile_v4(
       config_overrides.get("v4_profile", {}).get("avoid_terms")
       config_overrides.get("v4_profile", {}).get("target_roles")
     """
-    roles = parse_role_dates(resume_text)
+    profile_cfg = (config_overrides or {}).get("v4_profile", {})
+    structured_resume = _load_structured_resume(profile_cfg)
+    structured_resume_text = _structured_resume_text(structured_resume) if structured_resume else ""
+    combined_resume_text = "\n".join(part for part in [resume_text, structured_resume_text] if part)
+
+    roles = parse_role_dates(combined_resume_text)
     recency_weights = compute_skill_recency_weights(roles, current_focus=current_focus)
 
     if not recency_weights:
-        for m in _SKILL_PATTERNS.finditer(resume_text):
+        for m in _SKILL_PATTERNS.finditer(combined_resume_text):
             skill = m.group(0).lower()
             if skill not in recency_weights:
                 recency_weights[skill] = 0.5
+
+    if structured_resume:
+        for skill, weight in _structured_skill_weights(structured_resume).items():
+            recency_weights[skill] = max(recency_weights.get(skill, 0.0), weight)
 
     weighted_skills = [
         WeightedSkill(name=skill, weight=weight)
         for skill, weight in sorted(recency_weights.items(), key=lambda x: -x[1])
     ]
 
-    seniority = _infer_seniority(resume_text)
-    active_lanes = detect_active_lanes(resume_text, [], current_focus=current_focus)
-    target_roles = _infer_target_roles(resume_text, active_lanes)
-    active_lanes = detect_active_lanes(resume_text, target_roles, current_focus=current_focus)
-    domains = _infer_domains(resume_text, weighted_skills)
+    seniority = _infer_seniority(combined_resume_text)
+    active_lanes = detect_active_lanes(combined_resume_text, [], current_focus=current_focus)
+    target_roles = _infer_target_roles(combined_resume_text, active_lanes)
+    if structured_resume:
+        structured_roles = _structured_target_roles(structured_resume)
+        target_roles = _dedupe_keep_order([*structured_roles, *target_roles])[:8]
+    active_lanes = detect_active_lanes(combined_resume_text, target_roles, current_focus=current_focus)
+    domains = _infer_domains(combined_resume_text, weighted_skills)
 
     top_skills = [ws.name for ws in weighted_skills if ws.weight >= 0.7]
     if not top_skills:
@@ -263,14 +557,20 @@ def extract_profile_v4(
         avoid += ["microservices engineer", "systems integration specialist", "ai systems architect", "computer vision engineer"]
 
     # Apply per-user config_overrides (replaces hardcoded candidate customizations)
-    profile_cfg = (config_overrides or {}).get("v4_profile", {})
     if profile_cfg.get("target_roles"):
         target_roles = profile_cfg["target_roles"]
+    preferred_locations = (
+        profile_cfg.get("preferred_locations")
+        or (_structured_locations(structured_resume) if structured_resume else None)
+        or _extract_locations(combined_resume_text)
+    )
     if profile_cfg.get("must_have_terms"):
         extras = [t for t in profile_cfg["must_have_terms"] if t not in must_have]
         must_have = (must_have + extras)[:8]
     if profile_cfg.get("avoid_terms"):
         avoid.extend(profile_cfg["avoid_terms"])
+    preferred_company_tiers = _structured_company_preferences(profile_cfg)
+    company_preference_strength = float(profile_cfg.get("company_preference_strength") or 1.0)
 
     # Build company tier lookup from base config (same as V2's CompanyScorer)
     company_tier_map = _build_company_tier_map()
@@ -281,13 +581,15 @@ def extract_profile_v4(
         domains=domains,
         industries=["Technology"],
         seniority_band=seniority,
-        preferred_locations=_extract_locations(resume_text),
+        preferred_locations=preferred_locations,
         must_have_terms=must_have,
         avoid_terms=list(dict.fromkeys(avoid))[:12],
         current_focus=current_focus,
         active_lanes=active_lanes,
-        years_of_experience=None,
+        years_of_experience=_structured_years_of_experience(structured_resume) if structured_resume else None,
         company_tier_map=company_tier_map,
+        preferred_company_tiers=preferred_company_tiers,
+        company_preference_strength=company_preference_strength,
     )
 
 

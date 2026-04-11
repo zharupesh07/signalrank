@@ -22,12 +22,30 @@ logger = logging.getLogger(__name__)
 _JOB_WINDOW_DAYS = 15
 _RANK_MAX_CANDIDATES = 2000
 _RANK_DESCRIPTION_CHARS = 1200
+_STRUCTURED_COMPARE_TOP_K = 50
+_CONTEXT_MATCH_SKILLS = {
+    "python",
+    "sql",
+    "bash",
+    "gcp",
+    "aws",
+    "azure",
+    "docker",
+    "oidc",
+    "rbac",
+    "jenkins",
+    "github actions",
+    "langfuse",
+    "fastapi",
+}
 
 
 async def _load_jobs(
     db: AsyncSession,
     job_urls: list[str] | None,
     role_clusters: set[str] | None,
+    *,
+    preserve_corpus: bool = False,
 ) -> list[dict]:
     """Load jobs from DB as plain dicts (no pandas until final output)."""
     from api.models import JobRaw
@@ -45,11 +63,11 @@ async def _load_jobs(
     if job_urls:
         stmt = (
             select(*cols)
-            .where(JobRaw.ingested_at >= cutoff)
             .where(JobRaw.job_url.in_(job_urls))
             .order_by(JobRaw.ingested_at.desc())
-            .limit(_RANK_MAX_CANDIDATES)
         )
+        if not preserve_corpus:
+            stmt = stmt.where(JobRaw.ingested_at >= cutoff).limit(_RANK_MAX_CANDIDATES)
     else:
         _co = func.lower(func.trim(JobRaw.company))
         _ti = func.lower(func.trim(JobRaw.title))
@@ -77,7 +95,7 @@ async def _load_jobs(
             j["date_posted"] = j["date_posted"].isoformat()
 
     # Optional cluster filter
-    if role_clusters and "general" not in role_clusters:
+    if role_clusters and "general" not in role_clusters and not preserve_corpus:
         from domain.role_clusters import infer_clusters_from_job_text
         jobs = [
             j for j in jobs
@@ -85,6 +103,99 @@ async def _load_jobs(
         ]
 
     return jobs
+
+
+def _candidate_profile_for_match(profile, resume_text: str) -> dict:
+    weighted_skills = [ws.name for ws in getattr(profile, "weighted_skills", [])]
+    must_have_terms = list(getattr(profile, "must_have_terms", []) or [])
+    secondary_skills = [
+        skill for skill in weighted_skills
+        if skill not in must_have_terms and skill not in _CONTEXT_MATCH_SKILLS
+    ][:16]
+    context_skills = [
+        skill for skill in weighted_skills
+        if skill in _CONTEXT_MATCH_SKILLS
+    ][:16]
+    return {
+        "target_roles_primary": list(getattr(profile, "target_roles", []) or [])[:6],
+        "target_roles_adjacent": list(getattr(profile, "target_roles", []) or [])[1:7],
+        "negative_roles": list(getattr(profile, "avoid_terms", []) or [])[:12],
+        "preferred_locations": list(getattr(profile, "preferred_locations", []) or [])[:6],
+        "preferred_work_modes": ["remote"] if "Remote" in (getattr(profile, "preferred_locations", []) or []) else ["onsite", "hybrid", "remote"],
+        "core_skills": must_have_terms[:12],
+        "secondary_skills": secondary_skills,
+        "context_skills": context_skills,
+        "must_have_skills": must_have_terms[:12],
+        "good_to_have_skills": secondary_skills,
+        "seniority_band": getattr(profile, "seniority_band", "mid"),
+        "preferred_domains": list(getattr(profile, "domains", []) or []),
+        "evidence_snippets": [{"source": "resume_text", "text": resume_text[:240]}] if resume_text else [],
+    }
+
+
+def _apply_structured_comparison(scored: list[dict], profile, resume_text: str) -> list[dict]:
+    from domain.match_judge import heuristic_match_report
+    from domain.score_synthesis import synthesize_match_score
+
+    candidate_profile = _candidate_profile_for_match(profile, resume_text)
+    enriched: list[dict] = []
+    ranked = sorted(scored, key=lambda item: item.get("score", 0.0), reverse=True)
+
+    for idx, job in enumerate(ranked):
+        deterministic_score = float(job.get("score", 0.0) or 0.0) * 100
+        if idx >= _STRUCTURED_COMPARE_TOP_K:
+            enriched.append(
+                {
+                    **job,
+                    "final_score": deterministic_score,
+                    "fit_band": None,
+                    "confidence_band": None,
+                    "explanation_summary": None,
+                    "match_report": None,
+                    "verification_report": None,
+                }
+            )
+            continue
+
+        job_profile = job.get("job_profile") if isinstance(job.get("job_profile"), dict) else {}
+        if not job_profile:
+            enriched.append(
+                {
+                    **job,
+                    "final_score": deterministic_score,
+                    "fit_band": None,
+                    "confidence_band": None,
+                    "explanation_summary": None,
+                    "match_report": None,
+                    "verification_report": None,
+                }
+            )
+            continue
+
+        match_report = heuristic_match_report(
+            candidate_profile=candidate_profile,
+            job_profile=job_profile,
+            resume_text=resume_text,
+            job_text=str(job.get("description") or ""),
+        )
+        synthesized = synthesize_match_score(
+            deterministic_score=deterministic_score,
+            match_report=match_report,
+            verification_report=None,
+        )
+        enriched.append(
+            {
+                **job,
+                "final_score": synthesized["final_score"],
+                "fit_band": synthesized["fit_band"],
+                "confidence_band": synthesized["confidence_band"],
+                "explanation_summary": synthesized["explanation_summary"],
+                "match_report": match_report,
+                "verification_report": None,
+            }
+        )
+
+    return sorted(enriched, key=lambda item: item.get("final_score", 0.0), reverse=True)
 
 
 def _results_to_dataframe(scored: list[dict]) -> pd.DataFrame:
@@ -105,7 +216,7 @@ def _results_to_dataframe(scored: list[dict]) -> pd.DataFrame:
             "site": j.get("site"),
             "date_posted": j.get("date_posted"),
             # Score columns mapped to [0-100] for job_results compatibility
-            "final_score": raw_score * 100,
+            "final_score": j.get("final_score", raw_score * 100),
             "semantic_score": sem,
             "skills_score": features.get("skill_overlap", 0.0) * 100,
             "company_score": features.get("company_tier_score", 0.0) * 100,
@@ -113,12 +224,11 @@ def _results_to_dataframe(scored: list[dict]) -> pd.DataFrame:
             "location_score": features.get("location_match", 0.0) * 100,
             "recency_score": features.get("recency_score", 0.0) * 100,
             "title_relevance_score": features.get("title_similarity", 0.0) * 100,
-            # V4 doesn't have LLM agentic matching output (set to None)
-            "fit_band": None,
-            "confidence_band": None,
-            "explanation_summary": None,
-            "match_report": None,
-            "verification_report": None,
+            "fit_band": j.get("fit_band"),
+            "confidence_band": j.get("confidence_band"),
+            "explanation_summary": j.get("explanation_summary"),
+            "match_report": j.get("match_report"),
+            "verification_report": j.get("verification_report"),
             "company_tier": (j.get("job_profile") or {}).get("company_tier"),
             "is_contract": (j.get("job_profile") or {}).get("is_contract"),
         })
@@ -132,20 +242,35 @@ async def score_jobs_for_user(
     config_overrides: dict | None,
     distilled_text: str | None = None,
     job_urls: list[str] | None = None,
+    preserve_corpus: bool = False,
 ) -> pd.DataFrame:
     """V4 async scorer. Drop-in replacement for batch/ranker.py:score_jobs_for_user().
 
     Returns a DataFrame with the same columns as V2 for job_results compatibility.
     """
     from domain.role_clusters import roles_to_clusters
+    from api.models import Profile
 
     logger.info("V4 scorer: user=%s, job_urls=%s", user_id, len(job_urls) if job_urls else "all")
+
+    profile_row = (
+        await db.execute(select(Profile).where(Profile.user_id == user_id).limit(1))
+    ).scalar_one_or_none()
+    merged_overrides = dict(config_overrides or {})
+    v4_profile = dict((merged_overrides.get("v4_profile") or {}))
+    if profile_row is not None:
+        if getattr(profile_row, "target_roles", None) and not v4_profile.get("target_roles"):
+            v4_profile["target_roles"] = list(profile_row.target_roles)
+        if getattr(profile_row, "preferred_locations", None) and not v4_profile.get("preferred_locations"):
+            v4_profile["preferred_locations"] = list(profile_row.preferred_locations)
+    if v4_profile:
+        merged_overrides["v4_profile"] = v4_profile
 
     # Build candidate profile from resume text
     profile = extract_profile_v4(
         resume_text,
-        current_focus=(config_overrides or {}).get("current_focus"),
-        config_overrides=config_overrides,
+        current_focus=merged_overrides.get("current_focus"),
+        config_overrides=merged_overrides,
     )
 
     # Get resume embedding for semantic_similarity feature
@@ -164,7 +289,7 @@ async def score_jobs_for_user(
     clusters = roles_to_clusters(profile.target_roles) if profile.target_roles else None
 
     # Load jobs from DB
-    jobs = await _load_jobs(db, effective_urls, clusters)
+    jobs = await _load_jobs(db, effective_urls, clusters, preserve_corpus=preserve_corpus)
     logger.info("V4: loaded %d jobs for scoring", len(jobs))
 
     if not jobs:
@@ -179,7 +304,9 @@ async def score_jobs_for_user(
         logger.info("V4: attached embeddings for %d/%d jobs", len(emb_map), len(jobs))
 
     # Score all jobs (scores already normalized to [0,1] absolute by score_jobs)
-    scored = score_jobs(jobs, profile)
+    scored = score_jobs(jobs, profile, dedupe=not preserve_corpus)
+
+    scored = _apply_structured_comparison(scored, profile, resume_text)
 
     # Convert to DataFrame for job_results insertion (keeps V2 interface)
     df = _results_to_dataframe(scored)

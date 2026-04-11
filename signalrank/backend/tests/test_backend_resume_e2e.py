@@ -337,7 +337,7 @@ async def test_resume_fixture_backend_chain_allows_results_and_tracker_import(
 ):
     import api.routes.onboarding as onboarding_route
     import api.routes.runs as runs_route
-    import batch.ranker as ranker
+    import batch.scrape_pipeline as scrape_pipeline
     import batch.scraper as scraper
     import batch.worker as worker_mod
 
@@ -385,7 +385,8 @@ async def test_resume_fixture_backend_chain_allows_results_and_tracker_import(
             await on_persist(jobs)
         return [job.job_url for job in jobs]
 
-    async def fake_score_jobs_for_user(*, db, user_id, resume_text, distilled_text, config_overrides, job_urls=None):
+    async def fake_score_jobs_for_user(*, db, user_id, resume_text, distilled_text, config_overrides, job_urls=None, preserve_corpus=False):
+        del preserve_corpus
         del user_id, resume_text, distilled_text, config_overrides
         assert job_urls, f"{case.key}: worker did not pass freshly scraped URLs to ranker"
         result = await db.execute(select(JobRaw.id, JobRaw.job_url).where(JobRaw.job_url.in_(list(job_urls))))
@@ -404,7 +405,23 @@ async def test_resume_fixture_backend_chain_allows_results_and_tracker_import(
     monkeypatch.setattr(onboarding_route, "_embed_resume", noop_embed_resume)
     monkeypatch.setattr(worker_mod, "_embed_new_jobs", fake_embed_new_jobs)
     monkeypatch.setattr(scraper, "scrape", fake_scrape)
-    monkeypatch.setattr(ranker, "score_jobs_for_user", fake_score_jobs_for_user)
+    monkeypatch.setattr(
+        scrape_pipeline,
+        "select_fresh_jobs_for_embedding",
+        lambda rows, _profile: (
+            [row.job_url for row in rows],
+            {
+                "input_count": len(rows),
+                "selected_count": len(rows),
+                "dropped_no_signal": 0,
+                "dropped_duplicates": 0,
+                "boosted_cluster": 0,
+                "boosted_title": 0,
+                "boosted_skill": 0,
+            },
+        ),
+    )
+    monkeypatch.setattr(worker_mod, "_get_score_jobs_for_user", lambda: fake_score_jobs_for_user)
     monkeypatch.setattr(runs_route, "api_runtime_flags", lambda: {"run_api_worker": False})
 
     pdf_bytes = (RESUMES_DIR / case.pdf_name).read_bytes()

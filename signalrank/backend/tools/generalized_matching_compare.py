@@ -30,7 +30,7 @@ from api.routes.onboarding import _extract_text_from_pdf
 from batch.context import build_context, load_base_config
 from batch.query_builder import SearchQuery
 from batch.query_plan_cache import get_cached_queries
-from batch.ranker import score_job_ids_for_user
+from ranking.v4.db_scorer import score_jobs_for_user
 from batch.scraper import ScraperConfig, raw_job_to_dict, scrape
 from domain.additive_scoring import location_score_5tier, recency_score_0_100
 from domain.candidate_profile import build_candidate_profile
@@ -710,15 +710,16 @@ async def _run_baseline(
             )
 
             jobs = await scrape(queries, scraper_cfg, db=db, return_mode="jobs")
+            job_urls = [job.job_url for job in jobs]
             job_ids = await _persist_jobs(db, jobs, cfg)
             del jobs
             gc.collect()
 
-            ranked = await score_job_ids_for_user(
+            ranked = await score_jobs_for_user(
                 db=db,
                 user_id=user.id,
                 resume_text=resume_text,
-                job_ids=job_ids,
+                job_urls=job_urls,
                 config_overrides=profile.config_overrides,
                 distilled_text=profile.distilled_text,
             )

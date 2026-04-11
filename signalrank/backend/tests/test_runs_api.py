@@ -193,6 +193,36 @@ async def test_get_run_status_includes_error(client, auth_token, db: AsyncSessio
     assert r.json()["error"] == "ValueError: boom"
 
 
+async def test_get_run_status_includes_corpus_metadata(client, auth_token, db: AsyncSession):
+    user = (await db.execute(select(User).where(User.email == "runner@test.com"))).scalar_one()
+    run = Run(
+        user_id=user.id,
+        status="success",
+        job_count=83,
+        scrape_count=12,
+        progress={
+            "run_kind": "rerank_only",
+            "corpus_source": "latest_scrape_run",
+            "corpus_job_count": 240,
+            "scored_job_count": 83,
+            "shown_job_count": 83,
+        },
+    )
+    db.add(run)
+    await db.commit()
+
+    r = await client.get(
+        f"/api/runs/{run.id}/status",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert r.status_code == 200
+    payload = r.json()
+    assert payload["corpus_source"] == "latest_scrape_run"
+    assert payload["corpus_count"] == 240
+    assert payload["scored_count"] == 83
+    assert payload["shown_count"] == 83
+
+
 async def test_stop_pending_run(client, auth_token):
     # Trigger a run
     trigger = await client.post(

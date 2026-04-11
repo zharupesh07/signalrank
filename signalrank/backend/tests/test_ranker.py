@@ -1,14 +1,16 @@
 import pandas as pd
+from uuid import uuid4
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from batch.ranker import score_jobs_for_user
+from ranking.v4.db_scorer import score_jobs_for_user
 
 
 async def test_score_jobs_empty_corpus(db: AsyncSession):
+    user_id = str(uuid4())
     results = await score_jobs_for_user(
         db=db,
-        user_id="test-user",
+        user_id=user_id,
         resume_text="I am a machine learning engineer",
         config_overrides=None,
     )
@@ -17,6 +19,7 @@ async def test_score_jobs_empty_corpus(db: AsyncSession):
 
 
 async def test_score_jobs_returns_ranked_results(db: AsyncSession):
+    user_id = str(uuid4())
     embedding = "[" + ",".join(["0.0"] * 384) + "]"
     await db.execute(
         text(
@@ -37,7 +40,7 @@ async def test_score_jobs_returns_ranked_results(db: AsyncSession):
 
     results = await score_jobs_for_user(
         db=db,
-        user_id="test-user",
+        user_id=user_id,
         resume_text="Machine learning engineer with 5 years experience in Python, PyTorch, NLP, and deep learning.",
         config_overrides=None,
     )

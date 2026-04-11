@@ -81,6 +81,92 @@ MATCH_REPORT_SCHEMA = {
     "additionalProperties": False,
 }
 
+_STACK_GROUPS: dict[str, tuple[str, ...]] = {
+    "platform_infra": (
+        "kubernetes",
+        "terraform",
+        "docker",
+        "devops",
+        "cicd",
+        "jenkins",
+        "github actions",
+        "infrastructure as code",
+        "sre",
+    ),
+    "mlops_lifecycle": (
+        "mlflow",
+        "kubeflow",
+        "model deployment",
+        "model lifecycle",
+        "ml platform",
+        "ai platform",
+        "pipeline",
+        "airflow",
+        "inference",
+    ),
+    "agentic_genai": (
+        "agentic ai",
+        "agentic",
+        "llm",
+        "llmops",
+        "langgraph",
+        "langchain",
+        "rag",
+        "vector database",
+        "mcp",
+        "tool calling",
+    ),
+    "cloud_foundation": (
+        "aws",
+        "gcp",
+        "azure",
+        "cloud run",
+        "cloud infrastructure",
+        "cloud platform",
+    ),
+}
+
+_GENERIC_ANCHOR_SKILLS = {
+    "kubernetes",
+    "llmops",
+    "mlops",
+    "llm",
+    "agentic",
+    "agentic ai",
+    "ai platform",
+    "ml platform",
+    "cloud platform",
+}
+
+_CONCRETE_STACK_SKILLS = {
+    "mlflow",
+    "kubeflow",
+    "terraform",
+    "airflow",
+    "langgraph",
+    "langchain",
+    "mcp",
+    "vector databases",
+    "vector database",
+    "seldon core",
+    "cloud run",
+    "fastapi",
+    "jenkins",
+    "github actions",
+    "docker",
+    "gcp",
+    "aws",
+    "azure",
+}
+
+_HARD_NEGATIVE_TITLE_PATTERNS: dict[str, tuple[str, ...]] = {
+    "data_architect_drift": ("data architect", "ai data architect"),
+    "solution_architect_drift": ("solution architect", "solutions architect", "enterprise architect"),
+    "automation_role_drift": ("automation architect", "test automation", "quality engineering", "quality assurance", "qa"),
+    "fullstack_role_drift": ("full stack", "frontend", "backend developer"),
+    "presales_role_drift": ("presales", "pre sales"),
+}
+
 
 def _dedupe(values: Iterable[str] | None) -> list[str]:
     seen: set[str] = set()
@@ -154,6 +240,56 @@ def _job_role_blob(job_profile: dict) -> str:
     return " ".join(parts).lower()
 
 
+def _role_phrase_variants(candidate_profile: dict) -> tuple[set[str], set[str]]:
+    primary = {
+        _norm(role).lower()
+        for role in candidate_profile.get("target_roles_primary", []) or []
+        if _norm(role)
+    }
+    adjacent = {
+        _norm(role).lower()
+        for role in candidate_profile.get("target_roles_adjacent", []) or []
+        if _norm(role)
+    }
+
+    direct_phrases = set(primary)
+    adjacent_phrases = set(adjacent)
+
+    for role in primary | adjacent:
+        compact = role.replace("/", " ").replace("-", " ")
+        compact = re.sub(r"\s+", " ", compact).strip()
+        if not compact:
+            continue
+        target = direct_phrases if role in primary else adjacent_phrases
+        if compact:
+            target.add(compact)
+        if "mlops" in compact:
+            target.update({"mlops", "ml ops", "ml ops engineer"})
+        if "llmops" in compact:
+            target.update({"llmops", "llm ops", "llm ops engineer"})
+        if "ai platform" in compact:
+            target.update({"ai platform", "ai platform engineer"})
+        if "ml platform" in compact:
+            target.update({"ml platform", "ml platform engineer"})
+        if "platform engineer" in compact:
+            target.update({"platform engineer"})
+        if "machine learning engineer" in compact:
+            target.update({"machine learning engineer", "ml engineer"})
+
+    adjacent_phrases.update(
+        {
+            "ai engineer",
+            "ai ml engineer",
+            "ai/ml engineer",
+            "gen ai engineer",
+            "devops engineer",
+            "cloud ops engineer",
+            "sre",
+        }
+    )
+    return direct_phrases, adjacent_phrases
+
+
 def _location_fit(candidate_profile: dict, job_profile: dict) -> tuple[str, bool, list[str]]:
     preferred_locations = {str(loc).lower() for loc in candidate_profile.get("preferred_locations", []) if str(loc).strip()}
     preferred_modes = {str(mode).lower() for mode in candidate_profile.get("preferred_work_modes", []) if str(mode).strip()}
@@ -205,19 +341,64 @@ def _seniority_fit(candidate_profile: dict, job_profile: dict) -> tuple[str, lis
     return "unclear", reasons
 
 
-def _skill_signals(candidate_profile: dict, job_profile: dict) -> tuple[bool, list[str], list[str], list[str]]:
-    candidate_skills = {
+def _skill_signals(candidate_profile: dict, job_profile: dict) -> tuple[bool, list[str], list[str], list[str], list[str], list[str]]:
+    core_skills = {
         _norm(skill).lower()
-        for key in ("must_have_skills", "good_to_have_skills")
-        for skill in candidate_profile.get(key, [])
+        for skill in candidate_profile.get("core_skills", []) or candidate_profile.get("must_have_skills", [])
         if _norm(skill)
     }
+    secondary_skills = {
+        _norm(skill).lower()
+        for skill in candidate_profile.get("secondary_skills", []) or candidate_profile.get("good_to_have_skills", [])
+        if _norm(skill)
+    }
+    context_skills = {
+        _norm(skill).lower()
+        for skill in candidate_profile.get("context_skills", [])
+        if _norm(skill)
+    }
+    candidate_skills = core_skills | secondary_skills | context_skills
     job_required = {_norm(skill).lower() for skill in job_profile.get("required_skills", []) if _norm(skill)}
     job_preferred = {_norm(skill).lower() for skill in job_profile.get("preferred_skills", []) if _norm(skill)}
+    job_all = job_required | job_preferred
+    core_overlap = sorted(core_skills & job_all)
+    secondary_overlap = sorted(secondary_skills & job_all)
+    context_overlap = sorted(context_skills & job_all)
     overlap = sorted((candidate_skills & job_required) | (candidate_skills & job_preferred))
     missing = sorted((job_required - candidate_skills))[:8]
     extra = sorted(candidate_skills & job_preferred)[:8]
-    return bool(overlap), overlap[:8], missing, extra
+    return bool(overlap), core_overlap[:8], secondary_overlap[:8], context_overlap[:8], missing, extra
+
+
+def _stack_signals(candidate_profile: dict, job_profile: dict, job_text: str) -> tuple[list[str], list[str]]:
+    candidate_blob = " ".join(
+        [
+            *[str(item) for item in candidate_profile.get("target_roles_primary", []) or []],
+            *[str(item) for item in candidate_profile.get("target_roles_adjacent", []) or []],
+            *[str(item) for item in candidate_profile.get("must_have_skills", []) or []],
+            *[str(item) for item in candidate_profile.get("good_to_have_skills", []) or []],
+            *[str(item) for item in candidate_profile.get("preferred_domains", []) or []],
+        ]
+    ).lower()
+    job_blob = f"{_job_role_blob(job_profile)} {_norm(job_text).lower()}"
+    matched: list[str] = []
+    weak: list[str] = []
+
+    for label, terms in _STACK_GROUPS.items():
+        candidate_hits = {term for term in terms if term in candidate_blob}
+        job_hits = {term for term in terms if term in job_blob}
+        shared_hits = sorted(candidate_hits & job_hits)
+        if not candidate_hits or not job_hits:
+            continue
+        # Only count a stack as matched when the same stack evidence appears on
+        # both sides. Generic JD terms like "pipeline" should not create a fake
+        # MLOps match unless the resume also shows the same stack vocabulary.
+        if len(shared_hits) >= 2:
+            matched.append(label)
+        elif len(shared_hits) == 1:
+            weak.append(label)
+
+    return matched, weak
 
 
 def _negative_role_hit(candidate_profile: dict, job_profile: dict) -> str | None:
@@ -232,6 +413,36 @@ def _negative_role_hit(candidate_profile: dict, job_profile: dict) -> str | None
     return None
 
 
+def _hard_negative_role_hit(
+    *,
+    job_profile: dict,
+    job_text: str,
+    specialist_stack_match: bool,
+    core_match_count: int,
+    material_skill_count: int,
+) -> str | None:
+    title_text = _norm(" ".join(job_profile.get("role_titles_normalized", [])[:3])).lower()
+    role_blob = f"{title_text} {_job_role_blob(job_profile)} {_norm(job_text).lower()}"
+    strong_hands_on_evidence = specialist_stack_match and core_match_count >= 1 and material_skill_count >= 2
+
+    for label, patterns in _HARD_NEGATIVE_TITLE_PATTERNS.items():
+        if any(pattern in title_text for pattern in patterns):
+            if not strong_hands_on_evidence:
+                return label.replace("_", " ")
+
+    if "consultant" in title_text and not any(term in title_text for term in ("mlops", "llmops", "ai platform", "ml platform")):
+        if not strong_hands_on_evidence:
+            return "consulting role drift"
+
+    if any(term in title_text for term in ("architect", "manager", "director", "head")) and any(
+        term in title_text for term in ("data", "solution", "enterprise", "automation", "qa", "presales")
+    ):
+        if not strong_hands_on_evidence:
+            return "architecture role drift"
+
+    return None
+
+
 def heuristic_match_report(
     *,
     candidate_profile: dict,
@@ -243,48 +454,53 @@ def heuristic_match_report(
     job_blob = _job_role_blob(job_profile)
     title_blob = _norm(job_profile.get("role_titles_normalized", [])[:3]).lower()
     job_text_blob = f"{job_blob} {job_text}".lower()
+    direct_role_phrases, adjacent_role_phrases = _role_phrase_variants(candidate_profile)
 
     negative_hit = _negative_role_hit(candidate_profile, job_profile)
-    skill_present, matched_skills, skill_gaps, skill_extras = _skill_signals(candidate_profile, job_profile)
+    skill_present, core_matches, secondary_matches, context_matches, skill_gaps, skill_extras = _skill_signals(candidate_profile, job_profile)
+    matched_stacks, weak_stacks = _stack_signals(candidate_profile, job_profile, job_text)
     location_fit, location_mismatch, location_reasons = _location_fit(candidate_profile, job_profile)
     seniority_fit, seniority_reasons = _seniority_fit(candidate_profile, job_profile)
-
-    direct_role_hit = any(
-        term in job_text_blob
-        for term in (
-            "engineer",
-            "consultant",
-            "architect",
-            "developer",
-            "scientist",
-            "sre",
-            "platform",
-            "sap",
-            "ml",
-            "qa",
-        )
-    ) and any(
-        term in candidate_blob
-        for term in (
-            "engineer",
-            "consultant",
-            "architect",
-            "developer",
-            "scientist",
-            "platform",
-            "ml",
-            "sap",
-            "qa",
-        )
+    matched_skills = [*core_matches, *secondary_matches, *context_matches]
+    core_match_count = len(core_matches)
+    secondary_match_count = len(secondary_matches)
+    context_match_count = len(context_matches)
+    material_skill_count = core_match_count + secondary_match_count
+    matched_skill_count = len(matched_skills)
+    strong_skill_evidence = (core_match_count >= 1 and material_skill_count >= 2) or len(matched_stacks) >= 2
+    specialist_stack_match = any(stack in {"mlops_lifecycle", "agentic_genai"} for stack in matched_stacks)
+    concrete_skill_match = any(skill in _CONCRETE_STACK_SKILLS for skill in [*core_matches, *secondary_matches])
+    generic_anchor_only = bool(material_skill_count) and all(skill in _GENERIC_ANCHOR_SKILLS for skill in [*core_matches, *secondary_matches])
+    title_text = _norm(" ".join(job_profile.get("role_titles_normalized", [])[:3])).lower()
+    architecture_drift = any(term in title_text for term in ("architect", "manager", "director", "head")) and (
+        material_skill_count < 2 or not specialist_stack_match
     )
-    adjacent_role_hit = any(term in job_blob for term in candidate_profile.get("target_roles_adjacent", []))
+    hard_negative_role = _hard_negative_role_hit(
+        job_profile=job_profile,
+        job_text=job_text,
+        specialist_stack_match=specialist_stack_match,
+        core_match_count=core_match_count,
+        material_skill_count=material_skill_count,
+    )
+
+    direct_role_hit = any(phrase and phrase in title_text for phrase in direct_role_phrases)
+    adjacent_role_hit = (not direct_role_hit) and any(
+        phrase and (phrase in title_text or phrase in job_blob or phrase in job_text_blob)
+        for phrase in adjacent_role_phrases
+    )
 
     why_rank_up: list[str] = []
     why_rank_down: list[str] = []
     risk_flags: list[str] = []
 
-    if matched_skills:
-        why_rank_up.append(f"shares skills: {', '.join(matched_skills[:3])}")
+    if core_matches:
+        why_rank_up.append(f"shares core skills: {', '.join(core_matches[:3])}")
+    elif secondary_matches:
+        why_rank_up.append(f"shares secondary skills: {', '.join(secondary_matches[:3])}")
+    elif context_matches:
+        why_rank_up.append(f"shares context skills: {', '.join(context_matches[:3])}")
+    if matched_stacks:
+        why_rank_up.append(f"stack fit: {', '.join(matched_stacks[:2]).replace('_', ' ')}")
     if direct_role_hit:
         why_rank_up.append("role family looks aligned")
     if location_fit in {"aligned", "remote_ok"}:
@@ -295,6 +511,24 @@ def heuristic_match_report(
     if skill_gaps:
         why_rank_down.append(f"missing core skills: {', '.join(skill_gaps[:3])}")
         risk_flags.append("skill_gap")
+    if weak_stacks and not matched_stacks:
+        why_rank_down.append(f"stack evidence is thin: only {', '.join(weak_stacks[:2]).replace('_', ' ')} shows up")
+        risk_flags.append("weak_stack_alignment")
+    if matched_stacks and not specialist_stack_match:
+        why_rank_down.append("matched stack evidence is mostly generic infra/cloud, not a specialist MLOps or agentic stack")
+        risk_flags.append("generic_stack_only")
+    if generic_anchor_only and not concrete_skill_match:
+        why_rank_down.append("evidence relies on broad anchor terms like kubernetes or llmops without concrete platform stack support")
+        risk_flags.append("generic_anchor_only")
+    if context_match_count and material_skill_count == 0:
+        why_rank_down.append("skill evidence is mostly generic context, not core MLOps or platform stack evidence")
+        risk_flags.append("context_only_match")
+    if architecture_drift:
+        why_rank_down.append("title is more architecture/management-heavy than the demonstrated hands-on evidence")
+        risk_flags.append("architecture_drift")
+    if hard_negative_role:
+        why_rank_down.append(f"role drift: {hard_negative_role}")
+        risk_flags.append("hard_negative_role")
     if negative_hit:
         why_rank_down.append(f"negative-role signal: {negative_hit}")
         risk_flags.append("negative_role")
@@ -307,11 +541,25 @@ def heuristic_match_report(
     if not skill_present:
         risk_flags.append("weak_skill_evidence")
 
-    if negative_hit or location_mismatch:
+    if hard_negative_role and not direct_role_hit:
+        verdict = "reject"
+    elif negative_hit or location_mismatch:
         verdict = "reject" if not direct_role_hit else "misleading_fit"
-    elif direct_role_hit and skill_present and seniority_fit in {"aligned", "adjacent", "unclear"} and location_fit in {"aligned", "remote_ok", "unclear"}:
+    elif hard_negative_role:
+        verdict = "misleading_fit"
+    elif architecture_drift and direct_role_hit:
+        verdict = "misleading_fit"
+    elif (
+        direct_role_hit
+        and strong_skill_evidence
+        and specialist_stack_match
+        and core_match_count >= 1
+        and concrete_skill_match
+        and seniority_fit in {"aligned", "adjacent", "unclear"}
+        and location_fit in {"aligned", "remote_ok", "unclear"}
+    ):
         verdict = "strong_fit"
-    elif (direct_role_hit or adjacent_role_hit) and skill_present:
+    elif (direct_role_hit or adjacent_role_hit) and (skill_present or matched_stacks or weak_stacks):
         verdict = "adjacent_fit"
     elif skill_present or direct_role_hit:
         verdict = "weak_fit"
@@ -319,12 +567,19 @@ def heuristic_match_report(
         verdict = "reject"
 
     confidence = 0.42
-    confidence += 0.16 if skill_present else 0.0
+    confidence += 0.18 if strong_skill_evidence else 0.10 if skill_present else 0.0
+    confidence += 0.08 if matched_stacks else 0.03 if weak_stacks else 0.0
+    confidence += 0.06 if specialist_stack_match else 0.0
     confidence += 0.14 if direct_role_hit else 0.04
     confidence += 0.08 if location_fit in {"aligned", "remote_ok"} else 0.0
     confidence += 0.08 if seniority_fit in {"aligned", "adjacent"} else 0.0
     confidence -= 0.12 if negative_hit else 0.0
     confidence -= 0.10 if location_mismatch else 0.0
+    confidence -= 0.12 if architecture_drift else 0.0
+    confidence -= 0.14 if hard_negative_role else 0.0
+    confidence -= 0.08 if matched_stacks and not specialist_stack_match else 0.0
+    confidence -= 0.08 if weak_stacks and not matched_stacks else 0.0
+    confidence -= 0.08 if context_match_count and material_skill_count == 0 else 0.0
     confidence = max(0.05, min(confidence, 0.98))
 
     cited_resume_evidence = _evidence_list(candidate_profile.get("evidence_snippets"), limit=3)
@@ -339,6 +594,7 @@ def heuristic_match_report(
     explanation_parts = [
         f"verdict={verdict}",
         f"skills={', '.join(matched_skills[:3]) or 'none'}",
+        f"stacks={', '.join(matched_stacks[:2]) or 'none'}",
         f"seniority={seniority_fit}",
         f"location={location_fit}",
     ]

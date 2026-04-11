@@ -2,6 +2,7 @@ import asyncio
 import gc
 import logging
 import os
+import re
 import socket
 import time
 import uuid
@@ -9,14 +10,18 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import and_, func, or_, select, update
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from api.config import settings
-from api.models import JobRaw, JobResult, Profile, Run
+from api.models import JobRaw, Profile, Run
 from batch.context import build_context, get_batch, get_retry
+from batch.run_corpus import load_rerank_corpus_job_urls
 from batch.embedding_cache import PgEmbeddingCache, clear_vector_cache, store_job_embeddings
 from batch.memory import log_rss, release_memory
+from batch.run_progress import corpus_progress, merge_run_progress, run_progress_meta
+from batch.run_results import normalize_ranked_df, persist_ranked_results
+from batch.run_state import mark_run_cancelled, mark_run_failed
+from batch.scrape_pipeline import ScrapePipelineStopRequested, execute_scrape_pipeline
 from domain.candidate_profile import build_candidate_profile
 
 logger = logging.getLogger(__name__)
@@ -37,6 +42,12 @@ class RunRequest:
     claim_token: str | None = None
 
 
+def _get_score_jobs_for_user():
+    from ranking.v4.db_scorer import score_jobs_for_user
+
+    return score_jobs_for_user
+
+
 def _should_log_embed_progress(done: int, total: int, last_logged: int) -> bool:
     if done >= total:
         return True
@@ -44,70 +55,9 @@ def _should_log_embed_progress(done: int, total: int, last_logged: int) -> bool:
         return done != last_logged
     step = max(100, total // 20)
     return (done // step) > (last_logged // step)
-
-
-
-
 def _format_run_error(exc: Exception) -> str:
     message = f"{exc.__class__.__name__}: {exc}".strip()
     return message[:1000]
-
-
-def _run_kind(force_scrape: bool, disable_scraping: bool, *, auto_refresh: bool = False) -> str:
-    if disable_scraping:
-        return "rerank_only"
-    if auto_refresh:
-        return "auto_refresh"
-    if force_scrape:
-        return "manual_refresh"
-    return "manual_run"
-
-
-def _run_progress_meta(
-    mode: str,
-    force_scrape: bool,
-    disable_scraping: bool,
-    *,
-    auto_refresh: bool = False,
-    scrape_executed: bool | None = None,
-    scrape_reason: str | None = None,
-) -> dict:
-    progress = {
-        "requested_mode": mode,
-        "force_scrape": force_scrape,
-        "disable_scraping": disable_scraping,
-        "run_kind": _run_kind(force_scrape, disable_scraping, auto_refresh=auto_refresh),
-    }
-    if auto_refresh:
-        progress["auto_refresh"] = True
-    if scrape_executed is not None:
-        progress["scrape_executed"] = scrape_executed
-    if scrape_reason:
-        progress["scrape_reason"] = scrape_reason
-    return progress
-
-
-def _merge_run_progress(
-    mode: str,
-    force_scrape: bool,
-    disable_scraping: bool,
-    *,
-    auto_refresh: bool = False,
-    scrape_executed: bool | None = None,
-    scrape_reason: str | None = None,
-    **kwargs,
-) -> dict:
-    progress = _run_progress_meta(
-        mode,
-        force_scrape,
-        disable_scraping,
-        auto_refresh=auto_refresh,
-        scrape_executed=scrape_executed,
-        scrape_reason=scrape_reason,
-    )
-    progress.update(kwargs)
-    return progress
-
 
 def _worker_identity() -> str:
     return f"{socket.gethostname()}:{os.getpid()}"
@@ -184,7 +134,7 @@ async def _embed_new_jobs(
             for chunk_start in range(0, total_jobs, embed_chunk_size):
                 chunk_urls = job_urls[chunk_start:chunk_start + embed_chunk_size]
                 result = await db.execute(
-                    select(JobRaw.job_url, JobRaw.title, JobRaw.description).where(JobRaw.job_url.in_(chunk_urls))
+                    select(JobRaw.job_url, JobRaw.title, JobRaw.description, JobRaw.embedding).where(JobRaw.job_url.in_(chunk_urls))
                 )
                 rows = result.all()
                 if not rows:
@@ -193,10 +143,27 @@ async def _embed_new_jobs(
 
                 rows_by_url = {row.job_url: row for row in rows}
                 ordered_rows = [rows_by_url[url] for url in chunk_urls if url in rows_by_url]
-                descriptions = [row.description or "" for row in ordered_rows]
+                pending_rows = [row for row in ordered_rows if row.embedding is None]
+                already_embedded = len(ordered_rows) - len(pending_rows)
+                processed += already_embedded
+                if not pending_rows:
+                    if _should_log_embed_progress(processed, total_jobs, last_logged):
+                        logger.info("[EMBED] Encoded %d/%d persisted jobs", processed, total_jobs)
+                        last_logged = processed
+                        log_rss(logger, "embed_progress", encoded=processed, total=total_jobs)
+                    if update_progress:
+                        await update_progress(
+                            phase="embedding",
+                            phase_num=0,
+                            total_phases=1,
+                            jobs_found=total_jobs,
+                            message=f"Embedding jobs: {processed}/{total_jobs}",
+                        )
+                    continue
+                descriptions = [row.description or "" for row in pending_rows]
                 raw_skills_list = extract_skills_from_texts(descriptions, cfg)
                 chunk_specs: list[tuple[str, str, str]] = []
-                for row, raw_skills in zip(ordered_rows, raw_skills_list):
+                for row, raw_skills in zip(pending_rows, raw_skills_list):
                     canonical_skills = sorted(canon.canonicalize(raw_skills))
                     job_text = build_job_embedding_text(
                         title=row.title or "",
@@ -236,7 +203,7 @@ async def _embed_new_jobs(
                     await store_job_embeddings(db, job_embedding_rows)
                     await db.commit()
 
-                processed += len(ordered_rows)
+                processed += len(pending_rows)
                 if _should_log_embed_progress(processed, total_jobs, last_logged):
                     logger.info("[EMBED] Encoded %d/%d persisted jobs", processed, total_jobs)
                     last_logged = processed
@@ -249,7 +216,7 @@ async def _embed_new_jobs(
                         jobs_found=total_jobs,
                         message=f"Embedding jobs: {processed}/{total_jobs}",
                     )
-                del rows, ordered_rows, rows_by_url, descriptions, raw_skills_list, chunk_specs
+                del rows, ordered_rows, pending_rows, rows_by_url, descriptions, raw_skills_list, chunk_specs
                 if "vecs" in locals():
                     del vecs
                 gc.collect()
@@ -331,17 +298,11 @@ async def process_run(
                 return
             if run_check.status == "cancelled" or run_check.cancel_requested:
                 if run_check.cancel_requested and claim_token is not None:
-                    await _update_run_row(
+                    await mark_run_cancelled(
+                        _update_run_row,
                         session_factory,
                         run_id,
                         claim_token=claim_token,
-                        values={
-                            "status": "cancelled",
-                            "finished_at": datetime.now(timezone.utc),
-                            "claim_token": None,
-                            "claimed_by": None,
-                            "lease_expires_at": None,
-                        },
                     )
                 logger.info("Run %s not found or cancelled before starting, skipping", run_id)
                 return
@@ -368,45 +329,19 @@ async def process_run(
             config_overrides = profile.config_overrides if profile else None
             ctx = build_context(user_id=user_id, resume_text=resume_text, config_overrides=config_overrides)
             cfg = ctx.config
-
-            from batch.query_plan_cache import get_cached_queries
-            from batch.scraper import ScraperConfig, scrape, raw_job_to_dict
-
-            if mode == "quick":
-                scraper_max_terms = 1
-                scraper_hours_old = 24
-            else:
-                scraper_max_terms = profile.scraper_max_terms if profile else None
-                scraper_hours_old = profile.scraper_hours_old or 168  # 7 days
-            scraper_cfg = ScraperConfig.from_env(title_blocklist=(config_overrides or {}).get("title_blocklist", []))
-            scraper_cfg.hours_old = scraper_hours_old
-            if mode == "quick":
-                scraper_cfg.sources = ["indeed"]
-            if profile:
-                candidate_profile = build_candidate_profile(profile=profile, resume_text=resume_text, cfg=cfg)
-                profile_fingerprint = str(candidate_profile.get("profile_fingerprint") or candidate_profile.get("profile_cache_key") or "")
-                queries = await get_cached_queries(
-                    db,
-                    profile=profile,
-                    profile_fingerprint=profile_fingerprint,
-                    search_window_days=max(1, scraper_hours_old // 24),
-                    source_filter=",".join(sorted(scraper_cfg.sources or [])),
-                    max_terms=scraper_max_terms or settings.scraper_max_terms,
-                )
-            else:
-                queries = []
             async def _update_progress(**kwargs):
                 await _update_run_row(
                     session_factory,
                     run_id,
                     claim_token=claim_token,
                     values={
-                        "progress": _merge_run_progress(
+                        "progress": merge_run_progress(
                             mode,
                             force_scrape,
                             disable_scraping,
                             auto_refresh=auto_refresh,
                             scrape_executed=scrape_executed,
+                            scrape_reason=scrape_reason,
                             **kwargs,
                         ),
                         "last_heartbeat_at": datetime.now(timezone.utc),
@@ -414,195 +349,109 @@ async def process_run(
                     },
                 )
 
-            now = datetime.now(timezone.utc)
-            skip_scrape = disable_scraping
-            scrape_reason = "forced" if force_scrape else "manual_default"
-            if disable_scraping:
-                scrape_reason = "disabled"
-                logger.info("Run %s skipping scrape because disable_scraping=true", run_id)
+            if mode == "quick":
+                scraper_max_terms = 1
+                scraper_hours_old = 24
             else:
-                if auto_refresh and not force_scrape:
-                    if mode == "full":
-                        deep_scan_cutoff = now - timedelta(hours=48)
-                        recent_runs_result = await db.execute(
-                            select(Run).where(
-                                Run.user_id == user_id,
-                                Run.status == "success",
-                                Run.finished_at >= deep_scan_cutoff,
-                                Run.id != run_id,
-                            ).order_by(Run.finished_at.desc()).limit(20)
-                        )
-                        recent_runs = recent_runs_result.scalars().all()
-                        skip_scrape = any(
-                            recent_run.mode == "full"
-                            and isinstance(recent_run.progress, dict)
-                            and recent_run.progress.get("scrape_executed") is True
-                            for recent_run in recent_runs
-                        )
-                        scrape_threshold_hours = 48
-                    else:
-                        scrape_threshold_hours = 1
-                        scrape_cutoff = now - timedelta(hours=scrape_threshold_hours)
-                        recent_scrape = await db.execute(
-                            select(Run.id).where(
-                                Run.user_id == user_id,
-                                Run.status == "success",
-                                Run.scrape_count.is_not(None),
-                                Run.finished_at >= scrape_cutoff,
-                                Run.id != run_id,
-                            ).limit(1)
-                        )
-                        skip_scrape = recent_scrape.scalar_one_or_none() is not None
-                    if skip_scrape:
-                        scrape_reason = "recent_auto_refresh"
-            if skip_scrape:
-                logger.info(
-                    "Run %s skipping scrape%s",
+                scraper_max_terms = profile.scraper_max_terms if profile else None
+                scraper_hours_old = profile.scraper_hours_old or 168  # 7 days
+            from batch.scraper import ScraperConfig
+            scraper_cfg = ScraperConfig.from_env(title_blocklist=(config_overrides or {}).get("title_blocklist", []))
+            scraper_cfg.hours_old = scraper_hours_old
+            if mode == "quick":
+                scraper_cfg.sources = ["indeed"]
+            candidate_profile = build_candidate_profile(profile=profile, resume_text=resume_text, cfg=cfg) if profile else {}
+
+            async def _progress_writer(**kwargs):
+                await _update_run_row(
+                    session_factory,
                     run_id,
-                    "" if disable_scraping else f" - recent scrape within {scrape_threshold_hours}h threshold",
+                    claim_token=claim_token,
+                    values={
+                        "progress": merge_run_progress(
+                            mode,
+                            force_scrape,
+                            disable_scraping,
+                            auto_refresh=auto_refresh,
+                            **kwargs,
+                        ),
+                        "last_heartbeat_at": datetime.now(timezone.utc),
+                        "lease_expires_at": _lease_until(),
+                    },
                 )
 
-            scrape_count = 0
-            freshly_scraped_job_urls = None
-            if queries and not skip_scrape:
-                scrape_executed = True
-                scrape_reason = "executed"
-                config = scraper_cfg
-
-                stop_state = await _check_run_stop_state(session_factory, run_id, claim_token=claim_token)
-                if stop_state:
-                    if stop_state == "cancel_requested":
-                        await _update_run_row(
-                            session_factory,
-                            run_id,
-                            claim_token=claim_token,
-                            values={
-                                "status": "cancelled",
-                                "finished_at": datetime.now(timezone.utc),
-                                "claim_token": None,
-                                "claimed_by": None,
-                                "lease_expires_at": None,
-                            },
-                        )
-                    logger.info("Run %s stopped before scraping (%s)", run_id, stop_state)
-                    return
-
-                async def _persist_jobs(jobs):
-                    from sqlalchemy.dialects.postgresql import insert as pg_insert
-                    from domain.job_profile import build_job_profile
-                    from domain.role_clusters import infer_clusters_from_job_text
-                    # Quality filter: skip stub jobs (no title or very short description)
-                    jobs = [j for j in jobs if j.title and len(j.description or "") >= 20]
-                    if not jobs:
-                        return
-                    async with session_factory() as pdb:
-                        batch_size = 2000
-                        for i in range(0, len(jobs), batch_size):
-                            batch = jobs[i:i + batch_size]
-                            values = [raw_job_to_dict(job) for job in batch]
-                            for v in values:
-                                v["role_clusters"] = sorted(
-                                    infer_clusters_from_job_text(v.get("title"), v.get("description")) - {"general"}
-                                )
-                                v["job_profile"] = build_job_profile(
-                                    title=v.get("title"),
-                                    company=v.get("company"),
-                                    description=v.get("description"),
-                                    location=v.get("location"),
-                                    site=v.get("site"),
-                                    date_posted=v.get("date_posted"),
-                                    role_clusters=v["role_clusters"],
-                                    cfg=cfg,
-                                )
-                            insert_stmt = pg_insert(JobRaw).values(values)
-                            stmt = (
-                                insert_stmt
-                                .on_conflict_do_update(
-                                    index_elements=["job_url"],
-                                    set_={
-                                        "title": insert_stmt.excluded.title,
-                                        "company": insert_stmt.excluded.company,
-                                        "description": insert_stmt.excluded.description,
-                                        "location": insert_stmt.excluded.location,
-                                        "site": insert_stmt.excluded.site,
-                                        "date_posted": insert_stmt.excluded.date_posted,
-                                        "role_clusters": insert_stmt.excluded.role_clusters,
-                                        "job_profile": insert_stmt.excluded.job_profile,
-                                        "ingested_at": insert_stmt.excluded.ingested_at,
-                                    },
-                                )
-                            )
-                            await pdb.execute(stmt)
-                        await pdb.commit()
-
-                t_scrape = time.monotonic()
-                scraped_job_urls = await scrape(
-                    queries,
-                    config,
-                    on_progress=_update_progress,
-                    on_persist=_persist_jobs,
+            try:
+                scrape_result = await execute_scrape_pipeline(
+                    session_factory=session_factory,
                     db=db,
-                    return_mode="urls",
+                    run_id=run_id,
+                    user_id=user_id,
+                    mode=mode,
+                    force_scrape=force_scrape,
+                    disable_scraping=disable_scraping,
+                    auto_refresh=auto_refresh,
+                    profile=profile,
+                    resume_text=resume_text,
+                    config_overrides=config_overrides,
+                    candidate_profile=candidate_profile,
+                    cfg=cfg,
+                    scraper_cfg=scraper_cfg,
+                    scraper_max_terms=scraper_max_terms or settings.scraper_max_terms,
+                    scraper_hours_old=scraper_hours_old,
+                    claim_token=claim_token,
+                    progress_writer=_progress_writer,
+                    check_run_stop_state=_check_run_stop_state,
+                    embed_new_jobs=_embed_new_jobs,
                 )
-                logger.info("Run %s scrape done", run_id,
-                            extra={"run_id": run_id, "phase": "scrape",
-                                   "duration_s": round(time.monotonic() - t_scrape, 1),
-                                   "jobs_found": len(scraped_job_urls)})
-                log_rss(logger, "after_scrape", run_id=run_id, jobs_found=len(scraped_job_urls))
+            except ScrapePipelineStopRequested as stop_exc:
+                if stop_exc.state == "cancel_requested":
+                    await mark_run_cancelled(
+                        _update_run_row,
+                        session_factory,
+                        run_id,
+                        claim_token=claim_token,
+                    )
+                logger.info("Run %s stopped during scraping (%s)", run_id, stop_exc.state)
+                return
 
-                stop_state = await _check_run_stop_state(session_factory, run_id, claim_token=claim_token)
-                if stop_state:
-                    if stop_state == "cancel_requested":
-                        await _update_run_row(
-                            session_factory,
-                            run_id,
-                            claim_token=claim_token,
-                            values={
-                                "status": "cancelled",
-                                "finished_at": datetime.now(timezone.utc),
-                                "claim_token": None,
-                                "claimed_by": None,
-                                "lease_expires_at": None,
-                            },
-                        )
-                    logger.info("Run %s stopped after scraping (%s)", run_id, stop_state)
-                    return
+            scrape_executed = scrape_result.scrape_executed
+            scrape_reason = scrape_result.scrape_reason
+            scrape_count = scrape_result.scrape_count
+            freshly_scraped_job_urls = scrape_result.freshly_scraped_job_urls
+            rerank_corpus_meta: dict[str, str | int] | None = scrape_result.rerank_corpus_meta
 
-                scrape_count = len(scraped_job_urls)
-
-                # Track URLs of newly scraped jobs for ranking against fresh results only
-                freshly_scraped_job_urls = scraped_job_urls if scraped_job_urls else None
+            if disable_scraping and not freshly_scraped_job_urls:
+                freshly_scraped_job_urls, rerank_corpus_meta = await load_rerank_corpus_job_urls(
+                    db,
+                    user_id=user_id,
+                    mode=mode,
+                    exclude_run_id=run_id,
+                )
                 if freshly_scraped_job_urls:
-                    logger.info("Run %s will rank against %d freshly scraped job URLs (filtered mode)",
-                                run_id, len(freshly_scraped_job_urls))
+                    logger.info(
+                        "Run %s rerank-only mode resolved %d jobs from %s",
+                        run_id,
+                        len(freshly_scraped_job_urls),
+                        rerank_corpus_meta.get("corpus_source") if rerank_corpus_meta else "unknown",
+                    )
+                else:
+                    rerank_corpus_meta = corpus_progress(
+                        corpus_source="empty_existing_corpus",
+                        corpus_job_count=0,
+                    )
+                    logger.info("Run %s rerank-only mode found no existing corpus to rescore", run_id)
 
-                if scraped_job_urls:
-                    t_embed = time.monotonic()
-                    await _embed_new_jobs(db, scraped_job_urls, update_progress=_update_progress)
-                    logger.info("Run %s embed done", run_id,
-                                extra={"run_id": run_id, "phase": "embed",
-                                       "duration_s": round(time.monotonic() - t_embed, 1),
-                                       "jobs": len(scraped_job_urls)})
-                    log_rss(logger, "after_embed", run_id=run_id, jobs=len(scraped_job_urls))
-                    del scraped_job_urls
-                    release_memory(logger, "after_embed_release", run_id=run_id)
-                gc.collect()
-                release_memory(logger, "after_scrape_cleanup", run_id=run_id)
+            if rerank_corpus_meta is None and not freshly_scraped_job_urls:
+                rerank_corpus_meta = corpus_progress(corpus_source="default_rank_scope")
 
             stop_state = await _check_run_stop_state(session_factory, run_id, claim_token=claim_token)
             if stop_state:
                 if stop_state == "cancel_requested":
-                    await _update_run_row(
+                    await mark_run_cancelled(
+                        _update_run_row,
                         session_factory,
                         run_id,
                         claim_token=claim_token,
-                        values={
-                            "status": "cancelled",
-                            "finished_at": datetime.now(timezone.utc),
-                            "claim_token": None,
-                            "claimed_by": None,
-                            "lease_expires_at": None,
-                        },
                     )
                 logger.info("Run %s stopped before ranking (%s)", run_id, stop_state)
                 return
@@ -614,7 +463,7 @@ async def process_run(
                 values={
                     "status": "ranking",
                     "scrape_count": scrape_count,
-                    "progress": _merge_run_progress(
+                    "progress": merge_run_progress(
                         mode,
                         force_scrape,
                         disable_scraping,
@@ -625,6 +474,8 @@ async def process_run(
                         phase_num=1,
                         total_phases=1,
                         jobs_found=scrape_count,
+                        rerank_corpus_jobs=len(freshly_scraped_job_urls or []),
+                        **(rerank_corpus_meta or {}),
                         message="Ranking jobs...",
                     ),
                     "last_heartbeat_at": datetime.now(timezone.utc),
@@ -635,45 +486,35 @@ async def process_run(
 
             t_rank = time.monotonic()
             try:
-                _scorer_version = os.environ.get("SCORER_VERSION", "v2").lower()
-                if _scorer_version == "v4":
-                    from ranking.v4.db_scorer import score_jobs_for_user
-                else:
-                    from batch.ranker import score_jobs_for_user
-                logger.info("Using scorer version: %s", _scorer_version, extra={"run_id": run_id})
+                score_jobs_for_user = _get_score_jobs_for_user()
+                logger.info("Using scorer version: v4", extra={"run_id": run_id})
+                score_kwargs = dict(
+                    db=db,
+                    user_id=user_id,
+                    resume_text=resume_text,
+                    distilled_text=distilled_text,
+                    config_overrides=config_overrides,
+                    job_urls=freshly_scraped_job_urls,
+                    preserve_corpus=disable_scraping,
+                )
                 ranked_df = await asyncio.wait_for(
-                    score_jobs_for_user(
-                        db=db,
-                        user_id=user_id,
-                        resume_text=resume_text,
-                        distilled_text=distilled_text,
-                        config_overrides=config_overrides,
-                        job_urls=freshly_scraped_job_urls,
-                    ),
+                    score_jobs_for_user(**score_kwargs),
                     timeout=600,  # 10 min max
                 )
             except asyncio.TimeoutError:
                 logger.error("Run %s ranking timed out after 600s", run_id)
-                await _update_run_row(
+                await mark_run_failed(
+                    _update_run_row,
                     session_factory,
                     run_id,
+                    mode=mode,
+                    force_scrape=force_scrape,
+                    disable_scraping=disable_scraping,
+                    error="TimeoutError: Ranking timed out after 600s",
                     claim_token=claim_token,
-                    values={
-                        "status": "failed",
-                        "finished_at": datetime.now(timezone.utc),
-                        "progress": _run_progress_meta(
-                            mode,
-                            force_scrape,
-                            disable_scraping,
-                            auto_refresh=auto_refresh,
-                            scrape_executed=scrape_executed,
-                            scrape_reason=scrape_reason,
-                        ),
-                        "error": "TimeoutError: Ranking timed out after 600s",
-                        "claim_token": None,
-                        "claimed_by": None,
-                        "lease_expires_at": None,
-                    },
+                    auto_refresh=auto_refresh,
+                    scrape_executed=scrape_executed,
+                    scrape_reason=scrape_reason,
                 )
                 raise
             logger.info("Run %s ranking done in %.1fs, %d jobs",
@@ -683,98 +524,22 @@ async def process_run(
             stop_state = await _check_run_stop_state(session_factory, run_id, claim_token=claim_token)
             if stop_state:
                 if stop_state == "cancel_requested":
-                    await _update_run_row(
+                    await mark_run_cancelled(
+                        _update_run_row,
                         session_factory,
                         run_id,
                         claim_token=claim_token,
-                        values={
-                            "status": "cancelled",
-                            "finished_at": datetime.now(timezone.utc),
-                            "claim_token": None,
-                            "claimed_by": None,
-                            "lease_expires_at": None,
-                        },
                     )
                 logger.info("Run %s stopped before saving results (%s)", run_id, stop_state)
                 return
 
-            # Normalize scorer output: V2 uses seniority_score_dim, V4 uses seniority_score
-            if "seniority_score_dim" in ranked_df.columns and "seniority_score" not in ranked_df.columns:
-                ranked_df = ranked_df.rename(columns={"seniority_score_dim": "seniority_score"})
-
-            insert_batch: list[dict] = []
-            for row in ranked_df.itertuples(index=False):
-                insert_batch.append({
-                    "run_id": run_id,
-                    "user_id": user_id,
-                    "job_id": row.id,
-                    "semantic_score": float(row.semantic_score or 0),
-                    "skills_score": float(row.skills_score or 0),
-                    "company_score": float(row.company_score or 0),
-                    "seniority_score": float(row.seniority_score or 0),
-                    "location_score": float(row.location_score or 0),
-                    "recency_score": float(row.recency_score or 0),
-                    "final_score": float(row.final_score or 0),
-                    "title_relevance_score": float(getattr(row, "title_relevance_score", None) or 0),
-                    "fit_band": getattr(row, "fit_band", None),
-                    "confidence_band": getattr(row, "confidence_band", None),
-                    "explanation_summary": getattr(row, "explanation_summary", None),
-                    "match_report": getattr(row, "match_report", None),
-                    "verification_report": getattr(row, "verification_report", None),
-                    "company_tier": str(row.company_tier or ""),
-                    "is_contract": bool(row.is_contract),
-                })
-                if len(insert_batch) >= 500:
-                    await db.execute(
-                        pg_insert(JobResult).values(insert_batch).on_conflict_do_update(
-                            constraint="uq_job_results_user_job",
-                            set_={
-                                "run_id": pg_insert(JobResult).excluded.run_id,
-                                "semantic_score": pg_insert(JobResult).excluded.semantic_score,
-                                "skills_score": pg_insert(JobResult).excluded.skills_score,
-                                "company_score": pg_insert(JobResult).excluded.company_score,
-                                "seniority_score": pg_insert(JobResult).excluded.seniority_score,
-                                "location_score": pg_insert(JobResult).excluded.location_score,
-                                "recency_score": pg_insert(JobResult).excluded.recency_score,
-                                "final_score": pg_insert(JobResult).excluded.final_score,
-                                "title_relevance_score": pg_insert(JobResult).excluded.title_relevance_score,
-                                "fit_band": pg_insert(JobResult).excluded.fit_band,
-                                "confidence_band": pg_insert(JobResult).excluded.confidence_band,
-                                "explanation_summary": pg_insert(JobResult).excluded.explanation_summary,
-                                "match_report": pg_insert(JobResult).excluded.match_report,
-                                "verification_report": pg_insert(JobResult).excluded.verification_report,
-                                "company_tier": pg_insert(JobResult).excluded.company_tier,
-                                "is_contract": pg_insert(JobResult).excluded.is_contract,
-                            },
-                        )
-                    )
-                    insert_batch.clear()
-            if insert_batch:
-                await db.execute(
-                    pg_insert(JobResult).values(insert_batch).on_conflict_do_update(
-                        constraint="uq_job_results_user_job",
-                        set_={
-                            "run_id": pg_insert(JobResult).excluded.run_id,
-                            "semantic_score": pg_insert(JobResult).excluded.semantic_score,
-                            "skills_score": pg_insert(JobResult).excluded.skills_score,
-                            "company_score": pg_insert(JobResult).excluded.company_score,
-                            "seniority_score": pg_insert(JobResult).excluded.seniority_score,
-                            "location_score": pg_insert(JobResult).excluded.location_score,
-                            "recency_score": pg_insert(JobResult).excluded.recency_score,
-                            "final_score": pg_insert(JobResult).excluded.final_score,
-                            "title_relevance_score": pg_insert(JobResult).excluded.title_relevance_score,
-                            "fit_band": pg_insert(JobResult).excluded.fit_band,
-                            "confidence_band": pg_insert(JobResult).excluded.confidence_band,
-                            "explanation_summary": pg_insert(JobResult).excluded.explanation_summary,
-                            "match_report": pg_insert(JobResult).excluded.match_report,
-                            "verification_report": pg_insert(JobResult).excluded.verification_report,
-                            "company_tier": pg_insert(JobResult).excluded.company_tier,
-                            "is_contract": pg_insert(JobResult).excluded.is_contract,
-                        },
-                    )
-                )
-                insert_batch.clear()
-            await db.commit()
+            ranked_df = normalize_ranked_df(ranked_df)
+            await persist_ranked_results(
+                db,
+                ranked_df=ranked_df,
+                run_id=run_id,
+                user_id=user_id,
+            )
             release_memory(logger, "result_rows_release", run_id=run_id)
 
             await _update_run_row(
@@ -785,13 +550,23 @@ async def process_run(
                     "status": "success",
                     "finished_at": datetime.now(timezone.utc),
                     "job_count": len(ranked_df),
-                    "progress": _run_progress_meta(
+                    "progress": run_progress_meta(
                         mode,
                         force_scrape,
                         disable_scraping,
                         auto_refresh=auto_refresh,
                         scrape_executed=scrape_executed,
                         scrape_reason=scrape_reason,
+                    )
+                    | (rerank_corpus_meta or {})
+                    | corpus_progress(
+                        scored_job_count=len(ranked_df),
+                        shown_job_count=len(ranked_df),
+                    )
+                    | (
+                        {"rerank_corpus_jobs": len(freshly_scraped_job_urls or [])}
+                        if disable_scraping
+                        else {}
                     ),
                     "error": None,
                     "claim_token": None,
@@ -817,26 +592,18 @@ async def process_run(
             logger.warning("Run %s transient failure", run_id, exc_info=True)
             try:
                 await db.rollback()
-                await _update_run_row(
+                await mark_run_failed(
+                    _update_run_row,
                     session_factory,
                     run_id,
+                    mode=mode,
+                    force_scrape=force_scrape,
+                    disable_scraping=disable_scraping,
+                    error=_format_run_error(exc),
                     claim_token=claim_token,
-                    values={
-                        "status": "failed",
-                        "finished_at": datetime.now(timezone.utc),
-                        "progress": _run_progress_meta(
-                            mode,
-                            force_scrape,
-                            disable_scraping,
-                            auto_refresh=auto_refresh,
-                            scrape_executed=scrape_executed,
-                            scrape_reason=scrape_reason,
-                        ),
-                        "error": _format_run_error(exc),
-                        "claim_token": None,
-                        "claimed_by": None,
-                        "lease_expires_at": None,
-                    },
+                    auto_refresh=auto_refresh,
+                    scrape_executed=scrape_executed,
+                    scrape_reason=scrape_reason,
                 )
             except Exception:
                 logger.warning("Run %s: failed to update status after transient error", run_id, exc_info=True)
@@ -845,26 +612,18 @@ async def process_run(
             logger.exception("Run %s failed", run_id)
             try:
                 await db.rollback()
-                await _update_run_row(
+                await mark_run_failed(
+                    _update_run_row,
                     session_factory,
                     run_id,
+                    mode=mode,
+                    force_scrape=force_scrape,
+                    disable_scraping=disable_scraping,
+                    error=_format_run_error(exc),
                     claim_token=claim_token,
-                    values={
-                        "status": "failed",
-                        "finished_at": datetime.now(timezone.utc),
-                        "progress": _run_progress_meta(
-                            mode,
-                            force_scrape,
-                            disable_scraping,
-                            auto_refresh=auto_refresh,
-                            scrape_executed=scrape_executed,
-                            scrape_reason=scrape_reason,
-                        ),
-                        "error": _format_run_error(exc),
-                        "claim_token": None,
-                        "claimed_by": None,
-                        "lease_expires_at": None,
-                    },
+                    auto_refresh=auto_refresh,
+                    scrape_executed=scrape_executed,
+                    scrape_reason=scrape_reason,
                 )
             except Exception:
                 logger.warning("Run %s: failed to update status after error", run_id, exc_info=True)

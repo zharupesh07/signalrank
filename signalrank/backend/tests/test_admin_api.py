@@ -154,6 +154,33 @@ async def test_list_runs_returns_expected_shape(client, admin_token):
     assert isinstance(r.json(), list)
 
 
+async def test_list_runs_exposes_corpus_metadata(client, admin_token, db: AsyncSession):
+    admin_user = (await db.execute(select(User).where(User.email == "admin@test.com"))).scalar_one()
+    run = Run(
+        user_id=admin_user.id,
+        status="success",
+        job_count=120,
+        scrape_count=15,
+        progress={
+            "run_kind": "manual_refresh",
+            "corpus_source": "fresh_scrape",
+            "corpus_job_count": 120,
+            "scored_job_count": 120,
+            "shown_job_count": 120,
+        },
+    )
+    db.add(run)
+    await db.commit()
+
+    r = await client.get("/api/admin/runs", headers={"Authorization": f"Bearer {admin_token}"})
+    assert r.status_code == 200
+    payload = next(item for item in r.json() if item["run_id"] == run.id)
+    assert payload["corpus_source"] == "fresh_scrape"
+    assert payload["corpus_count"] == 120
+    assert payload["scored_count"] == 120
+    assert payload["shown_count"] == 120
+
+
 async def test_reset_jobs_clears_user_specific_feed_state_only(client, admin_token, regular_token, db: AsyncSession):
     me = await client.get("/api/profile", headers={"Authorization": f"Bearer {regular_token}"})
     user_id = me.json()["user_id"]

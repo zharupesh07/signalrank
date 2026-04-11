@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     scraper_default_country: str = "India"
     scraper_max_terms: int = 1
     linkedin_max_queries: int = 0
-    ranker_max_candidates: int = 2000
+    ranker_max_candidates: int = 10000
     ranker_max_description_chars: int = 1200
     access_token_expire_minutes: int = 60 * 24 * 7  # 7 days
 

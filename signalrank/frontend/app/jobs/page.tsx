@@ -1,389 +1,69 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useMemo } from "react";
 import { useSession } from "next-auth/react";
 import {
   useReactTable,
   getCoreRowModel,
   flexRender,
-  type SortingState,
 } from "@tanstack/react-table";
-import { api } from "@/lib/api";
-import { scoreColor, parseApiDate } from "@/lib/formatting";
-import type { Job } from "@/types";
-import { getColumns, TIER_COLORS } from "./columns";
+import { getColumns } from "./columns";
 import { useToast } from "@/components/toast";
 import { TableRowSkeleton } from "@/components/skeleton";
-import { ExternalLink, ChevronUp, ChevronDown, Search, X, Plus, ChevronRight, ChevronLeft, SlidersHorizontal, XCircle, Archive, Loader2 } from "lucide-react";
-
-const TIER_DESCRIPTIONS: Record<string, string> = {
-  tier_ss: "SS — Elite (FAANG, top-5 unicorns). Best comp & brand.",
-  tier_s:  "S — Excellent (top startups, strong mid-caps). Great comp.",
-  tier_a:  "A — Strong (solid growth-stage companies). Good comp.",
-  tier_b:  "B — Decent (stable mid-size). Market comp.",
-  tier_c:  "C — Fair (small or unknown companies).",
-  tier_d:  "D — Below target (low tier or uncertain).",
-};
-
-
-type JobsSortField =
-  | "final_score"
-  | "semantic_score"
-  | "skills_score"
-  | "company_score"
-  | "seniority_score"
-  | "location_score"
-  | "recency_score"
-  | "date_posted";
-
-function getApiSort(sorting: SortingState): { sort: JobsSortField; sortDir: "asc" | "desc" } {
-  const current = sorting[0];
-  if (!current) {
-    return { sort: "final_score", sortDir: "desc" };
-  }
-  const allowed = new Set<JobsSortField>([
-    "final_score",
-    "semantic_score",
-    "skills_score",
-    "company_score",
-    "seniority_score",
-    "location_score",
-    "recency_score",
-    "date_posted",
-  ]);
-  if (!allowed.has(current.id as JobsSortField)) {
-    return { sort: "final_score", sortDir: "desc" };
-  }
-  return {
-    sort: current.id as JobsSortField,
-    sortDir: current.desc ? "desc" : "asc",
-  };
-}
-
-const TIERS = [
-  { value: "tier_ss", label: "Tier SS" },
-  { value: "tier_s", label: "Tier S" },
-  { value: "tier_a", label: "Tier A" },
-  { value: "tier_b", label: "Tier B" },
-  { value: "tier_c", label: "Tier C" },
-  { value: "tier_d", label: "Tier D" },
-  { value: "unknown", label: "Unknown" },
-];
-
-interface Filters {
-  minScore: number;
-  tiers: string[];
-  jobType: "all" | "fte" | "contract";
-  sites: string[];
-  dateRange: "any" | "24h" | "week" | "month";
-}
-
-const DEFAULT_FILTERS: Filters = {
-  minScore: 0,
-  tiers: [],
-  jobType: "all",
-  sites: [],
-  dateRange: "any",
-};
-
-const JOB_PRESETS = [
-  {
-    key: "best",
-    label: "Best Matches",
-    apply: () => ({
-      filters: { ...DEFAULT_FILTERS, minScore: 70 },
-      search: "",
-      sorting: [{ id: "final_score", desc: true }] as SortingState,
-      showArchived: true,
-    }),
-  },
-  {
-    key: "fresh",
-    label: "Fresh",
-    apply: () => ({
-      filters: { ...DEFAULT_FILTERS, dateRange: "week" as const },
-      search: "",
-      sorting: [{ id: "date_posted", desc: true }] as SortingState,
-      showArchived: true,
-    }),
-  },
-  {
-    key: "top-companies",
-    label: "Top Companies",
-    apply: () => ({
-      filters: { ...DEFAULT_FILTERS, tiers: ["tier_ss", "tier_s", "tier_a"] },
-      search: "",
-      sorting: [{ id: "final_score", desc: true }] as SortingState,
-      showArchived: true,
-    }),
-  },
-  {
-    key: "no-contract",
-    label: "No Contract",
-    apply: () => ({
-      filters: { ...DEFAULT_FILTERS, jobType: "fte" as const },
-      search: "",
-      sorting: [{ id: "final_score", desc: true }] as SortingState,
-      showArchived: true,
-    }),
-  },
-  {
-    key: "remote",
-    label: "Remote",
-    apply: () => ({
-      filters: { ...DEFAULT_FILTERS },
-      search: "remote",
-      sorting: [{ id: "final_score", desc: true }] as SortingState,
-      showArchived: true,
-    }),
-  },
-];
-
-function countActiveFilters(filters: Filters): number {
-  let n = 0;
-  if (filters.minScore > 0) n++;
-  if (filters.tiers.length > 0) n++;
-  if (filters.jobType !== "all") n++;
-  if (filters.sites.length > 0) n++;
-  if (filters.dateRange !== "any") n++;
-  return n;
-}
-
-function toggleItem<T>(arr: T[], item: T): T[] {
-  return arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item];
-}
+import { ChevronUp, ChevronDown, Search, X, Archive, Loader2 } from "lucide-react";
+import {
+  JOB_PRESETS,
+  countActiveFilters,
+} from "./jobs-config";
+import {
+  JobDetailPanel,
+  JobsFiltersSidebar,
+  JobsHeader,
+  JobsPagination,
+  JobsPresetBar,
+} from "./jobs-ui";
+import { useJobsPageData } from "./use-jobs-page-data";
 
 export default function JobsPage() {
   const { data: session } = useSession();
   const token = (session as { accessToken?: string })?.accessToken ?? "";
   const isAdmin = Boolean((session as { isAdmin?: boolean })?.isAdmin);
   const { toast } = useToast();
-
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [total, setTotal] = useState(0);
-  const [runTotal, setRunTotal] = useState(0);
-  const [newGoodMatches, setNewGoodMatches] = useState(0);
-  const [availableSites, setAvailableSites] = useState<string[]>([]);
-  const [page, setPage] = useState(1);
-  const [sorting, setSorting] = useState<SortingState>([{ id: "final_score", desc: true }]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [tracked, setTracked] = useState<Set<string>>(new Set());
-  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [selectedJobLoading, setSelectedJobLoading] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
-  const [pageSize, setPageSize] = useState(50);
-  const [showArchived, setShowArchived] = useState(true);
-  const [archiveStatus, setArchiveStatus] = useState<{ total: number; done: number; pending: number; running: number } | null>(null);
-  const [archiving, setArchiving] = useState(false);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("signalrank-sidebar-collapsed");
-    if (saved == null) {
-      setCollapsed(true);
-      localStorage.setItem("signalrank-sidebar-collapsed", "true");
-      return;
-    }
-    if (saved === "true") setCollapsed(true);
-  }, []);
-
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 300);
-    return () => clearTimeout(t);
-  }, [search]);
-
-  useEffect(() => {
-    if (!token) {
-      setTracked(new Set());
-      return;
-    }
-    api.applications.trackedJobIds(token).then((ids) =>
-      setTracked(new Set(ids))
-    ).catch(() => null);
-  }, [token]);
-
-  useEffect(() => {
-    if (!token) {
-      setJobs([]);
-      setTotal(0);
-      setRunTotal(0);
-      setNewGoodMatches(0);
-      setAvailableSites([]);
-      setLoading(false);
-      return;
-    }
-  }, [token]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, filters, showArchived, pageSize, sorting]);
-
-  const loadJobs = useCallback(async () => {
-    if (!token) return;
-    const hasJobs = jobs.length > 0;
-    if (hasJobs) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-    try {
-      const { sort, sortDir } = getApiSort(sorting);
-      const response = await api.jobs.list(token, {
-        page,
-        limit: pageSize,
-        sort,
-        sortDir,
-        search: debouncedSearch,
-        showArchived,
-        minScore: filters.minScore,
-        tiers: filters.tiers,
-        jobType: filters.jobType,
-        sites: filters.sites,
-        dateRange: filters.dateRange,
-      });
-      setJobs(response.jobs);
-      setTotal(response.total);
-      setRunTotal(response.run_total);
-      setNewGoodMatches(response.new_good_matches);
-      setAvailableSites(response.available_sites);
-      setSelectedJob((current) => {
-        if (!current) return null;
-        const updated = response.jobs.find((job) => job.id === current.id);
-        return updated ? { ...current, ...updated } : current;
-      });
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [token, page, pageSize, debouncedSearch, showArchived, filters, sorting, jobs.length]);
-
-  useEffect(() => {
-    loadJobs().catch(() => { toast("Failed to load jobs", "error"); });
-  }, [loadJobs]);
-
-  const toggleSelectedJob = useCallback(async (job: Job) => {
-    const isSelected = selectedJob?.id === job.id;
-    if (isSelected) {
-      setSelectedJob(null);
-      setSelectedJobLoading(false);
-      return;
-    }
-
-    setSelectedJob(job);
-    if (job.description !== undefined) {
-      setSelectedJobLoading(false);
-      return;
-    }
-
-    setSelectedJobLoading(true);
-    try {
-      const detail = await api.jobs.get(token, job.id);
-      setSelectedJob((current) => (current?.id === job.id ? { ...current, ...detail } : current));
-    } catch {
-      toast("Failed to load job details", "error");
-    } finally {
-      setSelectedJobLoading(false);
-    }
-  }, [selectedJob?.id, toast, token]);
-
-  function toggleCollapsed() {
-    setCollapsed((prev) => {
-      const next = !prev;
-      localStorage.setItem("signalrank-sidebar-collapsed", String(next));
-      return next;
-    });
-  }
-
-  function applyPreset(key: string) {
-    const preset = JOB_PRESETS.find((item) => item.key === key);
-    if (!preset) return;
-    const next = preset.apply();
-    setFilters(next.filters);
-    setSearch(next.search);
-    setDebouncedSearch(next.search);
-    setSorting(next.sorting);
-    setShowArchived(next.showArchived);
-    setPage(1);
-  }
-
-  const trackJob = useCallback(async (job: Job) => {
-    try {
-      await api.applications.create(token, { job_id: job.id, company: job.company, title: job.title, status: "interested", system_score: job.final_score, resume_match_pct: job.semantic_score });
-      setTracked((prev) => new Set(prev).add(job.id));
-      if (job.is_new_find && (job.final_score ?? 0) >= 0.7) {
-        setNewGoodMatches((prev) => Math.max(0, prev - 1));
-      }
-      toast("Added to tracker", "success");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "";
-      if (msg.startsWith("409")) {
-        setTracked((prev) => new Set(prev).add(job.id));
-        if (job.is_new_find && (job.final_score ?? 0) >= 0.7) {
-          setNewGoodMatches((prev) => Math.max(0, prev - 1));
-        }
-        toast("Already tracked", "info");
-      } else {
-        toast(msg || "Failed to track job", "error");
-      }
-    }
-  }, [token, toast]);
-
-  async function triggerArchive() {
-    if (!isAdmin) return;
-    setArchiving(true);
-    try {
-      const res = await api.jobs.archiveUnsuitable(token);
-      toast(`Queued ${res.queued} jobs for evaluation`, "success");
-      pollArchiveStatus();
-    } catch {
-      toast("Failed to start archival", "error");
-    } finally {
-      setArchiving(false);
-    }
-  }
-
-  const pollArchiveStatus = useCallback(() => {
-    if (!isAdmin) return;
-    let delay = 5000;
-    const MAX_DELAY = 60000;
-    const timeoutRef = { current: undefined as ReturnType<typeof setTimeout> | undefined };
-
-    function schedule() {
-      timeoutRef.current = setTimeout(async () => {
-        try {
-          const status = await api.jobs.archiveStatus(token);
-          setArchiveStatus(status);
-          if (status.pending === 0 && status.running === 0 && status.total > 0) {
-            loadJobs().catch(() => null);
-            return;
-          }
-          const multiplier = document.hidden ? 2.0 : 1.5;
-          delay = Math.min(delay * multiplier, MAX_DELAY);
-          schedule();
-        } catch {
-          clearTimeout(timeoutRef.current);
-        }
-      }, document.hidden ? Math.max(delay, 15000) : delay);
-    }
-
-    schedule();
-  }, [isAdmin, token, loadJobs]);
-
-  useEffect(() => {
-    if (!token || !isAdmin) {
-      setArchiveStatus(null);
-      return;
-    }
-    api.jobs.archiveStatus(token).then((s) => {
-      setArchiveStatus(s);
-      if (s.pending > 0 || s.running > 0) pollArchiveStatus();
-    }).catch(() => null);
-  }, [token, isAdmin, pollArchiveStatus]);
-
-  const totalPages = Math.ceil(total / pageSize) || 1;
+  const {
+    applyPreset,
+    archiveStatus,
+    archiving,
+    availableSites,
+    collapsed,
+    filters,
+    jobs,
+    loading,
+    newGoodMatches,
+    page,
+    pageSize,
+    refreshing,
+    resetView,
+    runTotal,
+    search,
+    selectedJob,
+    selectedJobLoading,
+    setFilters,
+    setPage,
+    setPageSize,
+    setSearch,
+    setSelectedJob,
+    setShowArchived,
+    setSorting,
+    showArchived,
+    sorting,
+    toggleCollapsed,
+    toggleSelectedJob,
+    total,
+    totalPages,
+    tracked,
+    trackJob,
+    triggerArchive,
+  } = useJobsPageData({ token, isAdmin, toast });
   const activeFilterCount = countActiveFilters(filters);
 
   const columns = useMemo(
@@ -405,22 +85,12 @@ export default function JobsPage() {
     <div className="pt-14 min-h-screen page-content">
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex items-end justify-between gap-4 mb-5">
-          <div>
-            <div className="section-label mb-1">match explorer</div>
-            <div className="flex items-baseline gap-3">
-              <h1 className="text-xl font-bold text-foreground">All Matches</h1>
-              <span className="text-primary text-sm tabular-nums text-glow-dim">{total}</span>
-              {activeFilterCount > 0 && (
-                <span className="text-[11px] text-muted-foreground">of {runTotal}</span>
-              )}
-            </div>
-            {newGoodMatches > 0 && (
-              <div className="mt-2 inline-flex items-center gap-2 border border-[var(--terminal-green-bright)]/25 bg-[var(--terminal-green-bright)]/8 px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-[var(--terminal-green-bright)]">
-                <span className="tabular-nums font-bold">{newGoodMatches}</span>
-                <span>new good matches ready to review</span>
-              </div>
-            )}
-          </div>
+          <JobsHeader
+            total={total}
+            runTotal={runTotal}
+            activeFilterCount={activeFilterCount}
+            newGoodMatches={newGoodMatches}
+          />
           <div className="flex items-center gap-3">
             {isAdmin && (
               <button
@@ -455,207 +125,29 @@ export default function JobsPage() {
           </div>
         </div>
 
-        <div className="border border-border bg-card p-4 mb-4 space-y-3">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <div className="text-[11px] text-muted-foreground uppercase tracking-[0.15em]">Quick views</div>
-              <div className="text-sm text-muted-foreground mt-1">Start with a preset, then open advanced filters only if you need to narrow further.</div>
-            </div>
-            <button
-              onClick={toggleCollapsed}
-              className="inline-flex items-center gap-1.5 text-[11px] border border-border px-3 py-2 hover:border-primary hover:text-primary transition-colors uppercase tracking-wider"
-            >
-              <SlidersHorizontal size={11} />
-              {collapsed ? "Show Advanced Filters" : "Hide Advanced Filters"}
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {JOB_PRESETS.map((preset) => (
-              <button
-                key={preset.key}
-                onClick={() => applyPreset(preset.key)}
-                className="text-[11px] px-3 py-1.5 border border-border text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors uppercase tracking-wider"
-              >
-                {preset.label}
-              </button>
-            ))}
-            {activeFilterCount > 0 || search || !showArchived ? (
-              <button
-                onClick={() => {
-                  setFilters(DEFAULT_FILTERS);
-                  setSearch("");
-                  setDebouncedSearch("");
-                  setShowArchived(true);
-                  setSorting([{ id: "final_score", desc: true }]);
-                  setPage(1);
-                }}
-                className="text-[11px] px-3 py-1.5 border border-primary/30 text-primary hover:bg-primary hover:text-background transition-colors uppercase tracking-wider"
-              >
-                Reset View
-              </button>
-            ) : null}
-          </div>
-        </div>
+        <JobsPresetBar
+          activeFilterCount={activeFilterCount}
+          collapsed={collapsed}
+          search={search}
+          showArchived={showArchived}
+          onToggleCollapsed={toggleCollapsed}
+          onApplyPreset={applyPreset}
+          onResetView={resetView}
+          presets={JOB_PRESETS.map(({ key, label }) => ({ key, label }))}
+        />
 
         <div className="flex gap-4">
           {/* Sidebar — hidden on mobile */}
-          <aside
-            className="hidden md:block shrink-0 sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto"
-            style={{ width: collapsed ? 40 : 220 }}
-          >
-            {collapsed ? (
-              <button
-                onClick={toggleCollapsed}
-                className="flex flex-col items-center gap-1 w-full pt-3 text-muted-foreground hover:text-primary transition-colors"
-                title={`Advanced filters${activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}`}
-              >
-                <SlidersHorizontal size={14} />
-                <ChevronRight size={12} />
-                {activeFilterCount > 0 && (
-                  <span className="text-[10px] font-bold text-primary tabular-nums">{activeFilterCount}</span>
-                )}
-              </button>
-            ) : (
-              <div className="border border-border bg-card p-3 space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-[var(--fg-muted,#71717a)] uppercase tracking-wide">Advanced Filters</span>
-                  <button
-                    onClick={toggleCollapsed}
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                    title="Collapse"
-                  >
-                    <ChevronLeft size={13} />
-                  </button>
-                </div>
-
-                {activeFilterCount > 0 && (
-                  <button
-                    onClick={() => setFilters(DEFAULT_FILTERS)}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    Reset filters ({activeFilterCount})
-                  </button>
-                )}
-
-                {/* Min Score */}
-                <div>
-                  <div className="text-xs font-semibold text-[var(--fg-muted,#71717a)] uppercase tracking-wide mb-2">
-                    Min Score <span className="tabular-nums text-secondary-foreground normal-case font-normal">{filters.minScore}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={filters.minScore}
-                    onChange={(e) => setFilters((f) => ({ ...f, minScore: Number(e.target.value) }))}
-                    suppressHydrationWarning
-                    className="w-full accent-primary"
-                  />
-                </div>
-
-                <hr className="border-border" />
-
-                {/* Job Type */}
-                <div>
-                  <div className="text-xs font-semibold text-[var(--fg-muted,#71717a)] uppercase tracking-wide mb-2">Job Type</div>
-                  <div className="flex gap-1">
-                    {(["all", "fte", "contract"] as const).map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setFilters((f) => ({ ...f, jobType: t }))}
-                        className="flex-1 text-[10px] py-1 border transition-colors uppercase tracking-wide"
-                        style={{
-                          background: filters.jobType === t ? "var(--primary)" : "transparent",
-                          borderColor: filters.jobType === t ? "var(--primary)" : "var(--muted-foreground)",
-                          color: filters.jobType === t ? "var(--primary-foreground)" : "var(--muted-foreground)",
-                        }}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <hr className="border-border" />
-
-                {/* Company Tier */}
-                <div>
-                  <div className="text-xs font-semibold text-[var(--fg-muted,#71717a)] uppercase tracking-wide mb-2">Tier</div>
-                  <div className="space-y-1">
-                    {TIERS.map((tier) => (
-                      <label key={tier.value || "unknown"} className="flex items-center gap-2 cursor-pointer" title={TIER_DESCRIPTIONS[tier.value] ?? tier.label}>
-                        <input
-                          type="checkbox"
-                          checked={filters.tiers.includes(tier.value)}
-                          onChange={() => setFilters((f) => ({ ...f, tiers: toggleItem(f.tiers, tier.value) }))}
-                          suppressHydrationWarning
-                          className="accent-[#22c55e] w-3 h-3"
-                        />
-                        <span className="text-sm text-foreground">
-                          {tier.label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <hr className="border-border" />
-
-                {/* Date Posted */}
-                <div>
-                  <div className="text-xs font-semibold text-[var(--fg-muted,#71717a)] uppercase tracking-wide mb-2">Date Posted</div>
-                  <select
-                    value={filters.dateRange}
-                    onChange={(e) => setFilters((f) => ({ ...f, dateRange: e.target.value as Filters["dateRange"] }))}
-                    suppressHydrationWarning
-                    className="w-full bg-input border border-muted-foreground/40 text-xs text-foreground px-2 py-1.5 outline-none focus:border-primary transition-colors"
-                  >
-                    <option value="any">Any time</option>
-                    <option value="24h">Last 24h</option>
-                    <option value="week">Last week</option>
-                    <option value="month">Last month</option>
-                  </select>
-                </div>
-
-                {availableSites.length > 0 && (
-                  <>
-                    <hr className="border-border" />
-                    <div>
-                      <div className="text-xs font-semibold text-[var(--fg-muted,#71717a)] uppercase tracking-wide mb-2">Source</div>
-                      <div className="space-y-1">
-                        {availableSites.map((site) => (
-                          <label key={site} className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={filters.sites.includes(site)}
-                              onChange={() => setFilters((f) => ({ ...f, sites: toggleItem(f.sites, site) }))}
-                              suppressHydrationWarning
-                              className="accent-[#22c55e] w-3 h-3"
-                            />
-                            <span className="text-sm text-foreground">{site}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                <hr className="border-border" />
-
-                {/* Show Archived */}
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showArchived}
-                    onChange={() => setShowArchived((v) => !v)}
-                    suppressHydrationWarning
-                    className="accent-[#22c55e] w-3 h-3"
-                  />
-                  <span className="text-xs text-foreground">Show archived</span>
-                </label>
-              </div>
-            )}
-          </aside>
+          <JobsFiltersSidebar
+            collapsed={collapsed}
+            activeFilterCount={activeFilterCount}
+            filters={filters}
+            availableSites={availableSites}
+            showArchived={showArchived}
+            onToggleCollapsed={toggleCollapsed}
+            onSetFilters={setFilters}
+            onSetShowArchived={setShowArchived}
+          />
 
           {/* Main content + detail panel */}
           <div className="flex-1 min-w-0 flex gap-4">
@@ -746,45 +238,14 @@ export default function JobsPage() {
               </table>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>
-                {total === 0
-                  ? "Showing 0"
-                  : `Showing ${((page - 1) * pageSize) + 1}–${Math.min(page * pageSize, total)} of ${total}`}
-              </span>
-              <div className="flex items-center gap-3" suppressHydrationWarning>
-                <div className="flex items-center gap-1 font-mono">
-                  {[25, 50, 100].map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => setPageSize(s)}
-                      className={`px-2 py-1 border transition-colors ${pageSize === s ? "border-primary text-primary font-semibold" : "border-muted-foreground/40 hover:border-primary hover:text-primary"}`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2 font-mono">
-                  <button
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="px-3 py-1.5 border border-muted-foreground/40 hover:border-primary hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    [&lt; prev]
-                  </button>
-                  <span className="px-2">
-                    {page} / {totalPages}
-                  </span>
-                  <button
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page >= totalPages}
-                    className="px-3 py-1.5 border border-muted-foreground/40 hover:border-primary hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    [next &gt;]
-                  </button>
-                </div>
-              </div>
-            </div>
+            <JobsPagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              totalPages={totalPages}
+              onSetPageSize={setPageSize}
+              onSetPage={setPage}
+            />
           </div>
 
           {/* Detail panel backdrop (click to close) */}
@@ -794,126 +255,15 @@ export default function JobsPage() {
 
           {/* Detail panel */}
           {selectedJob && (
-            <div className="w-80 shrink-0 sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto border border-border bg-card space-y-4 p-4 z-40 relative">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="text-xs font-bold text-foreground leading-snug">{selectedJob.title}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{selectedJob.company}</div>
-                </div>
-                <button onClick={() => setSelectedJob(null)} className="text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-0.5">
-                  <XCircle size={14} />
-                </button>
-              </div>
-
-              {/* Score breakdown */}
-              <div className="space-y-2">
-                {[
-                  { label: "Overall", value: selectedJob.final_score },
-                  { label: "Title match", value: selectedJob.title_relevance_score },
-                  { label: "Resume match", value: selectedJob.semantic_score },
-                  { label: "Skills", value: selectedJob.skills_score },
-                  { label: "Company", value: selectedJob.company_score },
-                  { label: "Recency", value: selectedJob.recency_score },
-                ].map(({ label, value }) => {
-                  if (value == null) return null;
-                  const pct = value * 100;
-                  const color = scoreColor(pct);
-                  return (
-                    <div key={label} className="flex items-center gap-2">
-                      <span className="text-[10px] text-muted-foreground w-24 shrink-0">{label}</span>
-                      <div className="flex-1 h-1 bg-muted overflow-hidden">
-                        <div className="h-full" style={{ width: `${pct}%`, background: color }} />
-                      </div>
-                      <span className="text-[10px] tabular-nums w-7 text-right" style={{ color }}>{pct.toFixed(0)}%</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                {selectedJob.company_tier && (
-                  <span
-                    className="text-[10px] px-1.5 py-0.5 border cursor-help"
-                    title={TIER_DESCRIPTIONS[selectedJob.company_tier] ?? "Company tier"}
-                    style={{
-                      color: TIER_COLORS[selectedJob.company_tier] ?? "var(--muted-foreground)",
-                      borderColor: `${TIER_COLORS[selectedJob.company_tier] ?? "var(--muted-foreground)"}60`,
-                    }}
-                  >
-                    {selectedJob.company_tier.replace("tier_", "").toUpperCase()}
-                  </span>
-                )}
-                {selectedJob.is_contract && (
-                  <span className="text-[10px] text-[var(--terminal-yellow)] border border-[var(--terminal-yellow)]/30 px-1.5 py-0.5">CONTRACT</span>
-                )}
-                {selectedJob.is_new_find && (
-                  <span className="text-[10px] text-[var(--terminal-green-bright)] border border-[var(--terminal-green-bright)]/30 px-1.5 py-0.5 uppercase tracking-wider">NEW FIND</span>
-                )}
-                <span className="text-[10px] text-muted-foreground">{selectedJob.location ?? "—"}</span>
-                <span className="text-[10px] text-muted-foreground">{selectedJob.site}</span>
-                {selectedJob.archived_by_llm && (
-                  <span className="text-[10px] text-destructive border border-destructive/30 px-1.5 py-0.5">ARCHIVED</span>
-                )}
-              </div>
-
-              {selectedJob.archival_reason && (
-                <div className="text-[11px] text-muted-foreground bg-muted/30 border border-border px-2 py-1.5 italic">
-                  {selectedJob.archival_reason}
-                </div>
-              )}
-
-              <div className="flex items-center gap-2 pt-1">
-                {selectedJob.job_url && (
-                  <a
-                    href={selectedJob.job_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex items-center gap-1 text-[11px] text-muted-foreground border border-border px-2 py-1 hover:text-primary hover:border-primary/40 transition-colors"
-                  >
-                    Open <ExternalLink size={9} />
-                  </a>
-                )}
-                {tracked.has(selectedJob.id) ? (
-                  <span className="text-[11px] text-muted-foreground uppercase tracking-wider">tracked</span>
-                ) : (
-                  <>
-                    {selectedJob.is_new_find && (
-                      <span className="text-[10px] text-[var(--terminal-green-bright)] border border-[var(--terminal-green-bright)]/30 px-1.5 py-1 uppercase tracking-wider">
-                        new
-                      </span>
-                    )}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); trackJob(selectedJob); }}
-                      className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 px-2 py-1 hover:bg-primary/10 transition-colors uppercase tracking-wider"
-                    >
-                      <Plus size={8} />track
-                    </button>
-                  </>
-                )}
-              </div>
-
-              {selectedJobLoading && (
-                <div className="pt-1 border-t border-border space-y-2">
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Description</div>
-                  <div className="space-y-2">
-                    <div className="skeleton h-3 rounded w-full" />
-                    <div className="skeleton h-3 rounded w-[92%]" />
-                    <div className="skeleton h-3 rounded w-[88%]" />
-                    <div className="skeleton h-3 rounded w-[76%]" />
-                  </div>
-                </div>
-              )}
-
-              {selectedJob.description && !selectedJobLoading && (
-                <div className="pt-1 border-t border-border">
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Description</div>
-                  <p className="text-[11px] text-secondary-foreground leading-relaxed whitespace-pre-wrap">
-                    {selectedJob.description.slice(0, 2000)}{selectedJob.description.length > 2000 ? "…" : ""}
-                  </p>
-                </div>
-              )}
-            </div>
+            <JobDetailPanel
+              selectedJob={selectedJob}
+              tracked={tracked}
+              selectedJobLoading={selectedJobLoading}
+              onClose={() => setSelectedJob(null)}
+              onTrack={(job) => {
+                void trackJob(job);
+              }}
+            />
           )}
           </div>
         </div>

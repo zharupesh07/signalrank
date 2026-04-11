@@ -36,3 +36,5 @@ class CandidateProfile:
     years_of_experience: int | None = field(default=None)
     resume_embedding: list[float] | None = field(default=None)
     company_tier_map: dict[str, str] = field(default_factory=dict)  # company_name → tier
+    preferred_company_tiers: list[str] = field(default_factory=list)
+    company_preference_strength: float = field(default=1.0)

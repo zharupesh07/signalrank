@@ -2,7 +2,8 @@ import pytest
 from unittest.mock import AsyncMock, patch
 
 from api.models import JobRaw
-from batch.scraper import scrape, ScraperConfig, RawJob, _is_blocked
+from batch.scrape_cache import store_cached_jobs
+from batch.scraper import plan_incremental_scrape, scrape, ScraperConfig, RawJob, _is_blocked
 from batch.query_builder import SearchQuery
 
 
@@ -146,6 +147,93 @@ async def test_scrape_reuses_jobspy_cache_across_calls(db):
     with patch("batch.sources.jobspy_source._scrape_sync", side_effect=AssertionError("cache miss")):
         second = await scrape(queries, config, db=db)
     assert [job.job_url for job in second] == [job.job_url for job in scraped_jobs]
+
+
+@pytest.mark.asyncio
+async def test_plan_incremental_scrape_reuses_fresh_indeed_query_cache(db):
+    queries = [SearchQuery(term="MLOps Engineer", location="Bangalore", country="India")]
+    config = ScraperConfig(sources=["indeed"], hours_old=24)
+
+    db.add(
+        JobRaw(
+            job_url="https://example.com/cached-indeed",
+            title="MLOps Engineer",
+            company="Acme",
+            description="Cached description",
+            location="Bangalore",
+            site="indeed",
+        )
+    )
+    await db.commit()
+
+    await store_cached_jobs(
+        db,
+        provider="jobspy",
+        site="indeed",
+        query=queries[0],
+        config=config,
+        jobs=[
+            RawJob(
+                job_url="https://example.com/cached-indeed",
+                title="MLOps Engineer",
+                company="Acme",
+                description="Cached description",
+                location="Bangalore",
+                site="indeed",
+                date_posted=None,
+            )
+        ],
+    )
+
+    stale_queries, cached_urls = await plan_incremental_scrape(queries, config, db)
+
+    assert stale_queries == []
+    assert cached_urls == ["https://example.com/cached-indeed"]
+
+
+@pytest.mark.asyncio
+async def test_plan_incremental_scrape_marks_query_stale_when_cache_missing(db):
+    queries = [
+        SearchQuery(term="MLOps Engineer", location="Bangalore", country="India"),
+        SearchQuery(term="AI Platform Engineer", location="Pune", country="India"),
+    ]
+    config = ScraperConfig(sources=["indeed"], hours_old=24)
+
+    db.add(
+        JobRaw(
+            job_url="https://example.com/cached-indeed",
+            title="MLOps Engineer",
+            company="Acme",
+            description="Cached description",
+            location="Bangalore",
+            site="indeed",
+        )
+    )
+    await db.commit()
+
+    await store_cached_jobs(
+        db,
+        provider="jobspy",
+        site="indeed",
+        query=queries[0],
+        config=config,
+        jobs=[
+            RawJob(
+                job_url="https://example.com/cached-indeed",
+                title="MLOps Engineer",
+                company="Acme",
+                description="Cached description",
+                location="Bangalore",
+                site="indeed",
+                date_posted=None,
+            )
+        ],
+    )
+
+    stale_queries, cached_urls = await plan_incremental_scrape(queries, config, db)
+
+    assert stale_queries == [queries[1]]
+    assert cached_urls == ["https://example.com/cached-indeed"]
 
 
 @pytest.mark.asyncio

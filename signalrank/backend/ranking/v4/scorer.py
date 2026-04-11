@@ -60,7 +60,7 @@ def score_job(job: dict, profile: CandidateProfile, weights: dict[str, float]) -
     return sum(features[feat] * weights.get(feat, 0.0) for feat in features)
 
 
-def score_jobs(jobs: list[dict], profile: CandidateProfile) -> list[dict]:
+def score_jobs(jobs: list[dict], profile: CandidateProfile, *, dedupe: bool = True) -> list[dict]:
     """Score all jobs, deduplicate by (title, company), return sorted list.
 
     Scores are normalized to [0, 1] against the theoretical maximum (sum of
@@ -69,7 +69,8 @@ def score_jobs(jobs: list[dict], profile: CandidateProfile) -> list[dict]:
     """
     weights = load_weights(active_lanes=profile.active_lanes)
     max_possible = sum(w for w in weights.values() if w > 0) or 1.0
-    jobs = _dedup_jobs(jobs)
+    if dedupe:
+        jobs = _dedup_jobs(jobs)
     results: list[dict] = []
     for job in jobs:
         features = compute_features(job, profile)

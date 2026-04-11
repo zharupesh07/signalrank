@@ -37,6 +37,14 @@ _TITLE_STOPWORDS = {
 }
 
 _WEAK_TITLE_TOKENS = {"ai", "ml", "systems", "system", "platform", "application", "applications"}
+_LOCATION_ALIASES = {
+    "bangalore": {"bangalore", "bengaluru", "ka", "karnataka", "ka in"},
+    "bengaluru": {"bangalore", "bengaluru", "ka", "karnataka", "ka in"},
+    "pune": {"pune", "mh", "maharashtra", "mh in"},
+    "mumbai": {"mumbai", "bombay", "mh", "maharashtra", "mh in"},
+    "hyderabad": {"hyderabad", "telangana", "ts", "ts in"},
+    "chennai": {"chennai", "tn", "tamil nadu", "tn in"},
+}
 
 
 def _normalize(text: str | None) -> str:
@@ -59,6 +67,19 @@ def _count_term_hits(text: str, terms: list[str]) -> int:
 
 def _job_text(job: dict) -> str:
     return _normalize(f"{job.get('title', '')} {job.get('description', '')}")
+
+
+def _location_forms(text: str | None) -> set[str]:
+    normalized = _normalize(text)
+    if not normalized:
+        return set()
+    compact = re.sub(r"[^a-z0-9]+", " ", normalized).strip()
+    forms = {normalized, compact}
+    tokens = set(compact.split())
+    forms.update(tokens)
+    for token in list(tokens):
+        forms.update(_LOCATION_ALIASES.get(token, set()))
+    return {form for form in forms if form}
 
 
 def _infer_job_seniority(title: str) -> str:
@@ -173,12 +194,19 @@ def seniority_match(job: dict, profile: CandidateProfile) -> float:
 
 def location_match(job: dict, profile: CandidateProfile) -> float:
     """[0, 1] — 1.0 exact, 0.5 remote-ok, 0.0 no match."""
-    job_loc = _normalize(job.get("location", ""))
+    job_profile = job.get("job_profile") or {}
+    job_loc = str(job_profile.get("location_normalized") or job.get("location", ""))
+    job_forms = _location_forms(job_loc)
     profile_locs = [_normalize(loc) for loc in profile.preferred_locations]
-    if any(job_loc == loc for loc in profile_locs):
+    profile_forms = [_location_forms(loc) for loc in profile_locs]
+
+    if any(job_forms.intersection(forms) for forms in profile_forms):
         return 1.0
-    if "remote" in job_loc:
+    normalized_job_loc = _normalize(job_loc)
+    if "remote" in normalized_job_loc:
         return 0.5
+    if any(loc and (loc in normalized_job_loc or normalized_job_loc in loc) for loc in profile_locs):
+        return 1.0
     return 0.0
 
 
@@ -208,7 +236,22 @@ def company_tier_score(job: dict, profile: CandidateProfile) -> float:
     else:
         tier = "default"
 
-    return _COMPANY_TIER_SCORES.get(tier, _DEFAULT_COMPANY_SCORE)
+    base_score = _COMPANY_TIER_SCORES.get(tier, _DEFAULT_COMPANY_SCORE)
+    preferred_tiers = {str(t).strip().lower() for t in getattr(profile, "preferred_company_tiers", []) if str(t).strip()}
+    if not preferred_tiers:
+        return base_score
+
+    strength = max(0.0, min(float(getattr(profile, "company_preference_strength", 1.0) or 1.0), 2.0))
+    if tier in preferred_tiers:
+        if tier in {"tier_ss", "tier_s"}:
+            return min(1.0, base_score + 0.03 * strength)
+        if tier == "tier_a":
+            return min(1.0, base_score + 0.12 * strength)
+        return min(1.0, base_score + 0.06 * strength)
+
+    if tier in {"default", "", "tier_b", "tier_c", "tier_d"}:
+        return max(0.0, base_score * (1.0 - 0.12 * strength))
+    return base_score
 
 
 def semantic_similarity(job: dict, profile: CandidateProfile) -> float:
