@@ -1,6 +1,9 @@
 import type {
   Application,
+  JobFeedbackRequest,
+  JobFeedbackResponse,
   Job,
+  JobPreferencesResponse,
   JobsResponse,
   TrackerStats,
 } from "@/types";
@@ -69,6 +72,39 @@ export const jobsApi = {
       "/api/jobs/archive-status",
       { token }
     ),
+  preferences: (token: string) =>
+    request<JobPreferencesResponse>("/api/jobs/preferences", { token }),
+  feedback: (token: string, data: JobFeedbackRequest) =>
+    request<JobFeedbackResponse>("/api/jobs/feedback", {
+      method: "POST",
+      token,
+      body: JSON.stringify({
+        feedback_text: data.feedbackText ?? null,
+        quick_actions: data.quickActions ?? [],
+        job_ids: data.jobIds ?? [],
+        session_intent: data.sessionIntent ?? null,
+        page: data.page ?? 1,
+        limit: data.limit ?? 50,
+        sort: data.sort ?? "final_score",
+        sort_dir: data.sortDir ?? "desc",
+        search: data.search ?? "",
+        show_archived: data.showArchived ?? true,
+        min_score: data.minScore ?? 0,
+        tiers: data.tiers ?? [],
+        job_type: data.jobType ?? "all",
+        sites: data.sites ?? [],
+        date_range: data.dateRange ?? "any",
+      }),
+    }),
+  resetPreferences: (token: string, data: { clearAll?: boolean; categories?: string[] } = {}) =>
+    request<JobPreferencesResponse>("/api/jobs/preferences/reset", {
+      method: "POST",
+      token,
+      body: JSON.stringify({
+        clear_all: data.clearAll ?? false,
+        categories: data.categories ?? [],
+      }),
+    }),
 };
 
 export const applicationsApi = {

@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { ExternalLink, Plus } from "lucide-react";
 import type { Job } from "@/types";
-import { scoreColor, formatJobAge } from "@/lib/formatting";
+import { formatJobAge, formatSourceLabel } from "@/lib/formatting";
 
 const col = createColumnHelper<Job>();
 
@@ -17,24 +16,48 @@ export const TIER_COLORS: Record<string, string> = {
   tier_d:  "var(--muted-foreground)",
 };
 
-export function ScoreCell({ value }: { value: number | null }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+const BUCKET_STYLES: Record<string, { color: string; border: string; bg: string }> = {
+  top_fit: { color: "var(--primary)", border: "var(--primary)", bg: "color-mix(in srgb, var(--primary) 12%, transparent)" },
+  strong_fit: { color: "var(--terminal-green-bright)", border: "var(--terminal-green-bright)", bg: "color-mix(in srgb, var(--terminal-green-bright) 10%, transparent)" },
+  possible_fit: { color: "#4ade80", border: "#4ade80", bg: "color-mix(in srgb, #4ade80 12%, transparent)" },
+  stretch: { color: "var(--terminal-yellow)", border: "var(--terminal-yellow)", bg: "color-mix(in srgb, var(--terminal-yellow) 12%, transparent)" },
+  hide: { color: "var(--muted-foreground)", border: "var(--muted-foreground)", bg: "transparent" },
+};
 
-  if (value == null) return <span className="text-muted-foreground">—</span>;
-  const pct = value * 100;
-  const color = scoreColor(pct);
+export function FitBucketCell({ job }: { job: Job }) {
+  const bucketKey = job.preference_bucket_key ?? "possible_fit";
+  const bucketLabel = job.preference_bucket ?? "Possible fit";
+  const style = BUCKET_STYLES[bucketKey] ?? BUCKET_STYLES.possible_fit;
   return (
-    <div className="flex items-center gap-2">
-      <span className="tabular-nums text-xs font-bold" style={{ color }}>
-        {pct.toFixed(0)}
+    <div className="space-y-1">
+      <span
+        className="inline-flex items-center px-2 py-1 text-[10px] uppercase tracking-[0.16em] border"
+        style={{ color: style.color, borderColor: `${style.border}55`, background: style.bg }}
+      >
+        {bucketLabel}
       </span>
-      <div className="score-bar w-12">
-        <div
-          className="score-bar-fill"
-          style={{ width: mounted ? `${pct}%` : "0%", background: color }}
-        />
-      </div>
+      {job.rank_reason_up ? (
+        <div className="text-[10px] text-muted-foreground line-clamp-1">{job.rank_reason_up}</div>
+      ) : null}
+    </div>
+  );
+}
+
+export function SignalsCell({ job }: { job: Job }) {
+  const tags = job.preference_tags ?? [];
+  if (tags.length === 0) {
+    return <span className="text-muted-foreground text-xs">—</span>;
+  }
+  return (
+    <div className="flex flex-wrap gap-1">
+      {tags.slice(0, 3).map((tag) => (
+        <span
+          key={tag}
+          className="text-[10px] px-1.5 py-0.5 border border-border text-muted-foreground uppercase tracking-[0.14em]"
+        >
+          {tag}
+        </span>
+      ))}
     </div>
   );
 }
@@ -75,9 +98,9 @@ export function getColumns({ tracked, trackJob }: ColumnHandlers) {
       ),
     }),
     col.accessor("final_score", {
-      header: "Score",
-      size: 100,
-      cell: (i) => <ScoreCell value={i.getValue()} />,
+      header: "Fit",
+      size: 120,
+      cell: (i) => <FitBucketCell job={i.row.original} />,
     }),
     col.accessor("company_tier", {
       header: "Tier",
@@ -108,18 +131,44 @@ export function getColumns({ tracked, trackJob }: ColumnHandlers) {
     col.accessor("site", {
       header: "Source",
       size: 70,
-      cell: (i) => (
-        <span className="text-muted-foreground text-xs">{i.getValue() ?? "—"}</span>
-      ),
+      cell: (i) => {
+        const job = i.row.original;
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="text-muted-foreground text-xs">{formatSourceLabel(i.getValue())}</span>
+            {job.is_direct_source ? (
+              <span className="text-[10px] text-primary border border-primary/25 px-1 py-0.5 uppercase tracking-wider w-fit">
+                direct
+              </span>
+            ) : null}
+          </div>
+        );
+      },
     }),
     col.accessor("date_posted", {
       header: "Age",
       size: 50,
       cell: (i) => {
+        const job = i.row.original;
         const age = formatJobAge(i.getValue());
-        if (!age) return <span className="text-muted-foreground text-xs">—</span>;
-        return <span className="text-xs" style={{ color: age.color }}>{age.label}</span>;
+        if (age) return <span className="text-xs" style={{ color: age.color }}>{age.label}</span>;
+        if (!job.freshness_bucket || job.freshness_bucket === "unknown") {
+          return <span className="text-muted-foreground text-xs">—</span>;
+        }
+        const label = job.freshness_bucket === "fresh" ? "fresh" : job.freshness_bucket === "recent" ? "recent" : job.freshness_bucket;
+        const color = job.freshness_bucket === "fresh"
+          ? "var(--terminal-green-bright)"
+          : job.freshness_bucket === "recent"
+            ? "var(--terminal-yellow)"
+            : "var(--muted-foreground)";
+        return <span className="text-[11px]" style={{ color }}>{label}</span>;
       },
+    }),
+    col.display({
+      id: "signals",
+      header: "Signals",
+      size: 220,
+      cell: (i) => <SignalsCell job={i.row.original} />,
     }),
     col.display({
       id: "link",

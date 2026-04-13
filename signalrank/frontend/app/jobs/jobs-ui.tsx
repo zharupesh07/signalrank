@@ -1,9 +1,9 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, ExternalLink, Plus, SlidersHorizontal, XCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Loader2, Plus, RotateCcw, Send, SlidersHorizontal, XCircle } from "lucide-react";
 
 import { scoreColor } from "@/lib/formatting";
-import type { Job } from "@/types";
+import type { Job, JobPreferencesResponse } from "@/types";
 
 import {
   DEFAULT_FILTERS,
@@ -13,6 +13,18 @@ import {
   type Filters,
 } from "./jobs-config";
 import { TIER_COLORS } from "./columns";
+
+const QUICK_FEEDBACK_ACTIONS = [
+  { key: "good_fit", label: "good fit" },
+  { key: "bad_fit", label: "bad fit" },
+  { key: "too_junior", label: "too junior" },
+  { key: "wrong_role", label: "wrong role" },
+  { key: "wrong_location", label: "wrong location" },
+  { key: "prefer_more_like_this", label: "more like this" },
+  { key: "hide_company", label: "hide company" },
+  { key: "prefer_remote", label: "prefer remote" },
+  { key: "prefer_pune", label: "prefer pune" },
+] as const;
 
 export function JobsHeader({
   total,
@@ -333,17 +345,120 @@ export function JobsPagination({
   );
 }
 
+export function JobsRefinementPanel({
+  preferences,
+  feedbackInput,
+  feedbackSubmitting,
+  resetting,
+  onFeedbackInputChange,
+  onSubmitFeedback,
+  onResetPreferences,
+}: {
+  preferences: JobPreferencesResponse | null;
+  feedbackInput: string;
+  feedbackSubmitting: boolean;
+  resetting: boolean;
+  onFeedbackInputChange: (value: string) => void;
+  onSubmitFeedback: () => void;
+  onResetPreferences: () => void;
+}) {
+  return (
+    <aside className="hidden xl:flex w-[22rem] shrink-0 sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto border border-border bg-card p-4 flex-col gap-4">
+      <div>
+        <div className="text-[11px] text-muted-foreground uppercase tracking-[0.16em]">Refine Matches</div>
+        <div className="text-sm text-foreground mt-1">Teach the ranker what you actually want. It reranks the shortlist, not the whole corpus.</div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="text-[11px] text-muted-foreground uppercase tracking-[0.16em]">Learned Prefs</div>
+        <div className="flex flex-wrap gap-2">
+          {(preferences?.summary_chips ?? []).length > 0 ? (
+            preferences?.summary_chips.map((chip) => (
+              <span
+                key={chip}
+                className="text-[10px] px-2 py-1 border border-primary/25 text-primary uppercase tracking-[0.14em]"
+              >
+                {chip}
+              </span>
+            ))
+          ) : (
+            <span className="text-xs text-muted-foreground">No learned preferences yet.</span>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="text-[11px] text-muted-foreground uppercase tracking-[0.16em]">Feedback</div>
+        <textarea
+          value={feedbackInput}
+          onChange={(e) => onFeedbackInputChange(e.target.value)}
+          placeholder="prefer Pune over Bangalore&#10;avoid data scientist roles&#10;show more copilot / agentic ai jobs"
+          className="w-full min-h-32 resize-y bg-input border border-border px-3 py-2 text-xs text-foreground outline-none focus:border-primary transition-colors"
+        />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onSubmitFeedback}
+            disabled={feedbackSubmitting || !feedbackInput.trim()}
+            className="inline-flex items-center gap-1.5 text-[11px] border border-primary/35 px-3 py-2 text-primary hover:bg-primary/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-[0.14em]"
+          >
+            {feedbackSubmitting ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
+            refine
+          </button>
+          <button
+            onClick={onResetPreferences}
+            disabled={feedbackSubmitting || resetting}
+            className="inline-flex items-center gap-1.5 text-[11px] border border-border px-3 py-2 text-muted-foreground hover:text-primary hover:border-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-[0.14em]"
+          >
+            {resetting ? <Loader2 size={11} className="animate-spin" /> : <RotateCcw size={11} />}
+            reset
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="text-[11px] text-muted-foreground uppercase tracking-[0.16em]">Recent Feedback</div>
+        <div className="space-y-2">
+          {(preferences?.recent_feedback ?? []).length > 0 ? (
+            preferences?.recent_feedback.slice(0, 6).map((event) => (
+              <div key={event.id} className="border border-border px-3 py-2 space-y-1">
+                {event.feedback_text ? (
+                  <div className="text-xs text-secondary-foreground leading-relaxed">{event.feedback_text}</div>
+                ) : null}
+                {event.quick_actions.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {event.quick_actions.map((action) => (
+                      <span key={action} className="text-[10px] border border-border px-1.5 py-0.5 text-muted-foreground uppercase tracking-[0.12em]">
+                        {action.replaceAll("_", " ")}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ))
+          ) : (
+            <div className="text-xs text-muted-foreground">No feedback saved yet.</div>
+          )}
+        </div>
+      </div>
+    </aside>
+  );
+}
+
 export function JobDetailPanel({
   selectedJob,
   tracked,
   selectedJobLoading,
+  feedbackSubmitting,
   onClose,
+  onFeedback,
   onTrack,
 }: {
   selectedJob: Job;
   tracked: Set<string>;
   selectedJobLoading: boolean;
+  feedbackSubmitting: boolean;
   onClose: () => void;
+  onFeedback: (action: string, job: Job) => void;
   onTrack: (job: Job) => void;
 }) {
   return (
@@ -352,11 +467,26 @@ export function JobDetailPanel({
         <div>
           <div className="text-xs font-bold text-foreground leading-snug">{selectedJob.title}</div>
           <div className="text-xs text-muted-foreground mt-0.5">{selectedJob.company}</div>
+          {selectedJob.preference_bucket ? (
+            <div className="mt-2 inline-flex items-center border border-primary/25 px-2 py-1 text-[10px] text-primary uppercase tracking-[0.16em]">
+              {selectedJob.preference_bucket}
+            </div>
+          ) : null}
         </div>
         <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-0.5">
           <XCircle size={14} />
         </button>
       </div>
+
+      {(selectedJob.preference_tags ?? []).length > 0 ? (
+        <div className="flex flex-wrap gap-1">
+          {(selectedJob.preference_tags ?? []).map((tag) => (
+            <span key={tag} className="text-[10px] px-1.5 py-0.5 border border-border text-muted-foreground uppercase tracking-[0.14em]">
+              {tag}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       <div className="space-y-2">
         {[
@@ -446,6 +576,25 @@ export function JobDetailPanel({
             </button>
           </>
         )}
+      </div>
+
+      <div className="pt-1 border-t border-border space-y-2">
+        <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Quick Feedback</div>
+        <div className="flex flex-wrap gap-1.5">
+          {QUICK_FEEDBACK_ACTIONS.map((action) => (
+            <button
+              key={action.key}
+              onClick={(e) => {
+                e.stopPropagation();
+                onFeedback(action.key, selectedJob);
+              }}
+              disabled={feedbackSubmitting}
+              className="text-[10px] px-2 py-1 border border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-[0.12em]"
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {selectedJobLoading && (

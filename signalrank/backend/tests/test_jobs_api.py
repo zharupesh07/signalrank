@@ -1,9 +1,11 @@
 import pytest
-from datetime import datetime, timezone
+import uuid
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.models import ArchivalQueue, JobRaw, JobResult, Run, User
+from api.auth import create_access_token
+from api.models import ArchivalQueue, JobPreferenceMemory, JobRaw, JobResult, Run, User
 
 
 @pytest.fixture
@@ -139,6 +141,13 @@ async def test_list_jobs_returns_isoformatted_date_posted(client, auth_token, db
     assert "fit_band" in jobs[0]
     assert "confidence_band" in jobs[0]
     assert "explanation_summary" in jobs[0]
+    assert "rank_reason_up" in jobs[0]
+    assert "rank_reason_down" in jobs[0]
+    assert jobs[0]["rank_stage"] == "deterministic"
+    assert jobs[0]["freshness_bucket"] == "aging"
+    assert jobs[0]["is_direct_source"] is False
+    assert jobs[0]["preference_bucket"] in {"Top fit", "Strong fit", "Possible fit", "Stretch", "Hide"}
+    assert isinstance(jobs[0]["preference_tags"], list)
 
 
 async def test_list_jobs_uses_requested_timezone(client, auth_token, db: AsyncSession):
@@ -213,6 +222,301 @@ async def test_list_jobs_sorts_by_date_posted_desc(client, auth_token, db: Async
     assert response.status_code == 200
     jobs = response.json()["jobs"]
     assert [job["title"] for job in jobs] == ["Newer Job", "Older Job"]
+
+
+async def test_list_jobs_filters_company_tiers_including_legacy_values(client, auth_token, db: AsyncSession):
+    me = await client.get("/api/profile", headers={"Authorization": f"Bearer {auth_token}"})
+    user_id = me.json()["user_id"]
+
+    run = Run(user_id=user_id, status="success")
+    ss_job = JobRaw(
+        job_url="https://example.com/jobs/ss",
+        title="SS Job",
+        company="Elite Corp",
+        description="Role",
+        location="Remote",
+        site="manual",
+        date_posted=datetime(2026, 3, 29, 12, 0, tzinfo=timezone.utc),
+    )
+    legacy_s_job = JobRaw(
+        job_url="https://example.com/jobs/legacy-s",
+        title="Legacy S Job",
+        company="Strong Corp",
+        description="Role",
+        location="Remote",
+        site="manual",
+        date_posted=datetime(2026, 3, 29, 12, 0, tzinfo=timezone.utc),
+    )
+    b_job = JobRaw(
+        job_url="https://example.com/jobs/b",
+        title="B Job",
+        company="Okay Corp",
+        description="Role",
+        location="Remote",
+        site="manual",
+        date_posted=datetime(2026, 3, 29, 12, 0, tzinfo=timezone.utc),
+    )
+    db.add_all([run, ss_job, legacy_s_job, b_job])
+    await db.flush()
+    db.add_all(
+        [
+            JobResult(run_id=run.id, user_id=user_id, job_id=ss_job.id, final_score=91.0, company_tier="tier_ss"),
+            JobResult(run_id=run.id, user_id=user_id, job_id=legacy_s_job.id, final_score=81.0, company_tier="S"),
+            JobResult(run_id=run.id, user_id=user_id, job_id=b_job.id, final_score=71.0, company_tier="tier_b"),
+        ]
+    )
+    await db.commit()
+
+    response = await client.get(
+        "/api/jobs?tiers=tier_ss&tiers=tier_s",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 200
+    jobs = response.json()["jobs"]
+    assert [job["title"] for job in jobs] == ["SS Job", "Legacy S Job"]
+    assert jobs[1]["company_tier"] == "tier_s"
+
+
+@pytest.mark.asyncio
+async def test_list_jobs_scopes_filters_to_latest_success_run(client, auth_token, db: AsyncSession):
+    user_id = str(uuid.uuid4())
+    user = User(id=user_id, email="latest-run@test.com", password_hash="x")
+    db.add(user)
+
+    older_run = Run(
+        id=str(uuid.uuid4()),
+        user_id=user_id,
+        status="success",
+        finished_at=datetime.now(timezone.utc) - timedelta(days=1),
+        job_count=1,
+    )
+    latest_run = Run(
+        id=str(uuid.uuid4()),
+        user_id=user_id,
+        status="success",
+        finished_at=datetime.now(timezone.utc),
+        job_count=1,
+    )
+    db.add_all([older_run, latest_run])
+    await db.flush()
+
+    older_job = JobRaw(
+        job_url="https://example.com/older-ss",
+        title="Old SS Job",
+        company="OlderCo",
+        description="older",
+        location="Remote",
+        site="indeed",
+        date_posted=datetime.now(timezone.utc),
+    )
+    latest_job = JobRaw(
+        job_url="https://example.com/latest-b",
+        title="Latest B Job",
+        company="LatestCo",
+        description="latest",
+        location="Remote",
+        site="indeed",
+        date_posted=datetime.now(timezone.utc),
+    )
+    db.add_all([older_job, latest_job])
+    await db.flush()
+
+    db.add_all(
+        [
+            JobResult(
+                run_id=older_run.id,
+                user_id=user_id,
+                job_id=older_job.id,
+                final_score=91.0,
+                company_tier="tier_ss",
+            ),
+            JobResult(
+                run_id=latest_run.id,
+                user_id=user_id,
+                job_id=latest_job.id,
+                final_score=81.0,
+                company_tier="tier_b",
+            ),
+        ]
+    )
+    await db.commit()
+
+    response = await client.get(
+        "/api/jobs?tiers=tier_ss",
+        headers={"Authorization": f"Bearer {create_access_token(user_id, user.email, is_admin=False)}"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 0
+    assert payload["jobs"] == []
+
+
+@pytest.mark.asyncio
+async def test_list_jobs_ignores_success_runs_with_null_finished_at(client, auth_token, db: AsyncSession):
+    user_id = str(uuid.uuid4())
+    email = "null-finished@test.com"
+    user = User(id=user_id, email=email, password_hash="x")
+    db.add(user)
+
+    bogus_latest = Run(
+        id=str(uuid.uuid4()),
+        user_id=user_id,
+        status="success",
+        started_at=datetime.now(timezone.utc),
+        finished_at=None,
+        job_count=0,
+    )
+    real_run = Run(
+        id=str(uuid.uuid4()),
+        user_id=user_id,
+        status="success",
+        started_at=datetime.now(timezone.utc) - timedelta(hours=1),
+        finished_at=datetime.now(timezone.utc) - timedelta(minutes=30),
+        job_count=1,
+    )
+    db.add_all([bogus_latest, real_run])
+    await db.flush()
+
+    real_job = JobRaw(
+        job_url="https://example.com/real-job",
+        title="Real Job",
+        company="RealCo",
+        description="real",
+        location="Remote",
+        site="indeed",
+        date_posted=datetime.now(timezone.utc),
+    )
+    db.add(real_job)
+    await db.flush()
+    db.add(
+        JobResult(
+            run_id=real_run.id,
+            user_id=user_id,
+            job_id=real_job.id,
+            final_score=88.0,
+            company_tier="tier_a",
+        )
+    )
+    await db.commit()
+
+    response = await client.get(
+        "/api/jobs",
+        headers={"Authorization": f"Bearer {create_access_token(user_id, email, is_admin=False)}"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 1
+    assert len(payload["jobs"]) == 1
+    assert payload["jobs"][0]["title"] == "Real Job"
+
+
+@pytest.mark.asyncio
+async def test_job_feedback_reranks_shortlist_and_persists_preferences(client, auth_token, db: AsyncSession):
+    me = await client.get("/api/profile", headers={"Authorization": f"Bearer {auth_token}"})
+    user_id = me.json()["user_id"]
+
+    run = Run(user_id=user_id, status="success", started_at=datetime.now(timezone.utc) - timedelta(hours=1), finished_at=datetime.now(timezone.utc))
+    bangalore_job = JobRaw(
+        job_url="https://example.com/jobs/bangalore",
+        title="AI Platform Engineer",
+        company="City Corp",
+        description="Platform engineering for copilots",
+        location="Bangalore, India",
+        site="indeed",
+        date_posted=datetime.now(timezone.utc),
+    )
+    pune_job = JobRaw(
+        job_url="https://example.com/jobs/pune",
+        title="AI Platform Engineer",
+        company="Remote Corp",
+        description="Copilot platform engineering",
+        location="Pune, India",
+        site="greenhouse",
+        date_posted=datetime.now(timezone.utc),
+    )
+    db.add_all([run, bangalore_job, pune_job])
+    await db.flush()
+    db.add_all(
+        [
+            JobResult(run_id=run.id, user_id=user_id, job_id=bangalore_job.id, final_score=90.0, company_tier="tier_a"),
+            JobResult(run_id=run.id, user_id=user_id, job_id=pune_job.id, final_score=86.0, company_tier="tier_a"),
+        ]
+    )
+    await db.commit()
+
+    baseline = await client.get("/api/jobs", headers={"Authorization": f"Bearer {auth_token}"})
+    assert baseline.status_code == 200
+    assert [job["title"] for job in baseline.json()["jobs"]] == ["AI Platform Engineer", "AI Platform Engineer"]
+    assert baseline.json()["jobs"][0]["location"] == "Bangalore, India"
+
+    feedback = await client.post(
+        "/api/jobs/feedback",
+        headers={"Authorization": f"Bearer {auth_token}"},
+        json={
+            "feedback_text": "prefer Pune over Bangalore and show more copilot jobs",
+            "page": 1,
+            "limit": 50,
+            "sort": "final_score",
+            "sort_dir": "desc",
+            "show_archived": True,
+            "min_score": 0,
+            "tiers": [],
+            "job_type": "all",
+            "sites": [],
+            "date_range": "any",
+        },
+    )
+    assert feedback.status_code == 200
+    payload = feedback.json()
+    jobs = payload["jobs_payload"]["jobs"]
+    assert jobs[0]["location"] == "Pune, India"
+    assert "prefers Pune" in jobs[0]["preference_tags"]
+    assert payload["preferences"]["summary_chips"]
+
+    memory = (await db.execute(select(JobPreferenceMemory).where(JobPreferenceMemory.user_id == user_id))).scalar_one_or_none()
+    assert memory is not None
+    assert memory.state_json["location_preferences"]
+
+    preferences = await client.get("/api/jobs/preferences", headers={"Authorization": f"Bearer {auth_token}"})
+    assert preferences.status_code == 200
+    prefs_payload = preferences.json()
+    assert prefs_payload["recent_feedback"][0]["feedback_text"] == "prefer Pune over Bangalore and show more copilot jobs"
+
+
+@pytest.mark.asyncio
+async def test_reset_preferences_clears_learned_state(client, auth_token, db: AsyncSession):
+    me = await client.get("/api/profile", headers={"Authorization": f"Bearer {auth_token}"})
+    user_id = me.json()["user_id"]
+    db.add(
+        JobPreferenceMemory(
+            user_id=user_id,
+            state_json={
+                "location_preferences": [{"value": "pune", "label": "Pune", "weight": 2.0}],
+                "role_preferences": [],
+                "positive_tags": [],
+                "negative_tags": [],
+                "hidden_companies": [],
+                "preferred_sources": [],
+                "work_mode_preferences": [],
+                "positive_examples": [],
+                "negative_examples": [],
+                "explanation_snippets": ["Pune preferred"],
+            },
+        )
+    )
+    await db.commit()
+
+    response = await client.post(
+        "/api/jobs/preferences/reset",
+        headers={"Authorization": f"Bearer {auth_token}"},
+        json={"clear_all": True},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["has_learned_preferences"] is False
+    assert payload["state"]["location_preferences"] == []
 
 
 async def test_jobs_analytics_returns_expected_aggregates(client, auth_token, db: AsyncSession):

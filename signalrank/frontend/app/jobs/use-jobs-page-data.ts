@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { api } from "@/lib/api";
-import type { Job } from "@/types";
+import type { Job, JobFeedbackRequest, JobPreferencesResponse } from "@/types";
 
 import {
   DEFAULT_FILTERS,
@@ -41,6 +41,10 @@ export function useJobsPageData({
   const [showArchived, setShowArchived] = useState(true);
   const [archiveStatus, setArchiveStatus] = useState<{ total: number; done: number; pending: number; running: number } | null>(null);
   const [archiving, setArchiving] = useState(false);
+  const [preferences, setPreferences] = useState<JobPreferencesResponse | null>(null);
+  const [feedbackInput, setFeedbackInput] = useState("");
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [preferenceResetting, setPreferenceResetting] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("signalrank-sidebar-collapsed");
@@ -74,14 +78,49 @@ export function useJobsPageData({
       setRunTotal(0);
       setNewGoodMatches(0);
       setAvailableSites([]);
+      setPreferences(null);
       setLoading(false);
       return;
     }
   }, [token]);
 
+  const applyJobsPayload = useCallback((response: { jobs: Job[]; total: number; run_total: number; new_good_matches: number; available_sites: string[] }) => {
+    setJobs(response.jobs);
+    setTotal(response.total);
+    setRunTotal(response.run_total);
+    setNewGoodMatches(response.new_good_matches);
+    setAvailableSites(response.available_sites);
+    setSelectedJob((current) => {
+      if (!current) return null;
+      const updated = response.jobs.find((job) => job.id === current.id);
+      return updated ? { ...current, ...updated } : current;
+    });
+  }, []);
+
+  const applyPreferences = useCallback((response: JobPreferencesResponse) => {
+    setPreferences(response);
+  }, []);
+
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch, filters, showArchived, pageSize, sorting]);
+
+  const getFeedbackRequestBase = useCallback((): JobFeedbackRequest => {
+    const { sort, sortDir } = getApiSort(sorting);
+    return {
+      page,
+      limit: pageSize,
+      sort,
+      sortDir,
+      search: debouncedSearch,
+      showArchived,
+      minScore: filters.minScore,
+      tiers: filters.tiers,
+      jobType: filters.jobType,
+      sites: filters.sites,
+      dateRange: filters.dateRange,
+    };
+  }, [debouncedSearch, filters, page, pageSize, showArchived, sorting]);
 
   const loadJobs = useCallback(async () => {
     if (!token) return;
@@ -106,27 +145,28 @@ export function useJobsPageData({
         sites: filters.sites,
         dateRange: filters.dateRange,
       });
-      setJobs(response.jobs);
-      setTotal(response.total);
-      setRunTotal(response.run_total);
-      setNewGoodMatches(response.new_good_matches);
-      setAvailableSites(response.available_sites);
-      setSelectedJob((current) => {
-        if (!current) return null;
-        const updated = response.jobs.find((job) => job.id === current.id);
-        return updated ? { ...current, ...updated } : current;
-      });
+      applyJobsPayload(response);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [token, page, pageSize, debouncedSearch, showArchived, filters, sorting, jobs.length]);
+  }, [token, page, pageSize, debouncedSearch, showArchived, filters, sorting, jobs.length, applyJobsPayload]);
+
+  const loadPreferences = useCallback(async () => {
+    if (!token) return;
+    const response = await api.jobs.preferences(token);
+    applyPreferences(response);
+  }, [token, applyPreferences]);
 
   useEffect(() => {
     loadJobs().catch(() => {
       toast("Failed to load jobs", "error");
     });
   }, [loadJobs, toast]);
+
+  useEffect(() => {
+    loadPreferences().catch(() => null);
+  }, [loadPreferences]);
 
   const toggleSelectedJob = useCallback(async (job: Job) => {
     const isSelected = selectedJob?.id === job.id;
@@ -252,6 +292,60 @@ export function useJobsPageData({
     }
   }, [isAdmin, pollArchiveStatus, toast, token]);
 
+  const submitFeedback = useCallback(async ({
+    feedbackText,
+    quickActions = [],
+    jobIds = [],
+    sessionIntent,
+  }: {
+    feedbackText?: string;
+    quickActions?: string[];
+    jobIds?: string[];
+    sessionIntent?: string;
+  }) => {
+    if (!token) return;
+    const trimmed = feedbackText?.trim() ?? "";
+    if (!trimmed && quickActions.length === 0) return;
+    setFeedbackSubmitting(true);
+    try {
+      const response = await api.jobs.feedback(token, {
+        ...getFeedbackRequestBase(),
+        feedbackText: trimmed || undefined,
+        quickActions,
+        jobIds,
+        sessionIntent,
+      });
+      applyPreferences(response.preferences);
+      applyJobsPayload(response.jobs_payload);
+      if (trimmed) setFeedbackInput("");
+      toast("Preferences updated", "success");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to refine jobs";
+      toast(message, "error");
+    } finally {
+      setFeedbackSubmitting(false);
+    }
+  }, [token, getFeedbackRequestBase, applyPreferences, applyJobsPayload, toast]);
+
+  const resetPreferences = useCallback(async (categories: string[] = []) => {
+    if (!token) return;
+    setPreferenceResetting(true);
+    try {
+      const response = await api.jobs.resetPreferences(token, {
+        clearAll: categories.length === 0,
+        categories,
+      });
+      applyPreferences(response);
+      await loadJobs();
+      toast(categories.length === 0 ? "Preference memory cleared" : "Preference filters reset", "success");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to reset preferences";
+      toast(message, "error");
+    } finally {
+      setPreferenceResetting(false);
+    }
+  }, [token, applyPreferences, loadJobs, toast]);
+
   useEffect(() => {
     if (!token || !isAdmin) {
       setArchiveStatus(null);
@@ -273,18 +367,24 @@ export function useJobsPageData({
     collapsed,
     debouncedSearch,
     filters,
+    feedbackInput,
+    feedbackSubmitting,
     jobs,
     loadJobs,
     loading,
     newGoodMatches,
     page,
     pageSize,
+    preferenceResetting,
+    preferences,
     refreshing,
     resetView,
+    resetPreferences,
     runTotal,
     search,
     selectedJob,
     selectedJobLoading,
+    setFeedbackInput,
     setFilters,
     setPage,
     setPageSize,
@@ -301,5 +401,6 @@ export function useJobsPageData({
     tracked,
     trackJob,
     triggerArchive,
+    submitFeedback,
   };
 }

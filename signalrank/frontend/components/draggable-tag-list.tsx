@@ -13,9 +13,6 @@ interface DraggableTagListProps {
   emptyLabel?: string;
   placeholder?: string;
 }
-
-let _dragSource: { listId: string; item: string } | null = null;
-
 export function DraggableTagList({
   title,
   tone,
@@ -50,8 +47,9 @@ export function DraggableTagList({
     }
   }
 
-  function handleDragStart(item: string) {
-    _dragSource = { listId, item };
+  function handleDragStart(e: React.DragEvent, item: string) {
+    e.dataTransfer.setData("application/json", JSON.stringify({ listId, item }));
+    e.dataTransfer.effectAllowed = "move";
   }
 
   function handleDragOver(e: React.DragEvent) {
@@ -66,9 +64,17 @@ export function DraggableTagList({
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragOver(false);
-    if (!_dragSource || _dragSource.listId === listId) return;
-    const { item, listId: sourceId } = _dragSource;
-    _dragSource = null;
+    const raw = e.dataTransfer.getData("application/json");
+    if (!raw) return;
+    let payload: { listId?: string; item?: string } = {};
+    try {
+      payload = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    const item = String(payload.item || "");
+    const sourceId = String(payload.listId || "");
+    if (!item || !sourceId || sourceId === listId) return;
     if (items.includes(item)) return;
     onReceiveDrop(item, sourceId);
     onChange([...items, item]);
@@ -96,7 +102,7 @@ export function DraggableTagList({
           <span
             key={item}
             draggable
-            onDragStart={() => handleDragStart(item)}
+            onDragStart={(e) => handleDragStart(e, item)}
             className={`group flex cursor-grab items-center gap-1 border px-1.5 py-0.5 text-[11px] active:cursor-grabbing ${tone} border-current/20 bg-current/5 select-none`}
           >
             <GripVertical size={10} className="opacity-40 group-hover:opacity-70" />

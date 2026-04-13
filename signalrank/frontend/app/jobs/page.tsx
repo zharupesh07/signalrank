@@ -21,6 +21,7 @@ import {
   JobsHeader,
   JobsPagination,
   JobsPresetBar,
+  JobsRefinementPanel,
 } from "./jobs-ui";
 import { useJobsPageData } from "./use-jobs-page-data";
 
@@ -35,18 +36,24 @@ export default function JobsPage() {
     archiving,
     availableSites,
     collapsed,
+    feedbackInput,
+    feedbackSubmitting,
     filters,
     jobs,
     loading,
     newGoodMatches,
     page,
     pageSize,
+    preferenceResetting,
+    preferences,
     refreshing,
     resetView,
+    resetPreferences,
     runTotal,
     search,
     selectedJob,
     selectedJobLoading,
+    setFeedbackInput,
     setFilters,
     setPage,
     setPageSize,
@@ -63,6 +70,7 @@ export default function JobsPage() {
     tracked,
     trackJob,
     triggerArchive,
+    submitFeedback,
   } = useJobsPageData({ token, isAdmin, toast });
   const activeFilterCount = countActiveFilters(filters);
 
@@ -161,11 +169,12 @@ export default function JobsPage() {
                   <col style={{ width: 260 }} />
                   <col style={{ width: 160 }} />
                   <col style={{ width: 90 }} />
-                  <col style={{ width: 100 }} />
+                  <col style={{ width: 120 }} />
                   <col style={{ width: 60 }} />
                   <col style={{ width: 80 }} />
                   <col style={{ width: 70 }} />
                   <col style={{ width: 50 }} />
+                  <col style={{ width: 220 }} />
                   <col style={{ width: 32 }} />
                   <col style={{ width: 80 }} />
                 </colgroup>
@@ -192,11 +201,11 @@ export default function JobsPage() {
                 <tbody>
                   {loading ? (
                     Array.from({ length: 10 }).map((_, i) => (
-                      <TableRowSkeleton key={i} cols={10} />
+                      <TableRowSkeleton key={i} cols={11} />
                     ))
                   ) : table.getRowModel().rows.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="px-4 py-16 text-center">
+                      <td colSpan={11} className="px-4 py-16 text-center">
                         <div className="font-mono text-muted-foreground text-xs space-y-1">
                           <div>┌─────────────────────┐</div>
                           <div>│   no jobs found     │</div>
@@ -259,13 +268,38 @@ export default function JobsPage() {
               selectedJob={selectedJob}
               tracked={tracked}
               selectedJobLoading={selectedJobLoading}
+              feedbackSubmitting={feedbackSubmitting}
               onClose={() => setSelectedJob(null)}
+              onFeedback={(action, job) => {
+                void submitFeedback({
+                  quickActions: [action],
+                  jobIds: [job.id],
+                  sessionIntent: "job_detail_quick_feedback",
+                });
+              }}
               onTrack={(job) => {
                 void trackJob(job);
               }}
             />
           )}
           </div>
+
+          <JobsRefinementPanel
+            preferences={preferences}
+            feedbackInput={feedbackInput}
+            feedbackSubmitting={feedbackSubmitting}
+            resetting={preferenceResetting}
+            onFeedbackInputChange={setFeedbackInput}
+            onSubmitFeedback={() => {
+              void submitFeedback({
+                feedbackText: feedbackInput,
+                sessionIntent: "jobs_chat_refinement",
+              });
+            }}
+            onResetPreferences={() => {
+              void resetPreferences();
+            }}
+          />
         </div>
       </div>
     </div>

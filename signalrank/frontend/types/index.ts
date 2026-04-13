@@ -96,6 +96,15 @@ export interface Job {
   title_relevance_score: number | null;
   company_tier: string | null;
   is_contract: boolean;
+  rank_reason_up?: string | null;
+  rank_reason_down?: string | null;
+  rank_stage?: "deterministic" | "structured";
+  freshness_bucket?: "fresh" | "recent" | "aging" | "stale" | "unknown";
+  is_direct_source?: boolean;
+  preference_score?: number | null;
+  preference_bucket_key?: "top_fit" | "strong_fit" | "possible_fit" | "stretch" | "hide";
+  preference_bucket?: "Top fit" | "Strong fit" | "Possible fit" | "Stretch" | "Hide";
+  preference_tags?: string[];
   archived_by_llm: boolean | null;
   archival_reason: string | null;
 }
@@ -108,6 +117,80 @@ export interface JobsResponse {
   available_sites: string[];
   page: number;
   limit: number;
+}
+
+export interface JobPreferenceWeightedItem {
+  value: string;
+  label: string;
+  weight: number;
+}
+
+export interface JobPreferenceExample {
+  job_id?: string | null;
+  company?: string | null;
+  title?: string | null;
+  location?: string | null;
+  site?: string | null;
+  keywords?: string[];
+}
+
+export interface JobPreferenceState {
+  location_preferences: JobPreferenceWeightedItem[];
+  role_preferences: JobPreferenceWeightedItem[];
+  positive_tags: JobPreferenceWeightedItem[];
+  negative_tags: JobPreferenceWeightedItem[];
+  hidden_companies: string[];
+  preferred_sources: JobPreferenceWeightedItem[];
+  work_mode_preferences: JobPreferenceWeightedItem[];
+  positive_examples: JobPreferenceExample[];
+  negative_examples: JobPreferenceExample[];
+  explanation_snippets: string[];
+}
+
+export interface JobFeedbackEvent {
+  id: string;
+  feedback_text: string | null;
+  quick_actions: string[];
+  job_ids: string[];
+  job_snapshots: {
+    job_id: string;
+    title?: string | null;
+    company?: string | null;
+    location?: string | null;
+    site?: string | null;
+  }[];
+  created_at: string | null;
+}
+
+export interface JobPreferencesResponse {
+  state: JobPreferenceState;
+  summary_chips: string[];
+  has_learned_preferences: boolean;
+  updated_at: string | null;
+  recent_feedback: JobFeedbackEvent[];
+}
+
+export interface JobFeedbackRequest {
+  feedbackText?: string | null;
+  quickActions?: string[];
+  jobIds?: string[];
+  sessionIntent?: string | null;
+  page?: number;
+  limit?: number;
+  sort?: "final_score" | "semantic_score" | "skills_score" | "company_score" | "seniority_score" | "location_score" | "recency_score" | "title_relevance_score" | "date_posted";
+  sortDir?: "asc" | "desc";
+  search?: string;
+  showArchived?: boolean;
+  minScore?: number;
+  tiers?: string[];
+  jobType?: "all" | "fte" | "contract";
+  sites?: string[];
+  dateRange?: "any" | "24h" | "week" | "month";
+}
+
+export interface JobFeedbackResponse {
+  preferences: JobPreferencesResponse;
+  jobs_payload: JobsResponse;
 }
 
 export type ApplicationStatus =

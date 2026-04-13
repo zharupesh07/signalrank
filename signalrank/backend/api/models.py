@@ -182,6 +182,36 @@ class Application(Base):
     __table_args__ = (UniqueConstraint("user_id", "job_id", name="uq_application_user_job"),)
 
 
+class JobPreferenceMemory(Base):
+    __tablename__ = "job_preference_memory"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    state_json: Mapped[dict | None] = mapped_column(JSONB, server_default=text("'{}'::jsonb"))
+    summary_json: Mapped[dict | None] = mapped_column(JSONB, server_default=text("'{}'::jsonb"))
+    last_feedback_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class JobFeedbackEvent(Base):
+    __tablename__ = "job_feedback_events"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    run_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), index=True)
+    feedback_text: Mapped[str | None] = mapped_column(Text)
+    quick_actions: Mapped[list | None] = mapped_column(JSONB, server_default=text("'[]'::jsonb"))
+    job_ids: Mapped[list | None] = mapped_column(JSONB, server_default=text("'[]'::jsonb"))
+    job_snapshots: Mapped[list | None] = mapped_column(JSONB, server_default=text("'[]'::jsonb"))
+    extracted_delta: Mapped[dict | None] = mapped_column(JSONB, server_default=text("'{}'::jsonb"))
+    session_context: Mapped[dict | None] = mapped_column(JSONB, server_default=text("'{}'::jsonb"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_job_feedback_events_user_created", "user_id", "created_at"),
+    )
+
+
 class Recruiter(Base):
     __tablename__ = "recruiters"
 
