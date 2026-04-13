@@ -24,6 +24,9 @@ def test_ats_direct_company_registry_contains_expected_direct_boards():
     assert ("Airbnb", "greenhouse", "airbnb") in companies
     assert ("Stripe", "greenhouse", "stripe") in companies
     assert ("Freshworks", "smartrecruiters", "Freshworks") in companies
+    assert ("GitLab", "greenhouse", "gitlab") in companies
+    assert ("Harness", "greenhouse", "harnessinc") in companies
+    assert ("Meesho", "lever", "meesho") in companies
     assert ("Together AI", "greenhouse", "togetherai") in companies
     assert ("Modal", "ashby", "modal") in companies
 
@@ -46,6 +49,9 @@ def test_ats_direct_active_registry_skips_disabled_boards():
     assert ("Airbnb", "greenhouse", "airbnb") in active
     assert ("Stripe", "greenhouse", "stripe") in active
     assert ("Freshworks", "smartrecruiters", "Freshworks") in active
+    assert ("GitLab", "greenhouse", "gitlab") in active
+    assert ("Harness", "greenhouse", "harnessinc") in active
+    assert ("Meesho", "lever", "meesho") in active
 
 
 def test_ats_direct_api_url_builder_supports_all_sites():

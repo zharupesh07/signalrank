@@ -51,6 +51,7 @@ _ATS_COMPANIES = [
     {"company": "Netlify", "site": "greenhouse", "slug": "netlify"},
     {"company": "ClickHouse", "site": "greenhouse", "slug": "clickhouse"},
     {"company": "Postman", "site": "greenhouse", "slug": "postman"},
+    {"company": "GitLab", "site": "greenhouse", "slug": "gitlab"},
     {"company": "PolyAI", "site": "greenhouse", "slug": "polyai"},
     {"company": "Parloa", "site": "greenhouse", "slug": "parloa"},
     {"company": "Intercom", "site": "greenhouse", "slug": "intercom"},
@@ -134,6 +135,8 @@ _ATS_COMPANIES = [
     {"company": "Airbnb", "site": "greenhouse", "slug": "airbnb"},
     {"company": "Stripe", "site": "greenhouse", "slug": "stripe"},
     {"company": "Freshworks", "site": "smartrecruiters", "slug": "Freshworks"},
+    {"company": "Harness", "site": "greenhouse", "slug": "harnessinc"},
+    {"company": "Meesho", "site": "lever", "slug": "meesho"},
 ]
 
 
