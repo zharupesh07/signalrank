@@ -141,6 +141,14 @@ _WORKDAY_COMPANIES = [
         "base_url": "https://autodesk.wd1.myworkdayjobs.com/Ext",
     },
     {
+        "company": "Adobe",
+        "slug": "adobe",
+        "host": "adobe.wd5.myworkdayjobs.com",
+        "tenant": "adobe",
+        "site": "external_experienced",
+        "base_url": "https://adobe.wd5.myworkdayjobs.com/external_experienced",
+    },
+    {
         "company": "FIS",
         "slug": "fis",
         "host": "fis.wd5.myworkdayjobs.com",
