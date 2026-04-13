@@ -173,7 +173,7 @@ async def ingest_extract(
         fields = await llm.llm_json(
             system=system,
             user=user_msg,
-            max_tokens=300,
+            max_tokens=600,
             temperature=0.0,
             json_schema=_INGEST_SCHEMA,
             schema_name="job_ingest_extract",

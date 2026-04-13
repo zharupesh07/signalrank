@@ -222,6 +222,7 @@ async def scrape(
     from batch.sources.jobspy_source import search as search_jobspy
     from batch.sources.free_apis import search as search_free
     from batch.sources.google_jobs import search as search_google
+    from batch.sources.ats_direct import search as search_ats_direct
 
     keep_urls_only = return_mode == "urls"
     all_results: list[RawJob] | list[str] = []
@@ -298,6 +299,7 @@ async def scrape(
                     jobs_found=len(all_results), message="Scanning additional sources...",
                 )
             parallel_sources = [
+                ("ats_direct", search_ats_direct),
                 ("rapidapi", search_rapidapi),
                 ("free_apis", search_free),
                 ("google_jobs", search_google),

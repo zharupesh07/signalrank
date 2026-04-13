@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from api.models import JobRaw, Profile, User
-from ranking.v4.db_scorer import score_jobs_for_user
+from ranking.v4.db_scorer import _direct_source_score_bonus, _structured_compare_indices, score_jobs_for_user
 from ranking.v4.profile import CandidateProfile, WeightedSkill
 from ranking.v4.scorer import load_weights, score_job, score_jobs
 
@@ -44,7 +44,7 @@ def _job(title: str, company: str, description: str, **overrides) -> dict:
         "company": company,
         "description": description,
         "location": overrides.get("location", "Pune"),
-        "site": "linkedin",
+        "site": overrides.get("site", "linkedin"),
         "date_posted": datetime.now(timezone.utc).isoformat(),
         "role_clusters": overrides.get("role_clusters", []),
         "job_profile": overrides.get("job_profile", {"company_tier": "tier_b", "is_contract": False}),
@@ -152,6 +152,26 @@ def test_strong_mlops_job_outranks_python_dev():
     )
 
 
+def test_direct_source_outranks_equal_aggregator_copy():
+    profile = _mlops_profile()
+    direct_job = _job(
+        title="Senior MLOps Engineer",
+        company="Deepgram",
+        description=MLOPS_JOB["description"],
+        site="ashby",
+    )
+    aggregator_job = _job(
+        title="Senior MLOps Engineer",
+        company="Deepgram",
+        description=MLOPS_JOB["description"],
+        site="indeed",
+    )
+
+    results = score_jobs([aggregator_job, direct_job], profile, dedupe=False)
+
+    assert results[0]["site"] == "ashby"
+
+
 def test_perfect_match_scores_above_70():
     """A job matching all must_have_terms at a tier_ss company should score > 0.70."""
     profile = _mlops_profile()
@@ -163,6 +183,84 @@ def test_perfect_match_scores_above_70():
         f"Perfect match job scored {absolute:.3f} — expected > 0.70. "
         "Check must_have_hits, skill_overlap, title_similarity weights."
     )
+
+
+def test_structured_compare_indices_include_direct_candidates_beyond_top_k():
+    ranked = []
+    for idx in range(30):
+        ranked.append({"site": "indeed", "score": 0.9 - idx * 0.01})
+    ranked.append({"site": "ashby", "score": 0.58})
+    ranked.append({"site": "ashby", "score": 0.57})
+
+    indices = _structured_compare_indices(ranked)
+
+    assert 0 in indices
+    assert 24 in indices
+    assert 30 in indices
+    assert 31 in indices
+
+
+def test_direct_source_score_bonus_requires_fit_signals():
+    direct_job = _job(
+        title="AI Platform Engineer",
+        company="Deepgram",
+        description="Kubeflow, MLflow, kubernetes, model deployment, remote role.",
+        site="ashby",
+    )
+    weak_direct_job = _job(
+        title="Support Engineer",
+        company="Deepgram",
+        description="Helpdesk, QA, manual testing.",
+        site="ashby",
+    )
+
+    profile = _mlops_profile()
+    scored = {row["title"]: row for row in score_jobs([direct_job, weak_direct_job], profile, dedupe=False)}
+
+    assert _direct_source_score_bonus(scored["AI Platform Engineer"]) > 0
+    assert _direct_source_score_bonus(scored["Support Engineer"]) == 0
+
+
+def test_direct_source_beats_slightly_better_aggregator_when_fit_is_close():
+    profile = _mlops_profile(years_of_experience=7)
+    direct_job = _job(
+        title="Senior AI Engineer",
+        company="Automation Anywhere",
+        description=(
+            "Build agentic AI systems with Python, MLflow, MCP, evaluation pipelines, and deployment tooling. "
+            "Bengaluru role."
+        ),
+        site="company",
+        location="Bengaluru, India",
+        job_profile={
+            "company_tier": "tier_b",
+            "is_contract": False,
+            "seniority_band": "senior",
+            "work_mode": "onsite",
+            "location_normalized": "Bengaluru, India",
+        },
+    )
+    aggregator_job = _job(
+        title="Senior Python AI Engineer",
+        company="Some Aggregator Co",
+        description=(
+            "Remote role for Python AI work, kubernetes, llmops, and general GenAI development. "
+            "Some platform exposure."
+        ),
+        site="jsearch",
+        location="Remote, IN",
+        job_profile={
+            "company_tier": "tier_b",
+            "is_contract": False,
+            "seniority_band": "senior",
+            "work_mode": "remote",
+            "location_normalized": "Remote, IN",
+        },
+    )
+
+    results = score_jobs([aggregator_job, direct_job], profile, dedupe=False)
+
+    assert results[0]["site"] == "company"
 
 
 def test_qa_job_scores_below_python_dev():
@@ -282,6 +380,21 @@ def test_extract_profile_v4_accepts_bengaluru_and_location_overrides():
     assert overridden.preferred_locations == ["Pune", "Bangalore"]
 
 
+def test_extract_profile_v4_uses_explicit_yoe_for_seniority():
+    from ranking.v4.extraction import extract_profile_v4
+
+    resume = """
+    Senior Agent Systems & AI Platform Engineer with 7 years of experience building production AI platforms.
+    Certifications: Anthropic Claude Certified Architect.
+    Worked as Senior AI Platform Engineer and Senior Machine Learning Engineer in Pune and Bengaluru.
+    """
+
+    profile = extract_profile_v4(resume)
+
+    assert profile.years_of_experience == 7
+    assert profile.seniority_band == "senior"
+
+
 def test_extract_profile_v4_merges_structured_resume_json():
     from ranking.v4.extraction import extract_profile_v4
 
@@ -369,6 +482,68 @@ def test_company_tier_score_respects_preferred_company_tiers():
     assert startup_score < 0.40
 
 
+def test_builder_role_outranks_solutions_architect_for_example_like_profile():
+    profile = _mlops_profile(years_of_experience=7, preferred_locations=["Pune", "Bangalore", "Remote"])
+    builder = _job(
+        title="AI Engineer",
+        company="Automation Anywhere",
+        description=(
+            "Build agentic AI systems, evaluation loops, MCP integrations, and platform tooling in Python. "
+            "Bengaluru role with production deployment and orchestration responsibilities."
+        ),
+        location="Bengaluru, India",
+        site="company",
+        job_profile={
+            "company_tier": "tier_b",
+            "is_contract": False,
+            "seniority_band": "senior",
+            "work_mode": "onsite",
+            "location_normalized": "Bengaluru, India",
+        },
+    )
+    architect = _job(
+        title="Solutions Architect, Applied AI",
+        company="Anthropic",
+        description=(
+            "Customer-facing applied AI role for solution design, stakeholder engagement, and pre-sales style deployment support. "
+            "Remote EMEA role."
+        ),
+        location="Remote - EMEA",
+        site="greenhouse",
+        job_profile={
+            "company_tier": "tier_ss",
+            "is_contract": False,
+            "seniority_band": "principal",
+            "work_mode": "remote",
+            "location_normalized": "Remote - EMEA",
+        },
+    )
+
+    results = score_jobs([architect, builder], profile, dedupe=False)
+
+    assert results[0]["title"] == "AI Engineer"
+
+
+def test_location_match_rejects_region_locked_remote_roles():
+    from ranking.v4.features import location_match
+
+    profile = _mlops_profile(preferred_locations=["Pune", "Bangalore", "Remote"])
+    remote_europe_job = _job(
+        title="Agentic AI Engineer",
+        company="Acme",
+        description="Fully remote role, Europe only, agentic AI and platform orchestration work.",
+        location="Remote - Europe",
+        job_profile={
+            "company_tier": "tier_a",
+            "is_contract": False,
+            "work_mode": "remote",
+            "location_normalized": "Remote - Europe",
+        },
+    )
+
+    assert location_match(remote_europe_job, profile) == 0.0
+
+
 def test_structured_comparison_adds_fit_summary_for_top_jobs():
     from ranking.v4.db_scorer import _apply_structured_comparison
 
@@ -426,6 +601,48 @@ def test_structured_comparison_adds_fit_summary_for_top_jobs():
     assert any("stack fit" in item.lower() for item in top["match_report"]["why_rank_up"])
     assert bottom["match_report"] is not None
     assert bottom["final_score"] < top["final_score"]
+
+
+def test_direct_ats_copy_wins_duplicate_selection():
+    profile = _mlops_profile()
+    direct = {
+        **MLOPS_JOB,
+        "job_url": "https://boards.greenhouse.io/example/jobs/1",
+        "site": "greenhouse",
+        "ingested_at": datetime.now(timezone.utc).isoformat(),
+    }
+    aggregator = {
+        **MLOPS_JOB,
+        "job_url": "https://linkedin.com/jobs/view/1",
+        "site": "linkedin",
+        "ingested_at": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat(),
+    }
+
+    results = score_jobs([aggregator, direct], profile)
+
+    assert len(results) == 1
+    assert results[0]["site"] == "greenhouse"
+    assert results[0]["rank_reason_up"][0] == "Strong title match"
+
+
+def test_recency_score_falls_back_to_ingested_at_for_direct_sources():
+    from ranking.v4.features import recency_score
+
+    profile = _mlops_profile()
+    direct_job = {
+        **MLOPS_JOB,
+        "date_posted": None,
+        "ingested_at": datetime.now(timezone.utc).isoformat(),
+        "site": "greenhouse",
+    }
+    aggregator_job = {
+        **MLOPS_JOB,
+        "date_posted": None,
+        "ingested_at": datetime.now(timezone.utc).isoformat(),
+        "site": "linkedin",
+    }
+
+    assert recency_score(direct_job, profile) > recency_score(aggregator_job, profile)
 
 
 def test_structured_comparison_downgrades_architecture_drift_without_enough_skill_evidence():

@@ -10,9 +10,10 @@ from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from domain.job_source import compute_freshness_bucket, is_direct_source
 from ranking.v4.embeddings import ann_prefilter_job_urls, attach_embeddings_to_jobs, get_resume_embedding
 from ranking.v4.extraction import extract_profile_v4
 from ranking.v4.scorer import load_weights, score_jobs
@@ -22,7 +23,9 @@ logger = logging.getLogger(__name__)
 _JOB_WINDOW_DAYS = 15
 _RANK_MAX_CANDIDATES = 2000
 _RANK_DESCRIPTION_CHARS = 1200
-_STRUCTURED_COMPARE_TOP_K = 50
+_STRUCTURED_COMPARE_TOP_K = 25
+_STRUCTURED_COMPARE_SCAN_K = 120
+_STRUCTURED_COMPARE_DIRECT_FLOOR = 5
 _CONTEXT_MATCH_SKILLS = {
     "python",
     "sql",
@@ -55,16 +58,22 @@ async def _load_jobs(
         JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.company,
         func.left(JobRaw.description, _RANK_DESCRIPTION_CHARS).label("description"),
         JobRaw.location, JobRaw.site, JobRaw.date_posted,
-        JobRaw.role_clusters, JobRaw.job_profile, JobRaw.embedding,
+        JobRaw.ingested_at, JobRaw.role_clusters, JobRaw.job_profile, JobRaw.embedding,
     )
     col_names = ["id", "job_url", "title", "company", "description",
-                 "location", "site", "date_posted", "role_clusters", "job_profile", "embedding"]
+                 "location", "site", "date_posted", "ingested_at", "role_clusters", "job_profile", "embedding"]
+
+    source_rank = case(
+        (JobRaw.site.in_(["greenhouse", "ashby", "lever"]), 3),
+        (JobRaw.site.in_(["manual", "himalayas", "remotive", "jobicy"]), 2),
+        else_=1,
+    )
 
     if job_urls:
         stmt = (
             select(*cols)
             .where(JobRaw.job_url.in_(job_urls))
-            .order_by(JobRaw.ingested_at.desc())
+            .order_by(source_rank.desc(), JobRaw.date_posted.desc().nulls_last(), JobRaw.ingested_at.desc())
         )
         if not preserve_corpus:
             stmt = stmt.where(JobRaw.ingested_at >= cutoff).limit(_RANK_MAX_CANDIDATES)
@@ -78,6 +87,8 @@ async def _load_jobs(
             .where(JobRaw.ingested_at >= cutoff)
             .order_by(
                 _co, _ti, _lo,
+                source_rank.desc(),
+                JobRaw.date_posted.desc().nulls_last(),
                 func.length(JobRaw.description).desc().nulls_last(),
                 JobRaw.ingested_at.desc(),
             )
@@ -93,6 +104,8 @@ async def _load_jobs(
         j["id"] = str(j["id"])
         if isinstance(j.get("date_posted"), datetime):
             j["date_posted"] = j["date_posted"].isoformat()
+        if isinstance(j.get("ingested_at"), datetime):
+            j["ingested_at"] = j["ingested_at"].isoformat()
 
     # Optional cluster filter
     if role_clusters and "general" not in role_clusters and not preserve_corpus:
@@ -133,6 +146,56 @@ def _candidate_profile_for_match(profile, resume_text: str) -> dict:
     }
 
 
+def _structured_compare_indices(ranked: list[dict]) -> set[int]:
+    base = set(range(min(_STRUCTURED_COMPARE_TOP_K, len(ranked))))
+    direct_candidates = [
+        idx
+        for idx, job in enumerate(ranked[:_STRUCTURED_COMPARE_SCAN_K])
+        if is_direct_source(job.get("site"))
+    ]
+    direct_base_count = sum(1 for idx in base if idx in direct_candidates)
+    needed = max(0, min(_STRUCTURED_COMPARE_DIRECT_FLOOR, len(direct_candidates)) - direct_base_count)
+    for idx in direct_candidates:
+        if idx in base:
+            continue
+        if needed <= 0:
+            break
+        base.add(idx)
+        needed -= 1
+    return base
+
+
+def _direct_source_score_bonus(job: dict) -> float:
+    if not is_direct_source(job.get("site")):
+        return 0.0
+    features = job.get("features") if isinstance(job.get("features"), dict) else {}
+    if not features:
+        return 0.0
+    if features.get("negative_hits", 0.0) >= 0.2:
+        return 0.0
+    if features.get("role_shape_match", 0.0) < 0.45:
+        return 0.0
+    if features.get("seniority_match", 0.0) < 0:
+        return 0.0
+    title_similarity = float(features.get("title_similarity", 0.0) or 0.0)
+    role_family_match = float(features.get("role_family_match", 0.0) or 0.0)
+    must_have_hits = float(features.get("must_have_hits", 0.0) or 0.0)
+    location_match = float(features.get("location_match", 0.0) or 0.0)
+    recency = float(features.get("recency_score", 0.0) or 0.0)
+    freshness = compute_freshness_bucket(job.get("date_posted"), job.get("ingested_at"), job.get("site"))
+
+    bonus = 0.0
+    if title_similarity >= 0.3:
+        bonus += 3.0
+    if role_family_match >= 0.35 or must_have_hits >= 0.15:
+        bonus += 2.0
+    if location_match >= 0.5:
+        bonus += 1.0
+    if recency >= 0.75 or freshness == "fresh":
+        bonus += 2.0
+    return bonus
+
+
 def _apply_structured_comparison(scored: list[dict], profile, resume_text: str) -> list[dict]:
     from domain.match_judge import heuristic_match_report
     from domain.score_synthesis import synthesize_match_score
@@ -140,14 +203,15 @@ def _apply_structured_comparison(scored: list[dict], profile, resume_text: str) 
     candidate_profile = _candidate_profile_for_match(profile, resume_text)
     enriched: list[dict] = []
     ranked = sorted(scored, key=lambda item: item.get("score", 0.0), reverse=True)
+    structured_indices = _structured_compare_indices(ranked)
 
     for idx, job in enumerate(ranked):
         deterministic_score = float(job.get("score", 0.0) or 0.0) * 100
-        if idx >= _STRUCTURED_COMPARE_TOP_K:
+        if idx not in structured_indices:
             enriched.append(
                 {
                     **job,
-                    "final_score": deterministic_score,
+                    "final_score": deterministic_score + _direct_source_score_bonus(job),
                     "fit_band": None,
                     "confidence_band": None,
                     "explanation_summary": None,
@@ -183,15 +247,24 @@ def _apply_structured_comparison(scored: list[dict], profile, resume_text: str) 
             match_report=match_report,
             verification_report=None,
         )
+        why_up = list(match_report.get("why_rank_up") or [])
+        why_down = list(match_report.get("why_rank_down") or [])
+        if is_direct_source(job.get("site")):
+            why_up = ["Direct ATS source", *why_up]
         enriched.append(
             {
                 **job,
-                "final_score": synthesized["final_score"],
+                "final_score": synthesized["final_score"] + _direct_source_score_bonus(job),
                 "fit_band": synthesized["fit_band"],
                 "confidence_band": synthesized["confidence_band"],
                 "explanation_summary": synthesized["explanation_summary"],
-                "match_report": match_report,
+                "match_report": {
+                    **match_report,
+                    "why_rank_up": why_up[:3],
+                    "why_rank_down": why_down[:3],
+                },
                 "verification_report": None,
+                "rank_stage": "structured",
             }
         )
 

@@ -4,51 +4,65 @@
 # matching is more reliable than embedding proximity.
 
 defaults:
-  semantic_similarity: 0.20
-  title_similarity: 0.15
-  skill_overlap: 0.12
-  must_have_hits: 0.12
+  semantic_similarity: 0.14
+  title_similarity: 0.18
+  role_shape_match: 0.16
+  skill_overlap: 0.14
+  must_have_hits: 0.16
   role_family_match: 0.08
-  company_tier_score: 0.15
+  company_tier_score: 0.05
   seniority_match: 0.10
-  recency_score: 0.08
-  negative_hits: -0.30
-  location_match: 0.05
+  recency_score: 0.05
+  negative_hits: -0.42
+  location_match: 0.12
   description_role_family_terms: 0.04
   description_quality: 0.02
+  source_quality: 0.03
+  ingest_freshness: 0.01
 
 lane_overrides:
   mlops_platform:
-    semantic_similarity: 0.12
-    must_have_hits: 0.25
+    semantic_similarity: 0.08
+    title_similarity: 0.18
+    role_shape_match: 0.18
+    must_have_hits: 0.24
     skill_overlap: 0.20
-    role_family_match: 0.15
-    negative_hits: -0.40
+    role_family_match: 0.14
+    seniority_match: 0.10
+    location_match: 0.16
+    company_tier_score: 0.03
+    negative_hits: -0.48
   network:
     semantic_similarity: 0.08
+    title_similarity: 0.18
     role_family_match: 0.25
     must_have_hits: 0.25
     skill_overlap: 0.15
     negative_hits: -0.35
   sap_erp:
     semantic_similarity: 0.08
+    title_similarity: 0.18
     role_family_match: 0.25
     must_have_hits: 0.25
     skill_overlap: 0.15
   iot:
     semantic_similarity: 0.12
+    title_similarity: 0.18
     role_family_match: 0.20
     skill_overlap: 0.20
     must_have_hits: 0.18
   conversational_ai:
+    title_similarity: 0.18
     role_family_match: 0.20
     skill_overlap: 0.20
     must_have_hits: 0.18
   innovation:
+    title_similarity: 0.18
     role_family_match: 0.25
     description_role_family_terms: 0.15
     must_have_hits: 0.15
   r_and_d:
+    title_similarity: 0.18
     role_family_match: 0.20
     description_role_family_terms: 0.12
     must_have_hits: 0.15

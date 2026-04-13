@@ -38,6 +38,7 @@ async def test_progress_callback(config, queries):
 
     with patch("batch.sources.rapidapi.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.jobspy_source.search", new_callable=AsyncMock, return_value=[]), \
+         patch("batch.sources.ats_direct.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.free_apis.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.google_jobs.search", new_callable=AsyncMock, return_value=[]):
         result = await scrape(queries, config, on_progress=on_progress)
@@ -59,6 +60,7 @@ async def test_scrape_dedup_and_filter(config, queries):
 
     with patch("batch.sources.rapidapi.search", new_callable=AsyncMock, return_value=mock_jobs), \
          patch("batch.sources.jobspy_source.search", new_callable=AsyncMock, return_value=[]), \
+         patch("batch.sources.ats_direct.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.free_apis.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.google_jobs.search", new_callable=AsyncMock, return_value=[]):
         result = await scrape(queries, config)
@@ -81,6 +83,7 @@ async def test_scrape_blocklist(queries):
 
     with patch("batch.sources.rapidapi.search", new_callable=AsyncMock, return_value=mock_jobs), \
          patch("batch.sources.jobspy_source.search", new_callable=AsyncMock, return_value=[]), \
+         patch("batch.sources.ats_direct.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.free_apis.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.google_jobs.search", new_callable=AsyncMock, return_value=[]):
         result = await scrape(queries, config)
@@ -98,6 +101,7 @@ async def test_scrape_can_return_urls_only(config, queries):
 
     with patch("batch.sources.rapidapi.search", new_callable=AsyncMock, return_value=mock_jobs), \
          patch("batch.sources.jobspy_source.search", new_callable=AsyncMock, return_value=[]), \
+         patch("batch.sources.ats_direct.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.free_apis.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.google_jobs.search", new_callable=AsyncMock, return_value=[]):
         result = await scrape(queries, config, return_mode="urls")

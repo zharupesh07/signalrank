@@ -14,6 +14,8 @@ import json
 import math
 from pathlib import Path
 
+from domain.job_source import compute_freshness_bucket
+
 RELEVANCE = {"good": 1.0, "adjacent": 0.5, "bad": 0.0}
 
 
@@ -50,6 +52,22 @@ def ndcg_at_k(ranked: list[dict], labels: dict[str, str], k: int) -> float:
     return actual / ideal_score
 
 
+def bad_jobs_in_top_k(ranked: list[dict], labels: dict[str, str], k: int) -> int:
+    return sum(1 for job in ranked[:k] if labels.get(_job_id(job), "unlabeled") == "bad")
+
+
+def freshness_share_top_k(ranked: list[dict], k: int) -> float:
+    window = ranked[:k]
+    if not window:
+        return 0.0
+    fresh = 0
+    for job in window:
+        bucket = compute_freshness_bucket(job.get("date_posted"), job.get("ingested_at"), job.get("site"))
+        if bucket in {"fresh", "recent"}:
+            fresh += 1
+    return fresh / len(window)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Score a ranked snapshot against benchmark labels.")
     parser.add_argument("--snapshot", required=True, type=Path)
@@ -68,6 +86,8 @@ def main() -> None:
     print(f"Precision@20:  {precision_at_k(ranked, labels, 20):.3f}")
     print(f"Precision@30:  {precision_at_k(ranked, labels, 30):.3f}")
     print(f"nDCG@20:       {ndcg_at_k(ranked, labels, 20):.3f}")
+    print(f"Bad@10:        {bad_jobs_in_top_k(ranked, labels, 10)}")
+    print(f"Fresh@20:      {freshness_share_top_k(ranked, 20):.3f}")
     if unlabeled:
         print(f"\nUnlabeled jobs in top-30 ({len(unlabeled)})")
         for job_id in unlabeled:

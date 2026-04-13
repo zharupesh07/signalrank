@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 import numpy as np
 from rapidfuzz.fuzz import token_set_ratio
 
+from domain.job_source import is_direct_source, parse_datetime, source_quality_score
 from ranking.v4.lanes import LANE_REGISTRY
 from ranking.v4.profile import CandidateProfile
 
@@ -45,6 +47,83 @@ _LOCATION_ALIASES = {
     "hyderabad": {"hyderabad", "telangana", "ts", "ts in"},
     "chennai": {"chennai", "tn", "tamil nadu", "tn in"},
 }
+_ROLE_SHAPE_HARD_NEGATIVES = (
+    "product manager",
+    "program manager",
+    "marketing",
+    "account executive",
+    "sales",
+    "recruiter",
+    "customer success",
+    "designer",
+)
+_ROLE_SHAPE_ARCHITECT = ("architect", "solutions architect", "solution architect")
+_ROLE_SHAPE_ADJACENT = (
+    "solutions engineer",
+    "forward deployed engineer",
+    "customer engineer",
+    "implementation engineer",
+    "applied ai",
+)
+_ROLE_SHAPE_AI_BUILDER = (
+    "ai engineer",
+    "machine learning engineer",
+    "ml engineer",
+    "research engineer",
+    "mlops",
+    "llmops",
+)
+_ROLE_SHAPE_PLATFORM_BUILDER = (
+    "software engineer",
+    "platform engineer",
+    "infrastructure engineer",
+    "systems engineer",
+)
+_ROLE_SHAPE_PLATFORM_SIGNALS = (
+    "agentic",
+    "llm",
+    "genai",
+    "platform",
+    "orchestration",
+    "inference",
+    "evaluation",
+    "observability",
+    "reliability",
+    "deployment",
+    "harness",
+    "tooling",
+)
+_SOFTWARE_TITLE_AI_SIGNALS = (
+    "ai",
+    "machine learning",
+    "ml",
+    "agentic",
+    "llm",
+    "genai",
+    "inference",
+    "evaluation",
+)
+_REMOTE_GEO_RESTRICTIONS = (
+    "emea",
+    "apac",
+    "europe",
+    "european union",
+    "east coast",
+    "west coast",
+    "united states",
+    "u.s.",
+    "us-only",
+    "us only",
+    "canada",
+    "german speaking",
+    "germany",
+    "japan",
+    "singapore",
+    "london",
+    "federal",
+    "government",
+    "national security",
+)
 
 
 def _normalize(text: str | None) -> str:
@@ -67,6 +146,15 @@ def _count_term_hits(text: str, terms: list[str]) -> int:
 
 def _job_text(job: dict) -> str:
     return _normalize(f"{job.get('title', '')} {job.get('description', '')}")
+
+
+def _job_profile(job: dict) -> dict:
+    return job.get("job_profile") if isinstance(job.get("job_profile"), dict) else {}
+
+
+def _engineering_builder_profile(profile: CandidateProfile) -> bool:
+    blob = " ".join(profile.target_roles).lower()
+    return any(term in blob for term in ("engineer", "mlops", "platform", "infrastructure", "ai"))
 
 
 def _location_forms(text: str | None) -> set[str]:
@@ -185,35 +273,125 @@ def negative_hits(job: dict, profile: CandidateProfile) -> float:
 
 
 def seniority_match(job: dict, profile: CandidateProfile) -> float:
-    """[-1, 1] — title-inferred seniority vs candidate band. 0 when unknown/mid."""
-    job_band = _infer_job_seniority(job.get("title") or "")
+    """[-1, 1] — balance explicit YOE against title-inferred seniority."""
+    text = _job_text(job)
+    job_band = _normalize(_job_profile(job).get("seniority_band")) or _infer_job_seniority(job.get("title") or "")
+    candidate_years = getattr(profile, "years_of_experience", None)
+    yoe_match = re.search(r"\b(\d+)\s*(?:\+|plus)?\s*years\b", text)
+    if yoe_match and candidate_years is not None:
+        required_years = int(yoe_match.group(1))
+        if candidate_years + 1 < required_years:
+            return -1.0
+        if candidate_years < required_years:
+            return -0.35
+
+    desired_band = profile.seniority_band.lower()
+    if candidate_years is not None:
+        if candidate_years <= 2:
+            desired_band = "junior"
+        elif candidate_years <= 5:
+            desired_band = "mid"
+        elif candidate_years <= 9:
+            desired_band = "senior"
+        else:
+            desired_band = "principal"
+
+    if job_band == desired_band:
+        return 1.0
+    if desired_band == "senior" and job_band == "mid":
+        return 0.35
+    if desired_band == "senior" and job_band == "principal":
+        return -0.7
+    if desired_band == "mid" and job_band == "senior":
+        return -0.35
+    if desired_band in {"senior", "principal"} and job_band == "junior":
+        return -0.8
     if job_band == "mid":
         return 0.0
-    return 1.0 if job_band == profile.seniority_band.lower() else -1.0
+    return -0.5
 
 
 def location_match(job: dict, profile: CandidateProfile) -> float:
-    """[0, 1] — 1.0 exact, 0.5 remote-ok, 0.0 no match."""
-    job_profile = job.get("job_profile") or {}
+    """[0, 1] — exact preferred city > unrestricted remote > weak/unknown."""
+    job_profile = _job_profile(job)
     job_loc = str(job_profile.get("location_normalized") or job.get("location", ""))
     job_forms = _location_forms(job_loc)
     profile_locs = [_normalize(loc) for loc in profile.preferred_locations]
     profile_forms = [_location_forms(loc) for loc in profile_locs]
+    combined = _normalize(f"{job_loc} {job.get('title', '')} {job.get('description', '')}")
+    wants_remote = any(loc == "remote" for loc in profile_locs)
+    work_mode = _normalize(job_profile.get("work_mode"))
+
+    is_remote = "remote" in combined or work_mode == "remote"
+    has_geo_restriction = any(term in combined for term in _REMOTE_GEO_RESTRICTIONS)
+    if is_remote:
+        if has_geo_restriction:
+            return 0.0
+        return 1.0 if wants_remote else 0.45
 
     if any(job_forms.intersection(forms) for forms in profile_forms):
         return 1.0
+
+    if work_mode == "hybrid" and any(job_forms.intersection(forms) for forms in profile_forms):
+        return 0.9
+
     normalized_job_loc = _normalize(job_loc)
-    if "remote" in normalized_job_loc:
-        return 0.5
     if any(loc and (loc in normalized_job_loc or normalized_job_loc in loc) for loc in profile_locs):
         return 1.0
     return 0.0
 
 
+def role_shape_match(job: dict, profile: CandidateProfile) -> float:
+    """[0, 1] — does the role behave like the job the candidate would actually take?"""
+    if not _engineering_builder_profile(profile):
+        return 0.5
+
+    title = _normalize(job.get("title"))
+    text = _job_text(job)
+    if any(term in title for term in _ROLE_SHAPE_HARD_NEGATIVES):
+        return 0.0
+    if any(term in title for term in _ROLE_SHAPE_ARCHITECT):
+        return 0.1
+    if any(term in title for term in _ROLE_SHAPE_ADJACENT):
+        return 0.45 if any(term in text for term in _ROLE_SHAPE_PLATFORM_SIGNALS) else 0.25
+    if any(term in title for term in _ROLE_SHAPE_AI_BUILDER):
+        return 1.0 if any(term in text for term in _ROLE_SHAPE_PLATFORM_SIGNALS) else 0.72
+    if "software engineer" in title:
+        if any(term in title for term in _SOFTWARE_TITLE_AI_SIGNALS):
+            return 0.82 if any(term in text for term in _ROLE_SHAPE_PLATFORM_SIGNALS) else 0.6
+        if any(term in text for term in _ROLE_SHAPE_PLATFORM_SIGNALS):
+            return 0.35
+        return 0.28
+    if any(term in title for term in _ROLE_SHAPE_PLATFORM_BUILDER):
+        return 0.82 if any(term in text for term in _ROLE_SHAPE_PLATFORM_SIGNALS) else 0.55
+    if any(term in text for term in _ROLE_SHAPE_PLATFORM_SIGNALS):
+        return 0.55
+    return 0.2
+
+
 def recency_score(job: dict, profile: CandidateProfile) -> float:
     """Recency of job posting normalized to [0, 1]."""
     from domain.additive_scoring import recency_score_0_100
-    return recency_score_0_100(job.get("date_posted")) / 100.0
+
+    posted = parse_datetime(job.get("date_posted"))
+    if posted is not None:
+        return recency_score_0_100(posted) / 100.0
+
+    ingested = parse_datetime(job.get("ingested_at"))
+    if ingested is None:
+        return 0.25 if is_direct_source(job.get("site")) else 0.12
+
+    now = datetime.now(ingested.tzinfo or timezone.utc)
+    age_days = max(0.0, (now - ingested).total_seconds() / 86400)
+    if age_days <= 1:
+        return 0.88 if is_direct_source(job.get("site")) else 0.64
+    if age_days <= 3:
+        return 0.78 if is_direct_source(job.get("site")) else 0.52
+    if age_days <= 7:
+        return 0.62 if is_direct_source(job.get("site")) else 0.4
+    if age_days <= 14:
+        return 0.45 if is_direct_source(job.get("site")) else 0.28
+    return 0.2 if is_direct_source(job.get("site")) else 0.1
 
 
 def company_tier_score(job: dict, profile: CandidateProfile) -> float:
@@ -289,8 +467,32 @@ def description_quality(job: dict, profile: CandidateProfile) -> float:
     return 1.0
 
 
+def source_quality(job: dict, profile: CandidateProfile) -> float:
+    return source_quality_score(job.get("site"))
+
+
+def ingest_freshness(job: dict, profile: CandidateProfile) -> float:
+    ingested = parse_datetime(job.get("ingested_at"))
+    if ingested is None:
+        return 0.2
+
+    now = datetime.now(ingested.tzinfo or timezone.utc)
+    age_days = max(0.0, (now - ingested).total_seconds() / 86400)
+    if age_days <= 1:
+        return 1.0
+    if age_days <= 3:
+        return 0.9
+    if age_days <= 7:
+        return 0.75
+    if age_days <= 14:
+        return 0.55
+    if age_days <= 30:
+        return 0.35
+    return 0.15
+
+
 def compute_features(job: dict, profile: CandidateProfile) -> dict[str, float]:
-    """Compute all 12 features for a (job, profile) pair."""
+    """Compute all scoring features for a (job, profile) pair."""
     return {
         "title_similarity": title_similarity(job, profile),
         "skill_overlap": skill_overlap(job, profile),
@@ -298,10 +500,13 @@ def compute_features(job: dict, profile: CandidateProfile) -> dict[str, float]:
         "description_role_family_terms": description_role_family_terms(job, profile),
         "must_have_hits": must_have_hits(job, profile),
         "negative_hits": negative_hits(job, profile),
+        "role_shape_match": role_shape_match(job, profile),
         "seniority_match": seniority_match(job, profile),
         "location_match": location_match(job, profile),
         "recency_score": recency_score(job, profile),
         "company_tier_score": company_tier_score(job, profile),
         "semantic_similarity": semantic_similarity(job, profile),
         "description_quality": description_quality(job, profile),
+        "source_quality": source_quality(job, profile),
+        "ingest_freshness": ingest_freshness(job, profile),
     }

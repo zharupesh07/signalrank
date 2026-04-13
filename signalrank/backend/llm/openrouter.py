@@ -84,6 +84,16 @@ def _repair_jsonish(text: str) -> str:
     return _TRAILING_COMMA_RE.sub(r"\1", text)
 
 
+def _try_json_loads(text: str):
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        try:
+            return json.loads(text, strict=False)
+        except json.JSONDecodeError:
+            return None
+
+
 def _extract_json(raw: str) -> dict | None:
     text = raw.strip()
     if text.startswith("```"):
@@ -93,16 +103,14 @@ def _extract_json(raw: str) -> dict | None:
         if lines and lines[-1].strip().startswith("```"):
             lines = lines[:-1]
         text = "\n".join(lines).strip()
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
+    parsed = _try_json_loads(text)
+    if parsed is not None:
+        return parsed
     repaired = _repair_jsonish(text)
     if repaired != text:
-        try:
-            return json.loads(repaired)
-        except json.JSONDecodeError:
-            pass
+        parsed = _try_json_loads(repaired)
+        if parsed is not None:
+            return parsed
 
     stack = 0
     start_idx = None
@@ -118,16 +126,14 @@ def _extract_json(raw: str) -> dict | None:
                 candidates.append(text[start_idx : idx + 1])
 
     for candidate in reversed(candidates):
-        try:
-            return json.loads(candidate)
-        except json.JSONDecodeError:
-            repaired_candidate = _repair_jsonish(candidate)
-            if repaired_candidate != candidate:
-                try:
-                    return json.loads(repaired_candidate)
-                except json.JSONDecodeError:
-                    continue
-            continue
+        parsed = _try_json_loads(candidate)
+        if parsed is not None:
+            return parsed
+        repaired_candidate = _repair_jsonish(candidate)
+        if repaired_candidate != candidate:
+            parsed = _try_json_loads(repaired_candidate)
+            if parsed is not None:
+                return parsed
 
     return None
 
@@ -485,11 +491,14 @@ class OpenRouterClient:
             return cached  # type: ignore[return-value]
 
         healthy = await self._ensure_healthy(limit=3)
-        models_to_try = healthy if healthy else self.models[:3]
+        if healthy:
+            models_to_try = healthy + [model for model in self.models if model not in healthy]
+        else:
+            models_to_try = list(self.models)
         if self.preferred_models:
             preferred = [m for m in self.preferred_models if m in models_to_try]
             if preferred:
-                models_to_try = preferred
+                models_to_try = preferred + [m for m in models_to_try if m not in preferred]
 
         last_error = None
         for model in models_to_try:
@@ -502,6 +511,15 @@ class OpenRouterClient:
             )
             if raw is None and schema_body:
                 logger.info("Structured response unavailable on %s, falling back to prompt-only JSON", model)
+                raw = await self._call(model, messages, max_tokens, temperature)
+            elif schema_body:
+                parsed = _extract_json(raw)
+                if parsed is not None:
+                    logger.info("llm_json success via %s", model)
+                    _store_response_cache_value(cache_key, parsed)
+                    return parsed
+                logger.warning("Non-JSON from %s with structured output: %s...", model, raw[:80])
+                logger.info("Retrying %s without structured response format", model)
                 raw = await self._call(model, messages, max_tokens, temperature)
             if raw is None:
                 last_error = f"{model} returned nothing"

@@ -67,6 +67,26 @@ export const JOB_PRESETS = [
     }),
   },
   {
+    key: "direct",
+    label: "Direct ATS",
+    apply: () => ({
+      filters: { ...DEFAULT_FILTERS, sites: ["greenhouse", "ashby", "lever"] },
+      search: "",
+      sorting: [{ id: "final_score", desc: true }] as SortingState,
+      showArchived: true,
+    }),
+  },
+  {
+    key: "fresh-direct",
+    label: "Fresh Direct",
+    apply: () => ({
+      filters: { ...DEFAULT_FILTERS, sites: ["greenhouse", "ashby", "lever"], dateRange: "week" as const },
+      search: "",
+      sorting: [{ id: "date_posted", desc: true }] as SortingState,
+      showArchived: true,
+    }),
+  },
+  {
     key: "top-companies",
     label: "Top Companies",
     apply: () => ({

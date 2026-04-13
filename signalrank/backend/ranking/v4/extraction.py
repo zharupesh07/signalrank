@@ -28,6 +28,10 @@ _DATE_PATTERN = re.compile(
     r"((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{4})|present|current|now|(\d{4}))",
     re.IGNORECASE,
 )
+_YOE_PATTERN = re.compile(
+    r"\b(?:(?:over|more than)\s+)?(\d{1,2})\+?\s+years? of experience\b",
+    re.IGNORECASE,
+)
 
 _SENIORITY_BANDS = [
     (["principal", "distinguished", "architect", "head of"], "principal"),
@@ -393,7 +397,34 @@ def compute_skill_recency_weights(
     return weights
 
 
-def _infer_seniority(resume_text: str) -> str:
+def _infer_years_of_experience(resume_text: str, structured_resume: dict | None = None) -> int | None:
+    if structured_resume:
+        structured_years = _structured_years_of_experience(structured_resume)
+        if structured_years is not None:
+            return structured_years
+
+    explicit_matches = [int(match.group(1)) for match in _YOE_PATTERN.finditer(resume_text)]
+    if explicit_matches:
+        return max(explicit_matches)
+
+    roles = parse_role_dates(resume_text)
+    if roles:
+        years = [max(0, role["end_year"] - role["start_year"]) for role in roles]
+        if years:
+            return min(sum(years), max(years) + 2)
+    return None
+
+
+def _infer_seniority(resume_text: str, *, years_of_experience: int | None = None) -> str:
+    if years_of_experience is not None:
+        if years_of_experience <= 2:
+            return "junior"
+        if years_of_experience <= 5:
+            return "mid"
+        if years_of_experience <= 9:
+            return "senior"
+        return "principal"
+
     text = resume_text.lower()
     for keywords, band in _SENIORITY_BANDS:
         if any(kw in text for kw in keywords):
@@ -525,7 +556,8 @@ def extract_profile_v4(
         for skill, weight in sorted(recency_weights.items(), key=lambda x: -x[1])
     ]
 
-    seniority = _infer_seniority(combined_resume_text)
+    years_of_experience = _infer_years_of_experience(combined_resume_text, structured_resume)
+    seniority = _infer_seniority(combined_resume_text, years_of_experience=years_of_experience)
     active_lanes = detect_active_lanes(combined_resume_text, [], current_focus=current_focus)
     target_roles = _infer_target_roles(combined_resume_text, active_lanes)
     if structured_resume:
@@ -586,7 +618,7 @@ def extract_profile_v4(
         avoid_terms=list(dict.fromkeys(avoid))[:12],
         current_focus=current_focus,
         active_lanes=active_lanes,
-        years_of_experience=_structured_years_of_experience(structured_resume) if structured_resume else None,
+        years_of_experience=years_of_experience,
         company_tier_map=company_tier_map,
         preferred_company_tiers=preferred_company_tiers,
         company_preference_strength=company_preference_strength,

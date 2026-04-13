@@ -7,10 +7,13 @@ from datetime import datetime, timezone, timedelta
 
 from sqlalchemy import select
 
-from api.models import JobRaw
 import api.routes.ingest as ingest_route
+from api.deps_llm import get_llm_client
+from api.main import app
+from api.models import JobRaw
 from api.routes.ingest import _parse_ingest_response, _compute_priority, _validate_url, ingest_extract, IngestRequest
 from fastapi import HTTPException
+from llm.openrouter import OpenRouterClient
 
 @pytest.fixture
 async def auth_token(client):
@@ -109,6 +112,7 @@ async def test_ingest_extract_uses_structured_schema_output():
 
     assert result.title == "Senior ML Engineer"
     called_kwargs = llm.llm_json.await_args.kwargs
+    assert called_kwargs["max_tokens"] == 600
     assert called_kwargs["schema_name"] == "job_ingest_extract"
     assert called_kwargs["json_schema"]["required"] == [
         "title",
@@ -118,6 +122,50 @@ async def test_ingest_extract_uses_structured_schema_output():
         "date_posted",
         "description",
     ]
+
+
+@pytest.mark.asyncio
+async def test_ingest_endpoint_recovers_when_structured_output_is_not_parseable(client, auth_token):
+    llm = OpenRouterClient(api_key="test-key", models=["model-a"])
+    llm._ensure_healthy = AsyncMock(return_value=["model-a"])  # type: ignore[method-assign]
+    llm._call = AsyncMock(  # type: ignore[method-assign]
+        side_effect=[
+            """{
+  "title": "Engineer Lead Artificial Intelligence Machine Learning GitHub copilot",
+  "company": "FIS",
+  "location": "Pune, India",
+  "job_url": "https://careers.fisglobal.com/us/en/job/JR0305475/Engineer-Lead-Artificial-Intelligence-Machine-Learning-GitHub-copilot",
+  "date_posted": "",
+  "description": "Build AI systems
+with GitHub Copilot and ML workflows."
+}""",
+            """{
+  "title": "Engineer Lead Artificial Intelligence Machine Learning GitHub copilot",
+  "company": "FIS",
+  "location": "Pune, India",
+  "job_url": "https://careers.fisglobal.com/us/en/job/JR0305475/Engineer-Lead-Artificial-Intelligence-Machine-Learning-GitHub-copilot",
+  "date_posted": "",
+  "description": "Build AI systems with GitHub Copilot and ML workflows."
+}""",
+        ]
+    )
+    app.dependency_overrides[get_llm_client] = lambda: llm
+
+    try:
+        response = await client.post(
+            "/api/jobs/ingest",
+            json={"text": "FIS is hiring an AI/ML engineer lead focused on GitHub Copilot and ML workflows."},
+            headers={"Authorization": f"Bearer {auth_token}"},
+        )
+    finally:
+        app.dependency_overrides.pop(get_llm_client, None)
+        await llm.close()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["company"] == "FIS"
+    assert payload["title"] == "Engineer Lead Artificial Intelligence Machine Learning GitHub copilot"
+    assert payload["description"] == "Build AI systems\nwith GitHub Copilot and ML workflows."
 
 
 @pytest.mark.asyncio

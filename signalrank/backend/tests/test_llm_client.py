@@ -38,6 +38,31 @@ def test_extract_json_repairs_trailing_commas():
     assert _extract_json(raw) == {"name": "test", "skills": ["python"]}
 
 
+def test_extract_json_tolerates_unescaped_newlines_in_strings():
+    raw = '{"description":"line 1\nline 2"}'
+    assert _extract_json(raw) == {"description": "line 1\nline 2"}
+
+
+def test_extract_json_handles_model_style_multiline_job_payload():
+    raw = """{
+  "title": "Engineer Lead Artificial Intelligence Machine Learning GitHub copilot",
+  "company": "FIS",
+  "location": "Pune, India",
+  "job_url": "https://careers.fisglobal.com/us/en/job/JR0305475/Engineer-Lead-Artificial-Intelligence-Machine-Learning-GitHub-copilot",
+  "date_posted": "",
+  "description": "Build AI systems
+with GitHub Copilot and ML workflows."
+}"""
+    assert _extract_json(raw) == {
+        "title": "Engineer Lead Artificial Intelligence Machine Learning GitHub copilot",
+        "company": "FIS",
+        "location": "Pune, India",
+        "job_url": "https://careers.fisglobal.com/us/en/job/JR0305475/Engineer-Lead-Artificial-Intelligence-Machine-Learning-GitHub-copilot",
+        "date_posted": "",
+        "description": "Build AI systems\nwith GitHub Copilot and ML workflows.",
+    }
+
+
 def test_extract_json_handles_fenced_json_without_closing_fence():
     raw = '```json\n{"name":"test","skills":["python",],}\n'
     assert _extract_json(raw) == {"name": "test", "skills": ["python"]}
@@ -142,6 +167,28 @@ async def test_client_llm_json_falls_back_to_prompt_only_when_structured_request
                 "additionalProperties": False,
             },
         )
+
+    assert result == {"result": "ok"}
+    assert mock_call.await_count == 2
+    assert mock_call.await_args_list[0].kwargs["extra_body"]["response_format"]["type"] == "json_schema"
+    assert "extra_body" not in mock_call.await_args_list[1].kwargs or mock_call.await_args_list[1].kwargs["extra_body"] is None
+
+
+@pytest.mark.asyncio
+async def test_client_llm_json_falls_back_to_prompt_only_when_structured_request_returns_non_json():
+    client = OpenRouterClient(api_key="test-key", models=["model-a"])
+
+    with patch.object(client, "_ensure_healthy", AsyncMock(return_value=["model-a"])):
+        with patch.object(client, "_call", AsyncMock(side_effect=["not json", '{"result":"ok"}'])) as mock_call:
+            result = await client.llm_json(
+                "test prompt",
+                json_schema={
+                    "type": "object",
+                    "properties": {"result": {"type": "string"}},
+                    "required": ["result"],
+                    "additionalProperties": False,
+                },
+            )
 
     assert result == {"result": "ok"}
     assert mock_call.await_count == 2
@@ -264,6 +311,33 @@ async def test_llm_json_prefers_configured_models_only():
     assert result == {"result": "ok"}
     assert mock_post.call_count == 1
     assert mock_post.call_args.kwargs["json"]["model"] == "model-b"
+
+
+@pytest.mark.asyncio
+async def test_llm_json_tries_unprobed_models_after_healthy_model_parse_failure():
+    client = OpenRouterClient(
+        api_key="test-key",
+        models=["model-a", "model-b"],
+    )
+
+    with patch.object(client, "_ensure_healthy", AsyncMock(return_value=["model-a"])):
+        with patch.object(
+            client,
+            "_call",
+            AsyncMock(side_effect=["not json", "still not json", '{"result":"ok"}']),
+        ) as mock_call:
+            result = await client.llm_json(
+                "test prompt",
+                json_schema={
+                    "type": "object",
+                    "properties": {"result": {"type": "string"}},
+                    "required": ["result"],
+                    "additionalProperties": False,
+                },
+            )
+
+    assert result == {"result": "ok"}
+    assert [call.args[0] for call in mock_call.await_args_list] == ["model-a", "model-a", "model-b"]
 
 
 @pytest.mark.asyncio

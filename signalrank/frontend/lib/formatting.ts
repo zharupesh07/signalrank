@@ -36,6 +36,19 @@ export function formatJobAge(
   return { label: `${Math.floor(days / 30)}mo`, color: "var(--muted-foreground)" };
 }
 
+export function formatSourceLabel(site: string | null | undefined): string {
+  const value = String(site || "").trim();
+  if (!value) return "—";
+  if (value === "greenhouse") return "Greenhouse";
+  if (value === "ashby") return "Ashby";
+  if (value === "lever") return "Lever";
+  if (value === "li_jobsearch" || value === "li_7d" || value === "li_bulk" || value === "jobs_scanner") {
+    return "LinkedIn";
+  }
+  if (value === "jsearch") return "JSearch";
+  return value;
+}
+
 /**
  * Converts a stored regex penalty pattern to a human-readable display string.
  */
