@@ -15,6 +15,8 @@ def test_ats_direct_company_registry_contains_expected_direct_boards():
 
     assert ("Mistral AI", "lever", "mistral") in companies
     assert ("Clay Labs", "ashby", "claylabs") in companies
+    assert ("Together AI", "greenhouse", "togetherai") in companies
+    assert ("Modal", "ashby", "modal") in companies
 
 
 def test_ats_direct_active_registry_skips_disabled_boards():
@@ -25,6 +27,7 @@ def test_ats_direct_active_registry_skips_disabled_boards():
 
     assert ("Ada", "greenhouse", "ada") not in active
     assert ("Deepgram", "ashby", "deepgram") in active
+    assert ("Cloudflare", "greenhouse", "cloudflare") in active
 
 
 def test_ats_direct_api_url_builder_supports_all_sites():

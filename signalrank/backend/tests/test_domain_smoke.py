@@ -30,6 +30,7 @@ def test_company_scorer():
             "default_weight": 1.0,
             "tier_s": ["Google"],
             "tier_a": ["Infosys"],
+            "tier_b": ["Starburst", "Vapi"],
             "aliases": {
                 "google llc": "google",
             },
@@ -38,6 +39,8 @@ def test_company_scorer():
     scorer = CompanyScorer(cfg)
     assert scorer.classify("Google") == "tier_s"
     assert scorer.classify("Google LLC") == "tier_s"
+    assert scorer.classify("Starburst") == "tier_b"
+    assert scorer.classify("Vapi") == "tier_b"
     assert scorer.classify("Google Cloud") == "default"
     assert scorer.classify("Prosapiens HR Solutions") == "default"
 
