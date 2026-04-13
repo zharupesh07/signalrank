@@ -39,6 +39,7 @@ async def test_progress_callback(config, queries):
     with patch("batch.sources.rapidapi.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.jobspy_source.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.ats_direct.search", new_callable=AsyncMock, return_value=[]), \
+         patch("batch.sources.workday.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.free_apis.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.google_jobs.search", new_callable=AsyncMock, return_value=[]):
         result = await scrape(queries, config, on_progress=on_progress)
@@ -61,6 +62,7 @@ async def test_scrape_dedup_and_filter(config, queries):
     with patch("batch.sources.rapidapi.search", new_callable=AsyncMock, return_value=mock_jobs), \
          patch("batch.sources.jobspy_source.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.ats_direct.search", new_callable=AsyncMock, return_value=[]), \
+         patch("batch.sources.workday.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.free_apis.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.google_jobs.search", new_callable=AsyncMock, return_value=[]):
         result = await scrape(queries, config)
@@ -84,6 +86,7 @@ async def test_scrape_blocklist(queries):
     with patch("batch.sources.rapidapi.search", new_callable=AsyncMock, return_value=mock_jobs), \
          patch("batch.sources.jobspy_source.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.ats_direct.search", new_callable=AsyncMock, return_value=[]), \
+         patch("batch.sources.workday.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.free_apis.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.google_jobs.search", new_callable=AsyncMock, return_value=[]):
         result = await scrape(queries, config)
@@ -102,6 +105,7 @@ async def test_scrape_can_return_urls_only(config, queries):
     with patch("batch.sources.rapidapi.search", new_callable=AsyncMock, return_value=mock_jobs), \
          patch("batch.sources.jobspy_source.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.ats_direct.search", new_callable=AsyncMock, return_value=[]), \
+         patch("batch.sources.workday.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.free_apis.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.google_jobs.search", new_callable=AsyncMock, return_value=[]):
         result = await scrape(queries, config, return_mode="urls")
@@ -339,7 +343,7 @@ async def test_rapidapi_results_are_cached_across_calls(db, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_parallel_sources_use_isolated_db_sessions(db, queries):
-    config = ScraperConfig(sources=["rapidapi", "free_apis", "google_jobs"])
+    config = ScraperConfig(sources=["rapidapi", "free_apis", "google_jobs", "workday"])
     seen_db_ids = {}
 
     async def _rapidapi(*args, db=None, **kwargs):
@@ -354,12 +358,17 @@ async def test_parallel_sources_use_isolated_db_sessions(db, queries):
         seen_db_ids["google_jobs"] = id(db)
         return []
 
+    async def _workday(*args, db=None, **kwargs):
+        seen_db_ids["workday"] = id(db)
+        return []
+
     with patch("batch.sources.rapidapi.search", new=_rapidapi), \
          patch("batch.sources.free_apis.search", new=_free_apis), \
          patch("batch.sources.google_jobs.search", new=_google_jobs), \
+         patch("batch.sources.workday.search", new=_workday), \
          patch("batch.sources.jobspy_source.search", new_callable=AsyncMock, return_value=[]):
         await scrape(queries, config, db=db)
 
-    assert len(seen_db_ids) == 3
+    assert len(seen_db_ids) == 4
     assert all(db_id != id(db) for db_id in seen_db_ids.values())
-    assert len(set(seen_db_ids.values())) == 3
+    assert len(set(seen_db_ids.values())) == 4

@@ -187,7 +187,7 @@ batch/
   scraper.py           # Orchestrates all scraping sources
   ranker.py            # Scores all jobs for a user
   query_builder.py     # Builds search queries from profile
-  sources/             # jobspy, rapidapi, free_apis, google_jobs
+  sources/             # jobspy, rapidapi, free_apis, google_jobs, ats_direct, workday
 domain/
   additive_scoring.py  # 0-100 composite score
   company.py           # Tier taxonomy + lookup

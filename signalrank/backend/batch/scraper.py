@@ -205,6 +205,18 @@ async def plan_incremental_scrape(
                     seen_cached_urls.add(url)
                     cached_urls.append(url)
 
+    if not allowed or "workday" in allowed:
+        from batch.sources.workday import active_companies
+
+        for company in active_companies():
+            for idx, query in enumerate(queries):
+                await _record_assignment(
+                    idx,
+                    provider="workday",
+                    site=company["slug"],
+                    query=query,
+                )
+
     stale_queries = [query for idx, query in enumerate(queries) if idx in stale_indexes]
     return stale_queries, cached_urls
 
@@ -223,6 +235,7 @@ async def scrape(
     from batch.sources.free_apis import search as search_free
     from batch.sources.google_jobs import search as search_google
     from batch.sources.ats_direct import search as search_ats_direct
+    from batch.sources.workday import search as search_workday
 
     keep_urls_only = return_mode == "urls"
     all_results: list[RawJob] | list[str] = []
@@ -300,6 +313,7 @@ async def scrape(
                 )
             parallel_sources = [
                 ("ats_direct", search_ats_direct),
+                ("workday", search_workday),
                 ("rapidapi", search_rapidapi),
                 ("free_apis", search_free),
                 ("google_jobs", search_google),
