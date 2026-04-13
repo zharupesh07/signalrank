@@ -6,6 +6,7 @@ import re
 from datetime import datetime
 
 import httpx
+from bs4 import BeautifulSoup
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from batch.query_builder import SearchQuery
@@ -39,10 +40,13 @@ _DISABLED_ATS_COMPANIES = {
 }
 
 _ATS_COMPANIES = [
+    {"company": "OpenAI", "site": "ashby", "slug": "openai"},
     {"company": "Anthropic", "site": "greenhouse", "slug": "anthropic"},
+    {"company": "Databricks", "site": "greenhouse", "slug": "databricks"},
     {"company": "Together AI", "site": "greenhouse", "slug": "togetherai"},
     {"company": "Fireworks AI", "site": "greenhouse", "slug": "fireworksai"},
     {"company": "Cloudflare", "site": "greenhouse", "slug": "cloudflare"},
+    {"company": "Elastic", "site": "greenhouse", "slug": "elastic"},
     {"company": "CircleCI", "site": "greenhouse", "slug": "circleci"},
     {"company": "Netlify", "site": "greenhouse", "slug": "netlify"},
     {"company": "ClickHouse", "site": "greenhouse", "slug": "clickhouse"},
@@ -85,6 +89,10 @@ _ATS_COMPANIES = [
     {"company": "Baseten", "site": "ashby", "slug": "baseten"},
     {"company": "Langfuse", "site": "ashby", "slug": "langfuse"},
     {"company": "Deel", "site": "ashby", "slug": "deel"},
+    {"company": "Snowflake", "site": "ashby", "slug": "snowflake"},
+    {"company": "Confluent", "site": "ashby", "slug": "confluent"},
+    {"company": "Pinecone", "site": "ashby", "slug": "pinecone"},
+    {"company": "LangChain", "site": "ashby", "slug": "langchain"},
     {"company": "Vapi", "site": "ashby", "slug": "vapi"},
     {"company": "Bland AI", "site": "ashby", "slug": "bland"},
     {"company": "Sierra", "site": "ashby", "slug": "sierra"},
@@ -93,8 +101,6 @@ _ATS_COMPANIES = [
     {"company": "n8n", "site": "ashby", "slug": "n8n"},
     {"company": "Zapier", "site": "ashby", "slug": "zapier"},
     {"company": "Cohere", "site": "ashby", "slug": "cohere"},
-    {"company": "LangChain", "site": "ashby", "slug": "langchain"},
-    {"company": "Pinecone", "site": "ashby", "slug": "pinecone"},
     {"company": "Attio", "site": "ashby", "slug": "attio"},
     {"company": "Tinybird", "site": "ashby", "slug": "tinybird"},
     {"company": "Travelperk", "site": "ashby", "slug": "travelperk"},
@@ -117,6 +123,7 @@ _ATS_COMPANIES = [
     {"company": "Inngest", "site": "ashby", "slug": "inngest"},
     {"company": "Mistral AI", "site": "lever", "slug": "mistral"},
     {"company": "Weights & Biases", "site": "lever", "slug": "wandb"},
+    {"company": "Atlassian", "site": "lever", "slug": "atlassian"},
     {"company": "Palantir", "site": "lever", "slug": "palantir"},
     {"company": "Clarity AI", "site": "lever", "slug": "clarity-ai"},
     {"company": "Qonto", "site": "lever", "slug": "qonto"},
@@ -124,6 +131,9 @@ _ATS_COMPANIES = [
     {"company": "Pigment", "site": "lever", "slug": "pigment"},
     {"company": "Spotify", "site": "lever", "slug": "spotify"},
     {"company": "Vinted", "site": "lever", "slug": "vinted"},
+    {"company": "Airbnb", "site": "greenhouse", "slug": "airbnb"},
+    {"company": "Stripe", "site": "greenhouse", "slug": "stripe"},
+    {"company": "Freshworks", "site": "smartrecruiters", "slug": "Freshworks"},
 ]
 
 
@@ -155,6 +165,8 @@ def _api_url(company: dict) -> str:
         return f"https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=true"
     if site == "lever":
         return f"https://api.lever.co/v0/postings/{slug}"
+    if site == "smartrecruiters":
+        return f"https://careers.smartrecruiters.com/{slug}"
     raise ValueError(f"Unsupported ATS site: {site}")
 
 
@@ -247,6 +259,59 @@ def _normalize_lever(company: dict, payload) -> list[RawJob]:
     return jobs
 
 
+async def _normalize_smartrecruiters(
+    client: httpx.AsyncClient, company: dict, html: str
+) -> list[RawJob]:
+    soup = BeautifulSoup(html, "lxml")
+    job_urls: list[str] = []
+    for anchor in soup.find_all("a", href=True):
+        href = str(anchor["href"]).strip()
+        if href.startswith("/"):
+            href = f"https://jobs.smartrecruiters.com{href}"
+        if "jobs.smartrecruiters.com" not in href:
+            continue
+        if href not in job_urls:
+            job_urls.append(href)
+
+    jobs: list[RawJob] = []
+    for url in job_urls:
+        try:
+            response = await client.get(url, timeout=30)
+            response.raise_for_status()
+        except Exception:
+            continue
+        detail = BeautifulSoup(response.text, "lxml")
+        title = None
+        og_title = detail.find("meta", attrs={"property": "og:title"})
+        if og_title and og_title.get("content"):
+            title = str(og_title["content"]).strip()
+        if not title:
+            title_tag = detail.find("title")
+            title = str(title_tag.get_text(" ", strip=True)) if title_tag else None
+        if title and "|" in title:
+            title = title.split("|", 1)[0].strip()
+        description = None
+        desc_tag = detail.find("meta", attrs={"name": "description"})
+        if desc_tag and desc_tag.get("content"):
+            description = str(desc_tag["content"]).strip()
+        if not description:
+            description = detail.get_text(" ", strip=True)
+        if not title:
+            continue
+        jobs.append(
+            RawJob(
+                job_url=url,
+                title=title,
+                company=company["company"],
+                description=description or "",
+                location=None,
+                site="smartrecruiters",
+                date_posted=None,
+            )
+        )
+    return jobs
+
+
 def _query_tokens(term: str) -> list[str]:
     tokens = re.findall(r"[a-z0-9\+#/]+", str(term or "").lower())
     filtered = [token for token in tokens if token not in _QUERY_STOPWORDS]
@@ -279,6 +344,8 @@ def _matches_query(job: RawJob, query: SearchQuery) -> bool:
 async def _fetch_board(client: httpx.AsyncClient, company: dict) -> list[RawJob]:
     response = await client.get(_api_url(company), timeout=30)
     response.raise_for_status()
+    if company["site"] == "smartrecruiters":
+        return await _normalize_smartrecruiters(client, company, response.text)
     payload = response.json()
     if company["site"] == "greenhouse":
         return _normalize_greenhouse(company, payload)

@@ -13,8 +13,17 @@ def test_ats_direct_company_registry_contains_expected_direct_boards():
         for entry in ats_direct._ATS_COMPANIES
     }
 
+    assert ("OpenAI", "ashby", "openai") in companies
     assert ("Mistral AI", "lever", "mistral") in companies
     assert ("Clay Labs", "ashby", "claylabs") in companies
+    assert ("Databricks", "greenhouse", "databricks") in companies
+    assert ("Snowflake", "ashby", "snowflake") in companies
+    assert ("Confluent", "ashby", "confluent") in companies
+    assert ("Elastic", "greenhouse", "elastic") in companies
+    assert ("Atlassian", "lever", "atlassian") in companies
+    assert ("Airbnb", "greenhouse", "airbnb") in companies
+    assert ("Stripe", "greenhouse", "stripe") in companies
+    assert ("Freshworks", "smartrecruiters", "Freshworks") in companies
     assert ("Together AI", "greenhouse", "togetherai") in companies
     assert ("Modal", "ashby", "modal") in companies
 
@@ -28,6 +37,15 @@ def test_ats_direct_active_registry_skips_disabled_boards():
     assert ("Ada", "greenhouse", "ada") not in active
     assert ("Deepgram", "ashby", "deepgram") in active
     assert ("Cloudflare", "greenhouse", "cloudflare") in active
+    assert ("OpenAI", "ashby", "openai") in active
+    assert ("Databricks", "greenhouse", "databricks") in active
+    assert ("Snowflake", "ashby", "snowflake") in active
+    assert ("Confluent", "ashby", "confluent") in active
+    assert ("Elastic", "greenhouse", "elastic") in active
+    assert ("Atlassian", "lever", "atlassian") in active
+    assert ("Airbnb", "greenhouse", "airbnb") in active
+    assert ("Stripe", "greenhouse", "stripe") in active
+    assert ("Freshworks", "smartrecruiters", "Freshworks") in active
 
 
 def test_ats_direct_api_url_builder_supports_all_sites():
@@ -40,6 +58,9 @@ def test_ats_direct_api_url_builder_supports_all_sites():
     assert ats_direct._api_url(
         {"company": "Mistral AI", "site": "lever", "slug": "mistral"}
     ) == "https://api.lever.co/v0/postings/mistral"
+    assert ats_direct._api_url(
+        {"company": "Freshworks", "site": "smartrecruiters", "slug": "Freshworks"}
+    ) == "https://careers.smartrecruiters.com/Freshworks"
 
 
 @pytest.mark.asyncio
