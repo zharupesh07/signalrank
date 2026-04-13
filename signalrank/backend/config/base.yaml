@@ -169,6 +169,26 @@ company_scoring:
     GE Healthcare: GE HealthCare
     Modal Labs: Modal
     Fractal: Fractal Analytics
+    Facebook: Meta
+    Facebook Inc: Meta
+    Facebook, Inc.: Meta
+    Meta Platforms: Meta
+    Meta Platforms Inc: Meta
+    Google LLC: Google
+    Alphabet: Google
+    Alphabet Inc: Google
+    Amazon.com: Amazon
+    Amazon.com Services LLC: Amazon
+    Microsoft Corporation: Microsoft
+    Apple Inc: Apple
+    Netflix, Inc.: Netflix
+    Salesforce.com: Salesforce
+    Adobe Systems: Adobe
+    Uber Technologies: Uber
+    Airbnb, Inc.: Airbnb
+    Stripe, Inc.: Stripe
+    Databricks, Inc.: Databricks
+    Snowflake Inc: Snowflake
 
   # SS: European/product-based, remote/Pune-friendly, dream companies
   tier_ss:
@@ -251,6 +271,14 @@ company_scoring:
     - Netlify
     - ElevenLabs
     - Deepgram
+    - Dropbox
+    - Figma
+    - Canva
+    - Zoom
+    - Twilio
+    - Box
+    - DocuSign
+    - Pinterest
 
   # A: High pay but work-intensive
   tier_a:

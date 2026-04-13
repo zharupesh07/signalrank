@@ -45,6 +45,19 @@ def test_company_scorer():
     assert scorer.classify("Prosapiens HR Solutions") == "default"
 
 
+def test_base_company_aliases_cover_faang_and_product_variants():
+    from batch.context import load_base_config
+    from domain.company import CompanyScorer
+
+    scorer = CompanyScorer(load_base_config())
+    assert scorer.classify("Facebook") == "tier_s"
+    assert scorer.classify("Meta Platforms") == "tier_s"
+    assert scorer.classify("Google LLC") == "tier_ss"
+    assert scorer.classify("Amazon.com Services LLC") == "tier_a"
+    assert scorer.classify("Stripe, Inc.") == "tier_s"
+    assert scorer.classify("Dropbox") == "tier_s"
+
+
 def test_fingerprint():
     from domain.embeddings import fingerprint_text
 
