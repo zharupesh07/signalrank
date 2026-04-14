@@ -165,9 +165,7 @@ ranking:
 company_scoring:
   default_weight: 1.0
   aliases:
-    Weights and Biases: Weights & Biases
     GE Healthcare: GE HealthCare
-    Modal Labs: Modal
     Fractal: Fractal Analytics
     Facebook: Meta
     Facebook Inc: Meta
@@ -201,7 +199,6 @@ company_scoring:
     - HubSpot
     - Autodesk
     - UKG
-    - Elastic
     - GitLab
     - JetBrains
     - Spotify
@@ -224,17 +221,6 @@ company_scoring:
     - Miro
     - Notion
     - Workday
-    - OpenAI
-    - Anthropic
-    - Together AI
-    - Modal
-    - Anyscale
-    - Baseten
-    - Langfuse
-    - Cloudflare
-    - Vercel
-    - ClickHouse
-    - Glean
 
   # S: Great WLB + can pay 50L+
   tier_s:
@@ -247,28 +233,19 @@ company_scoring:
     - Stripe
     - Snowflake
     - Databricks
-    - Confluent
     - Palantir
     - Scale AI
-    - Weights and Biases
     - Hugging Face
     - Cohere
     - DeepMind
     - Apple
     - Meta
     - Nvidia
-    - Freshworks
     - Zoho
     - AMD
     - Okta
     - Intel
     - Synopsys
-    - Arize AI
-    - Pinecone
-    - LangChain
-    - Postman
-    - CircleCI
-    - Netlify
     - ElevenLabs
     - Deepgram
     - Dropbox
@@ -283,16 +260,9 @@ company_scoring:
   # A: High pay but work-intensive
   tier_a:
     - Amazon
-    - Uber
     - Coinbase
-    - Rippling
-    - Flipkart
     - PhonePe
-    - Razorpay
     - CRED
-    - Meesho
-    - Swiggy
-    - Zomato
     - Dream11
     - Groww
     - Zerodha
@@ -326,14 +296,6 @@ company_scoring:
     - NetApp
     - Equinix
     - Automation Anywhere
-    - Fireworks AI
-    - RunPod
-    - Deel
-    - Redpanda
-    - Materialize
-    - SingleStore
-    - BrowserStack
-    - Harness
 
   # B: Domain AI / established enterprise
   tier_b:
@@ -372,17 +334,6 @@ company_scoring:
     - Moody's
     - Genesys
     - Guidewire
-    - WhyLabs
-    - Fiddler AI
-    - Truera
-    - Evidently AI
-    - OctoAI
-    - Fixie AI
-    - Dust
-    - Cognition AI
-    - Replicate
-    - Starburst
-    - Helicone
     - Vapi
     - Bland AI
     - Sierra
@@ -391,7 +342,6 @@ company_scoring:
     - n8n
     - Zapier
     - Attio
-    - Pulumi
     - WorkOS
     - Supabase
     - Temporal

@@ -251,10 +251,10 @@ async def test_profile_options_exposes_shared_taxonomy(client, auth_token):
     assert "adjacent" in payload["title_penalty_rules"]
     assert "hybrid" in payload["title_penalty_rules"]
     assert "Atlassian" in payload["company_tier_lists"]["tier_ss"]
-    assert "OpenAI" in payload["company_tier_lists"]["tier_ss"]
-    assert "Anthropic" in payload["company_tier_lists"]["tier_ss"]
+    assert "OpenAI" not in payload["company_tier_lists"]["tier_ss"]
+    assert "Anthropic" not in payload["company_tier_lists"]["tier_ss"]
     assert "Microsoft" in payload["company_tier_lists"]["tier_s"]
-    assert "Confluent" in payload["company_tier_lists"]["tier_s"]
+    assert "Confluent" not in payload["company_tier_lists"]["tier_s"]
 
 
 async def test_resume_tailor_nonexistent_job_returns_404(client, auth_token):

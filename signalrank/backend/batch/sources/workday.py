@@ -149,14 +149,6 @@ _WORKDAY_COMPANIES = [
         "base_url": "https://adobe.wd5.myworkdayjobs.com/external_experienced",
     },
     {
-        "company": "BrowserStack",
-        "slug": "browserstack",
-        "host": "browserstack.wd3.myworkdayjobs.com",
-        "tenant": "browserstack",
-        "site": "External",
-        "base_url": "https://browserstack.wd3.myworkdayjobs.com/External",
-    },
-    {
         "company": "FIS",
         "slug": "fis",
         "host": "fis.wd5.myworkdayjobs.com",

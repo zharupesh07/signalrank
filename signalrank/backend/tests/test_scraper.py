@@ -42,8 +42,7 @@ async def test_progress_callback(config, queries):
          patch("batch.sources.workday.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.free_apis.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.google_jobs.search", new_callable=AsyncMock, return_value=[]), \
-         patch("batch.sources.amazon_jobs.search", new_callable=AsyncMock, return_value=[]), \
-         patch("batch.sources.swiggy.search", new_callable=AsyncMock, return_value=[]):
+         patch("batch.sources.amazon_jobs.search", new_callable=AsyncMock, return_value=[]):
         result = await scrape(queries, config, on_progress=on_progress)
 
     phases = [c["phase"] for c in progress_calls]
@@ -67,8 +66,7 @@ async def test_scrape_dedup_and_filter(config, queries):
          patch("batch.sources.workday.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.free_apis.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.google_jobs.search", new_callable=AsyncMock, return_value=[]), \
-         patch("batch.sources.amazon_jobs.search", new_callable=AsyncMock, return_value=[]), \
-         patch("batch.sources.swiggy.search", new_callable=AsyncMock, return_value=[]):
+         patch("batch.sources.amazon_jobs.search", new_callable=AsyncMock, return_value=[]):
         result = await scrape(queries, config)
 
     urls = [j.job_url for j in result]
@@ -112,8 +110,7 @@ async def test_scrape_can_return_urls_only(config, queries):
          patch("batch.sources.workday.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.free_apis.search", new_callable=AsyncMock, return_value=[]), \
          patch("batch.sources.google_jobs.search", new_callable=AsyncMock, return_value=[]), \
-         patch("batch.sources.amazon_jobs.search", new_callable=AsyncMock, return_value=[]), \
-         patch("batch.sources.swiggy.search", new_callable=AsyncMock, return_value=[]):
+         patch("batch.sources.amazon_jobs.search", new_callable=AsyncMock, return_value=[]):
         result = await scrape(queries, config, return_mode="urls")
 
     assert result == ["https://example.com/1", "https://example.com/2"]

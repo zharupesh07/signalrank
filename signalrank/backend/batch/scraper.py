@@ -164,10 +164,6 @@ async def plan_incremental_scrape(
         for idx, query in enumerate(queries):
             await _record_assignment(idx, provider="amazon_jobs", site="amazon", query=query)
 
-    if not allowed or "swiggy" in allowed:
-        for idx, query in enumerate(queries):
-            await _record_assignment(idx, provider="swiggy", site="swiggy", query=query)
-
     if not allowed or "free_apis" in allowed:
         unique_queries = _dedupe_query_terms(queries)
         if unique_queries:
@@ -243,7 +239,6 @@ async def scrape(
     from batch.sources.free_apis import search as search_free
     from batch.sources.google_jobs import search as search_google
     from batch.sources.amazon_jobs import search as search_amazon_jobs
-    from batch.sources.swiggy import search as search_swiggy
     from batch.sources.ats_direct import search as search_ats_direct
     from batch.sources.workday import search as search_workday
 
@@ -328,7 +323,6 @@ async def scrape(
                 ("free_apis", search_free),
                 ("google_jobs", search_google),
                 ("amazon_jobs", search_amazon_jobs),
-                ("swiggy", search_swiggy),
             ]
             if allowed:
                 parallel_sources = [(n, fn) for n, fn in parallel_sources if n in allowed]
