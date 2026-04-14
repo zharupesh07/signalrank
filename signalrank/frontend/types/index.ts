@@ -193,6 +193,41 @@ export interface JobFeedbackResponse {
   jobs_payload: JobsResponse;
 }
 
+export interface ProfileFreshCompanyRow {
+  company_rank: number;
+  company: string;
+  company_tier: string;
+  role_bucket: string;
+  best_job_title: string;
+  best_job_location: string;
+  location_bucket: string;
+  remote_policy_match: string;
+  yoe_match_band: string;
+  site: string;
+  best_job_url: string;
+  score: number;
+  jobs_considered_for_company: number;
+}
+
+export interface ProfileFreshRequest {
+  limit?: number;
+  country?: string;
+  queries?: string[];
+  locations?: string[];
+  sources?: string[];
+  companies?: string[];
+}
+
+export interface ProfileFreshResponse {
+  output_csv: string;
+  summary_json: string;
+  scraped_jobs: number;
+  jobs_scored: number;
+  companies_exported: number;
+  rejection_counts: Record<string, number>;
+  rows: ProfileFreshCompanyRow[];
+}
+
 export type ApplicationStatus =
   | "interested"
   | "applied"

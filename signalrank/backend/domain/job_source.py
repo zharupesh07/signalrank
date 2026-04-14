@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-DIRECT_SOURCE_SITES = {"greenhouse", "ashby", "lever", "workday"}
+DIRECT_SOURCE_SITES = {"greenhouse", "ashby", "lever", "workday", "company_portal"}
 SPECIALIST_FEED_SITES = {"himalayas", "remotive", "jobicy", "manual"}
 AGGREGATOR_SITES = {
     "indeed",
@@ -20,6 +20,7 @@ _SOURCE_PRIORITY = {
     "ashby": 4,
     "lever": 4,
     "workday": 4,
+    "company_portal": 4,
     "manual": 3,
     "himalayas": 2,
     "remotive": 2,

@@ -1,11 +1,11 @@
-import pytest
 import uuid
 from datetime import datetime, timedelta, timezone
+import pytest
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import create_access_token
-from api.models import ArchivalQueue, JobPreferenceMemory, JobRaw, JobResult, Run, User
+from api.models import ArchivalQueue, JobPreferenceMemory, JobRaw, JobResult, Profile, Run, User
 
 
 @pytest.fixture
@@ -659,3 +659,61 @@ async def test_get_job_includes_agentic_summary_fields(client, auth_token, db: A
     assert payload["fit_band"] == "strong_fit"
     assert payload["confidence_band"] == "high"
     assert payload["explanation_summary"] == "Strong fit | lane: direct"
+
+
+async def test_profile_fresh_preview_returns_rows(client, auth_token, db: AsyncSession, monkeypatch):
+    import api.routes.jobs as jobs_route
+
+    me = await client.get("/api/profile", headers={"Authorization": f"Bearer {auth_token}"})
+    user_id = me.json()["user_id"]
+    profile = (await db.execute(select(Profile).where(Profile.user_id == user_id))).scalar_one()
+    profile.resume_text = "Senior AI Platform Engineer with MLOps and agent systems experience"
+    await db.commit()
+
+    async def _fake_generate(**kwargs):
+        assert kwargs["resume_text"] == profile.resume_text
+        return {
+            "output_csv": "/tmp/profile_fresh.csv",
+            "summary_json": "/tmp/profile_fresh.summary.json",
+            "scraped_jobs": 10,
+            "jobs_scored": 3,
+            "companies_exported": 2,
+            "rejection_counts": {"role_mismatch": 7},
+            "rows": [
+                {
+                    "company_rank": 1,
+                    "company": "Acme",
+                    "company_tier": "tier_s",
+                    "role_bucket": "agentic",
+                    "best_job_title": "Senior Agent Engineer",
+                    "best_job_location": "Remote, India",
+                    "location_bucket": "top",
+                    "remote_policy_match": "india_safe",
+                    "yoe_match_band": "ideal",
+                    "site": "greenhouse",
+                    "best_job_url": "https://example.com/1",
+                    "score": 91.0,
+                    "jobs_considered_for_company": 2,
+                }
+            ],
+        }
+
+    monkeypatch.setattr(jobs_route, "generate_profile_fresh_company_rank", _fake_generate)
+
+    response = await client.post(
+        "/api/jobs/profile-fresh",
+        headers={"Authorization": f"Bearer {auth_token}"},
+        json={
+            "limit": 30,
+            "queries": ["MLOps Engineer"],
+            "locations": ["Remote", "Pune"],
+            "sources": ["ats_direct"],
+            "companies": ["Snowflake"],
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["companies_exported"] == 2
+    assert payload["scraped_jobs"] == 10
+    assert payload["rows"][0]["company"] == "Acme"

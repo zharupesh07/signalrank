@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from batch.query_builder import SearchQuery
 from batch.scrape_cache import load_cached_jobs, store_cached_jobs
 from batch.scraper import RawJob, ScraperConfig
+from domain.company import _norm
 
 logger = logging.getLogger(__name__)
 
@@ -207,8 +208,11 @@ _WORKDAY_COMPANIES = [
 ]
 
 
-def active_companies() -> list[dict]:
-    return list(_WORKDAY_COMPANIES)
+def active_companies(allowlist: list[str] | None = None) -> list[dict]:
+    if not allowlist:
+        return list(_WORKDAY_COMPANIES)
+    allow = {_norm(item) for item in allowlist if str(item).strip()}
+    return [company for company in _WORKDAY_COMPANIES if _norm(company["company"]) in allow]
 
 
 def _cache_query(company: dict, query: SearchQuery, config: ScraperConfig) -> SearchQuery:
@@ -412,7 +416,7 @@ async def search(
         headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"},
         follow_redirects=True,
     ) as client:
-        for company in active_companies():
+        for company in active_companies(config.company_allowlist):
             for query in queries:
                 cache_query = _cache_query(company, query, config)
                 try:

@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Literal
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
@@ -27,6 +28,7 @@ from domain.job_preferences import (
     merge_preference_state,
     rerank_rows,
 )
+from scripts.profile_fresh_company_rank import generate_profile_fresh_company_rank
 
 ARCHIVAL_TIERS = {"tier_ss", "tier_s", "tier_a"}
 DEFAULT_JOBS_CACHE_PARAMS = {
@@ -84,6 +86,25 @@ class JobsFeedbackRequest(BaseModel):
 class JobsPreferencesResetRequest(BaseModel):
     clear_all: bool = False
     categories: list[str] = Field(default_factory=list)
+
+
+class ProfileFreshRequest(BaseModel):
+    limit: int = 30
+    country: str = "India"
+    queries: list[str] = Field(default_factory=list)
+    locations: list[str] = Field(default_factory=list)
+    sources: list[str] = Field(default_factory=list)
+    companies: list[str] = Field(default_factory=list)
+
+
+class ProfileFreshResponse(BaseModel):
+    output_csv: str
+    summary_json: str
+    scraped_jobs: int
+    jobs_scored: int
+    companies_exported: int
+    rejection_counts: dict[str, int]
+    rows: list[dict]
 
 
 async def warm_default_jobs_cache(db: AsyncSession, *, user_id: str, tz_name: str | None = None) -> None:
@@ -190,6 +211,36 @@ async def _load_default_jobs_cache(db: AsyncSession, *, user_id: str, run_id: st
         return None
     default = cache.get("default")
     return default if isinstance(default, dict) else None
+
+
+@router.post("/profile-fresh", response_model=ProfileFreshResponse)
+async def run_profile_fresh_preview(
+    body: ProfileFreshRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    profile = (
+        await db.execute(select(Profile).where(Profile.user_id == current_user.id))
+    ).scalar_one_or_none()
+    if not profile or not profile.resume_text:
+        raise HTTPException(status_code=400, detail="Resume text is required to run profile-fresh preview")
+
+    output_dir = Path(__file__).resolve().parents[2] / "tmp" / "top100_company_rank_300"
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    output_csv = output_dir / f"profile_fresh_{current_user.id}_{timestamp}.csv"
+
+    result = await generate_profile_fresh_company_rank(
+        resume_path=None,
+        resume_text=profile.resume_text,
+        output_csv=output_csv,
+        limit=max(1, min(body.limit, 100)),
+        country=body.country,
+        terms=list(body.queries),
+        locations=list(body.locations),
+        sources=list(body.sources),
+        companies=list(body.companies),
+    )
+    return ProfileFreshResponse(**result)
 
 
 def _extract_cached_run_summary(run: Run) -> dict:

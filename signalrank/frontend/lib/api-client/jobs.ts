@@ -5,6 +5,8 @@ import type {
   Job,
   JobPreferencesResponse,
   JobsResponse,
+  ProfileFreshRequest,
+  ProfileFreshResponse,
   TrackerStats,
 } from "@/types";
 
@@ -103,6 +105,19 @@ export const jobsApi = {
       body: JSON.stringify({
         clear_all: data.clearAll ?? false,
         categories: data.categories ?? [],
+      }),
+    }),
+  profileFresh: (token: string, data: ProfileFreshRequest = {}) =>
+    request<ProfileFreshResponse>("/api/jobs/profile-fresh", {
+      method: "POST",
+      token,
+      body: JSON.stringify({
+        limit: data.limit ?? 30,
+        country: data.country ?? "India",
+        queries: data.queries ?? [],
+        locations: data.locations ?? [],
+        sources: data.sources ?? [],
+        companies: data.companies ?? [],
       }),
     }),
 };

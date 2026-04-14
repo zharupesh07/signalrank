@@ -13,6 +13,8 @@ from batch.query_builder import SearchQuery
 
 logger = logging.getLogger(__name__)
 
+COMPANY_FILTERABLE_SOURCES = frozenset({"ats_direct", "workday", "company_portals"})
+
 
 @dataclass
 class RawJob:
@@ -50,6 +52,7 @@ class ScraperConfig:
     linkedin_max_queries: int = 0
     default_country: str = "India"
     sources: list[str] | None = None  # None = all; e.g. ["indeed"] for quick run
+    company_allowlist: list[str] | None = None
     jobspy_timeout: int = 300
     total_timeout: int = 900
 
@@ -115,6 +118,12 @@ async def plan_incremental_scrape(
         return queries, []
 
     allowed = set(config.sources) if config.sources else None
+    if config.company_allowlist:
+        allowed = (
+            set(COMPANY_FILTERABLE_SOURCES)
+            if allowed is None
+            else allowed & COMPANY_FILTERABLE_SOURCES
+        )
     stale_indexes: set[int] = set()
     cached_urls: list[str] = []
     seen_cached_urls: set[str] = set()
@@ -212,11 +221,23 @@ async def plan_incremental_scrape(
     if not allowed or "workday" in allowed:
         from batch.sources.workday import active_companies
 
-        for company in active_companies():
+        for company in active_companies(config.company_allowlist):
             for idx, query in enumerate(queries):
                 await _record_assignment(
                     idx,
                     provider="workday",
+                    site=company["slug"],
+                    query=query,
+                )
+
+    if not allowed or "company_portals" in allowed:
+        from batch.sources.company_portals import active_companies
+
+        for company in active_companies(config.company_allowlist):
+            for idx, query in enumerate(queries):
+                await _record_assignment(
+                    idx,
+                    provider="company_portals",
                     site=company["slug"],
                     query=query,
                 )
@@ -240,6 +261,7 @@ async def scrape(
     from batch.sources.google_jobs import search as search_google
     from batch.sources.amazon_jobs import search as search_amazon_jobs
     from batch.sources.ats_direct import search as search_ats_direct
+    from batch.sources.company_portals import search as search_company_portals
     from batch.sources.workday import search as search_workday
 
     keep_urls_only = return_mode == "urls"
@@ -274,8 +296,16 @@ async def scrape(
             return await fn(queries, config, db=isolated_db)
 
     async def _run():
+        effective_allowed = allowed
+        if config.company_allowlist:
+            effective_allowed = (
+                set(COMPANY_FILTERABLE_SOURCES)
+                if effective_allowed is None
+                else effective_allowed & COMPANY_FILTERABLE_SOURCES
+            )
+
         # Phase 1: JobSpy Indeed
-        if not allowed or "indeed" in allowed:
+        if not effective_allowed or "indeed" in effective_allowed:
             if on_progress:
                 await on_progress(
                     phase="jobspy_indeed", phase_num=1, total_phases=3,
@@ -291,7 +321,7 @@ async def scrape(
                 logger.exception("Phase jobspy/indeed failed, skipping")
 
         # Phase 2: JobSpy LinkedIn — skipped if linkedin_max_queries=0 or filtered out
-        if (not allowed or "linkedin" in allowed) and config.linkedin_max_queries > 0:
+        if (not effective_allowed or "linkedin" in effective_allowed) and config.linkedin_max_queries > 0:
             linkedin_queries = queries[:config.linkedin_max_queries]
             if on_progress:
                 await on_progress(
@@ -310,7 +340,7 @@ async def scrape(
             logger.info("Phase jobspy/linkedin: skipped")
 
         # Phase 3: Parallel sources — skip if filtered
-        if not allowed or allowed - {"indeed", "linkedin"}:
+        if not effective_allowed or effective_allowed - {"indeed", "linkedin"}:
             if on_progress:
                 await on_progress(
                     phase="parallel", phase_num=3, total_phases=3,
@@ -318,14 +348,15 @@ async def scrape(
                 )
             parallel_sources = [
                 ("ats_direct", search_ats_direct),
+                ("company_portals", search_company_portals),
                 ("workday", search_workday),
                 ("rapidapi", search_rapidapi),
                 ("free_apis", search_free),
                 ("google_jobs", search_google),
                 ("amazon_jobs", search_amazon_jobs),
             ]
-            if allowed:
-                parallel_sources = [(n, fn) for n, fn in parallel_sources if n in allowed]
+            if effective_allowed:
+                parallel_sources = [(n, fn) for n, fn in parallel_sources if n in effective_allowed]
             tasks = [_run_source_with_isolated_db(fn) for _, fn in parallel_sources]
             results_list = await asyncio.gather(*tasks, return_exceptions=True)
             for (name, _), res in zip(parallel_sources, results_list):
