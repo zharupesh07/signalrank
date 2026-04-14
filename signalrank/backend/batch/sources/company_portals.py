@@ -33,6 +33,7 @@ _QUERY_STOPWORDS = {
 }
 
 _COMPANIES = [
+    {"company": "Adobe", "slug": "adobe", "kind": "adobe"},
     {"company": "Salesforce", "slug": "salesforce", "kind": "salesforce"},
     {"company": "Optum", "slug": "optum", "kind": "optum"},
     {"company": "SAP", "slug": "sap", "kind": "sap"},
@@ -117,6 +118,8 @@ def _matches_location(query: SearchQuery, location: str | None) -> bool:
         return True
     if query_loc in {"delhi", "new delhi"} and any(city in loc for city in ("delhi", "new delhi")):
         return True
+    if query_loc in {"gurgaon", "gurugram"} and any(city in loc for city in ("gurgaon", "gurugram")):
+        return True
     return query_loc in loc or ("remote" in loc and query_loc in {"remote", ""})
 
 
@@ -151,6 +154,72 @@ def _job_location_from_jsonld(payload: dict[str, Any]) -> str | None:
     if not parts:
         return None
     return ", ".join(dict.fromkeys(parts))
+
+
+def _extract_phapp_ddo(html: str) -> dict[str, Any]:
+    match = re.search(r"phApp\.ddo\s*=\s*(\{.*?\})\s*;\s*phApp\.experimentData", html, re.DOTALL)
+    if not match:
+        return {}
+    try:
+        payload = json.loads(match.group(1))
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+async def _fetch_adobe_jobs(
+    client: httpx.AsyncClient, company: dict[str, str], query: SearchQuery
+) -> list[RawJob]:
+    jobs: list[RawJob] = []
+    seen: set[str] = set()
+    for search_term in _portal_search_terms(query):
+        response = await client.get(
+            "https://careers.adobe.com/us/en/search-results",
+            params={"keywords": search_term},
+            timeout=30,
+        )
+        response.raise_for_status()
+        ddo = _extract_phapp_ddo(response.text)
+        payload = ((ddo.get("eagerLoadRefineSearch") or {}).get("data") or {})
+        for item in payload.get("jobs") or []:
+            if not isinstance(item, dict):
+                continue
+            job_seq_no = str(item.get("jobSeqNo") or "").strip()
+            title = str(item.get("title") or "").strip()
+            if not job_seq_no or not title:
+                continue
+            job_url = f"https://careers.adobe.com/us/en/job/{job_seq_no}/{quote_plus(title.replace('/', '-'))}"
+            if job_url in seen:
+                continue
+            location = str(item.get("location") or item.get("cityStateCountry") or "").strip() or None
+            preview_text = " ".join(
+                part for part in [
+                    title,
+                    str(item.get("descriptionTeaser") or "").strip(),
+                    str(item.get("ml_job_parser") or "").strip(),
+                ] if part
+            )
+            if not _matches_search_term(
+                title=title,
+                description=preview_text,
+                location=location,
+                search_term=search_term,
+                query=query,
+            ):
+                continue
+            seen.add(job_url)
+            jobs.append(
+                RawJob(
+                    job_url=job_url,
+                    title=title,
+                    company=company["company"],
+                    description=str(item.get("descriptionTeaser") or "").strip(),
+                    location=location,
+                    site="company_portal",
+                    date_posted=_parse_date(item.get("postedDate") or item.get("dateCreated")),
+                )
+            )
+    return jobs
 
 
 async def _fetch_salesforce_detail(
@@ -416,6 +485,8 @@ async def _fetch_company_jobs(
     kind = company["kind"]
     if kind == "salesforce":
         return await _fetch_salesforce_jobs(client, company, query)
+    if kind == "adobe":
+        return await _fetch_adobe_jobs(client, company, query)
     if kind == "optum":
         return await _fetch_optum_jobs(client, company, query)
     if kind == "sap":

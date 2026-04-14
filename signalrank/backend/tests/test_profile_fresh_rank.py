@@ -251,6 +251,59 @@ def test_location_priority_beats_acceptable_city_even_with_bump(company_scorer: 
     assert ranked[1].location_compensation == 5
 
 
+def test_rank_profile_fresh_jobs_accepts_strong_ai_signal_for_generic_ic_title(company_scorer: CompanyScorer):
+    jobs = [
+        _job(
+            "Software Engineering AMTS",
+            company="Salesforce",
+            location="Hyderabad, India",
+            description="AI-assisted tools, modern large language models, LLM workflows, 5-8 years experience",
+            url="https://careers.salesforce.com/en/jobs/jr263074/software-engineering-amts/",
+        )
+    ]
+
+    ranked, rejections = rank_profile_fresh_jobs(jobs, company_scorer=company_scorer)
+
+    assert len(ranked) == 1
+    assert ranked[0].role_bucket in {"agentic", "genai"}
+    assert rejections == {}
+
+
+def test_rank_profile_fresh_jobs_accepts_agentforce_developer_role(company_scorer: CompanyScorer):
+    jobs = [
+        _job(
+            "Salesforce/Agentforce Developer (Software Engineering, MTS)",
+            company="Salesforce",
+            location="Bangalore, India",
+            description="Agentforce capabilities, prompt templates, AI-driven automation, 5-8 years experience",
+            url="https://careers.salesforce.com/en/jobs/jr318187/salesforceagentforce-developer-software-engineering-mts/",
+        )
+    ]
+
+    ranked, rejections = rank_profile_fresh_jobs(jobs, company_scorer=company_scorer)
+
+    assert len(ranked) == 1
+    assert ranked[0].role_bucket == "agentic"
+    assert rejections == {}
+
+
+def test_classify_location_accepts_gurgaon_as_acceptable_city(company_scorer: CompanyScorer):
+    jobs = [
+        _job(
+            "Senior GenAI Engineer",
+            company="Adobe",
+            location="Gurgaon, India",
+            description="Generative AI services with 6-8 years experience",
+            url="https://example.com/gurgaon",
+        )
+    ]
+
+    ranked, _ = rank_profile_fresh_jobs(jobs, company_scorer=company_scorer)
+
+    assert len(ranked) == 1
+    assert ranked[0].location_bucket == "acceptable"
+
+
 def test_select_top_companies_uses_best_applyable_job(company_scorer: CompanyScorer):
     jobs = [
         _job(
@@ -308,11 +361,11 @@ def test_rank_profile_fresh_jobs_can_filter_to_allowed_companies(company_scorer:
 
 def test_active_companies_respects_allowlist():
     ats_names = {item["company"] for item in ats_direct.active_companies(["Snowflake", "Stripe"])}
-    portal_names = {item["company"] for item in company_portals.active_companies(["Optum", "SAP"])}
+    portal_names = {item["company"] for item in company_portals.active_companies(["Adobe", "Optum", "SAP"])}
     workday_names = {item["company"] for item in workday.active_companies(["Salesforce", "FIS"])}
 
     assert ats_names == {"Snowflake", "Stripe"}
-    assert portal_names == {"Optum", "SAP"}
+    assert portal_names == {"Adobe", "Optum", "SAP"}
     assert workday_names == {"Salesforce", "FIS"}
 
 

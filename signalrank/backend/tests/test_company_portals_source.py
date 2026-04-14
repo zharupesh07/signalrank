@@ -20,8 +20,22 @@ def _job(url: str, title: str, location: str, description: str) -> RawJob:
 
 
 def test_company_portals_active_companies_respects_allowlist():
-    names = {item["company"] for item in company_portals.active_companies(["Optum", "SAP"])}
-    assert names == {"Optum", "SAP"}
+    names = {item["company"] for item in company_portals.active_companies(["Adobe", "Optum", "SAP"])}
+    assert names == {"Adobe", "Optum", "SAP"}
+
+
+def test_extract_phapp_ddo_parses_embedded_adobe_payload():
+    html = """
+    <script type="text/javascript">
+    var phApp = phApp || {"widgetApiEndpoint":"https://careers.adobe.com/widgets"};
+    phApp.ddo = {"eagerLoadRefineSearch":{"totalHits":1,"data":{"jobs":[{"jobSeqNo":"ADOBUSR123","title":"Machine Learning Engineer 3","location":"Bangalore, India","descriptionTeaser":"GenAI systems","postedDate":"2026-04-01T00:00:00.000+0000"}]}}};
+    phApp.experimentData = {};
+    </script>
+    """
+    payload = company_portals._extract_phapp_ddo(html)
+
+    assert payload["eagerLoadRefineSearch"]["totalHits"] == 1
+    assert payload["eagerLoadRefineSearch"]["data"]["jobs"][0]["jobSeqNo"] == "ADOBUSR123"
 
 
 @pytest.mark.asyncio

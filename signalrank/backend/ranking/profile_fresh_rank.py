@@ -23,6 +23,7 @@ DEFAULT_LOCATIONS = [
     "Remote",
     "Pune",
     "Bangalore",
+    "Gurgaon",
     "Mumbai",
     "Delhi",
     "Noida",
@@ -150,6 +151,7 @@ _TITLE_HARD_REJECTS = (
     "erp",
     "frontend",
     "front end",
+    "product engineer",
     "recruiter",
     "talent acquisition",
 )
@@ -166,6 +168,7 @@ _ROLE_NEGATIVES = (
     "frontend",
 )
 _AGENTIC_TERMS = (
+    "agentforce",
     "agentic",
     "ai agent",
     "ai agents",
@@ -206,11 +209,15 @@ _ML_ENGINEER_TERMS = (
 )
 _ENGINEERING_IC_TITLE_TERMS = (
     "engineer",
+    "engineering",
     "developer",
     "devops",
     "mlops",
     "sre",
     "platform",
+    "member of technical staff",
+    "mts",
+    "amts",
 )
 
 _TITLE_TARGET_TERMS = (
@@ -243,6 +250,8 @@ _CITY_BUCKETS = {
         "ka in",
     ),
     "acceptable": (
+        "gurgaon",
+        "gurugram",
         "mumbai",
         "delhi",
         "new delhi",
@@ -295,6 +304,15 @@ def _contains_any(text: str, terms: tuple[str, ...]) -> bool:
     return any(term in text for term in terms)
 
 
+def _contains_phrase(text: str, phrase: str) -> bool:
+    pattern = r"(?<![a-z0-9])" + re.escape(phrase) + r"(?![a-z0-9])"
+    return re.search(pattern, text) is not None
+
+
+def _contains_any_phrase(text: str, terms: tuple[str, ...]) -> bool:
+    return any(_contains_phrase(text, term) for term in terms)
+
+
 def _contains_location_marker(text: str, marker: str) -> bool:
     pattern = r"(?<![a-z0-9])" + re.escape(marker) + r"(?![a-z0-9])"
     return re.search(pattern, text) is not None
@@ -345,6 +363,13 @@ def _has_target_title_signal(title: str) -> bool:
     )
 
 
+def _has_target_text_signal(text: str) -> bool:
+    return any(
+        _contains_any(text, terms)
+        for terms in (_AGENTIC_TERMS, _GENAI_TERMS, _MLOPS_TERMS, _ML_ENGINEER_TERMS)
+    )
+
+
 def _extract_yoe_range(text: str) -> tuple[int | None, int | None]:
     patterns = [
         r"\b(\d+)\s*[-to]{1,3}\s*(\d+)\+?\s*(?:years|year|yrs|yr)\b",
@@ -367,13 +392,13 @@ def _extract_yoe_range(text: str) -> tuple[int | None, int | None]:
 def classify_role_bucket(job: dict[str, Any]) -> tuple[str | None, str | None]:
     title = _normalize(job.get("title"))
     text = _job_text(job)
-    if _contains_any(title, _TITLE_HARD_REJECTS):
+    if _contains_any_phrase(title, _TITLE_HARD_REJECTS):
         return None, None
     if _contains_any(text, _ROLE_NEGATIVES):
         return None, None
     if not _is_engineering_ic_title(title):
         return None, None
-    if not _has_target_title_signal(title):
+    if not _has_target_title_signal(title) and not _has_target_text_signal(text):
         return None, None
 
     if _contains_any(title, _AGENTIC_TERMS):
