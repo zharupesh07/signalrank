@@ -153,10 +153,48 @@ if [[ ${#ALEMBIC_HEADS[@]} -gt 1 ]]; then
 fi
 info "Alembic head: ${ALEMBIC_HEADS[0]}"
 
+# If the database already has core application tables but no Alembic
+# version row, it was initialized outside the migration chain (for example
+# from a SQL dump). In that case, stamp the schema to head instead of replaying
+# the entire migration history and hitting duplicate-table errors.
+BOOTSTRAP_MODE="$(
+  cd "$BACKEND_DIR" && uv run python - <<'PY'
+import asyncio
+
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
+
+from api.config import settings
+from api.database import _parse_url
+
+
+async def main() -> None:
+    url, connect_args = _parse_url(settings.database_url)
+    engine = create_async_engine(url, connect_args=connect_args)
+    async with engine.connect() as conn:
+        version_exists = bool((await conn.execute(text("SELECT to_regclass('public.alembic_version') IS NOT NULL"))).scalar())
+        jobs_exists = bool((await conn.execute(text("SELECT to_regclass('public.jobs_raw') IS NOT NULL"))).scalar())
+        users_exists = bool((await conn.execute(text("SELECT to_regclass('public.users') IS NOT NULL"))).scalar())
+    await engine.dispose()
+    if not version_exists and jobs_exists and users_exists:
+        print("stamp")
+    else:
+        print("upgrade")
+
+
+asyncio.run(main())
+PY
+)"
+
 # ── Alembic migrations ────────────────────────────────────────────────────────
 
-info "Running database migrations..."
-(cd "$BACKEND_DIR" && uv run alembic upgrade head)
+if [[ "$BOOTSTRAP_MODE" == "stamp" ]]; then
+  info "Existing schema detected without Alembic version row; stamping head."
+  (cd "$BACKEND_DIR" && uv run alembic stamp head)
+else
+  info "Running database migrations..."
+  (cd "$BACKEND_DIR" && uv run alembic upgrade head)
+fi
 
 # ── Start services ────────────────────────────────────────────────────────────
 
