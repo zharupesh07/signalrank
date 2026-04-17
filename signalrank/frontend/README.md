@@ -29,7 +29,7 @@ Open [http://localhost:3000](http://localhost:3000).
 |---|---|
 | `/` | Landing / redirect |
 | `/onboarding` | First-run resume upload + auto-inferred role/location/preferences review |
-| `/jobs` | Ranked job feed — filters, page-size picker (50/100/200/All), sidebar detail |
+| `/jobs` | Ranked job feed across all successful runs by default — filters, run selector, page-size picker (50/100/200/All), sidebar detail |
 | `/tracker` | Application tracker + recruiter CRM; "+ Add Job" button to ingest via URL or paste |
 | `/dashboard` | Run history + score overview; "+ Add Job" button to ingest via URL or paste |
 | `/runs` | Scraper run management |

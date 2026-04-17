@@ -171,6 +171,7 @@ export interface JobPreferencesResponse {
 }
 
 export interface JobFeedbackRequest {
+  runId?: string | null;
   feedbackText?: string | null;
   quickActions?: string[];
   jobIds?: string[];

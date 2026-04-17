@@ -13,6 +13,7 @@ import type {
 import { request } from "./core";
 
 export type JobsListParams = {
+  runId?: string;
   page?: number;
   limit?: number;
   sort?: "final_score" | "semantic_score" | "skills_score" | "company_score" | "seniority_score" | "location_score" | "recency_score" | "date_posted";
@@ -33,6 +34,7 @@ export const jobsApi = {
       limit = 50,
       sort = "final_score",
       sortDir = "desc",
+      runId,
       search = "",
       showArchived = true,
       minScore = 0,
@@ -51,6 +53,7 @@ export const jobsApi = {
       job_type: jobType,
       date_range: dateRange,
     });
+    if (runId) qs.set("run_id", runId);
     if (search) qs.set("search", search);
     for (const tier of tiers) qs.append("tiers", tier);
     for (const site of sites) qs.append("sites", site);
@@ -81,6 +84,7 @@ export const jobsApi = {
       method: "POST",
       token,
       body: JSON.stringify({
+        run_id: data.runId ?? null,
         feedback_text: data.feedbackText ?? null,
         quick_actions: data.quickActions ?? [],
         job_ids: data.jobIds ?? [],

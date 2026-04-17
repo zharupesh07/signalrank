@@ -210,7 +210,7 @@ alembic/versions/      # DB migrations
 |---|---|---|
 | POST | `/api/auth/register` | Register new user |
 | POST | `/api/auth/login` | Login, get JWT |
-| GET | `/api/jobs` | Ranked job feed (filterable) |
+| GET | `/api/jobs` | Ranked job feed (filterable, defaults to all successful runs; optional `run_id` for single-run drilldown) |
 | POST | `/api/runs/trigger` | Start scrape + rank run |
 | GET | `/api/applications` | Application tracker |
 | POST | `/api/resume/tailor` | Tailor resume for a job (LLM) |

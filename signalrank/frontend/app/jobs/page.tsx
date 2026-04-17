@@ -21,6 +21,7 @@ import {
   JobsHeader,
   JobsPagination,
   JobsPresetBar,
+  JobsRunSelector,
   JobsRefinementPanel,
 } from "./jobs-ui";
 import { useJobsPageData } from "./use-jobs-page-data";
@@ -46,9 +47,12 @@ export default function JobsPage() {
     pageSize,
     preferenceResetting,
     preferences,
+    runs,
     refreshing,
     resetView,
     resetPreferences,
+    selectedRunId,
+    setSelectedRunId,
     runTotal,
     search,
     selectedJob,
@@ -142,6 +146,15 @@ export default function JobsPage() {
           onApplyPreset={applyPreset}
           onResetView={resetView}
           presets={JOB_PRESETS.map(({ key, label }) => ({ key, label }))}
+        />
+
+        <JobsRunSelector
+          runs={runs}
+          selectedRunId={selectedRunId}
+          onSelectRun={(runId) => {
+            setSelectedRunId(runId);
+            setPage(1);
+          }}
         />
 
         <div className="flex gap-4">

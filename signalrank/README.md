@@ -349,8 +349,9 @@ sequenceDiagram
     R->>DB: INSERT job_results (scored)
     Q->>DB: UPDATE run status=success
 
-    UI->>API: GET /api/jobs?run_id=latest
-    API-->>UI: ranked job list (score, tier, title, company)
+    UI->>API: GET /api/jobs
+    API-->>UI: ranked job list across all successful runs by default
+    Note over UI,API: jobs page can also drill into a single successful run via run_id
 ```
 
 ---

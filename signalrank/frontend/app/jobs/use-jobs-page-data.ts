@@ -11,6 +11,11 @@ import {
   getApiSort,
   type Filters,
 } from "./jobs-config";
+import type { JobsRunSummary } from "./jobs-ui";
+
+function pickDefaultRunId(runs: JobsRunSummary[]) {
+  return runs.length > 0 ? "all" : "";
+}
 
 export function useJobsPageData({
   token,
@@ -26,6 +31,9 @@ export function useJobsPageData({
   const [runTotal, setRunTotal] = useState(0);
   const [newGoodMatches, setNewGoodMatches] = useState(0);
   const [availableSites, setAvailableSites] = useState<string[]>([]);
+  const [runs, setRuns] = useState<JobsRunSummary[]>([]);
+  const [selectedRunId, setSelectedRunId] = useState("");
+  const [runsLoaded, setRunsLoaded] = useState(false);
   const [page, setPage] = useState(1);
   const [sorting, setSorting] = useState([{ id: "final_score", desc: true }]);
   const [loading, setLoading] = useState(true);
@@ -79,10 +87,46 @@ export function useJobsPageData({
       setNewGoodMatches(0);
       setAvailableSites([]);
       setPreferences(null);
+      setRuns([]);
+      setSelectedRunId("");
+      setRunsLoaded(false);
       setLoading(false);
       return;
     }
   }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    setRunsLoaded(false);
+    api.runs
+      .list(token)
+      .then((items) => {
+        if (cancelled) return;
+        setRuns(items);
+        setSelectedRunId((current) => {
+          if (current === "all") return current;
+          if (current && items.some((run) => run.run_id === current)) return current;
+          return pickDefaultRunId(items);
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setRuns([]);
+        setSelectedRunId("");
+      })
+      .finally(() => {
+        if (!cancelled) setRunsLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  useEffect(() => {
+    setPage(1);
+    setSelectedJob(null);
+  }, [selectedRunId]);
 
   const applyJobsPayload = useCallback((response: { jobs: Job[]; total: number; run_total: number; new_good_matches: number; available_sites: string[] }) => {
     setJobs(response.jobs);
@@ -124,6 +168,17 @@ export function useJobsPageData({
 
   const loadJobs = useCallback(async () => {
     if (!token) return;
+    if (!runsLoaded) return;
+    if (!selectedRunId) {
+      setJobs([]);
+      setTotal(0);
+      setRunTotal(0);
+      setNewGoodMatches(0);
+      setAvailableSites([]);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     const hasJobs = jobs.length > 0;
     if (hasJobs) {
       setRefreshing(true);
@@ -133,6 +188,7 @@ export function useJobsPageData({
     try {
       const { sort, sortDir } = getApiSort(sorting);
       const response = await api.jobs.list(token, {
+        runId: selectedRunId || undefined,
         page,
         limit: pageSize,
         sort,
@@ -150,7 +206,7 @@ export function useJobsPageData({
       setLoading(false);
       setRefreshing(false);
     }
-  }, [token, page, pageSize, debouncedSearch, showArchived, filters, sorting, jobs.length, applyJobsPayload]);
+  }, [token, page, pageSize, debouncedSearch, showArchived, filters, sorting, jobs.length, applyJobsPayload, selectedRunId, runsLoaded]);
 
   const loadPreferences = useCallback(async () => {
     if (!token) return;
@@ -309,6 +365,7 @@ export function useJobsPageData({
     setFeedbackSubmitting(true);
     try {
       const response = await api.jobs.feedback(token, {
+        runId: selectedRunId || undefined,
         ...getFeedbackRequestBase(),
         feedbackText: trimmed || undefined,
         quickActions,
@@ -325,7 +382,7 @@ export function useJobsPageData({
     } finally {
       setFeedbackSubmitting(false);
     }
-  }, [token, getFeedbackRequestBase, applyPreferences, applyJobsPayload, toast]);
+  }, [token, getFeedbackRequestBase, applyPreferences, applyJobsPayload, toast, selectedRunId]);
 
   const resetPreferences = useCallback(async (categories: string[] = []) => {
     if (!token) return;
@@ -377,9 +434,12 @@ export function useJobsPageData({
     pageSize,
     preferenceResetting,
     preferences,
+    runs,
     refreshing,
     resetView,
     resetPreferences,
+    selectedRunId,
+    setSelectedRunId,
     runTotal,
     search,
     selectedJob,

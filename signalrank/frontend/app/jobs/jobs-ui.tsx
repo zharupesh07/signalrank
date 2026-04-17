@@ -14,6 +14,17 @@ import {
 } from "./jobs-config";
 import { TIER_COLORS } from "./columns";
 
+export type JobsRunSummary = {
+  run_id: string;
+  status: string;
+  job_count: number | null;
+  scrape_count: number | null;
+  started_at: string | null;
+  finished_at: string | null;
+  run_kind?: string | null;
+  scrape_reason?: string | null;
+};
+
 const QUICK_FEEDBACK_ACTIONS = [
   { key: "good_fit", label: "good fit" },
   { key: "bad_fit", label: "bad fit" },
@@ -53,6 +64,64 @@ export function JobsHeader({
           <span>new good matches ready to review</span>
         </div>
       )}
+    </div>
+  );
+}
+
+function formatRunLabel(run: JobsRunSummary) {
+  const kind = (run.run_kind || run.status || "").replaceAll("_", " ");
+  const count = run.job_count == null ? "0" : String(run.job_count);
+  const finished = run.finished_at || run.started_at;
+  const when = finished ? new Date(finished).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "unknown";
+  return `${kind || "run"} · ${count} jobs · ${when}`;
+}
+
+export function JobsRunSelector({
+  runs,
+  selectedRunId,
+  onSelectRun,
+}: {
+  runs: JobsRunSummary[];
+  selectedRunId: string;
+  onSelectRun: (runId: string) => void;
+}) {
+  const selectedRun = runs.find((run) => run.run_id === selectedRunId) ?? null;
+
+  return (
+    <div className="mb-4 border border-border bg-card px-4 py-3 flex flex-wrap items-center gap-3">
+      <div>
+        <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Run</div>
+        <div className="text-xs text-secondary-foreground mt-1">Pick any successful scan. Jobs and feedback will stay scoped to this run.</div>
+      </div>
+      <div className="ml-auto flex items-center gap-3">
+        <select
+          value={selectedRunId}
+          onChange={(e) => onSelectRun(e.target.value)}
+          className="min-w-[20rem] bg-input border border-border px-3 py-2 text-xs text-foreground outline-none focus:border-primary transition-colors"
+        >
+          {runs.length > 0 ? (
+            <option value="all">All Successful Runs</option>
+          ) : null}
+          {runs.length === 0 ? (
+            <option value="">No successful runs found</option>
+          ) : (
+            runs.map((run) => (
+              <option key={run.run_id} value={run.run_id}>
+                {formatRunLabel(run)}
+              </option>
+            ))
+          )}
+        </select>
+        {selectedRunId === "all" ? (
+          <div className="text-[11px] text-muted-foreground tabular-nums">
+            {runs.length} runs
+          </div>
+        ) : selectedRun ? (
+          <div className="text-[11px] text-muted-foreground tabular-nums">
+            {selectedRun.job_count ?? 0} jobs
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

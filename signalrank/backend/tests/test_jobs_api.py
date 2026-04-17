@@ -278,7 +278,7 @@ async def test_list_jobs_filters_company_tiers_including_legacy_values(client, a
 
 
 @pytest.mark.asyncio
-async def test_list_jobs_scopes_filters_to_latest_success_run(client, auth_token, db: AsyncSession):
+async def test_list_jobs_uses_all_success_runs_and_falls_back_to_tiered_runs(client, auth_token, db: AsyncSession):
     user_id = str(uuid.uuid4())
     user = User(id=user_id, email="latest-run@test.com", password_hash="x")
     db.add(user)
@@ -335,11 +335,19 @@ async def test_list_jobs_scopes_filters_to_latest_success_run(client, auth_token
                 user_id=user_id,
                 job_id=latest_job.id,
                 final_score=81.0,
-                company_tier="tier_b",
+                company_tier="",
             ),
         ]
     )
     await db.commit()
+
+    latest_response = await client.get(
+        "/api/jobs",
+        headers={"Authorization": f"Bearer {create_access_token(user_id, user.email, is_admin=False)}"},
+    )
+    assert latest_response.status_code == 200
+    latest_payload = latest_response.json()
+    assert [job["title"] for job in latest_payload["jobs"]] == ["Old SS Job", "Latest B Job"]
 
     response = await client.get(
         "/api/jobs?tiers=tier_ss",
@@ -348,8 +356,160 @@ async def test_list_jobs_scopes_filters_to_latest_success_run(client, auth_token
 
     assert response.status_code == 200
     payload = response.json()
+    assert payload["total"] == 1
+    assert [job["title"] for job in payload["jobs"]] == ["Old SS Job"]
+
+
+@pytest.mark.asyncio
+async def test_list_jobs_respects_explicit_run_id_even_with_tier_filter(client, auth_token, db: AsyncSession):
+    user_id = str(uuid.uuid4())
+    email = "explicit-run@test.com"
+    user = User(id=user_id, email=email, password_hash="x")
+    db.add(user)
+
+    older_run = Run(
+        id=str(uuid.uuid4()),
+        user_id=user_id,
+        status="success",
+        finished_at=datetime.now(timezone.utc) - timedelta(days=1),
+        job_count=1,
+    )
+    latest_run = Run(
+        id=str(uuid.uuid4()),
+        user_id=user_id,
+        status="success",
+        finished_at=datetime.now(timezone.utc),
+        job_count=1,
+    )
+    db.add_all([older_run, latest_run])
+    await db.flush()
+
+    older_job = JobRaw(
+        job_url="https://example.com/older-explicit",
+        title="Older Explicit Job",
+        company="OlderCo",
+        description="older",
+        location="Remote",
+        site="indeed",
+        date_posted=datetime.now(timezone.utc),
+    )
+    latest_job = JobRaw(
+        job_url="https://example.com/latest-explicit",
+        title="Latest Explicit Job",
+        company="LatestCo",
+        description="latest",
+        location="Remote",
+        site="indeed",
+        date_posted=datetime.now(timezone.utc),
+    )
+    db.add_all([older_job, latest_job])
+    await db.flush()
+
+    db.add_all(
+        [
+            JobResult(
+                run_id=older_run.id,
+                user_id=user_id,
+                job_id=older_job.id,
+                final_score=91.0,
+                company_tier="tier_ss",
+            ),
+            JobResult(
+                run_id=latest_run.id,
+                user_id=user_id,
+                job_id=latest_job.id,
+                final_score=81.0,
+                company_tier="",
+            ),
+        ]
+    )
+    await db.commit()
+
+    response = await client.get(
+        f"/api/jobs?run_id={latest_run.id}&tiers=tier_ss",
+        headers={"Authorization": f"Bearer {create_access_token(user_id, email, is_admin=False)}"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
     assert payload["total"] == 0
     assert payload["jobs"] == []
+
+
+@pytest.mark.asyncio
+async def test_list_jobs_default_includes_jobs_from_multiple_successful_runs(client, auth_token, db: AsyncSession):
+    user_id = str(uuid.uuid4())
+    email = "meaningful-run@test.com"
+    user = User(id=user_id, email=email, password_hash="x")
+    db.add(user)
+
+    quick_run = Run(
+        id=str(uuid.uuid4()),
+        user_id=user_id,
+        status="success",
+        finished_at=datetime.now(timezone.utc),
+        job_count=13,
+    )
+    full_run = Run(
+        id=str(uuid.uuid4()),
+        user_id=user_id,
+        status="success",
+        finished_at=datetime.now(timezone.utc) - timedelta(hours=1),
+        job_count=100,
+    )
+    db.add_all([quick_run, full_run])
+    await db.flush()
+
+    quick_job = JobRaw(
+        job_url="https://example.com/quick-job",
+        title="Quick Job",
+        company="QuickCo",
+        description="quick",
+        location="Remote",
+        site="indeed",
+        date_posted=datetime.now(timezone.utc),
+    )
+    full_job = JobRaw(
+        job_url="https://example.com/full-job",
+        title="Full Job",
+        company="FullCo",
+        description="full",
+        location="Remote",
+        site="indeed",
+        date_posted=datetime.now(timezone.utc),
+    )
+    db.add_all([quick_job, full_job])
+    await db.flush()
+
+    db.add_all(
+        [
+            JobResult(
+                run_id=quick_run.id,
+                user_id=user_id,
+                job_id=quick_job.id,
+                final_score=91.0,
+                company_tier="tier_ss",
+            ),
+            JobResult(
+                run_id=full_run.id,
+                user_id=user_id,
+                job_id=full_job.id,
+                final_score=81.0,
+                company_tier="tier_a",
+            ),
+        ]
+    )
+    await db.commit()
+
+    response = await client.get(
+        "/api/jobs",
+        headers={"Authorization": f"Bearer {create_access_token(user_id, email, is_admin=False)}"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 2
+    assert [job["title"] for job in payload["jobs"]] == ["Quick Job", "Full Job"]
 
 
 @pytest.mark.asyncio
