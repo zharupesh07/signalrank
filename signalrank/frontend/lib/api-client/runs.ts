@@ -3,15 +3,15 @@ import type { Run } from "@/types";
 import { normalizeRun, request, type RunPayload } from "./core";
 
 export const runsApi = {
-  list: (token: string) =>
-    request<RunPayload[]>("/api/runs", { token }),
+  list: async (token: string): Promise<Run[]> =>
+    (await request<RunPayload[]>("/api/runs", { token })).map(normalizeRun),
   trigger: (
     token: string,
     mode: "quick" | "full" = "quick",
     disableScraping = false,
     executorType?: "local" | "cloud",
   ) =>
-    request<{ run_id: string; status: string }>("/api/runs/trigger", {
+    request<{ id?: string; run_id: string; status: string }>("/api/runs/trigger", {
       method: "POST",
       token,
       body: JSON.stringify({

@@ -5,7 +5,6 @@ from pydantic import BaseModel
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.config import api_runtime_flags
 from api.database import get_db
 from api.deps import get_current_user
 from api.utils import deep_merge_dict, profile_resume_template
@@ -23,7 +22,6 @@ from api.models import (
     Profile, RecruiterRefreshTask, Run, TailoredResume, User,
 )
 from domain.profile_rules import enrich_config_with_profile_rules
-from batch.worker import RunRequest, get_queue
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -496,9 +494,6 @@ async def trigger_run_for_user(
     db.add(run)
     await db.commit()
     await db.refresh(run)
-    if api_runtime_flags()["run_api_worker"]:
-        queue = get_queue(mode)
-        await queue.put(RunRequest(run.id, user.id, mode, body.force_scrape, body.disable_scraping))
     return {"run_id": run.id, "status": "pending", "mode": mode, "user_email": user.email}
 
 

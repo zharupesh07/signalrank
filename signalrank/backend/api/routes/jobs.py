@@ -12,6 +12,7 @@ from api.database import get_db
 from api.deps import get_current_user
 from api.deps_llm import get_llm_client
 from api.models import Application, ArchivalQueue, JobFeedbackEvent, JobPreferenceMemory, JobRaw, JobResult, Profile, Run, User
+from api.rate_limits import enforce_user_rate_limit
 from api.stats_cache import get_cached_stats, invalidate_stats_cache, set_cached_stats
 from api.timezone import format_datetime_local
 from api.routes.admin import require_admin
@@ -220,6 +221,12 @@ async def run_profile_fresh_preview(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await enforce_user_rate_limit(
+        current_user.id,
+        "profile_fresh_preview",
+        limit=4,
+        window_seconds=60 * 60,
+    )
     profile = (
         await db.execute(select(Profile).where(Profile.user_id == current_user.id))
     ).scalar_one_or_none()
@@ -993,6 +1000,12 @@ async def post_feedback(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await enforce_user_rate_limit(
+        current_user.id,
+        "jobs_feedback",
+        limit=30,
+        window_seconds=60 * 60,
+    )
     invalid_actions = sorted(set(body.quick_actions) - QUICK_ACTIONS)
     if invalid_actions:
         raise HTTPException(status_code=422, detail=f"invalid quick_actions: {', '.join(invalid_actions)}")
@@ -1146,6 +1159,12 @@ async def archive_unsuitable(
     current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
+    await enforce_user_rate_limit(
+        current_user.id,
+        "archive_unsuitable",
+        limit=4,
+        window_seconds=60 * 60,
+    )
     """Enqueue all unevaluated SS/S/A tier JobResults for LLM archival evaluation."""
     run = await _get_latest_success_run(db, user_id=current_user.id)
     if not run:

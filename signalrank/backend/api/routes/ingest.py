@@ -17,6 +17,7 @@ from api.database import get_db
 from api.deps import get_current_user
 from api.deps_llm import get_llm_client
 from api.models import Application, GenerationQueue, JobRaw, JobResult, Profile, User
+from api.rate_limits import enforce_user_rate_limit
 from batch.context import load_base_config
 from domain.job_profile import build_job_profile
 from llm.openrouter import OpenRouterClient
@@ -143,6 +144,12 @@ async def ingest_extract(
 ):
     if not body.url and not body.text:
         raise HTTPException(status_code=422, detail="Provide url or text")
+    await enforce_user_rate_limit(
+        current_user.id,
+        "job_ingest_extract",
+        limit=20,
+        window_seconds=60 * 60,
+    )
 
     content = body.text or ""
     is_url = bool(body.url)
@@ -201,6 +208,12 @@ async def ingest_confirm(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await enforce_user_rate_limit(
+        current_user.id,
+        "job_ingest_confirm",
+        limit=30,
+        window_seconds=60 * 60,
+    )
     job_url = (body.job_url or "").strip() or f"manual://{uuid.uuid4()}"
 
     # Duplicate check — before any DB writes

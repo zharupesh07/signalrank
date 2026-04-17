@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { api } from "@/lib/api";
-import type { Job, JobFeedbackRequest, JobPreferencesResponse } from "@/types";
+import type { Job, JobFeedbackRequest, JobPreferencesResponse, Run } from "@/types";
 
 import {
   DEFAULT_FILTERS,
@@ -11,9 +11,7 @@ import {
   getApiSort,
   type Filters,
 } from "./jobs-config";
-import type { JobsRunSummary } from "./jobs-ui";
-
-function pickDefaultRunId(runs: JobsRunSummary[]) {
+function pickDefaultRunId(runs: Run[]) {
   return runs.length > 0 ? "all" : "";
 }
 
@@ -31,7 +29,7 @@ export function useJobsPageData({
   const [runTotal, setRunTotal] = useState(0);
   const [newGoodMatches, setNewGoodMatches] = useState(0);
   const [availableSites, setAvailableSites] = useState<string[]>([]);
-  const [runs, setRuns] = useState<JobsRunSummary[]>([]);
+  const [runs, setRuns] = useState<Run[]>([]);
   const [selectedRunId, setSelectedRunId] = useState("");
   const [runsLoaded, setRunsLoaded] = useState(false);
   const [page, setPage] = useState(1);
@@ -106,7 +104,7 @@ export function useJobsPageData({
         setRuns(items);
         setSelectedRunId((current) => {
           if (current === "all") return current;
-          if (current && items.some((run) => run.run_id === current)) return current;
+          if (current && items.some((run) => run.id === current)) return current;
           return pickDefaultRunId(items);
         });
       })

@@ -19,8 +19,8 @@ class Settings(BaseSettings):
     cors_allow_origin_regex: str = ""
     openrouter_api_key: str = ""
     hunter_api_key: str = ""
-    db_pool_size: int = 3
-    db_max_overflow: int = 3
+    db_pool_size: int = 5
+    db_max_overflow: int = 5
     db_pool_timeout: int = 30
     llm_response_cache_max: int = 1000
     llm_semaphore: int = 3
@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     linkedin_max_queries: int = 0
     ranker_max_candidates: int = 10000
     ranker_max_description_chars: int = 1200
+    max_active_runs_per_user: int = 1
     access_token_expire_minutes: int = 60 * 24 * 7  # 7 days
 
     @field_validator("allowed_origins", mode="before")

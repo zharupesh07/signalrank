@@ -3,7 +3,7 @@
 import { ChevronLeft, ChevronRight, ExternalLink, Loader2, Plus, RotateCcw, Send, SlidersHorizontal, XCircle } from "lucide-react";
 
 import { scoreColor } from "@/lib/formatting";
-import type { Job, JobPreferencesResponse } from "@/types";
+import type { Job, JobPreferencesResponse, Run } from "@/types";
 
 import {
   DEFAULT_FILTERS,
@@ -14,16 +14,10 @@ import {
 } from "./jobs-config";
 import { TIER_COLORS } from "./columns";
 
-export type JobsRunSummary = {
-  run_id: string;
-  status: string;
-  job_count: number | null;
-  scrape_count: number | null;
-  started_at: string | null;
-  finished_at: string | null;
-  run_kind?: string | null;
-  scrape_reason?: string | null;
-};
+export type JobsRunSummary = Pick<
+  Run,
+  "id" | "status" | "job_count" | "scrape_count" | "started_at" | "finished_at" | "run_kind" | "scrape_reason"
+>;
 
 const QUICK_FEEDBACK_ACTIONS = [
   { key: "good_fit", label: "good fit" },
@@ -85,7 +79,7 @@ export function JobsRunSelector({
   selectedRunId: string;
   onSelectRun: (runId: string) => void;
 }) {
-  const selectedRun = runs.find((run) => run.run_id === selectedRunId) ?? null;
+  const selectedRun = runs.find((run) => run.id === selectedRunId) ?? null;
 
   return (
     <div className="mb-4 border border-border bg-card px-4 py-3 flex flex-wrap items-center gap-3">
@@ -106,7 +100,7 @@ export function JobsRunSelector({
             <option value="">No successful runs found</option>
           ) : (
             runs.map((run) => (
-              <option key={run.run_id} value={run.run_id}>
+              <option key={run.id} value={run.id}>
                 {formatRunLabel(run)}
               </option>
             ))

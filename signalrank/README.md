@@ -2,6 +2,8 @@
 
 > AI-powered job discovery and ranking — surfaces roles that actually match your profile, not just keywords.
 
+Canonical product spec: [docs/spec.md](/Users/examplecandidate/Projects/job_ranker/signalrank/docs/spec.md)
+
 SignalRank scrapes job boards, embeds your resume, infers target roles from it, and ranks every listing against your skills, seniority, preferred companies, and location — so your job search feed looks like a curated shortlist, not a firehose.
 
 ---

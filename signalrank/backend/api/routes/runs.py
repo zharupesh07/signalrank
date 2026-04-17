@@ -7,20 +7,22 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
-from api.config import api_runtime_flags
+from api.config import api_runtime_flags, settings
 from api.database import get_db
 from api.deps import get_current_user
 from api.models import Profile, Run, User
+from api.rate_limits import enforce_user_rate_limit
 from api.routes.admin import require_admin
 from batch.run_kinds import run_kind_from_flags, run_kind_from_progress, scrape_reason_from_progress
 from batch.run_progress import progress_int, progress_str
-from batch.worker import RunRequest, get_queue
+from batch.worker import get_queue
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
 logger = logging.getLogger(__name__)
+ACTIVE_RUN_STATUSES = ("pending", "claimed", "scraping", "ranking")
 
 def _display_status(db_status: str) -> str:
-    return "done" if db_status == "success" else db_status
+    return "completed" if db_status == "success" else db_status
 
 
 def _jobs_snapshot(progress: dict | None) -> dict | None:
@@ -33,10 +35,13 @@ def _jobs_snapshot(progress: dict | None) -> dict | None:
     return default if isinstance(default, dict) else None
 
 class RunResponse(BaseModel):
+    id: str
     run_id: str
     status: str
     job_count: int | None = None
     scrape_count: int | None = None
+    ranked_count: int | None = None
+    visible_count: int | None = None
     corpus_count: int | None = None
     scored_count: int | None = None
     shown_count: int | None = None
@@ -48,6 +53,7 @@ class RunResponse(BaseModel):
     error: str | None = None
     started_at: str | None = None
     finished_at: str | None = None
+    executor_type: str | None = None
 
 
 class TriggerRunRequest(BaseModel):
@@ -69,25 +75,32 @@ async def _create_run(
     profile = result.scalar_one_or_none()
     if not profile or not profile.onboarding_complete:
         raise HTTPException(status_code=400, detail="Please complete onboarding before triggering a run")
+    await enforce_user_rate_limit(
+        current_user.id,
+        "refresh_jobs",
+        limit=6,
+        window_seconds=60 * 60,
+    )
 
-    existing_result = await db.execute(
+    active_runs_result = await db.execute(
         select(Run)
         .where(
             Run.user_id == current_user.id,
-            Run.mode == requested_mode,
-            Run.status.in_(["pending", "claimed", "scraping", "ranking"]),
+            Run.status.in_(ACTIVE_RUN_STATUSES),
         )
         .order_by(Run.started_at.desc())
     )
-    existing_run = next(
-        (
-            run for run in existing_result.scalars().all()
-            if bool((run.progress or {}).get("disable_scraping", False)) == disable_scraping
-        ),
-        None,
-    )
-    if existing_run:
-        return {"run_id": existing_run.id, "status": existing_run.status}
+    active_runs = active_runs_result.scalars().all()
+    if active_runs:
+        existing_run = active_runs[0]
+        if len(active_runs) >= settings.max_active_runs_per_user:
+            logger.info(
+                "Run request reused active run %s for user_id=%s because active run limit=%s was reached",
+                existing_run.id,
+                current_user.id,
+                settings.max_active_runs_per_user,
+            )
+            return {"id": existing_run.id, "run_id": existing_run.id, "status": existing_run.status}
 
     if executor_type == "local" and not getattr(current_user, "is_admin", False):
         raise HTTPException(status_code=403, detail="Local executor requires admin")
@@ -111,28 +124,40 @@ async def _create_run(
     db.add(run)
     await db.commit()
     await db.refresh(run)
+    logger.info(
+        "Run %s created as pending in DB (mode=%s user_id=%s); awaiting worker claim",
+        run.id,
+        requested_mode,
+        current_user.id,
+    )
+    return {"id": run.id, "run_id": run.id, "status": "pending"}
 
-    if api_runtime_flags()["run_api_worker"]:
-        queue = get_queue(requested_mode)
-        await queue.put(
-            RunRequest(
-                run.id,
-                current_user.id,
-                requested_mode,
-                force_scrape,
-                disable_scraping,
-            )
-        )
-        logger.info("Run %s queued in-process by API worker (mode=%s user_id=%s)", run.id, requested_mode, current_user.id)
-    else:
-        logger.info(
-            "Run %s created as pending in DB (mode=%s user_id=%s); awaiting dedicated worker service",
-            run.id,
-            requested_mode,
-            current_user.id,
-        )
 
-    return {"run_id": run.id, "status": "pending"}
+def _serialize_run(run: Run) -> RunResponse:
+    status = _display_status(run.status)
+    ranked_count = progress_int(run.progress, "scored_job_count")
+    visible_count = progress_int(run.progress, "shown_job_count")
+    return RunResponse(
+        id=run.id,
+        run_id=run.id,
+        status=status,
+        job_count=run.job_count,
+        scrape_count=run.scrape_count,
+        ranked_count=ranked_count,
+        visible_count=visible_count,
+        corpus_count=progress_int(run.progress, "corpus_job_count"),
+        scored_count=ranked_count,
+        shown_count=visible_count,
+        corpus_source=progress_str(run.progress, "corpus_source"),
+        progress=run.progress,
+        run_kind=run_kind_from_progress(run.progress),
+        scrape_reason=scrape_reason_from_progress(run.progress),
+        jobs_snapshot=_jobs_snapshot(run.progress),
+        error=run.error,
+        started_at=str(run.started_at) if run.started_at else None,
+        finished_at=str(run.finished_at) if run.finished_at else None,
+        executor_type=run.executor_type,
+    )
 
 
 @router.post("/trigger", status_code=202)
@@ -181,24 +206,7 @@ async def get_latest_run(
     run = result.scalar_one_or_none()
     if not run:
         raise HTTPException(status_code=404, detail="No runs found")
-    _status = _display_status(run.status)
-    return RunResponse(
-        run_id=run.id,
-        status=_status,
-        job_count=run.job_count,
-        scrape_count=run.scrape_count,
-        corpus_count=progress_int(run.progress, "corpus_job_count"),
-        scored_count=progress_int(run.progress, "scored_job_count"),
-        shown_count=progress_int(run.progress, "shown_job_count"),
-        corpus_source=progress_str(run.progress, "corpus_source"),
-        progress=run.progress,
-        run_kind=run_kind_from_progress(run.progress),
-        scrape_reason=scrape_reason_from_progress(run.progress),
-        jobs_snapshot=_jobs_snapshot(run.progress),
-        error=run.error,
-        started_at=str(run.started_at) if run.started_at else None,
-        finished_at=str(run.finished_at) if run.finished_at else None,
-    )
+    return _serialize_run(run)
 
 
 @router.get("", response_model=list[RunResponse])
@@ -209,30 +217,12 @@ async def list_runs(
     result = await db.execute(
         select(Run)
         .where(Run.user_id == current_user.id)
+        .where(Run.status == "success")
         .order_by(Run.started_at.desc())
         .limit(50)
     )
     runs = result.scalars().all()
-    return [
-        RunResponse(
-            run_id=r.id,
-            status=_display_status(r.status),
-            job_count=r.job_count,
-            scrape_count=r.scrape_count,
-            corpus_count=progress_int(r.progress, "corpus_job_count"),
-            scored_count=progress_int(r.progress, "scored_job_count"),
-            shown_count=progress_int(r.progress, "shown_job_count"),
-            corpus_source=progress_str(r.progress, "corpus_source"),
-            progress=r.progress,
-            run_kind=run_kind_from_progress(r.progress),
-            scrape_reason=scrape_reason_from_progress(r.progress),
-            jobs_snapshot=_jobs_snapshot(r.progress),
-            error=r.error,
-            started_at=str(r.started_at) if r.started_at else None,
-            finished_at=str(r.finished_at) if r.finished_at else None,
-        )
-        for r in runs
-    ]
+    return [_serialize_run(r) for r in runs]
 
 
 @router.get("/{run_id}/status", response_model=RunResponse)
@@ -247,24 +237,7 @@ async def get_run_status(
     run = result.scalar_one_or_none()
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
-    _status = _display_status(run.status)
-    return RunResponse(
-        run_id=run.id,
-        status=_status,
-        job_count=run.job_count,
-        scrape_count=run.scrape_count,
-        corpus_count=progress_int(run.progress, "corpus_job_count"),
-        scored_count=progress_int(run.progress, "scored_job_count"),
-        shown_count=progress_int(run.progress, "shown_job_count"),
-        corpus_source=progress_str(run.progress, "corpus_source"),
-        progress=run.progress,
-        run_kind=run_kind_from_progress(run.progress),
-        scrape_reason=scrape_reason_from_progress(run.progress),
-        jobs_snapshot=_jobs_snapshot(run.progress),
-        error=run.error,
-        started_at=str(run.started_at) if run.started_at else None,
-        finished_at=str(run.finished_at) if run.finished_at else None,
-    )
+    return _serialize_run(run)
 
 
 @router.post("/{run_id}/stop", status_code=200)

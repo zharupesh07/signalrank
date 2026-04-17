@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -71,6 +72,21 @@ async def test_fetch_himalayas_handles_error(query):
     client.get.side_effect = httpx.ConnectError("timeout")
     jobs = await _fetch_himalayas(client, query)
     assert jobs == []
+
+
+@pytest.mark.asyncio
+async def test_fetch_himalayas_handles_http_status_without_traceback(query, caplog):
+    request = httpx.Request("GET", "https://himalayas.app/jobs/api")
+    response = httpx.Response(403, request=request)
+    client = AsyncMock()
+    client.get.return_value = response
+
+    with caplog.at_level(logging.WARNING):
+        jobs = await _fetch_himalayas(client, query)
+
+    assert jobs == []
+    assert "Himalayas API unavailable: HTTP 403" in caplog.text
+    assert "Traceback" not in caplog.text
 
 
 @pytest.mark.asyncio

@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
-  Briefcase,
   CheckCircle,
   Database,
   FileText,
@@ -338,7 +337,9 @@ export default function SettingsPage() {
     { id: "profile", label: "Profile", icon: User },
     { id: "resume", label: "Resume", icon: FileText },
     { id: "search", label: "Search", icon: Target },
-    { id: "recruiters", label: "Recruiters", icon: Briefcase },
+    ...(isAdmin
+      ? [{ id: "recruiters" as SettingsSection, label: "Recruiters", icon: Shield }]
+      : []),
     ...(isDev
       ? [{ id: "developer" as SettingsSection, label: "Developer", icon: Database }]
       : []),
@@ -495,7 +496,7 @@ export default function SettingsPage() {
               />
             )}
 
-            {activeSection === "recruiters" && (
+            {activeSection === "recruiters" && isAdmin && (
               <RecruiterFinder token={token} />
             )}
 

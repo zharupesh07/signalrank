@@ -1,5 +1,7 @@
+import logging
 from unittest.mock import AsyncMock
 
+import httpx
 import pytest
 
 from batch.query_builder import SearchQuery
@@ -144,6 +146,66 @@ async def test_workday_search_fetches_and_filters(monkeypatch):
     )
 
     assert [job.job_url for job in results] == ["https://example.com/software-engineer"]
+
+
+@pytest.mark.asyncio
+async def test_fetch_query_page_converts_expected_http_status():
+    request = httpx.Request("POST", "https://example.com/jobs")
+    response = httpx.Response(400, request=request)
+
+    class _Client:
+        async def post(self, *_args, **_kwargs):
+            return response
+
+    with pytest.raises(workday.WorkdayListHTTPError) as exc_info:
+        await workday._fetch_query_page(
+            _Client(),
+            {
+                "company": "Aptiv",
+                "host": "aptiv.wd5.myworkdayjobs.com",
+                "tenant": "aptiv",
+                "site": "APTIV_CAREERS",
+            },
+            SearchQuery(term="MLOps Engineer", location="Pune", country="India"),
+            limit=20,
+            offset=0,
+        )
+
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.company == "Aptiv"
+
+
+@pytest.mark.asyncio
+async def test_workday_search_logs_expected_http_status_once(monkeypatch, caplog):
+    monkeypatch.setattr(
+        workday,
+        "_WORKDAY_COMPANIES",
+        [
+            {
+                "company": "Aptiv",
+                "slug": "aptiv",
+                "host": "aptiv.wd5.myworkdayjobs.com",
+                "tenant": "aptiv",
+                "site": "APTIV_CAREERS",
+                "base_url": "https://aptiv.wd5.myworkdayjobs.com/APTIV_CAREERS",
+            }
+        ],
+    )
+    monkeypatch.setattr(workday, "load_cached_jobs", AsyncMock(return_value=None))
+    fetch = AsyncMock(side_effect=workday.WorkdayListHTTPError("Aptiv", "MLOps Engineer", 400))
+    monkeypatch.setattr(workday, "_fetch_company_jobs", fetch)
+
+    queries = [
+        SearchQuery(term="MLOps Engineer", location="Pune", country="India"),
+        SearchQuery(term="Platform Engineer", location="Pune", country="India"),
+    ]
+    with caplog.at_level(logging.WARNING):
+        results = await workday.search(queries, ScraperConfig(), db=None)
+
+    assert results == []
+    assert fetch.await_count == 1
+    assert "Workday source unavailable for Aptiv: HTTP 400" in caplog.text
+    assert "Traceback" not in caplog.text
 
 
 @pytest.mark.asyncio

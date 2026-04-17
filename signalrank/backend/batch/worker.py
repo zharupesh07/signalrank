@@ -806,24 +806,49 @@ async def _claim_pending_run(session_factory: async_sessionmaker, mode: str, loc
                 Run.executor_type == "cloud",
             )
 
-        result = await db.execute(
-            select(Run)
-            .where(
-                Run.mode == mode,
-                executor_filter,
-                or_(
-                    Run.status == "pending",
-                    and_(
-                        Run.status.in_(["claimed", "scraping", "ranking"]),
-                        or_(Run.lease_expires_at.is_(None), Run.lease_expires_at <= now),
-                    ),
+        claimable_filter = and_(
+            Run.mode == mode,
+            executor_filter,
+            or_(
+                Run.status == "pending",
+                and_(
+                    Run.status.in_(["claimed", "scraping", "ranking"]),
+                    or_(Run.lease_expires_at.is_(None), Run.lease_expires_at <= now),
                 ),
-            )
-            .order_by(Run.started_at.asc())
-            .limit(1)
-            .with_for_update(skip_locked=True)
+            ),
         )
-        run = result.scalar_one_or_none()
+        candidate_rows = (
+            select(
+                Run.user_id.label("user_id"),
+                func.min(Run.started_at).label("oldest_started_at"),
+            )
+            .where(claimable_filter)
+            .group_by(Run.user_id)
+            .order_by(func.min(Run.started_at).asc())
+            .limit(32)
+        )
+        candidates = (await db.execute(candidate_rows)).all()
+        if not candidates:
+            await db.rollback()
+            return None
+
+        run = None
+        for candidate in candidates:
+            result = await db.execute(
+                select(Run)
+                .where(
+                    claimable_filter,
+                    Run.user_id == candidate.user_id,
+                    Run.started_at == candidate.oldest_started_at,
+                )
+                .order_by(Run.id.asc())
+                .limit(1)
+                .with_for_update(skip_locked=True)
+            )
+            run = result.scalar_one_or_none()
+            if run is not None:
+                break
+
         if not run:
             await db.rollback()
             return None

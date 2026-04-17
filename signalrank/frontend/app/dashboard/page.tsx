@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { usePathname, useRouter } from "next/navigation";
 import { useToast } from "@/components/toast";
 import RunProgress from "@/components/run-progress";
 import { JobCardSkeleton, StatCardSkeleton } from "@/components/skeleton";
@@ -10,9 +11,12 @@ import Link from "next/link";
 import AddJobModal from "@/components/add-job-modal";
 import { MiniBarChart, ScoreDisplay, explainJob, StatCard } from "./dashboard-ui";
 import { useDashboardData } from "./use-dashboard-data";
+import { isLiveRunStatus } from "@/types";
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
   const token = (session as { accessToken?: string })?.accessToken ?? "";
   const isAdmin = (session as { isAdmin?: boolean })?.isAdmin ?? false;
   const { toast } = useToast();
@@ -38,13 +42,31 @@ export default function DashboardPage() {
   const lastRunTime = run?.started_at
     ? new Date(run.started_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     : null;
-  const isRunActive = ["pending", "running", "scraping", "ranking"].includes(run?.status ?? "");
+  const isRunActive = isLiveRunStatus(run?.status);
   const topMatches = jobs.slice(0, 3);
   const nextActionLabel = isRunActive
     ? "A scan is in progress. Keep this page open for live status, then jump straight into the explorer."
     : jobs.length > 0
       ? "Review top matches first, then move the strongest ones into the tracker."
       : "Run a scan to populate your first batch of ranked jobs.";
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace(`/login?callbackUrl=${encodeURIComponent(pathname)}`);
+    }
+  }, [pathname, router, status]);
+
+  if (status === "loading" || status === "unauthenticated") {
+    return (
+      <div className="pt-14 min-h-screen page-content">
+        <div className="max-w-4xl mx-auto px-6 py-8">
+          <div className="border border-border bg-card p-6 text-sm text-muted-foreground">
+            Loading dashboard session...
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

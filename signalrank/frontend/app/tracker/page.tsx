@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/lib/api";
 import { swr, setCache } from "@/lib/cache";
-import type { Application, ApplicationStatus, TrackerStats } from "@/types";
+import type { Application, ApplicationStatus, Run, TrackerStats } from "@/types";
 import { useToast } from "@/components/toast";
 import AddJobModal from "@/components/add-job-modal";
 import {
@@ -144,7 +144,7 @@ export default function TrackerPage() {
   const [showImport, setShowImport] = useState(false);
   const [importMinScore, setImportMinScore] = useState(0.7);
   const [importLimit, setImportLimit] = useState(20);
-  const [runs, setRuns] = useState<{ run_id: string; status: string; job_count: number | null }[]>([]);
+  const [runs, setRuns] = useState<Pick<Run, "id" | "status" | "job_count">[]>([]);
   const [selectedRunId, setSelectedRunId] = useState("");
   const [importing, setImporting] = useState(false);
   const [addJobOpen, setAddJobOpen] = useState(false);
@@ -423,9 +423,9 @@ export default function TrackerPage() {
                   className="w-full text-xs bg-background border border-border text-secondary-foreground px-2 py-1.5 focus:border-primary focus:outline-none"
                 >
                   <option value="">Select run...</option>
-                  {runs.filter((r) => r.status === "done" || r.status === "success").map((r) => (
-                    <option key={r.run_id} value={r.run_id}>
-                      {r.run_id.slice(0, 8)} ({r.job_count ?? 0} jobs)
+                  {runs.filter((r) => r.status === "done").map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.id.slice(0, 8)} ({r.job_count ?? 0} jobs)
                     </option>
                   ))}
                 </select>

@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { Check } from "lucide-react";
 import { api } from "@/lib/api";
 import { formatElapsed } from "@/lib/formatting";
-import type { Run } from "@/types";
+import { isLiveRunStatus, type Run } from "@/types";
 import { useToast } from "@/components/toast";
 
 interface RunProgressProps {
@@ -35,11 +35,8 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
 
   const run = runOverride && runOverride.id === initialRun.id ? runOverride : initialRun;
 
-  const isLiveStatus = (s: string) =>
-    s === "pending" || s === "running" || s === "scraping" || s === "ranking" || s === "syncing";
-
   useEffect(() => {
-    if (isLiveStatus(run.status)) {
+    if (isLiveRunStatus(run.status)) {
       intervalRef.current = setInterval(() => setTick((t) => t + 1), 1000);
     }
     return () => {
@@ -50,7 +47,7 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
   useEffect(() => {
     if (!token || !run.id) return;
     if (run.id.startsWith("local-")) return;
-    if (!isLiveStatus(run.status)) return;
+    if (!isLiveRunStatus(run.status)) return;
     if (completedRef.current) return;
 
     let delay = 3000;
@@ -90,7 +87,7 @@ export default function RunProgress({ run: initialRun, onComplete }: RunProgress
     };
   }, [token, run.id, run.status, toast]);
 
-  const isLive = isLiveStatus(run.status);
+  const isLive = isLiveRunStatus(run.status);
   const p = run.progress;
 
   const PHASES = [

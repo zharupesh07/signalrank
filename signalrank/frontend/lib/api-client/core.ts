@@ -14,10 +14,13 @@ export type ResumePreviewValidation = {
 };
 
 export type RunPayload = {
+  id?: string;
   run_id: string;
   status: string;
   job_count: number | null;
   scrape_count: number | null;
+  ranked_count?: number | null;
+  visible_count?: number | null;
   started_at: string | null;
   finished_at: string | null;
   progress: RunProgress | null;
@@ -132,12 +135,16 @@ export async function request<T>(
 }
 
 export function normalizeRun(payload: RunPayload): Run {
-  const status = payload.status === "success" ? "done" : payload.status as Run["status"];
+  const status = (payload.status === "success" || payload.status === "completed"
+    ? "done"
+    : payload.status) as Run["status"];
   return {
-    id: payload.run_id,
+    id: payload.id ?? payload.run_id,
     status,
     job_count: payload.job_count,
     scrape_count: payload.scrape_count,
+    ranked_count: payload.ranked_count ?? payload.progress?.jobs_found ?? null,
+    visible_count: payload.visible_count ?? null,
     started_at: payload.started_at ?? "",
     finished_at: payload.finished_at,
     progress: payload.progress,
@@ -145,6 +152,7 @@ export function normalizeRun(payload: RunPayload): Run {
     scrape_reason: payload.scrape_reason ?? payload.progress?.scrape_reason ?? null,
     jobs_snapshot: payload.jobs_snapshot,
     error: payload.error,
+    executor_type: (payload as RunPayload & { executor_type?: string | null }).executor_type ?? null,
   };
 }
 

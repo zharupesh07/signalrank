@@ -291,13 +291,31 @@ export interface RunProgress {
   auto_refresh?: boolean;
 }
 
+export type RunStatus =
+  | "pending"
+  | "scraping"
+  | "ranking"
+  | "syncing"
+  | "running"
+  | "done"
+  | "failed"
+  | "cancelled";
+
+export const LIVE_RUN_STATUSES: RunStatus[] = ["pending", "running", "scraping", "ranking", "syncing"];
+
+export function isLiveRunStatus(status: string | null | undefined): status is RunStatus {
+  return LIVE_RUN_STATUSES.includes((status ?? "") as RunStatus);
+}
+
 export interface Run {
   id: string;
-  status: "pending" | "scraping" | "ranking" | "syncing" | "running" | "done" | "failed" | "cancelled";
+  status: RunStatus;
   started_at: string;
   finished_at: string | null;
   job_count: number | null;
   scrape_count: number | null;
+  ranked_count?: number | null;
+  visible_count?: number | null;
   progress: RunProgress | null;
   run_kind?: string | null;
   scrape_reason?: string | null;

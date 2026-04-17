@@ -14,6 +14,14 @@ from batch.scraper import RawJob, ScraperConfig
 logger = logging.getLogger(__name__)
 
 
+def _log_http_fetch_failure(source: str, exc: Exception) -> None:
+    if isinstance(exc, httpx.HTTPStatusError):
+        status = exc.response.status_code
+        logger.warning("%s API unavailable: HTTP %s", source, status)
+        return
+    logger.exception("%s API failed", source)
+
+
 def _parse_date(val) -> datetime | None:
     if not val:
         return None
@@ -28,8 +36,8 @@ async def _fetch_himalayas(client: httpx.AsyncClient, query: SearchQuery) -> lis
         resp = await client.get("https://himalayas.app/jobs/api", params={"limit": "500"}, timeout=30)
         resp.raise_for_status()
         items = resp.json().get("jobs", [])
-    except Exception:
-        logger.exception("Himalayas API failed")
+    except Exception as exc:
+        _log_http_fetch_failure("Himalayas", exc)
         return []
 
     term_lower = query.term.lower()
@@ -52,8 +60,8 @@ async def _fetch_remotive(client: httpx.AsyncClient, query: SearchQuery) -> list
         resp = await client.get("https://remotive.com/api/remote-jobs", params={"search": query.term, "limit": "500"}, timeout=30)
         resp.raise_for_status()
         items = resp.json().get("jobs", [])
-    except Exception:
-        logger.exception("Remotive API failed")
+    except Exception as exc:
+        _log_http_fetch_failure("Remotive", exc)
         return []
 
     jobs = []
@@ -75,8 +83,8 @@ async def _fetch_jobicy(client: httpx.AsyncClient, query: SearchQuery) -> list[R
         resp = await client.get("https://jobicy.com/api/v2/remote-jobs", params={"count": "100", "tag": query.term}, timeout=30)
         resp.raise_for_status()
         items = resp.json().get("jobs", [])
-    except Exception:
-        logger.exception("Jobicy API failed")
+    except Exception as exc:
+        _log_http_fetch_failure("Jobicy", exc)
         return []
 
     jobs = []

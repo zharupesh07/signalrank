@@ -14,6 +14,7 @@ from api.deps import get_current_user
 from api.deps_hunter import get_hunter_client
 from api.deps_llm import get_llm_client
 from api.models import Application, Recruiter, RecruiterRefreshTask, User
+from api.rate_limits import enforce_user_rate_limit
 from batch.recruiter_finder import find_recruiters
 
 logger = logging.getLogger(__name__)
@@ -110,6 +111,12 @@ async def refresh_all_recruiters(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await enforce_user_rate_limit(
+        current_user.id,
+        "recruiter_refresh_all",
+        limit=2,
+        window_seconds=60 * 60,
+    )
     result = await db.execute(
         select(Application.company)
         .where(Application.user_id == current_user.id, Application.company.isnot(None))
@@ -196,6 +203,12 @@ async def find_and_save_recruiters(
     body: RecruiterFindRequest,
     current_user: User = Depends(get_current_user),
 ):
+    await enforce_user_rate_limit(
+        current_user.id,
+        "recruiter_find",
+        limit=6,
+        window_seconds=60 * 60,
+    )
     if not body.company.strip():
         raise HTTPException(status_code=422, detail="company is required")
     if body.max_results < 1 or body.max_results > 25:
@@ -267,6 +280,12 @@ async def enrich_emails(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await enforce_user_rate_limit(
+        current_user.id,
+        "recruiter_enrich_emails",
+        limit=2,
+        window_seconds=60 * 60,
+    )
     hunter = get_hunter_client()
     if hunter is None:
         raise HTTPException(status_code=400, detail="HUNTER_API_KEY not configured")

@@ -18,6 +18,7 @@ from api.deps import get_current_user, get_user_profile
 from api.deps_llm import get_llm_client
 from api.helpers import VALID_TEMPLATES, get_resume_template
 from api.models import JobRaw, Profile, TailoredResume, User
+from api.rate_limits import enforce_user_rate_limit
 from api.routes.profile import ResumeEditorInput
 from domain.resume_editor import editor_to_tailored_content, merge_resume_editor, parse_resume_editor
 from llm.openrouter import OpenRouterClient
@@ -88,6 +89,14 @@ async def tailor(
     llm: OpenRouterClient = Depends(get_llm_client),
 ):
     from llm.resume_tailor import render_compile_validate_content, tailor_resume
+
+    if profile:
+        await enforce_user_rate_limit(
+            profile.user_id,
+            "resume_tailor",
+            limit=10,
+            window_seconds=60 * 60,
+        )
 
     if body.template is not None and body.template not in VALID_TEMPLATES:
         raise HTTPException(status_code=422, detail=f"Template must be one of: {VALID_TEMPLATES}")
@@ -216,6 +225,14 @@ async def generate_cold_email(
 ):
     from llm.email_generator import generate_email
 
+    if profile:
+        await enforce_user_rate_limit(
+            profile.user_id,
+            "cold_email",
+            limit=20,
+            window_seconds=60 * 60,
+        )
+
     job_res = await db.execute(select(JobRaw).where(JobRaw.id == body.job_id))
     job = job_res.scalar_one_or_none()
     if not job:
@@ -259,6 +276,14 @@ async def preview_resume(
     db: AsyncSession = Depends(get_db),
 ):
     from llm.resume_tailor import render_compile_validate_content
+
+    if profile:
+        await enforce_user_rate_limit(
+            profile.user_id,
+            "resume_preview",
+            limit=60,
+            window_seconds=60 * 60,
+        )
 
     if body.template is not None and body.template not in VALID_TEMPLATES:
         raise HTTPException(status_code=422, detail=f"Template must be one of: {VALID_TEMPLATES}")
@@ -333,6 +358,12 @@ async def regenerate_all_resumes(
 ):
     from batch.resume_worker import force_regenerate_all
 
+    await enforce_user_rate_limit(
+        current_user.id,
+        "resume_regenerate_all",
+        limit=3,
+        window_seconds=60 * 60,
+    )
     count = await force_regenerate_all(db, current_user.id)
     return {"enqueued": count}
 

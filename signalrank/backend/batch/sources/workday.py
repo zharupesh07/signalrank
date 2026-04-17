@@ -15,6 +15,17 @@ from domain.company import _norm
 
 logger = logging.getLogger(__name__)
 
+_EXPECTED_HTTP_STATUSES = {400, 401, 403, 404, 429}
+
+
+class WorkdayListHTTPError(Exception):
+    def __init__(self, company: str, query: str, status_code: int):
+        self.company = company
+        self.query = query
+        self.status_code = status_code
+        super().__init__(f"{company} list endpoint returned HTTP {status_code} for {query!r}")
+
+
 _QUERY_STOPWORDS = {
     "engineer",
     "developer",
@@ -302,7 +313,13 @@ async def _fetch_query_page(
         headers={"Content-Type": "application/json"},
         timeout=30,
     )
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        status_code = exc.response.status_code
+        if status_code in _EXPECTED_HTTP_STATUSES:
+            raise WorkdayListHTTPError(company["company"], query.term, status_code) from exc
+        raise
     return response.json()
 
 
@@ -392,7 +409,7 @@ async def probe_company(client: httpx.AsyncClient, company: dict) -> dict[str, s
             "total": int(payload.get("total") or 0),
             "url": _list_url(company),
         }
-    except Exception:
+    except Exception as exc:
         return {
             "company": company["company"],
             "slug": company["slug"],
@@ -411,12 +428,15 @@ async def search(
 
     all_jobs: list[RawJob] = []
     seen_urls: set[str] = set()
+    unavailable_companies: set[str] = set()
 
     async with httpx.AsyncClient(
         headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"},
         follow_redirects=True,
     ) as client:
         for company in active_companies(config.company_allowlist):
+            if company["slug"] in unavailable_companies:
+                continue
             for query in queries:
                 cache_query = _cache_query(company, query, config)
                 try:
@@ -439,6 +459,24 @@ async def search(
                         )
                     else:
                         jobs = cached
+                except WorkdayListHTTPError as exc:
+                    logger.warning(
+                        "Workday source unavailable for %s: HTTP %s on %s; skipping remaining queries for this board",
+                        exc.company,
+                        exc.status_code,
+                        query.term,
+                    )
+                    unavailable_companies.add(company["slug"])
+                    jobs = []
+                    break
+                except httpx.HTTPStatusError as exc:
+                    logger.warning(
+                        "Workday fetch failed for %s (%s): HTTP %s",
+                        company["company"],
+                        query.term,
+                        exc.response.status_code,
+                    )
+                    jobs = []
                 except Exception:
                     logger.exception("Workday fetch failed for %s (%s)", company["company"], query.term)
                     jobs = []
