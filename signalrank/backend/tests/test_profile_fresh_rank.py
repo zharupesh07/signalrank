@@ -177,6 +177,71 @@ def test_rank_profile_fresh_jobs_rejects_product_engineer_roles(company_scorer: 
     assert rejections["role_mismatch"] == 1
 
 
+def test_rank_profile_fresh_jobs_rejects_product_lead_roles_even_with_agentic_terms(company_scorer: CompanyScorer):
+    jobs = [
+        _job(
+            "Product Lead, Agentic Ads Platform",
+            company="Hightouch",
+            location="Remote",
+            description="Build agent systems and generative AI advertising workflows with 6-8 years experience",
+        )
+    ]
+
+    ranked, rejections = rank_profile_fresh_jobs(jobs, company_scorer=company_scorer)
+
+    assert ranked == []
+    assert rejections["role_mismatch"] == 1
+
+
+def test_rank_profile_fresh_jobs_rejects_generic_platform_title_with_genai_description(company_scorer: CompanyScorer):
+    jobs = [
+        _job(
+            "Platform Engineer: Data",
+            company="Supabase",
+            location="Remote",
+            description="Generative AI systems, LLM tooling, and agent orchestration with 6-8 years experience",
+        )
+    ]
+
+    ranked, rejections = rank_profile_fresh_jobs(jobs, company_scorer=company_scorer)
+
+    assert ranked == []
+    assert rejections["role_mismatch"] == 1
+
+
+def test_rank_profile_fresh_jobs_rejects_generic_devops_title_with_agentic_description(company_scorer: CompanyScorer):
+    jobs = [
+        _job(
+            "Cloud DevOps Engineer",
+            company="Snowflake",
+            location="IN-Pune",
+            description="Support agentic AI workloads and platform reliability with 6-8 years experience",
+        )
+    ]
+
+    ranked, rejections = rank_profile_fresh_jobs(jobs, company_scorer=company_scorer)
+
+    assert ranked == []
+    assert rejections["role_mismatch"] == 1
+
+
+def test_rank_profile_fresh_jobs_infers_company_when_missing(company_scorer: CompanyScorer):
+    jobs = [
+        _job(
+            "Agentic AI Engineer",
+            company="nan",
+            location="Bangalore, India",
+            description="Cognite operates at the forefront of industrial digitalization, building AI and data solutions.",
+            url="https://example.com/cognite",
+        )
+    ]
+
+    ranked, _ = rank_profile_fresh_jobs(jobs, company_scorer=company_scorer)
+
+    assert len(ranked) == 1
+    assert ranked[0].company == "Cognite"
+
+
 def test_rank_profile_fresh_jobs_rejects_yoe_out_of_range(company_scorer: CompanyScorer):
     low = _job(
         "MLOps Engineer",
@@ -220,6 +285,22 @@ def test_rank_profile_fresh_jobs_rejects_remote_roles_with_explicit_us_cities(co
             company="Stripe",
             location="Seattle; San Francisco; New York City; Remote",
             description="Machine learning systems role with 6-8 years experience",
+        )
+    ]
+
+    ranked, rejections = rank_profile_fresh_jobs(jobs, company_scorer=company_scorer)
+
+    assert ranked == []
+    assert rejections["geo_restricted_remote"] == 1
+
+
+def test_rank_profile_fresh_jobs_rejects_remote_roles_with_explicit_europe_locations(company_scorer: CompanyScorer):
+    jobs = [
+        _job(
+            "Senior Specialist Solutions Architect - AI & ML Engineer",
+            company="Databricks",
+            location="Finland; Remote - Denmark; Stockholm, Sweden",
+            description="AI and ML engineer role with 6-8 years experience",
         )
     ]
 

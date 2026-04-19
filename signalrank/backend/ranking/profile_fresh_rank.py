@@ -93,9 +93,16 @@ _NON_INDIA_REMOTE_TERMS = (
     "apac excluding india",
     "latam",
     "uk only",
+    "remote uk",
     "germany only",
+    "remote germany",
     "ireland only",
+    "remote ireland",
     "singapore only",
+    "remote singapore",
+    "remote sweden",
+    "remote denmark",
+    "remote finland",
 )
 _NON_INDIA_LOCATION_TERMS = (
     "us-",
@@ -115,6 +122,12 @@ _NON_INDIA_LOCATION_TERMS = (
     "uk",
     "united kingdom",
     "germany",
+    "sweden",
+    "stockholm",
+    "denmark",
+    "copenhagen",
+    "finland",
+    "helsinki",
     "france",
     "spain",
     "portugal",
@@ -129,6 +142,8 @@ _NON_INDIA_LOCATION_TERMS = (
 _TITLE_HARD_REJECTS = (
     "account executive",
     "account manager",
+    "product lead",
+    "marketing lead",
     "manager",
     "director",
     "head",
@@ -234,7 +249,8 @@ _TITLE_TARGET_TERMS = (
     " ml",
     "mlops",
     "llmops",
-    "platform",
+    "ai platform",
+    "ml platform",
     "artificial intelligence",
 )
 
@@ -292,6 +308,50 @@ class RankedJob:
 
 def _normalize(value: Any) -> str:
     return re.sub(r"\s+", " ", str(value or "").strip().lower())
+
+
+def _clean_company_value(value: Any) -> str:
+    text = re.sub(r"\s+", " ", str(value or "").strip())
+    if _normalize(text) in {"", "nan", "none", "null"}:
+        return ""
+    return text
+
+
+def _infer_company_name(job: dict[str, Any]) -> str:
+    company = _clean_company_value(job.get("company"))
+    if company:
+        return company
+
+    text = _normalize(
+        " ".join(
+            [
+                str(job.get("title") or ""),
+                str(job.get("description") or ""),
+                str(job.get("job_url") or ""),
+            ]
+        )
+    )
+
+    if "cognite" in text:
+        return "Cognite"
+
+    email_match = re.search(r"\b([a-z0-9._%+-]+)@([a-z0-9.-]+)\b", str(job.get("description") or ""), re.IGNORECASE)
+    if email_match:
+        domain = email_match.group(2).split(".")[0]
+        slug = re.sub(r"[^a-z0-9]+", " ", domain, flags=re.IGNORECASE).strip()
+        if slug:
+            return " ".join(part.capitalize() for part in slug.split())
+
+    brand_match = re.search(
+        r"^([A-Z][A-Za-z0-9&.,'-]*(?:\s+[A-Z][A-Za-z0-9&.,'-]*){0,3})\s+(?:is|are|operates|builds|seeks|seeking|looking|works|thrives)\b",
+        str(job.get("description") or ""),
+    )
+    if brand_match:
+        inferred = brand_match.group(1).strip()
+        if inferred and _normalize(inferred) not in {"we", "this role", "role summary"}:
+            return inferred
+
+    return "Unattributed Employer"
 
 
 def canonical_company_name(name: str, company_scorer: CompanyScorer) -> str:
@@ -398,26 +458,24 @@ def classify_role_bucket(job: dict[str, Any]) -> tuple[str | None, str | None]:
         return None, None
     if not _is_engineering_ic_title(title):
         return None, None
-    if not _has_target_title_signal(title) and not _has_target_text_signal(text):
+    title_has_target_signal = _has_target_title_signal(title)
+    if not title_has_target_signal:
         return None, None
 
     if _contains_any(title, _AGENTIC_TERMS):
         return "agentic", "strong"
     if _contains_any(text, _AGENTIC_TERMS):
-        fit_band = "strong" if _contains_any(title, _AGENTIC_TERMS) else "moderate"
-        return "agentic", fit_band
+        return "agentic", "moderate"
 
     if _contains_any(title, _GENAI_TERMS):
         return "genai", "strong"
     if _contains_any(text, _GENAI_TERMS):
-        fit_band = "strong" if _contains_any(title, _GENAI_TERMS) else "moderate"
-        return "genai", fit_band
+        return "genai", "moderate"
 
     if _contains_any(title, _MLOPS_TERMS):
         return "mlops_llmops", "strong"
     if _contains_any(text, _MLOPS_TERMS):
-        fit_band = "strong" if _contains_any(title, _MLOPS_TERMS) else "moderate"
-        return "mlops_llmops", fit_band
+        return "mlops_llmops", "moderate"
 
     if _contains_any(title, _ML_ENGINEER_TERMS):
         return "ml_engineer", "strong"
@@ -517,7 +575,7 @@ def rank_profile_fresh_jobs(
     }
 
     for job in jobs:
-        company = str(job.get("company") or "").strip()
+        company = _infer_company_name(job)
         title = str(job.get("title") or "").strip()
         url = str(job.get("job_url") or "").strip()
         if not company or not title or not url:
