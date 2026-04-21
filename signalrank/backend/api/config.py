@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     scraper_default_country: str = "India"
     scraper_max_terms: int = 1
     linkedin_max_queries: int = 0
+    linkedin_cookie_header: str = ""
     ranker_max_candidates: int = 10000
     ranker_max_description_chars: int = 1200
     max_active_runs_per_user: int = 1

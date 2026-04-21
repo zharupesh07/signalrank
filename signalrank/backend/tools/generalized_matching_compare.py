@@ -698,7 +698,7 @@ async def _run_baseline(
 
             scraper_cfg = ScraperConfig.from_env(title_blocklist=(profile.config_overrides or {}).get("title_blocklist", []))
             scraper_cfg.hours_old = days * 24
-            scraper_cfg.sources = ["indeed"] if quick_search else ["indeed", "linkedin", "rapidapi", "free_apis", "google_jobs", "workday"]
+            scraper_cfg.sources = ["indeed"] if quick_search else ["indeed", "linkedin", "linkedin_page", "rapidapi", "free_apis", "google_jobs", "workday"]
 
             queries = await get_cached_queries(
                 db,
@@ -1291,7 +1291,7 @@ async def _run_generalized(
 
             scraper_cfg = ScraperConfig.from_env(title_blocklist=list(query_plan.get("negative_keywords") or []))
             scraper_cfg.hours_old = days * 24
-            scraper_cfg.sources = ["indeed"] if quick_search else ["indeed", "linkedin", "rapidapi", "free_apis", "google_jobs", "workday"]
+            scraper_cfg.sources = ["indeed"] if quick_search else ["indeed", "linkedin", "linkedin_page", "rapidapi", "free_apis", "google_jobs", "workday"]
 
             jobs = await scrape(queries, scraper_cfg, db=db, return_mode="jobs")
             job_ids = await _persist_jobs(db, jobs, cfg)

@@ -168,7 +168,7 @@ async def _run_target(target: ResumeTarget, days: int, limit: int, quick_search:
             )
             scraper_cfg = ScraperConfig.from_env(title_blocklist=(profile.config_overrides or {}).get("title_blocklist", []))
             scraper_cfg.hours_old = days * 24
-            scraper_cfg.sources = ["indeed"] if quick_search else ["indeed", "linkedin", "rapidapi", "free_apis", "google_jobs", "workday"]
+            scraper_cfg.sources = ["indeed"] if quick_search else ["indeed", "linkedin", "linkedin_page", "rapidapi", "free_apis", "google_jobs", "workday"]
 
             queries = await get_cached_queries(
                 db,

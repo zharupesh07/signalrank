@@ -50,6 +50,7 @@ class ScraperConfig:
     title_blocklist: list[str] = field(default_factory=list)
     # 0 = disabled, N = run only first N queries on LinkedIn (slow ~80s/query)
     linkedin_max_queries: int = 0
+    linkedin_cookie_header: str = ""
     default_country: str = "India"
     sources: list[str] | None = None  # None = all; e.g. ["indeed"] for quick run
     company_allowlist: list[str] | None = None
@@ -63,6 +64,7 @@ class ScraperConfig:
             max_results_per_query=settings.scraper_max_results,
             hours_old=settings.scraper_hours_old,
             linkedin_max_queries=settings.linkedin_max_queries,
+            linkedin_cookie_header=settings.linkedin_cookie_header,
             default_country=settings.scraper_default_country,
             title_blocklist=title_blocklist or [],
         )
@@ -157,6 +159,10 @@ async def plan_incremental_scrape(
     if (not allowed or "linkedin" in allowed) and config.linkedin_max_queries > 0:
         for idx, query in enumerate(queries[:config.linkedin_max_queries]):
             await _record_assignment(idx, provider="jobspy", site="linkedin", query=query)
+
+    if (not allowed or "linkedin_page" in allowed) and config.linkedin_max_queries > 0:
+        for idx, query in enumerate(queries[:config.linkedin_max_queries]):
+            await _record_assignment(idx, provider="linkedin_page", site="linkedin", query=query)
 
     if not allowed or "rapidapi" in allowed:
         from batch.sources.rapidapi import SOURCES, _partition_queries
@@ -257,6 +263,7 @@ async def scrape(
 ) -> list[RawJob] | list[str]:
     from batch.sources.rapidapi import search as search_rapidapi
     from batch.sources.jobspy_source import search as search_jobspy
+    from batch.sources.linkedin_page import search as search_linkedin_page
     from batch.sources.free_apis import search as search_free
     from batch.sources.google_jobs import search as search_google
     from batch.sources.amazon_jobs import search as search_amazon_jobs
@@ -308,7 +315,7 @@ async def scrape(
         if not effective_allowed or "indeed" in effective_allowed:
             if on_progress:
                 await on_progress(
-                    phase="jobspy_indeed", phase_num=1, total_phases=3,
+                    phase="jobspy_indeed", phase_num=1, total_phases=4,
                     jobs_found=0, message="Scanning Indeed...",
                 )
             try:
@@ -325,7 +332,7 @@ async def scrape(
             linkedin_queries = queries[:config.linkedin_max_queries]
             if on_progress:
                 await on_progress(
-                    phase="jobspy_linkedin", phase_num=2, total_phases=3,
+                    phase="jobspy_linkedin", phase_num=2, total_phases=4,
                     jobs_found=len(all_results), message="Scanning LinkedIn...",
                 )
             try:
@@ -339,11 +346,33 @@ async def scrape(
         else:
             logger.info("Phase jobspy/linkedin: skipped")
 
-        # Phase 3: Parallel sources — skip if filtered
-        if not effective_allowed or effective_allowed - {"indeed", "linkedin"}:
+        if (not effective_allowed or "linkedin_page" in effective_allowed) and config.linkedin_max_queries > 0:
+            linkedin_queries = queries[:config.linkedin_max_queries]
             if on_progress:
                 await on_progress(
-                    phase="parallel", phase_num=3, total_phases=3,
+                    phase="linkedin_page",
+                    phase_num=3,
+                    total_phases=4,
+                    jobs_found=len(all_results),
+                    message="Scanning LinkedIn page...",
+                )
+            try:
+                results = await asyncio.wait_for(
+                    search_linkedin_page(linkedin_queries, config, db=db),
+                    timeout=config.jobspy_timeout,
+                )
+                logger.info("Phase linkedin_page: %d jobs", len(results))
+                await _persist_phase(results)
+            except asyncio.TimeoutError:
+                logger.warning("Phase linkedin_page timed out")
+            except Exception:
+                logger.exception("Phase linkedin_page failed, skipping")
+
+        # Phase 4: Parallel sources — skip if filtered
+        if not effective_allowed or effective_allowed - {"indeed", "linkedin", "linkedin_page"}:
+            if on_progress:
+                await on_progress(
+                    phase="parallel", phase_num=4, total_phases=4,
                     jobs_found=len(all_results), message="Scanning additional sources...",
                 )
             parallel_sources = [

@@ -410,3 +410,19 @@ async def test_parallel_sources_use_isolated_db_sessions(db, queries):
     assert len(seen_db_ids) == 5
     assert all(db_id != id(db) for db_id in seen_db_ids.values())
     assert len(set(seen_db_ids.values())) == 5
+
+
+@pytest.mark.asyncio
+async def test_scrape_can_select_linkedin_page_source(config, queries):
+    with patch("batch.sources.rapidapi.search", new_callable=AsyncMock, return_value=[]), \
+         patch("batch.sources.jobspy_source.search", new_callable=AsyncMock, return_value=[]), \
+         patch("batch.sources.linkedin_page.search", new_callable=AsyncMock, return_value=[]), \
+         patch("batch.sources.ats_direct.search", new_callable=AsyncMock, return_value=[]), \
+         patch("batch.sources.company_portals.search", new_callable=AsyncMock, return_value=[]), \
+         patch("batch.sources.workday.search", new_callable=AsyncMock, return_value=[]), \
+         patch("batch.sources.free_apis.search", new_callable=AsyncMock, return_value=[]), \
+         patch("batch.sources.google_jobs.search", new_callable=AsyncMock, return_value=[]), \
+         patch("batch.sources.amazon_jobs.search", new_callable=AsyncMock, return_value=[]):
+        result = await scrape(queries, ScraperConfig(sources=["linkedin_page"], linkedin_max_queries=1))
+
+    assert result == []
