@@ -3,13 +3,16 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -20,7 +23,8 @@ export default function LoginPage() {
       if (res?.error) {
         setError("Login failed. Check credentials or backend connectivity.");
       } else {
-        router.push("/dashboard");
+        router.replace(callbackUrl);
+        router.refresh();
       }
     } finally {
       setLoading(false);

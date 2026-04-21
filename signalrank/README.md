@@ -437,7 +437,7 @@ LINKEDIN_MAX_QUERIES=0            # 0 = disabled (LinkedIn scraping is slow, ~80
 openssl rand -base64 32
 ```
 
-**`OPENROUTER_API_KEY`** — required for resume parsing, onboarding distillation, and resume tailoring. Get one at [openrouter.ai/keys](https://openrouter.ai/keys). Uses free-tier models by default (`arcee-ai/trinity-mini:free` primary, `trinity-large-preview:free` fallback).
+**`OPENROUTER_API_KEY`** — required for resume parsing, onboarding distillation, and resume tailoring. Get one at [openrouter.ai/keys](https://openrouter.ai/keys). Uses free-tier models by default (`google/gemma-4-31b-it:free` primary, then `arcee-ai/trinity-large-preview:free`, `google/gemma-4-26b-a4b-it:free`, `openai/gpt-oss-120b:free`, and `google/gemma-3-4b-it:free`).
 
 ---
 

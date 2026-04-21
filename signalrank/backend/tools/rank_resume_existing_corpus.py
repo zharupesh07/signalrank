@@ -27,9 +27,9 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 SCRAPE_CACHE_VERSION = 1
 SCRAPE_CACHE_DIR = Path(__file__).resolve().parents[1] / "tmp" / "resume_existing_corpus_rank" / "_scrape_cache"
 FAST_MODELS = [
-    "nvidia/nemotron-3-nano-30b-a3b:free",
-    "arcee-ai/trinity-mini:free",
+    "google/gemma-4-31b-it:free",
     "arcee-ai/trinity-large-preview:free",
+    "google/gemma-4-26b-a4b-it:free",
 ]
 
 STOPWORDS = {

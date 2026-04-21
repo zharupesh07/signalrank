@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pathlib import Path
 
 from api.models import Profile
-from api.routes.onboarding import _extract_text_from_pdf
+from api.routes.onboarding import _extract_text_from_pdf, _resume_structure_is_weak
 from domain.onboarding_profile import extract_resume_seed_signals, should_run_onboarding_llm
 from tests._paths import repo_resumes_dir
 
@@ -86,15 +86,15 @@ async def test_onboarding_parsed_returns_empty_prefill_when_parse_failed(
 
 
 async def test_upload_resume_txt(client, auth_token, monkeypatch):
-    import llm.resume_parser as rp
+    import api.routes.onboarding as onboarding_route
     from llm.resume_parser import ResumeParseResult
 
     async def mock_parse(text, llm_client):
         return ResumeParseResult(skills=["python"], years_of_experience=3)
 
-    monkeypatch.setattr(rp, "parse_resume", mock_parse)
-    monkeypatch.setattr(rp, "parse_resume_structure", mock_parse)
-    monkeypatch.setattr(rp, "parse_resume_from_images", mock_parse)
+    monkeypatch.setattr(onboarding_route, "parse_resume", mock_parse)
+    monkeypatch.setattr(onboarding_route, "parse_resume_structure", mock_parse)
+    monkeypatch.setattr(onboarding_route, "parse_resume_from_images", mock_parse)
 
     r = await client.post(
         "/api/onboarding/resume",
@@ -105,6 +105,57 @@ async def test_upload_resume_txt(client, auth_token, monkeypatch):
     data = r.json()
     assert "questions" in data
     assert len(data["questions"]) >= 3
+
+
+async def test_upload_resume_pdf_skips_vision_when_text_parse_is_strong(client, auth_token, monkeypatch):
+    import api.routes.onboarding as onboarding_route
+    from llm.resume_parser import ResumeParseResult
+
+    def _vision_should_not_run(*_args, **_kwargs):
+        raise AssertionError("vision should not run")
+
+    async def mock_parse(text, llm_client):
+        if "structure" in text:
+            return {
+                "name": "Candidate",
+                "position": "Platform Engineer",
+                "experiences": [{"title": "Engineer"}],
+                "education": [{"degree": "B.Tech"}],
+                "skills": [{"category": "General", "items": ["Python", "GCP"]}],
+            }
+        return ResumeParseResult(skills=["python"], years_of_experience=3)
+
+    monkeypatch.setattr(onboarding_route, "_extract_text_from_pdf", lambda _content: "resume structure text")
+    monkeypatch.setattr(onboarding_route, "_render_pdf_pages_as_images", _vision_should_not_run)
+    monkeypatch.setattr(onboarding_route, "parse_resume", mock_parse)
+    monkeypatch.setattr(onboarding_route, "parse_resume_structure", mock_parse)
+    monkeypatch.setattr(onboarding_route, "parse_resume_from_images", mock_parse)
+
+    r = await client.post(
+        "/api/onboarding/resume",
+        files={"file": ("resume.pdf", b"%PDF-1.4 fake", "application/pdf")},
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert r.status_code == 200
+
+
+def test_resume_structure_is_weak_uses_text_first_thresholds():
+    assert _resume_structure_is_weak({}) is True
+    assert _resume_structure_is_weak({"name": "Candidate", "experiences": []}) is True
+    assert _resume_structure_is_weak(
+        {
+            "name": "Candidate",
+            "position": "Platform Engineer",
+            "experiences": [{"title": "Engineer"}],
+            "education": [{"degree": "B.Tech"}],
+            "skills": [{"category": "General", "items": ["Python", "GCP"]}],
+        }
+    ) is False
+    assert _resume_structure_is_weak(
+        {
+            "experiences": [{"title": "Engineer 1"}, {"title": "Engineer 2"}],
+        }
+    ) is False
 
 
 @pytest.mark.parametrize(
@@ -123,14 +174,14 @@ async def test_upload_resume_skips_llm_for_high_confidence_fixture_resumes(
     pdf_name,
     expected_role,
 ):
-    import llm.resume_parser as rp
+    import api.routes.onboarding as onboarding_route
 
     def _should_not_run(*_args, **_kwargs):
         raise AssertionError("LLM parser should not run for high-confidence fixture resumes")
 
-    monkeypatch.setattr(rp, "parse_resume", _should_not_run)
-    monkeypatch.setattr(rp, "parse_resume_structure", _should_not_run)
-    monkeypatch.setattr(rp, "parse_resume_from_images", _should_not_run)
+    monkeypatch.setattr(onboarding_route, "parse_resume", _should_not_run)
+    monkeypatch.setattr(onboarding_route, "parse_resume_structure", _should_not_run)
+    monkeypatch.setattr(onboarding_route, "parse_resume_from_images", _should_not_run)
 
     resume_text = _extract_text_from_pdf((RESUMES_DIR / pdf_name).read_bytes())
 

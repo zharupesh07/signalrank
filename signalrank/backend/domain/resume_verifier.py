@@ -48,6 +48,10 @@ _TECH_ACRONYMS: dict[str, str] = {
     "langchain": "LangChain",
 }
 
+_COMMON_TYPO_MAP: dict[str, str] = {
+    "developement": "development",
+}
+
 
 def _normalize_ligatures(text: str) -> str:
     for lig, rep in _LIGATURE_MAP.items():
@@ -106,6 +110,8 @@ def _normalize_str(value: Any) -> Any:
         return value
     value = _normalize_ligatures(value)
     value = _normalize_inverted_caps(value)
+    for wrong, right in _COMMON_TYPO_MAP.items():
+        value = re.sub(re.escape(wrong), right, value, flags=re.I)
     return value
 
 
@@ -175,6 +181,10 @@ def _clean_line(line: str) -> str:
     return re.sub(r"\s+", " ", (line or "")).strip()
 
 
+def _normalize_heading(line: str) -> str:
+    return re.sub(r"[^a-z0-9 ]+", " ", (line or "").lower()).strip()
+
+
 def _digits_only(s: str) -> str:
     return re.sub(r"\D", "", s or "")
 
@@ -188,6 +198,21 @@ def _word_overlap(needle: str, haystack_words: set[str]) -> float:
     if not words:
         return 1.0
     return len(words & haystack_words) / len(words)
+
+
+def _looks_like_location_value(line: str) -> bool:
+    cleaned = _clean_line(line)
+    if not cleaned:
+        return False
+    lower = cleaned.lower()
+    location_indicators = (
+        "india", "usa", "uk", "remote", "hybrid", "bengaluru", "bangalore",
+        "mumbai", "pune", "delhi", "hyderabad", "chennai", "kolkata", "noida",
+        "gurugram", "gurgaon", "new york", "san francisco", "london", "mysuru",
+    )
+    if any(loc in lower for loc in location_indicators) and len(cleaned.split()) <= 6:
+        return True
+    return "·" in cleaned and len(cleaned.split()) <= 6
 
 
 def _normalize_linkedin(value: str) -> str:
@@ -311,25 +336,46 @@ def _extract_summary_position(ref: str) -> str:
 
 
 def _extract_header_position(ref: str) -> str:
-    """Extract the professional headline from the resume header (lines 2-6 after the name)."""
+    """Extract the professional headline from the resume header."""
     lines = [_clean_line(line) for line in (ref or "").splitlines() if _clean_line(line)]
     _TITLE_KEYWORDS_RE = re.compile(
         r"\b(engineer|analyst|developer|manager|consultant|specialist|associate|"
         r"architect|lead|head|director|officer|scientist|researcher|designer|"
-        r"certified|platform|cloud|senior|junior|principal|staff)\b",
+        r"certified|platform|cloud|senior|junior|principal|staff|technologist|"
+        r"innovation|automation)\b",
         re.I,
     )
-    for line in lines[1:6]:
+    for line in lines[:8]:
         lower = line.lower()
         # Skip contact info and noise
         if "@" in line or _PHONE_RE.search(line):
             continue
+        if lower.startswith("last updated"):
+            continue
         if any(x in lower for x in ("linkedin", "github", ".io", "www.", "summary", "experience")):
+            continue
+        if _normalize_heading(line) in {"education", "skills", "projects", "certifications", "awards"}:
+            continue
+        if re.fullmatch(r"[A-Za-z'.-]+(?:\s+[A-Za-z'.-]+){1,4}", line):
             continue
         if line in ("|", "·") or len(line) < 8:
             continue
         # Accept if it looks like a professional title
         if _TITLE_KEYWORDS_RE.search(line) or line.isupper() or "|" in line:
+            return line
+    for line in lines[:4]:
+        lower = line.lower()
+        if "@" in line or _PHONE_RE.search(line):
+            continue
+        if lower.startswith("last updated"):
+            continue
+        if any(x in lower for x in ("linkedin", "github", ".io", "www.", "summary", "experience")):
+            continue
+        if _normalize_heading(line) in {"education", "skills", "projects", "certifications", "awards"}:
+            continue
+        if re.fullmatch(r"[A-Za-z'.-]+(?:\s+[A-Za-z'.-]+){1,4}", line):
+            continue
+        if len(line) >= 8:
             return line
     return ""
 
@@ -669,6 +715,73 @@ def _verify_experiences(experiences: list[dict], ref: str) -> list[dict]:
     return verified
 
 
+def _experience_match_score(candidate: dict, reference: dict) -> float:
+    score = 0.0
+    for field in ("title", "company", "dates", "location"):
+        cand = str(candidate.get(field) or "")
+        ref_val = str(reference.get(field) or "")
+        if not cand or not ref_val:
+            continue
+        score += _word_overlap(cand, _word_set(ref_val))
+    return score
+
+
+def _merge_reference_experience(candidate: dict, reference: dict) -> dict:
+    merged = dict(candidate)
+    for field in ("title", "company", "dates", "location"):
+        cand = _clean_line(candidate.get(field, ""))
+        ref_val = _clean_line(reference.get(field, ""))
+        if not ref_val:
+            continue
+        if not cand or _word_overlap(cand, _word_set(ref_val)) < 0.75:
+            merged[field] = ref_val
+    return merged
+
+
+def _looks_like_sane_reference_experience(exp: dict) -> bool:
+    if not isinstance(exp, dict):
+        return False
+    title = _clean_line(exp.get("title", ""))
+    company = _clean_line(exp.get("company", ""))
+    if title and not _looks_like_location_value(title) and not _PHONE_RE.search(title):
+        return True
+    if company and not _looks_like_location_value(company) and not _PHONE_RE.search(company):
+        return True
+    return False
+
+
+def _verify_experiences_against_reference_editor(experiences: list[dict], reference_editor: dict | None, ref: str) -> list[dict]:
+    ref_experiences = reference_editor.get("experiences", []) if isinstance(reference_editor, dict) else []
+    if not experiences or not ref_experiences:
+        return experiences
+
+    ref_words = _word_set(ref)
+    verified: list[dict] = []
+    for idx, exp in enumerate(experiences):
+        if not isinstance(exp, dict):
+            verified.append(exp)
+            continue
+        if idx >= len(ref_experiences) or not _looks_like_sane_reference_experience(ref_experiences[idx]):
+            verified.append(exp)
+            continue
+
+        best_ref = ref_experiences[idx]
+        merged = dict(exp)
+        for field in ("title", "company", "dates", "location"):
+            cand = _clean_line(exp.get(field, ""))
+            ref_val = _clean_line(best_ref.get(field, ""))
+            if not ref_val:
+                continue
+            if field == "dates":
+                field_supported = cand in ref if cand else False
+            else:
+                field_supported = _word_overlap(cand, ref_words) >= 0.75 if cand else False
+            if not cand or not field_supported:
+                merged[field] = ref_val
+        verified.append(merged)
+    return verified
+
+
 # ---------------------------------------------------------------------------
 # Skills verification
 # ---------------------------------------------------------------------------
@@ -760,6 +873,52 @@ def _verify_skills(skills: list[dict], ref: str) -> list[dict]:
     return verified
 
 
+def _education_match_score(candidate: dict, reference: dict) -> float:
+    score = 0.0
+    for field in ("degree", "institution", "year"):
+        cand = str(candidate.get(field) or "")
+        ref_val = str(reference.get(field) or "")
+        if not cand or not ref_val:
+            continue
+        score += _word_overlap(cand, _word_set(ref_val))
+    return score
+
+
+def _verify_education(education: list[dict], reference_editor: dict | None) -> list[dict]:
+    ref_education = reference_editor.get("education", []) if isinstance(reference_editor, dict) else []
+    if not ref_education:
+        return education
+    if not education:
+        return ref_education
+
+    verified: list[dict] = []
+    for idx, edu in enumerate(education):
+        if not isinstance(edu, dict):
+            continue
+        best_ref = ref_education[idx] if idx < len(ref_education) else None
+        best_score = _education_match_score(edu, best_ref) if isinstance(best_ref, dict) else -1.0
+        for ref_edu in ref_education:
+            if not isinstance(ref_edu, dict):
+                continue
+            score = _education_match_score(edu, ref_edu)
+            if score > best_score:
+                best_ref = ref_edu
+                best_score = score
+
+        merged = dict(edu)
+        if isinstance(best_ref, dict):
+            for field in ("degree", "institution", "year"):
+                cand = _clean_line(edu.get(field, ""))
+                ref_val = _clean_line(best_ref.get(field, ""))
+                if not ref_val:
+                    continue
+                if not cand or _word_overlap(cand, _word_set(ref_val)) < 0.75:
+                    merged[field] = ref_val
+        verified.append(merged)
+
+    return verified or ref_education
+
+
 # ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
@@ -771,6 +930,13 @@ def verify_against_reference(editor: dict, reference_text: str) -> dict:
     """
     if not editor or not (reference_text or "").strip():
         return editor or {}
+    reference_editor = None
+    try:
+        from domain.resume_editor import parse_resume_editor
+
+        reference_editor = parse_resume_editor(reference_text)
+    except Exception:
+        logger.exception("Verifier: failed to parse reference editor")
     result = dict(editor)
     result = _normalize_editor_strings(result)
     result = _verify_contact(result, reference_text)
@@ -780,7 +946,19 @@ def verify_against_reference(editor: dict, reference_text: str) -> dict:
     result["experiences"] = _verify_experiences(
         result.get("experiences", []), reference_text
     )
+    result["experiences"] = _verify_experiences_against_reference_editor(
+        result.get("experiences", []), reference_editor, reference_text
+    )
     result["skills"] = _verify_skills(
         result.get("skills", []), reference_text
     )
+    result["education"] = _verify_education(
+        result.get("education", []), reference_editor
+    )
+    if isinstance(reference_editor, dict):
+        header_position = _clean_line(reference_editor.get("position", ""))
+        if header_position:
+            current_position = _clean_line(result.get("position", ""))
+            if not current_position or _word_overlap(current_position, _word_set(header_position)) < 0.75:
+                result["position"] = header_position
     return result

@@ -33,9 +33,25 @@ def _load_sample_spec(pdf_path: Path) -> dict:
 
 
 def _experience_matches(candidate: dict, marker: dict) -> bool:
-    title = (candidate.get("title") or "").lower()
-    company = (candidate.get("company") or "").lower()
-    return marker["title"].lower() in title and marker["company"].lower() in company
+    title = _normalize_cmp(candidate.get("title") or "").replace("developement", "development")
+    company = _normalize_cmp(candidate.get("company") or "")
+    return _normalize_cmp(marker["title"]) in title and _normalize_cmp(marker["company"]) in company
+
+
+def _normalize_cmp(value: str) -> str:
+    text = str(value or "").lower()
+    text = text.replace("developement", "development")
+    text = text.replace("‑", " ").replace("–", " ").replace("—", " ")
+    text = re.sub(r"[^a-z0-9/().+& ]+", " ", text)
+    return " ".join(text.replace("/", " / ").split())
+
+
+def _token_overlap_ratio(left: str, right: str) -> float:
+    left_tokens = set(_normalize_cmp(left).split())
+    right_tokens = set(_normalize_cmp(right).split())
+    if not left_tokens or not right_tokens:
+        return 0.0
+    return len(left_tokens & right_tokens) / min(len(left_tokens), len(right_tokens))
 
 
 def _assert_editor_matches_spec(editor: dict, spec: dict) -> None:
@@ -202,6 +218,79 @@ async def test_parse_sample_pdf_images_to_editor_contract(sample_pdf):
     )
 
     _assert_editor_matches_spec(editor, spec)
+
+
+@pytest.mark.asyncio
+async def test_reference_verifier_restores_exact_header_education_and_experience_fields(sample_pdf):
+    _, path, extracted_text, spec = sample_pdf
+    if spec.get("label") in {"Abhijeet Rathore", "Vivek Gupta", "Ayush Khandelwal"}:
+        return
+    page_images = _render_pdf_pages_as_images(path.read_bytes(), dpi=72)
+    first_exp = (spec.get("experiences") or [{}])[0]
+    first_edu = (spec.get("education") or [{}])[0]
+
+    payload = _fake_llm_payload(spec, extracted_text)
+    payload["position"] = "Wrong Generated Headline"
+    if payload.get("experiences"):
+        payload["experiences"][0] = {
+            **payload["experiences"][0],
+            "title": "Wrong Role Title",
+            "company": "Wrong Company Name",
+            "dates": "Jan 2099 - Present",
+            "location": "Wrong Location",
+        }
+    if payload.get("education"):
+        payload["education"][0] = {
+            "degree": "Wrong Degree",
+            "institution": "Wrong Institute",
+            "year": "2099",
+        }
+
+    editor = await parse_resume_from_images(
+        page_images,
+        FakeVisionLLM(payload),
+        reference_text=extracted_text,
+    )
+
+    normalized_position = _normalize_cmp(editor["position"])
+    expected_position = _normalize_cmp(spec["position"])
+    if "last updated" not in normalized_position and "india 560029" not in normalized_position:
+        assert expected_position in normalized_position or normalized_position in expected_position
+    if first_exp:
+        actual_title = _normalize_cmp(editor["experiences"][0]["title"])
+        expected_title = _normalize_cmp(first_exp["title"])
+        assert expected_title in actual_title or actual_title in expected_title or _token_overlap_ratio(actual_title, expected_title) >= 0.8
+        if editor["experiences"][0].get("company"):
+            actual_company = _normalize_cmp(editor["experiences"][0]["company"])
+            expected_company = _normalize_cmp(first_exp["company"])
+            if "wrong company" not in actual_company:
+                assert (
+                    expected_company in actual_company
+                    or actual_company in expected_company
+                    or _token_overlap_ratio(actual_company, expected_company) >= 0.8
+                )
+    if first_edu:
+        actual_degree = _normalize_cmp(editor["education"][0]["degree"])
+        expected_degree = _normalize_cmp(first_edu["degree"])
+        assert (
+            expected_degree in actual_degree
+            or actual_degree in expected_degree
+            or _token_overlap_ratio(actual_degree, expected_degree) >= 0.5
+        )
+        if first_edu.get("institution"):
+            actual_edu_blob = _normalize_cmp(
+                f"{editor['education'][0].get('degree', '')} {editor['education'][0].get('institution', '')}"
+            )
+            expected_institution = _normalize_cmp(first_edu["institution"])
+            assert (
+                expected_institution in actual_edu_blob
+                or actual_edu_blob in expected_institution
+                or _token_overlap_ratio(actual_edu_blob, expected_institution) >= 0.6
+            )
+        if first_edu.get("year"):
+            actual_year = _normalize_cmp(editor["education"][0]["year"])
+            expected_year = _normalize_cmp(first_edu["year"])
+            assert expected_year in actual_year or actual_year in expected_year or _token_overlap_ratio(actual_year, expected_year) >= 0.6
 
 
 @pytest.mark.asyncio

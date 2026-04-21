@@ -22,8 +22,9 @@ from tools.benchmark_ranking.score_labeled import _job_id
 
 LABELS = ("good", "adjacent", "bad")
 CONSENSUS_MODELS = [
-    "nvidia/nemotron-3-super-120b-a12b:free",
+    "google/gemma-4-31b-it:free",
     "arcee-ai/trinity-large-preview:free",
+    "openai/gpt-oss-120b:free",
 ]
 
 JSON_SCHEMA = {

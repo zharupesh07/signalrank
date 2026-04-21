@@ -23,6 +23,15 @@ uv run alembic upgrade head
 uv run uvicorn api.main:app --port 8000 --reload
 ```
 
+## Agent Workflow
+
+When an AI agent is working in this backend, keep the context narrow:
+
+- Read this README plus the specific API, worker, or config files involved in the task.
+- Do not preload the entire `docs/` tree or unrelated planning notes.
+- Prefer the local code and scripts already in the repo over optional external integrations.
+- Treat MCP servers as optional. Only use them when the task explicitly needs that integration.
+
 `api.main` now reads runtime worker flags directly from the environment. In practice that means the API process can run "API-only" with background workers disabled, while `api.worker_main` can run queue/resume/archival workers as a separate process.
 
 ## Low-Memory Railway Profile
@@ -158,6 +167,7 @@ SCRAPER_MAX_RESULTS=1500
 SCRAPER_HOURS_OLD=720             # 30-day lookback
 SCRAPER_DEFAULT_COUNTRY=India
 LINKEDIN_MAX_QUERIES=0            # 0 = disabled (slow: ~80s/query)
+LINKEDIN_COOKIE_HEADER=           # Optional LinkedIn session cookie header for page scraping
 RANKER_MAX_CANDIDATES=2000
 RANKER_MAX_DESCRIPTION_CHARS=1200
 RUN_API_WORKER=false              # API entrypoint default
@@ -228,7 +238,7 @@ alembic/versions/      # DB migrations
 - Per-model retry: `MAX_RETRIES_PER_MODEL = 3`
 - 429 backoff: respects `Retry-After` header; fallback `min(2^(n+2), 60) + jitter(0.5–3.0s)`
 - Model health probe on startup (TTL 1h); unhealthy models auto-skipped
-- Default models: `arcee-ai/trinity-mini:free` (14s) → `arcee-ai/trinity-large-preview:free` (72s)
+- Default models: `google/gemma-4-31b-it:free` → `arcee-ai/trinity-large-preview:free` → `google/gemma-4-26b-a4b-it:free` → `openai/gpt-oss-120b:free` → `google/gemma-3-4b-it:free`
 
 ### Resume Worker
 
@@ -240,7 +250,7 @@ alembic/versions/      # DB migrations
 ### Scraping
 
 - Free APIs (Remotive, Himalayas, Jobicy): 1s inter-request delay per fetcher call
-- LinkedIn: sequential with `LINKEDIN_MAX_QUERIES=0` default
+- LinkedIn: sequential with `LINKEDIN_MAX_QUERIES=0` default; `linkedin_page` is the direct URL scraper source
 
 ## Running Tests
 

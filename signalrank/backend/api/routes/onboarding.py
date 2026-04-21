@@ -36,6 +36,24 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
 
 
+def _resume_structure_is_weak(editor: dict | None) -> bool:
+    if not isinstance(editor, dict) or not editor:
+        return True
+    experiences = editor.get("experiences") if isinstance(editor.get("experiences"), list) else []
+    education = editor.get("education") if isinstance(editor.get("education"), list) else []
+    skills = editor.get("skills") if isinstance(editor.get("skills"), list) else []
+    if len(experiences) >= 2:
+        return False
+    if len(experiences) >= 1 and (
+        str(editor.get("name") or "").strip()
+        or str(editor.get("position") or "").strip()
+        or len(education) >= 1
+        or len(skills) >= 2
+    ):
+        return False
+    return True
+
+
 def _deterministic_resume_parse(resume_text: str, profile: Profile | None = None) -> ResumeParseResult:
     return deterministic_resume_parse(resume_text, profile)
 
@@ -322,9 +340,8 @@ async def _parse_and_update_profile(
 ) -> None:
     """Background task: parse resume with LLM and auto-populate profile + config_overrides.
 
-    If ``pdf_bytes`` is provided, attempts vision-based parsing first (renders
-    PDF pages as images and sends to a free vision model).  Falls back to
-    text-based LLM parsing if vision fails or is unavailable.
+    If ``pdf_bytes`` is provided, use text parsing first. Vision parsing is only
+    attempted as a supplement/fallback when the text-derived structure is weak.
     """
     distilled_text = None
     async def _commit_profile_changes() -> tuple[str | None, dict]:
@@ -349,14 +366,25 @@ async def _parse_and_update_profile(
             return distilled, merged
 
     try:
-        # Step 1: Image-first for structural parsing, with raw text as a reference.
-        # Fall back to text-only extraction when vision is unavailable or weak.
-        structure_result = {}
-        parsed_result = ResumeParseResult()
-        if pdf_bytes:
+        # Step 1: Parse text first. Most PDFs already extract clean text; vision
+        # only helps when structure extraction from text is clearly weak.
+        parsed_result, structure_result = await asyncio.gather(
+            asyncio.wait_for(parse_resume(resume_text, llm), timeout=60),
+            asyncio.wait_for(parse_resume_structure(resume_text, llm), timeout=90),
+            return_exceptions=True,
+        )
+        parsed = parsed_result if isinstance(parsed_result, ResumeParseResult) else ResumeParseResult()
+        llm_editor = structure_result if isinstance(structure_result, dict) else {}
+        if pdf_bytes and _resume_structure_is_weak(llm_editor):
             page_images = _render_pdf_pages_as_images(pdf_bytes)
             if page_images:
-                structure_result = await asyncio.wait_for(
+                logger.info(
+                    "Text parse was weak (exps=%d, name=%r, position=%r) — trying vision supplement",
+                    len(llm_editor.get("experiences", [])),
+                    llm_editor.get("name"),
+                    llm_editor.get("position"),
+                )
+                vision_result = await asyncio.wait_for(
                     parse_resume_from_images(
                         page_images,
                         llm,
@@ -365,20 +393,8 @@ async def _parse_and_update_profile(
                     ),
                     timeout=180,
                 )
-        if not structure_result:
-            parsed_result, structure_result = await asyncio.gather(
-                asyncio.wait_for(parse_resume(resume_text, llm), timeout=60),
-                asyncio.wait_for(parse_resume_structure(resume_text, llm), timeout=90),
-                return_exceptions=True,
-            )
-        parsed = parsed_result if isinstance(parsed_result, ResumeParseResult) else ResumeParseResult()
-        llm_editor = structure_result if isinstance(structure_result, dict) else {}
-        if pdf_bytes and len(llm_editor.get("experiences", [])) < 2 and structure_result:
-            logger.info("Vision parse was weak (exps=%d, name=%r) — using text fallback",
-                        len(llm_editor.get("experiences", [])), llm_editor.get("name"))
-            text_result = await asyncio.wait_for(parse_resume_structure(resume_text, llm), timeout=90)
-            if isinstance(text_result, dict) and len(text_result.get("experiences", [])) > len(llm_editor.get("experiences", [])):
-                llm_editor = text_result
+                if isinstance(vision_result, dict) and not _resume_structure_is_weak(vision_result):
+                    llm_editor = vision_result
 
         from domain.resume_verifier import verify_against_reference
         llm_editor = verify_against_reference(llm_editor, resume_text)

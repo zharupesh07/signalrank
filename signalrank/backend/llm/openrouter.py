@@ -51,11 +51,11 @@ def _store_response_cache_value(cache_key: str, value: object) -> None:
         _response_cache.popitem(last=False)
 
 FALLBACK_MODELS = [
-    "nvidia/nemotron-3-nano-30b-a3b:free",      # 1.3s — fastest
-    "arcee-ai/trinity-mini:free",                # 2.0s — reliable
-    "google/gemma-3-27b-it:free",                # 2.3s — also vision-capable
-    "arcee-ai/trinity-large-preview:free",       # 3.5s — quality fallback
-    "nvidia/nemotron-3-super-120b-a12b:free",    # 4.3s — largest
+    "google/gemma-4-31b-it:free",
+    "arcee-ai/trinity-large-preview:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "openai/gpt-oss-120b:free",
+    "google/gemma-3-4b-it:free",
 ]
 
 # Keep text parsing on the fastest reliable free models by default.
@@ -78,6 +78,7 @@ _llm_semaphore = asyncio.Semaphore(max(1, int(getattr(settings, "llm_semaphore",
 
 _MODEL_SIZE_RE = re.compile(r"(?i)(\d+(?:\.\d+)?)b")
 _TRAILING_COMMA_RE = re.compile(r",\s*([}\]])")
+_FENCED_JSON_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.I | re.S)
 
 
 def _repair_jsonish(text: str) -> str:
@@ -96,36 +97,22 @@ def _try_json_loads(text: str):
 
 def _extract_json(raw: str) -> dict | None:
     text = raw.strip()
+    candidates: list[str] = []
+    fenced = _FENCED_JSON_RE.findall(text)
+    if fenced:
+        candidates.extend(block.strip() for block in fenced if block.strip())
     if text.startswith("```"):
         lines = text.splitlines()
         if lines:
             lines = lines[1:]
         if lines and lines[-1].strip().startswith("```"):
             lines = lines[:-1]
-        text = "\n".join(lines).strip()
-    parsed = _try_json_loads(text)
-    if parsed is not None:
-        return parsed
-    repaired = _repair_jsonish(text)
-    if repaired != text:
-        parsed = _try_json_loads(repaired)
-        if parsed is not None:
-            return parsed
+        stripped = "\n".join(lines).strip()
+        if stripped:
+            candidates.append(stripped)
+    candidates.append(text)
 
-    stack = 0
-    start_idx = None
-    candidates = []
-    for idx, ch in enumerate(text):
-        if ch == "{":
-            if stack == 0:
-                start_idx = idx
-            stack += 1
-        elif ch == "}" and stack > 0:
-            stack -= 1
-            if stack == 0 and start_idx is not None:
-                candidates.append(text[start_idx : idx + 1])
-
-    for candidate in reversed(candidates):
+    for candidate in candidates:
         parsed = _try_json_loads(candidate)
         if parsed is not None:
             return parsed
@@ -134,8 +121,101 @@ def _extract_json(raw: str) -> dict | None:
             parsed = _try_json_loads(repaired_candidate)
             if parsed is not None:
                 return parsed
+        auto_closed = _auto_close_jsonish(repaired_candidate)
+        if auto_closed != repaired_candidate:
+            parsed = _try_json_loads(auto_closed)
+            if parsed is not None:
+                return parsed
+
+        for nested in _extract_json_objects(candidate):
+            parsed = _try_json_loads(nested)
+            if parsed is not None:
+                return parsed
+            repaired_nested = _repair_jsonish(nested)
+            if repaired_nested != nested:
+                parsed = _try_json_loads(repaired_nested)
+                if parsed is not None:
+                    return parsed
+            auto_closed_nested = _auto_close_jsonish(repaired_nested)
+            if auto_closed_nested != repaired_nested:
+                parsed = _try_json_loads(auto_closed_nested)
+                if parsed is not None:
+                    return parsed
 
     return None
+
+
+def _extract_json_objects(text: str) -> list[str]:
+    stack = 0
+    start_idx = None
+    in_string = False
+    escape = False
+    candidates: list[str] = []
+
+    for idx, ch in enumerate(text):
+        if in_string:
+            if escape:
+                escape = False
+                continue
+            if ch == "\\":
+                escape = True
+                continue
+            if ch == '"':
+                in_string = False
+            continue
+
+        if ch == '"':
+            in_string = True
+            continue
+        if ch == "{":
+            if stack == 0:
+                start_idx = idx
+            stack += 1
+            continue
+        if ch == "}" and stack > 0:
+            stack -= 1
+            if stack == 0 and start_idx is not None:
+                candidates.append(text[start_idx : idx + 1])
+
+    return list(reversed(candidates))
+
+
+def _auto_close_jsonish(text: str) -> str:
+    brace_balance = 0
+    bracket_balance = 0
+    in_string = False
+    escape = False
+
+    for ch in text:
+        if in_string:
+            if escape:
+                escape = False
+                continue
+            if ch == "\\":
+                escape = True
+                continue
+            if ch == '"':
+                in_string = False
+            continue
+        if ch == '"':
+            in_string = True
+            continue
+        if ch == "{":
+            brace_balance += 1
+        elif ch == "}" and brace_balance > 0:
+            brace_balance -= 1
+        elif ch == "[":
+            bracket_balance += 1
+        elif ch == "]" and bracket_balance > 0:
+            bracket_balance -= 1
+
+    if in_string:
+        text += '"'
+    if bracket_balance > 0:
+        text += "]" * bracket_balance
+    if brace_balance > 0:
+        text += "}" * brace_balance
+    return text
 
 
 def _looks_like_nonempty_resume_payload(payload: dict) -> bool:

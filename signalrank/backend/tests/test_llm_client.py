@@ -68,6 +68,35 @@ def test_extract_json_handles_fenced_json_without_closing_fence():
     assert _extract_json(raw) == {"name": "test", "skills": ["python"]}
 
 
+def test_extract_json_handles_fenced_json_with_braces_inside_strings():
+    raw = """Model output:
+```json
+{
+  "name": "Example Candidate",
+  "summary": "Built systems {safely} across teams",
+  "skills": ["Python", "GCP"]
+}
+```"""
+    assert _extract_json(raw) == {
+        "name": "Example Candidate",
+        "summary": "Built systems {safely} across teams",
+        "skills": ["Python", "GCP"],
+    }
+
+
+def test_extract_json_handles_chatty_prefix_and_suffix():
+    raw = """I extracted this resume JSON for you.
+{
+  "name": "Ayush Khandelwal",
+  "email": "ayush@example.com"
+}
+Double-check education and experience titles."""
+    assert _extract_json(raw) == {
+        "name": "Ayush Khandelwal",
+        "email": "ayush@example.com",
+    }
+
+
 def test_extract_response_content_handles_multiple_payload_shapes():
     assert _extract_response_content({"choices": [{"message": {"content": "hello"}}]}) == "hello"
     assert _extract_response_content({"choices": [{"message": {"content": [{"type": "text", "text": "hello"}]}}]}) == "hello"

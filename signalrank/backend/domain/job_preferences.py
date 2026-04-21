@@ -500,6 +500,25 @@ async def enrich_feedback_delta_with_llm(
     text = normalize_text(feedback_text)
     if not text or llm is None:
         return base_delta
+    if any(
+        base_delta.get(bucket)
+        for bucket in (
+            "location_preferences",
+            "role_preferences",
+            "positive_tags",
+            "negative_tags",
+            "hidden_companies",
+            "preferred_sources",
+            "work_mode_preferences",
+            "positive_examples",
+            "negative_examples",
+        )
+    ) and (
+        re.search(r"prefer\s+.+?\s+over\s+.+", text, re.IGNORECASE)
+        or re.search(r"\bfirst\b", text, re.IGNORECASE)
+        or re.search(r"\b(?:prefer|prioritize|avoid|show more|deprioritize|less)\b", text, re.IGNORECASE)
+    ):
+        return base_delta
     api_key = getattr(llm, "api_key", "")
     if not api_key:
         return base_delta

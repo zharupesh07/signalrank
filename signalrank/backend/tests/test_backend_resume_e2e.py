@@ -512,7 +512,7 @@ async def test_resume_fixture_backend_chain_allows_results_and_tracker_import(
     status_response = await client.get(f"/api/runs/{run_id}/status", headers=headers)
     assert status_response.status_code == 200
     status_payload = status_response.json()
-    assert status_payload["status"] == "done"
+    assert status_payload["status"] == "completed"
     assert status_payload["job_count"] == 4
 
     jobs_response = await client.get("/api/jobs?limit=10", headers=headers)
