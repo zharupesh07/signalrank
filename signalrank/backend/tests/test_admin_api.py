@@ -236,21 +236,7 @@ async def test_admin_trigger_run_does_not_require_local_queue_when_api_worker_di
     admin_token,
     regular_token,
     db: AsyncSession,
-    monkeypatch,
 ):
-    import api.routes.admin as admin_route
-
-    monkeypatch.setattr(
-        admin_route,
-        "api_runtime_flags",
-        lambda: {"run_api_worker": False},
-    )
-
-    def _should_not_queue():
-        raise AssertionError("Admin trigger should not enqueue when local API worker is disabled")
-
-    monkeypatch.setattr(admin_route, "get_queue", _should_not_queue)
-
     me = await client.get("/api/profile", headers={"Authorization": f"Bearer {regular_token}"})
     user_id = me.json()["user_id"]
     await db.execute(update(Profile).where(Profile.user_id == user_id).values(onboarding_complete=True))

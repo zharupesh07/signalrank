@@ -234,6 +234,13 @@ _ENGINEERING_IC_TITLE_TERMS = (
     "mts",
     "amts",
 )
+_GENERIC_SOFTWARE_IC_TITLE_TERMS = (
+    "software engineer",
+    "software engineering",
+    "member of technical staff",
+    "mts",
+    "amts",
+)
 
 _TITLE_TARGET_TERMS = (
     "agent",
@@ -459,7 +466,10 @@ def classify_role_bucket(job: dict[str, Any]) -> tuple[str | None, str | None]:
     if not _is_engineering_ic_title(title):
         return None, None
     title_has_target_signal = _has_target_title_signal(title)
-    if not title_has_target_signal:
+    text_has_target_signal = _has_target_text_signal(text)
+    if not title_has_target_signal and not (
+        text_has_target_signal and _contains_any(title, _GENERIC_SOFTWARE_IC_TITLE_TERMS)
+    ):
         return None, None
 
     if _contains_any(title, _AGENTIC_TERMS):

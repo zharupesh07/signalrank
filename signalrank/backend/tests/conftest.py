@@ -1,24 +1,57 @@
 import asyncio
+import os
+import re
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
+from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 import llm.openrouter as _openrouter_mod
 
-from api.database import Base, get_db
-from api.main import app, limiter as app_limiter
-from api.routes.auth import _limiter as auth_limiter
+from api.database import Base
 
-TEST_DB_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/signalrank_test"
+DEFAULT_TEST_DB_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/signalrank_test"
+TEST_DB_URL = os.getenv("SIGNALRANK_TEST_DATABASE_URL", DEFAULT_TEST_DB_URL)
 
 
-@pytest.fixture(scope="session", autouse=True)
+def _worker_test_db_url() -> str:
+    worker_id = os.getenv("PYTEST_XDIST_WORKER")
+    if not worker_id:
+        return TEST_DB_URL
+
+    url = make_url(TEST_DB_URL)
+    database = url.database or "signalrank_test"
+    return url.set(database=f"{database}_{worker_id}").render_as_string(hide_password=False)
+
+
+async def _ensure_database_exists(db_url: str):
+    url = make_url(db_url)
+    database = url.database
+    if not database or not re.fullmatch(r"[A-Za-z0-9_]+", database):
+        raise RuntimeError(f"Unsafe test database name: {database!r}")
+
+    admin_url = url.set(database="postgres").render_as_string(hide_password=False)
+    engine = create_async_engine(admin_url, isolation_level="AUTOCOMMIT")
+    async with engine.begin() as conn:
+        exists = (
+            await conn.execute(
+                text("SELECT 1 FROM pg_database WHERE datname = :database"),
+                {"database": database},
+            )
+        ).scalar_one_or_none()
+        if not exists:
+            await conn.execute(text(f'CREATE DATABASE "{database}"'))
+    await engine.dispose()
+
+
+@pytest.fixture(scope="session")
 def _ensure_schema():
-    """Create DB schema once per session synchronously — avoids event-loop sharing issues."""
     async def _create():
-        engine = create_async_engine(TEST_DB_URL)
+        db_url = _worker_test_db_url()
+        await _ensure_database_exists(db_url)
+        engine = create_async_engine(db_url)
         async with engine.begin() as conn:
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
             await conn.execute(text("DROP TABLE IF EXISTS query_plan_cache CASCADE"))
@@ -63,9 +96,8 @@ def _ensure_schema():
 
 
 @pytest.fixture
-async def test_engine():
-    """Per-test engine: truncate all tables for isolation, then yield."""
-    engine = create_async_engine(TEST_DB_URL)
+async def test_engine(_ensure_schema):
+    engine = create_async_engine(_worker_test_db_url())
     async with engine.begin() as conn:
         for table in reversed(Base.metadata.sorted_tables):
             await conn.execute(table.delete())
@@ -81,17 +113,23 @@ async def db(test_engine):
 
 
 @pytest.fixture(autouse=True)
-def clear_caches():
+def clear_caches(request):
     _openrouter_mod._response_cache.clear()
-    # Reset rate limiter storage to prevent cross-test 429s
-    app_limiter.reset()
-    auth_limiter.reset()
+    if "client" in request.fixturenames:
+        from api.main import limiter as app_limiter
+        from api.routes.auth import _limiter as auth_limiter
+
+        app_limiter.reset()
+        auth_limiter.reset()
     yield
     _openrouter_mod._response_cache.clear()
 
 
 @pytest.fixture
 async def client(db: AsyncSession):
+    from api.database import get_db
+    from api.main import app
+
     async def override_get_db():
         yield db
 

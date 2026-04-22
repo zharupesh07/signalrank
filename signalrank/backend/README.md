@@ -255,8 +255,15 @@ alembic/versions/      # DB migrations
 ## Running Tests
 
 ```bash
-# Requires a running signalrank_test database:
-# docker exec signalrank-pg psql -U postgres -c "CREATE DATABASE signalrank_test;"
+# Fast unit lane; no Postgres required.
+uv run pytest -m unit -n auto
 
-uv run pytest
+# Full local lane; creates signalrank_test if the local postgres server is running.
+uv run pytest -n auto
+
+# Live network/LLM lane; opt in explicitly.
+uv run pytest -m live
 ```
+
+Override the default local test database with `SIGNALRANK_TEST_DATABASE_URL`.
+When `pytest-xdist` is enabled, each worker gets its own suffixed test database.

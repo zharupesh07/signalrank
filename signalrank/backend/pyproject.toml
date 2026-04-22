@@ -51,8 +51,10 @@ markers = [
     "unit: pure unit tests with no DB or HTTP dependencies (safe for -n auto)",
     "db: tests requiring database access",
     "client: tests requiring HTTP test client",
+    "slow: slower local suites that are useful before larger refactors",
+    "e2e: end-to-end backend workflow coverage",
 ]
-addopts = "-m 'not live'"
+addopts = "-m 'not live' --strict-markers -ra"
 
 [dependency-groups]
 dev = [

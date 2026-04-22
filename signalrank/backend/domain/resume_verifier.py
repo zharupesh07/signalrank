@@ -354,6 +354,8 @@ def _extract_header_position(ref: str) -> str:
             continue
         if any(x in lower for x in ("linkedin", "github", ".io", "www.", "summary", "experience")):
             continue
+        if _looks_like_location_value(line):
+            continue
         if _normalize_heading(line) in {"education", "skills", "projects", "certifications", "awards"}:
             continue
         if re.fullmatch(r"[A-Za-z'.-]+(?:\s+[A-Za-z'.-]+){1,4}", line):
@@ -370,6 +372,8 @@ def _extract_header_position(ref: str) -> str:
         if lower.startswith("last updated"):
             continue
         if any(x in lower for x in ("linkedin", "github", ".io", "www.", "summary", "experience")):
+            continue
+        if _looks_like_location_value(line):
             continue
         if _normalize_heading(line) in {"education", "skills", "projects", "certifications", "awards"}:
             continue

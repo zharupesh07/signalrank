@@ -155,7 +155,7 @@ def _top_titles(case_key: str) -> tuple[str, ...]:
 
 
 def _make_jobs(case_spec: dict) -> list[JobRaw]:
-    now = datetime(2026, 4, 4, 12, 0, tzinfo=timezone.utc)
+    now = datetime.now(timezone.utc).replace(microsecond=0)
     case = _case_for_spec(case_spec)
     top_titles = _top_titles(case["key"])
     jobs: list[JobRaw] = []
@@ -193,7 +193,7 @@ def _make_jobs(case_spec: dict) -> list[JobRaw]:
 
 
 def _make_top10_jobs(case_key: str, case_spec: dict) -> list[JobRaw]:
-    now = datetime(2026, 4, 4, 12, 0, tzinfo=timezone.utc)
+    now = datetime.now(timezone.utc).replace(microsecond=0)
     fixture = TOP10_CASES[case_key]
     jobs: list[JobRaw] = []
 
