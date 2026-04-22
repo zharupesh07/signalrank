@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, ExternalLink, Loader2, Plus, RotateCcw, Send, SlidersHorizontal, XCircle } from "lucide-react";
 
-import { scoreColor } from "@/lib/formatting";
+import { formatSourceLabel, scoreColor } from "@/lib/formatting";
 import type { Job, JobPreferencesResponse, Run } from "@/types";
 
 import {
@@ -31,6 +31,37 @@ const QUICK_FEEDBACK_ACTIONS = [
   { key: "prefer_pune", label: "prefer pune" },
 ] as const;
 
+const DIRECT_SOURCE_SITES = new Set(["greenhouse", "ashby", "lever", "workday", "company_portal", "smartrecruiters"]);
+const MARKET_SOURCE_SITES = new Set(["jsearch", "google", "li_jobsearch", "li_7d", "li_bulk", "jobs_scanner", "linkedin", "linkedin_page"]);
+
+function sourceGroups(availableSites: string[]) {
+  const uniqueSites = Array.from(new Set(availableSites)).filter(Boolean);
+  const direct = uniqueSites.filter((site) => DIRECT_SOURCE_SITES.has(site));
+  const market = uniqueSites.filter((site) => MARKET_SOURCE_SITES.has(site));
+  const other = uniqueSites.filter((site) => !DIRECT_SOURCE_SITES.has(site) && !MARKET_SOURCE_SITES.has(site));
+
+  return [
+    { key: "all", label: "All", sublabel: `${uniqueSites.length} sources`, sites: [] },
+    { key: "direct", label: "Direct", sublabel: `${direct.length} ATS/company`, sites: direct },
+    { key: "market", label: "Market", sublabel: `${market.length} LinkedIn/search`, sites: market },
+    { key: "other", label: "Other", sublabel: `${other.length} remote/free`, sites: other },
+  ].filter((group) => group.key === "all" || group.sites.length > 0);
+}
+
+function sameSites(a: string[], b: string[]) {
+  if (a.length !== b.length) return false;
+  const left = new Set(a);
+  return b.every((site) => left.has(site));
+}
+
+function sourceFilterLabel(selectedSites: string[]) {
+  if (selectedSites.length === 0) return "All sources";
+  if (selectedSites.length <= 2) {
+    return selectedSites.map(formatSourceLabel).join(", ");
+  }
+  return `${selectedSites.length} selected`;
+}
+
 export function JobsHeader({
   total,
   runTotal,
@@ -43,11 +74,11 @@ export function JobsHeader({
   newGoodMatches: number;
 }) {
   return (
-    <div>
+    <div className="min-w-0">
       <div className="section-label mb-1">match explorer</div>
-      <div className="flex items-baseline gap-3">
-        <h1 className="text-xl font-bold text-foreground">All Matches</h1>
-        <span className="text-primary text-sm tabular-nums text-glow-dim">{total}</span>
+      <div className="flex flex-wrap items-baseline gap-3">
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">All Matches</h1>
+        <span className="text-primary text-sm tabular-nums text-glow-dim">{total} shown</span>
         {activeFilterCount > 0 && (
           <span className="text-[11px] text-muted-foreground">of {runTotal}</span>
         )}
@@ -197,10 +228,7 @@ export function JobsFiltersSidebar({
   onSetShowArchived: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   return (
-    <aside
-      className="hidden md:block shrink-0 sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto"
-      style={{ width: collapsed ? 40 : 220 }}
-    >
+    <aside className="hidden lg:block shrink-0 sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto" style={{ width: collapsed ? 40 : 236 }}>
       {collapsed ? (
         <button
           onClick={onToggleCollapsed}
@@ -313,19 +341,26 @@ export function JobsFiltersSidebar({
             <>
               <hr className="border-border" />
               <div>
-                <div className="text-xs font-semibold text-[var(--fg-muted,#71717a)] uppercase tracking-wide mb-2">Source</div>
-                <div className="space-y-1">
-                  {availableSites.map((site) => (
-                    <label key={site} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={filters.sites.includes(site)}
-                        onChange={() => onSetFilters((f) => ({ ...f, sites: toggleItem(f.sites, site) }))}
-                        suppressHydrationWarning
-                        className="accent-[#22c55e] w-3 h-3"
-                      />
-                      <span className="text-sm text-foreground">{site}</span>
-                    </label>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="text-xs font-semibold text-[var(--fg-muted,#71717a)] uppercase tracking-wide">Source</div>
+                  <div className="text-[10px] text-muted-foreground tabular-nums">
+                    {sourceFilterLabel(filters.sites)}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {sourceGroups(availableSites).map((group) => (
+                    <button
+                      key={group.key}
+                      onClick={() => onSetFilters((f) => ({ ...f, sites: group.sites }))}
+                      className="border px-2 py-2 text-left transition-colors hover:border-primary hover:text-primary"
+                      style={{
+                        borderColor: sameSites(filters.sites, group.sites) ? "var(--primary)" : "var(--border)",
+                        background: sameSites(filters.sites, group.sites) ? "color-mix(in srgb, var(--primary) 8%, transparent)" : "transparent",
+                      }}
+                    >
+                      <div className="text-[11px] uppercase tracking-[0.14em] text-foreground">{group.label}</div>
+                      <div className="mt-0.5 text-[10px] text-muted-foreground">{group.sublabel}</div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -426,7 +461,7 @@ export function JobsRefinementPanel({
   onResetPreferences: () => void;
 }) {
   return (
-    <aside className="hidden xl:flex w-[22rem] shrink-0 sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto border border-border bg-card p-4 flex-col gap-4">
+    <aside className="hidden 2xl:flex w-[20rem] shrink-0 sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto border border-border bg-card p-4 flex-col gap-4">
       <div>
         <div className="text-[11px] text-muted-foreground uppercase tracking-[0.16em]">Refine Matches</div>
         <div className="text-sm text-foreground mt-1">Teach the ranker what you actually want. It reranks the shortlist, not the whole corpus.</div>

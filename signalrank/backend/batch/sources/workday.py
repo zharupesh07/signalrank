@@ -216,6 +216,14 @@ _WORKDAY_COMPANIES = [
         "site": "Careers",
         "base_url": "https://ciena.wd5.myworkdayjobs.com/Careers",
     },
+    {
+        "company": "NVIDIA",
+        "slug": "nvidia",
+        "host": "nvidia.wd5.myworkdayjobs.com",
+        "tenant": "nvidia",
+        "site": "NVIDIAExternalCareerSite",
+        "base_url": "https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite",
+    },
 ]
 
 

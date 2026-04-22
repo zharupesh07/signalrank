@@ -20,8 +20,13 @@ def _job(url: str, title: str, location: str, description: str) -> RawJob:
 
 
 def test_company_portals_active_companies_respects_allowlist():
-    names = {item["company"] for item in company_portals.active_companies(["Adobe", "Optum", "SAP"])}
-    assert names == {"Adobe", "Optum", "SAP"}
+    names = {
+        item["company"]
+        for item in company_portals.active_companies(
+            ["Adobe", "Google", "Microsoft", "Cisco", "Optum", "SAP"]
+        )
+    }
+    assert names == {"Adobe", "Google", "Microsoft", "Cisco", "Optum", "SAP"}
 
 
 def test_extract_phapp_ddo_parses_embedded_adobe_payload():
@@ -36,6 +41,15 @@ def test_extract_phapp_ddo_parses_embedded_adobe_payload():
 
     assert payload["eagerLoadRefineSearch"]["totalHits"] == 1
     assert payload["eagerLoadRefineSearch"]["data"]["jobs"][0]["jobSeqNo"] == "ADOBUSR123"
+
+
+def test_google_card_location_prefers_visible_location_span():
+    soup = company_portals.BeautifulSoup(
+        '<li><span class="r0wTof">Bengaluru, Karnataka, India</span></li>',
+        "lxml",
+    )
+
+    assert company_portals._google_card_location(soup) == "Bengaluru, Karnataka, India"
 
 
 @pytest.mark.asyncio

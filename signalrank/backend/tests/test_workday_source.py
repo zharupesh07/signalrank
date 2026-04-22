@@ -26,6 +26,7 @@ def test_workday_company_registry_contains_expected_boards():
     assert ("Salesforce", "salesforce", "salesforce", "External_Career_Site") in companies
     assert ("Walmart", "walmart", "walmart", "WalmartExternal") in companies
     assert ("Adobe", "adobe", "adobe", "external_experienced") in companies
+    assert ("NVIDIA", "nvidia", "nvidia", "NVIDIAExternalCareerSite") in companies
     assert ("BrowserStack", "browserstack", "browserstack", "External") not in companies
 
 

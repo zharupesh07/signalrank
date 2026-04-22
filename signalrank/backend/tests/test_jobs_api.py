@@ -224,6 +224,52 @@ async def test_list_jobs_sorts_by_date_posted_desc(client, auth_token, db: Async
     assert [job["title"] for job in jobs] == ["Newer Job", "Older Job"]
 
 
+async def test_list_jobs_age_sort_uses_ingested_at_when_date_missing(client, auth_token, db: AsyncSession):
+    me = await client.get("/api/profile", headers={"Authorization": f"Bearer {auth_token}"})
+    user_id = me.json()["user_id"]
+
+    run = Run(user_id=user_id, status="success")
+    dated_old = JobRaw(
+        job_url="https://example.com/jobs/dated-old",
+        title="Dated Old Job",
+        company="Example Corp",
+        description="Role",
+        location="Remote",
+        site="manual",
+        date_posted=datetime(2026, 3, 20, 12, 0, tzinfo=timezone.utc),
+        ingested_at=datetime(2026, 3, 20, 13, 0, tzinfo=timezone.utc),
+    )
+    fresh_direct = JobRaw(
+        job_url="https://example.com/jobs/fresh-direct",
+        title="Fresh Direct Job",
+        company="Example Corp",
+        description="Role",
+        location="Remote",
+        site="greenhouse",
+        date_posted=None,
+        ingested_at=datetime.now(timezone.utc),
+    )
+    db.add_all([run, dated_old, fresh_direct])
+    await db.flush()
+    db.add_all(
+        [
+            JobResult(run_id=run.id, user_id=user_id, job_id=dated_old.id, final_score=70.0, company_tier="tier_a"),
+            JobResult(run_id=run.id, user_id=user_id, job_id=fresh_direct.id, final_score=60.0, company_tier="tier_a"),
+        ]
+    )
+    await db.commit()
+
+    response = await client.get(
+        "/api/jobs?sort=date_posted&sort_dir=desc&date_range=week",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 200
+    jobs = response.json()["jobs"]
+    assert [job["title"] for job in jobs] == ["Fresh Direct Job"]
+    assert jobs[0]["date_posted"] is None
+    assert jobs[0]["freshness_bucket"] == "fresh"
+
+
 async def test_list_jobs_filters_company_tiers_including_legacy_values(client, auth_token, db: AsyncSession):
     me = await client.get("/api/profile", headers={"Authorization": f"Bearer {auth_token}"})
     user_id = me.json()["user_id"]

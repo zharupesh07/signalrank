@@ -95,46 +95,60 @@ export default function JobsPage() {
 
   return (
     <div className="pt-14 min-h-screen page-content">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex items-end justify-between gap-4 mb-5">
+      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 py-8">
+        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 mb-5">
           <JobsHeader
             total={total}
             runTotal={runTotal}
             activeFilterCount={activeFilterCount}
             newGoodMatches={newGoodMatches}
           />
-          <div className="flex items-center gap-3">
-            {isAdmin && (
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 xl:min-w-[34rem]">
+            <div className="flex items-center border border-border bg-input focus-within:border-primary transition-colors flex-1">
+              <Search size={12} className="text-muted-foreground ml-3 shrink-0" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="search title, company, city..."
+                suppressHydrationWarning
+                className="flex-1 bg-transparent px-2 py-2.5 text-xs text-foreground outline-none placeholder:text-muted-foreground"
+              />
+              {search && (
+                <button onClick={() => setSearch("")} className="pr-2 text-muted-foreground hover:text-secondary-foreground transition-colors">
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+            {isAdmin ? (
               <button
                 onClick={triggerArchive}
                 disabled={archiving || (archiveStatus !== null && (archiveStatus.pending > 0 || archiveStatus.running > 0))}
-                className="flex items-center gap-1.5 text-[11px] border border-border px-3 py-2 hover:border-primary hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-wider"
+                className="flex items-center justify-center gap-1.5 text-[11px] border border-border px-3 py-2.5 hover:border-primary hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-wider"
                 title="Queue archival evaluation in the background for the current successful run"
               >
                 {archiving || (archiveStatus && (archiveStatus.pending > 0 || archiveStatus.running > 0)) ? (
                   <><Loader2 size={11} className="animate-spin" />archiving {archiveStatus ? `${archiveStatus.done}/${archiveStatus.total}` : ""}</>
                 ) : (
-                  <><Archive size={11} />manual archive run</>
+                  <><Archive size={11} />archive run</>
                 )}
               </button>
-            )}
+            ) : null}
           </div>
-          <div className="flex items-center border border-border bg-input focus-within:border-primary transition-colors w-64">
-            <Search size={11} className="text-muted-foreground ml-3 shrink-0" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="search title, company..."
-              suppressHydrationWarning
-              className="flex-1 bg-transparent px-2 py-2 text-xs text-foreground outline-none placeholder:text-muted-foreground"
-            />
-            {search && (
-              <button onClick={() => setSearch("")} className="pr-2 text-muted-foreground hover:text-secondary-foreground transition-colors">
-                <X size={11} />
-              </button>
-            )}
-          </div>
+        </div>
+
+        <div className="mb-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
+          {[
+            { label: "visible", value: total },
+            { label: "run total", value: runTotal },
+            { label: "filters", value: activeFilterCount },
+            { label: "sources", value: availableSites.length },
+          ].map((item) => (
+            <div key={item.label} className="border border-border bg-card px-3 py-2">
+              <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{item.label}</div>
+              <div className="mt-1 text-lg text-foreground tabular-nums">{item.value}</div>
+            </div>
+          ))}
         </div>
 
         <JobsPresetBar
@@ -157,8 +171,7 @@ export default function JobsPage() {
           }}
         />
 
-        <div className="flex gap-4">
-          {/* Sidebar — hidden on mobile */}
+        <div className="flex gap-4 items-start">
           <JobsFiltersSidebar
             collapsed={collapsed}
             activeFilterCount={activeFilterCount}
@@ -170,26 +183,24 @@ export default function JobsPage() {
             onSetShowArchived={setShowArchived}
           />
 
-          {/* Main content + detail panel */}
           <div className="flex-1 min-w-0 flex gap-4">
           <div className={`space-y-5 ${selectedJob ? "flex-1 min-w-0" : "w-full"}`}>
-            <div className="border border-border overflow-x-auto relative">
+            <div className="border border-border overflow-x-auto relative jobs-table-shell">
               {refreshing && (
                 <div className="absolute inset-0 z-10 bg-background/35 pointer-events-none" />
               )}
-              <table className="jobs-table w-full text-xs border-collapse min-w-[900px]">
+              <table className="jobs-table w-full text-xs border-collapse min-w-[1040px]">
                 <colgroup>
-                  <col style={{ width: 260 }} />
+                  <col style={{ width: 300 }} />
                   <col style={{ width: 160 }} />
-                  <col style={{ width: 90 }} />
-                  <col style={{ width: 120 }} />
-                  <col style={{ width: 60 }} />
-                  <col style={{ width: 80 }} />
+                  <col style={{ width: 160 }} />
+                  <col style={{ width: 150 }} />
                   <col style={{ width: 70 }} />
-                  <col style={{ width: 50 }} />
+                  <col style={{ width: 110 }} />
+                  <col style={{ width: 70 }} />
                   <col style={{ width: 220 }} />
-                  <col style={{ width: 32 }} />
-                  <col style={{ width: 80 }} />
+                  <col style={{ width: 44 }} />
+                  <col style={{ width: 96 }} />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-border bg-input">
@@ -214,11 +225,11 @@ export default function JobsPage() {
                 <tbody>
                   {loading ? (
                     Array.from({ length: 10 }).map((_, i) => (
-                      <TableRowSkeleton key={i} cols={11} />
+                      <TableRowSkeleton key={i} cols={10} />
                     ))
                   ) : table.getRowModel().rows.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className="px-4 py-16 text-center">
+                      <td colSpan={10} className="px-4 py-16 text-center">
                         <div className="font-mono text-muted-foreground text-xs space-y-1">
                           <div>┌─────────────────────┐</div>
                           <div>│   no jobs found     │</div>

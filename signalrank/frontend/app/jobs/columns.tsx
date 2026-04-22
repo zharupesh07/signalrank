@@ -62,6 +62,32 @@ export function SignalsCell({ job }: { job: Job }) {
   );
 }
 
+function sourceTone(site: string | null | undefined, direct: boolean | undefined) {
+  const value = String(site || "").trim();
+  if (direct || ["greenhouse", "ashby", "lever", "workday", "company_portal", "smartrecruiters"].includes(value)) {
+    return {
+      label: value === "company_portal" ? "Company" : "Direct",
+      color: "var(--primary)",
+    };
+  }
+  if (["li_jobsearch", "li_7d", "li_bulk", "jobs_scanner", "linkedin", "linkedin_page"].includes(value)) {
+    return {
+      label: "LinkedIn",
+      color: "var(--terminal-green-bright)",
+    };
+  }
+  if (value === "jsearch" || value === "google") {
+    return {
+      label: "Search",
+      color: "var(--terminal-yellow)",
+    };
+  }
+  return {
+    label: "Other",
+    color: "var(--muted-foreground)",
+  };
+}
+
 type ColumnHandlers = {
   tracked: Set<string>;
   trackJob: (job: Job) => Promise<void>;
@@ -71,11 +97,18 @@ export function getColumns({ tracked, trackJob }: ColumnHandlers) {
   return [
     col.accessor("title", {
       header: "Title",
-      size: 260,
+      size: 300,
       cell: (i) => (
-        <span className="text-secondary-foreground text-xs font-medium leading-snug block">
-          {i.getValue() ?? "—"}
-        </span>
+        <div className="space-y-1">
+          <span className="text-secondary-foreground text-xs font-medium leading-snug block">
+            {i.getValue() ?? "—"}
+          </span>
+          {i.row.original.is_contract ? (
+            <span className="inline-flex text-[10px] text-[var(--terminal-yellow)] border border-[var(--terminal-yellow)]/30 px-1.5 py-0.5">
+              CONTRACT
+            </span>
+          ) : null}
+        </div>
       ),
     }),
     col.accessor("company", {
@@ -92,9 +125,9 @@ export function getColumns({ tracked, trackJob }: ColumnHandlers) {
     }),
     col.accessor("location", {
       header: "Location",
-      size: 90,
+      size: 160,
       cell: (i) => (
-        <span className="text-muted-foreground text-xs">{i.getValue() ?? "—"}</span>
+        <span className="text-muted-foreground text-xs line-clamp-2">{i.getValue() ?? "—"}</span>
       ),
     }),
     col.accessor("final_score", {
@@ -119,28 +152,23 @@ export function getColumns({ tracked, trackJob }: ColumnHandlers) {
         ) : <span className="text-muted-foreground">—</span>;
       },
     }),
-    col.accessor("is_contract", {
-      header: "Type",
-      size: 80,
-      cell: (i) => i.getValue() ? (
-        <span className="text-[11px] text-[var(--terminal-yellow)] border border-[var(--terminal-yellow)]/30 px-1.5 py-0.5">
-          CONTRACT
-        </span>
-      ) : null,
-    }),
     col.accessor("site", {
       header: "Source",
-      size: 70,
+      size: 110,
       cell: (i) => {
         const job = i.row.original;
+        const tone = sourceTone(i.getValue(), job.is_direct_source);
         return (
-          <div className="flex flex-col gap-1">
-            <span className="text-muted-foreground text-xs">{formatSourceLabel(i.getValue())}</span>
-            {job.is_direct_source ? (
-              <span className="text-[10px] text-primary border border-primary/25 px-1 py-0.5 uppercase tracking-wider w-fit">
-                direct
-              </span>
-            ) : null}
+          <div className="space-y-1">
+            <span
+              className="inline-flex border px-1.5 py-0.5 text-[10px] uppercase tracking-[0.14em]"
+              style={{ color: tone.color, borderColor: `${tone.color}55` }}
+            >
+              {tone.label}
+            </span>
+            <div className="text-[10px] text-muted-foreground truncate">
+              {formatSourceLabel(i.getValue())}
+            </div>
           </div>
         );
       },

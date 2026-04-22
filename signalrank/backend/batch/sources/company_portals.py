@@ -34,6 +34,9 @@ _QUERY_STOPWORDS = {
 
 _COMPANIES = [
     {"company": "Adobe", "slug": "adobe", "kind": "adobe"},
+    {"company": "Microsoft", "slug": "microsoft", "kind": "microsoft"},
+    {"company": "Google", "slug": "google", "kind": "google"},
+    {"company": "Cisco", "slug": "cisco", "kind": "cisco_phenom"},
     {"company": "Salesforce", "slug": "salesforce", "kind": "salesforce"},
     {"company": "Optum", "slug": "optum", "kind": "optum"},
     {"company": "SAP", "slug": "sap", "kind": "sap"},
@@ -53,6 +56,11 @@ def _parse_date(value: Any) -> datetime | None:
         return None
     if isinstance(value, datetime):
         return value
+    if isinstance(value, int | float):
+        try:
+            return datetime.fromtimestamp(value)
+        except (OverflowError, OSError, ValueError):
+            return None
     try:
         return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     except (TypeError, ValueError):
@@ -217,6 +225,156 @@ async def _fetch_adobe_jobs(
                     location=location,
                     site="company_portal",
                     date_posted=_parse_date(item.get("postedDate") or item.get("dateCreated")),
+                )
+            )
+    return jobs
+
+
+async def _fetch_microsoft_detail(
+    client: httpx.AsyncClient, position_id: str
+) -> dict[str, Any]:
+    response = await client.get(
+        "https://apply.careers.microsoft.com/api/pcsx/position_details",
+        params={"domain": "microsoft.com", "position_id": position_id},
+        timeout=30,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    data = payload.get("data")
+    return data if isinstance(data, dict) else {}
+
+
+async def _fetch_microsoft_jobs(
+    client: httpx.AsyncClient, company: dict[str, str], query: SearchQuery
+) -> list[RawJob]:
+    jobs: list[RawJob] = []
+    seen: set[str] = set()
+    for search_term in _portal_search_terms(query):
+        response = await client.get(
+            "https://apply.careers.microsoft.com/api/pcsx/search",
+            params={
+                "domain": "microsoft.com",
+                "query": search_term,
+                "location": query.location or query.country,
+                "limit": 20,
+            },
+            timeout=30,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        positions = ((payload.get("data") or {}).get("positions") or [])
+        for item in positions:
+            if not isinstance(item, dict):
+                continue
+            position_id = str(item.get("id") or "").strip()
+            title = str(item.get("name") or "").strip()
+            if not position_id or not title:
+                continue
+            url = urljoin(
+                "https://apply.careers.microsoft.com",
+                str(item.get("positionUrl") or f"/careers/job/{position_id}"),
+            )
+            if url in seen:
+                continue
+            location = ", ".join(
+                loc.strip()
+                for loc in item.get("locations") or []
+                if isinstance(loc, str) and loc.strip()
+            ) or None
+            if not _matches_search_term(
+                title=title,
+                description=str(item.get("department") or ""),
+                location=location,
+                search_term=search_term,
+                query=query,
+            ):
+                continue
+            try:
+                detail = await _fetch_microsoft_detail(client, position_id)
+            except Exception:
+                logger.exception("Microsoft detail fetch failed for %s", url)
+                detail = {}
+            seen.add(url)
+            jobs.append(
+                RawJob(
+                    job_url=url,
+                    title=str(detail.get("name") or title).strip(),
+                    company=company["company"],
+                    description=str(
+                        detail.get("jobDescription") or item.get("department") or ""
+                    ),
+                    location=location,
+                    site="company_portal",
+                    date_posted=_parse_date(
+                        detail.get("postedTs") or item.get("postedTs")
+                    ),
+                )
+            )
+    return jobs
+
+
+def _google_card_location(card: BeautifulSoup) -> str | None:
+    location = card.select_one(".r0wTof")
+    if location:
+        return location.get_text(" ", strip=True) or None
+    text = card.get_text(" ", strip=True)
+    match = re.search(r"\bplace\s+(.+?)(?:\s+bar_chart|\s+Google\s+\|)", text)
+    return match.group(1).strip() if match else None
+
+
+async def _fetch_google_jobs(
+    client: httpx.AsyncClient, company: dict[str, str], query: SearchQuery
+) -> list[RawJob]:
+    jobs: list[RawJob] = []
+    seen: set[str] = set()
+    for search_term in _portal_search_terms(query):
+        response = await client.get(
+            "https://www.google.com/about/careers/applications/jobs/results/",
+            params={"q": search_term, "location": query.location or query.country},
+            timeout=30,
+        )
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "lxml")
+        for anchor in soup.select('a[href*="jobs/results/"]'):
+            href = str(anchor.get("href") or "").strip()
+            if not href or "accounts.google.com" in href:
+                continue
+            card = anchor.find_parent("li") or anchor.find_parent("div")
+            if card is None:
+                continue
+            title_tag = card.find("h3")
+            title = title_tag.get_text(" ", strip=True) if title_tag else ""
+            if not title:
+                title = (
+                    str(anchor.get("aria-label") or "")
+                    .removeprefix("Learn more about ")
+                    .strip()
+                )
+            if not title:
+                continue
+            url = urljoin("https://www.google.com/about/careers/applications/", href)
+            if url in seen:
+                continue
+            location = _google_card_location(card)
+            description = card.get_text(" ", strip=True)
+            if not _matches_search_term(
+                title=title,
+                description=description,
+                location=location,
+                search_term=search_term,
+                query=query,
+            ):
+                continue
+            seen.add(url)
+            jobs.append(
+                RawJob(
+                    job_url=url,
+                    title=title,
+                    company=company["company"],
+                    description=description,
+                    location=location,
+                    site="company_portal",
+                    date_posted=None,
                 )
             )
     return jobs
@@ -479,10 +637,82 @@ async def _fetch_siemens_energy_jobs(
     return jobs
 
 
+async def _fetch_cisco_phenom_jobs(
+    client: httpx.AsyncClient, company: dict[str, str], query: SearchQuery
+) -> list[RawJob]:
+    jobs: list[RawJob] = []
+    seen: set[str] = set()
+    for search_term in _portal_search_terms(query):
+        response = await client.get(
+            "https://careers.cisco.com/global/en/search-results",
+            params={"keywords": search_term},
+            timeout=30,
+        )
+        response.raise_for_status()
+        ddo = _extract_phapp_ddo(response.text)
+        payload = ((ddo.get("eagerLoadRefineSearch") or {}).get("data") or {})
+        for item in payload.get("jobs") or []:
+            if not isinstance(item, dict):
+                continue
+            title = str(item.get("title") or "").strip()
+            req_id = str(item.get("reqId") or item.get("jobSeqNo") or "").strip()
+            if not title or not req_id:
+                continue
+            url = str(item.get("applyUrl") or "").strip()
+            if not url:
+                url = f"https://careers.cisco.com/global/en/job/{req_id}"
+            if url in seen:
+                continue
+            location = str(
+                item.get("location")
+                or item.get("cityStateCountry")
+                or ", ".join(item.get("multi_location") or [])
+                or ""
+            ).strip() or None
+            description = " ".join(
+                part
+                for part in (
+                    str(item.get("descriptionTeaser") or "").strip(),
+                    str(item.get("ml_job_parser") or "").strip(),
+                    " ".join(item.get("ml_skills") or []),
+                )
+                if part
+            )
+            if not _matches_search_term(
+                title=title,
+                description=description,
+                location=location,
+                search_term=search_term,
+                query=query,
+            ):
+                continue
+            seen.add(url)
+            jobs.append(
+                RawJob(
+                    job_url=url,
+                    title=title,
+                    company=company["company"],
+                    description=description,
+                    location=location,
+                    site="company_portal",
+                    date_posted=_parse_date(
+                        item.get("postedDate") or item.get("dateCreated")
+                    ),
+                )
+            )
+    return jobs
+
+
 async def _fetch_company_jobs(
     client: httpx.AsyncClient, company: dict[str, str], query: SearchQuery
 ) -> list[RawJob]:
     kind = company["kind"]
+    if kind == "microsoft":
+        return await _fetch_microsoft_jobs(client, company, query)
+    if kind == "google":
+        return await _fetch_google_jobs(client, company, query)
+    if kind == "cisco_phenom":
+        return await _fetch_cisco_phenom_jobs(client, company, query)
     if kind == "salesforce":
         return await _fetch_salesforce_jobs(client, company, query)
     if kind == "adobe":

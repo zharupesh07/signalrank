@@ -473,6 +473,14 @@ def _preferences_payload(context: PreferenceContext, memory: JobPreferenceMemory
     }
 
 
+def _age_sort_col():
+    return func.coalesce(JobRaw.date_posted, JobRaw.ingested_at)
+
+
+def _age_cutoff_filter(cutoff: datetime):
+    return _age_sort_col() >= cutoff
+
+
 async def _build_jobs_payload_multi_run(
     *,
     request: Request,
@@ -494,7 +502,7 @@ async def _build_jobs_payload_multi_run(
 ) -> dict:
     """Build jobs payload for multiple runs (used when tier filters are active)."""
     tz_name = request.headers.get("X-User-Timezone")
-    sort_col = JobRaw.date_posted if sort == "date_posted" else getattr(JobResult, sort)
+    sort_col = _age_sort_col() if sort == "date_posted" else getattr(JobResult, sort)
     order_expr = sort_col.asc().nulls_last() if sort_dir == "asc" else sort_col.desc().nulls_last()
     preference_context = preference_context or PreferenceContext(state=canonicalize_state(None), summary_chips=[], has_learned_preferences=False)
     preference_active = has_explicit_preferences(preference_context.state)
@@ -552,8 +560,7 @@ async def _build_jobs_payload_multi_run(
     if date_range != "any":
         hours = {"24h": 24, "week": 24 * 7, "month": 24 * 30}[date_range]
         cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
-        base_filters.append(JobRaw.date_posted.is_not(None))
-        base_filters.append(JobRaw.date_posted >= cutoff)
+        base_filters.append(_age_cutoff_filter(cutoff))
 
     site_filters = list(base_filters)
     if sites:
@@ -670,7 +677,7 @@ async def _build_jobs_payload(
     preference_context: PreferenceContext | None = None,
 ) -> dict:
     tz_name = request.headers.get("X-User-Timezone")
-    sort_col = JobRaw.date_posted if sort == "date_posted" else getattr(JobResult, sort)
+    sort_col = _age_sort_col() if sort == "date_posted" else getattr(JobResult, sort)
     order_expr = sort_col.asc().nulls_last() if sort_dir == "asc" else sort_col.desc().nulls_last()
     preference_context = preference_context or PreferenceContext(state=canonicalize_state(None), summary_chips=[], has_learned_preferences=False)
     preference_active = has_explicit_preferences(preference_context.state)
@@ -726,8 +733,7 @@ async def _build_jobs_payload(
     if date_range != "any":
         hours = {"24h": 24, "week": 24 * 7, "month": 24 * 30}[date_range]
         cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
-        base_filters.append(JobRaw.date_posted.is_not(None))
-        base_filters.append(JobRaw.date_posted >= cutoff)
+        base_filters.append(_age_cutoff_filter(cutoff))
 
     site_filters = list(base_filters)
     if sites:

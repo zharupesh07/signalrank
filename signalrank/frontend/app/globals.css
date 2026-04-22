@@ -392,6 +392,16 @@
 
 /* Jobs table */
 .jobs-table { table-layout: fixed; }
+.jobs-table-shell {
+  background:
+    linear-gradient(90deg, var(--card) 30%, transparent),
+    linear-gradient(270deg, var(--card) 30%, transparent) 100% 0,
+    linear-gradient(90deg, color-mix(in srgb, var(--primary) 15%, transparent), transparent),
+    linear-gradient(270deg, color-mix(in srgb, var(--primary) 15%, transparent), transparent) 100% 0;
+  background-attachment: local, local, scroll, scroll;
+  background-repeat: no-repeat;
+  background-size: 28px 100%, 28px 100%, 12px 100%, 12px 100%;
+}
 
 /* Row hover highlight */
 .job-row-item {
