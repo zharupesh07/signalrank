@@ -16,6 +16,25 @@ def _empty_ranked_df():
                                   "recency_score", "company_tier", "is_contract"])
 
 
+def _ranked_df_for(job: JobRaw):
+    return pd.DataFrame(
+        [
+            {
+                "id": job.id,
+                "final_score": 91.0,
+                "semantic_score": 0.88,
+                "skills_score": 90.0,
+                "company_score": 80.0,
+                "seniority_score_dim": 85.0,
+                "location_score": 95.0,
+                "recency_score": 100.0,
+                "company_tier": "tier_a",
+                "is_contract": False,
+            }
+        ]
+    )
+
+
 @pytest.mark.asyncio
 async def test_process_run_full_mode_manual_run_does_not_skip_scrape_after_recent_deep_scan(
     db: AsyncSession,
@@ -423,6 +442,84 @@ async def test_process_run_rerank_only_reuses_latest_scrape_backed_run_corpus(
     assert refreshed_run.progress["corpus_run_id"] == previous_run_id
     assert refreshed_run.progress["corpus_job_count"] == 2
     assert refreshed_run.progress["rerank_corpus_jobs"] == 2
+
+
+@pytest.mark.asyncio
+async def test_process_run_archives_expired_jobs_after_ranking(
+    db: AsyncSession,
+    test_engine,
+    monkeypatch,
+):
+    user = User(email="worker-availability@test.com", password_hash="mock", provider="credentials")
+    db.add(user)
+    await db.flush()
+    user_id = user.id
+
+    profile = Profile(user_id=user_id, resume_text="Backend engineer")
+    job = JobRaw(
+        job_url="https://example.com/jobs/open-or-expired",
+        title="Backend Engineer",
+        company="Example",
+        description="Build backend services",
+        location="Remote",
+        site="indeed",
+    )
+    current_run = Run(
+        user_id=user_id,
+        status="pending",
+        mode="quick",
+        progress={
+            "requested_mode": "quick",
+            "force_scrape": False,
+            "disable_scraping": True,
+        },
+    )
+    db.add_all([profile, job, current_run])
+    await db.commit()
+
+    import batch.query_plan_cache as query_plan_cache
+    import batch.worker as worker_module
+
+    async def _queries(*args, **kwargs):
+        return []
+
+    async def _score_jobs_for_user(**kwargs):
+        return _ranked_df_for(job)
+
+    archive_calls = []
+
+    async def _archive_expired_jobs_for_user(db, *, user_id, run_id=None, limit=50, **kwargs):
+        archive_calls.append({"user_id": user_id, "run_id": run_id, "limit": limit})
+        return {
+            "checked": 1,
+            "expired": 1,
+            "unknown": 0,
+            "archived": 1,
+            "tracker_archived": 0,
+            "jobs": [],
+        }
+
+    monkeypatch.setattr(query_plan_cache, "get_cached_queries", _queries)
+    monkeypatch.setattr(worker_module, "_get_score_jobs_for_user", lambda: _score_jobs_for_user)
+    monkeypatch.setattr(
+        worker_module,
+        "archive_expired_jobs_for_user",
+        _archive_expired_jobs_for_user,
+    )
+    monkeypatch.setattr(worker_module.settings, "job_availability_archive_after_run", True)
+    monkeypatch.setattr(worker_module.settings, "job_availability_archive_limit", 100)
+
+    session_factory = async_sessionmaker(test_engine, expire_on_commit=False)
+    run_id = current_run.id
+    await process_run(run_id, user_id, session_factory, mode="quick", disable_scraping=True)
+
+    db.expire_all()
+    refreshed_run = (await db.execute(select(Run).where(Run.id == run_id))).scalar_one()
+    assert refreshed_run.status == "success"
+    assert archive_calls == [{"user_id": user_id, "run_id": run_id, "limit": 100}]
+    assert refreshed_run.progress["availability_checked"] == 1
+    assert refreshed_run.progress["availability_archived"] == 1
+    assert refreshed_run.progress["tracker_archived"] == 0
 
 
 @pytest.mark.asyncio

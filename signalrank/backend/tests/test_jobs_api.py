@@ -64,6 +64,49 @@ async def test_archive_unsuitable_requires_admin(client, auth_token):
     assert response.status_code == 403
 
 
+async def test_archive_expired_requires_admin(client, auth_token):
+    response = await client.post(
+        "/api/jobs/archive-expired",
+        headers={"Authorization": f"Bearer {auth_token}"},
+        json={"urls": ["https://example.com/jobs/expired"]},
+    )
+    assert response.status_code == 403
+
+
+async def test_archive_expired_admin_runs_availability_archive(client, admin_token, monkeypatch):
+    calls = []
+
+    async def fake_archive(db, *, user_id, urls=None, limit=50):
+        calls.append({"user_id": user_id, "urls": urls, "limit": limit})
+        return {
+            "checked": 1,
+            "archived": 1,
+            "tracker_archived": 1,
+            "expired": 1,
+            "unknown": 0,
+            "jobs": [
+                {
+                    "url": urls[0],
+                    "status": "expired",
+                    "reason": "Job posting is expired or no longer available",
+                }
+            ],
+        }
+
+    monkeypatch.setattr("api.routes.jobs.archive_expired_jobs_for_user", fake_archive)
+
+    response = await client.post(
+        "/api/jobs/archive-expired",
+        headers={"Authorization": f"Bearer {admin_token}"},
+        json={"urls": ["https://example.com/jobs/expired"], "limit": 5},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["archived"] == 1
+    assert calls[0]["urls"] == ["https://example.com/jobs/expired"]
+    assert calls[0]["limit"] == 5
+
+
 async def test_archive_unsuitable_admin_queues_background_tasks(client, admin_token, db: AsyncSession):
     me = await client.get("/api/profile", headers={"Authorization": f"Bearer {admin_token}"})
     user_id = me.json()["user_id"]

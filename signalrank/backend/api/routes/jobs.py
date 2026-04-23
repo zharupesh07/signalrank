@@ -16,6 +16,7 @@ from api.rate_limits import enforce_user_rate_limit
 from api.stats_cache import get_cached_stats, invalidate_stats_cache, set_cached_stats
 from api.timezone import format_datetime_local
 from api.routes.admin import require_admin
+from batch.job_availability import archive_expired_jobs_for_user
 from domain.job_source import compute_freshness_bucket, is_direct_source
 from domain.job_preferences import (
     QUICK_ACTIONS,
@@ -107,6 +108,11 @@ class ProfileFreshResponse(BaseModel):
     companies_exported: int
     rejection_counts: dict[str, int]
     rows: list[dict]
+
+
+class ArchiveExpiredRequest(BaseModel):
+    urls: list[str] = Field(default_factory=list)
+    limit: int = Field(default=50, ge=1, le=100)
 
 
 async def warm_default_jobs_cache(db: AsyncSession, *, user_id: str, tz_name: str | None = None) -> None:
@@ -1201,6 +1207,29 @@ async def archive_unsuitable(
     await db.commit()
 
     return {"queued": len(job_result_ids)}
+
+
+@router.post("/archive-expired", status_code=200)
+async def archive_expired(
+    body: ArchiveExpiredRequest,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    await enforce_user_rate_limit(
+        current_user.id,
+        "archive_expired",
+        limit=8,
+        window_seconds=60 * 60,
+    )
+    result = await archive_expired_jobs_for_user(
+        db,
+        user_id=current_user.id,
+        urls=body.urls or None,
+        limit=body.limit,
+    )
+    if result["archived"]:
+        invalidate_stats_cache()
+    return result
 
 
 @router.get("/archive-status")

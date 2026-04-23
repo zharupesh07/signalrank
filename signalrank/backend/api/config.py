@@ -43,6 +43,8 @@ class Settings(BaseSettings):
     linkedin_cookie_header: str = ""
     ranker_max_candidates: int = 10000
     ranker_max_description_chars: int = 1200
+    job_availability_archive_after_run: bool = True
+    job_availability_archive_limit: int = 100
     max_active_runs_per_user: int = 1
     access_token_expire_minutes: int = 60 * 24 * 7  # 7 days
 

@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from api.config import settings
 from api.models import JobRaw, Profile, Run
 from batch.context import build_context, get_batch, get_retry
+from batch.job_availability import archive_expired_jobs_for_user
 from batch.run_corpus import load_rerank_corpus_job_urls
 from batch.embedding_cache import PgEmbeddingCache, clear_vector_cache, store_job_embeddings
 from batch.memory import log_rss, release_memory
@@ -540,6 +541,36 @@ async def process_run(
                 run_id=run_id,
                 user_id=user_id,
             )
+            availability_archive_meta: dict[str, int] = {}
+            if settings.job_availability_archive_after_run and len(ranked_df) > 0:
+                try:
+                    t_archive = time.monotonic()
+                    availability_result = await archive_expired_jobs_for_user(
+                        db,
+                        user_id=user_id,
+                        run_id=run_id,
+                        limit=settings.job_availability_archive_limit,
+                    )
+                    availability_archive_meta = {
+                        "availability_checked": int(availability_result["checked"]),
+                        "availability_expired": int(availability_result["expired"]),
+                        "availability_unknown": int(availability_result["unknown"]),
+                        "availability_archived": int(availability_result["archived"]),
+                        "tracker_archived": int(availability_result["tracker_archived"]),
+                    }
+                    logger.info(
+                        "Run %s availability archive checked %d jobs in %.1fs; archived %d",
+                        run_id,
+                        availability_archive_meta["availability_checked"],
+                        time.monotonic() - t_archive,
+                        availability_archive_meta["availability_archived"],
+                    )
+                except Exception:
+                    logger.warning(
+                        "Run %s availability archive failed; continuing",
+                        run_id,
+                        exc_info=True,
+                    )
             release_memory(logger, "result_rows_release", run_id=run_id)
 
             await _update_run_row(
@@ -563,6 +594,7 @@ async def process_run(
                         scored_job_count=len(ranked_df),
                         shown_job_count=len(ranked_df),
                     )
+                    | availability_archive_meta
                     | (
                         {"rerank_corpus_jobs": len(freshly_scraped_job_urls or [])}
                         if disable_scraping
