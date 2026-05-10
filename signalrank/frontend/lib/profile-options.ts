@@ -68,6 +68,7 @@ export const PROFILE_OPTIONS_FALLBACK: ProfileOptions = {
     { label: "B-tier (good companies)", value: "tier_b" },
     { label: "Any company", value: "any" },
   ],
+  scan_plan: null,
   title_penalty_rules: {
     strong: [],
     adjacent: [],

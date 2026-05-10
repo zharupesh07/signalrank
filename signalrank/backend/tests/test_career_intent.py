@@ -73,3 +73,26 @@ def test_build_career_intent_profile_for_ai_platform_resume_prefers_platform_rol
     assert titles[:3] == ["AI Platform Engineer", "MLOps Engineer", "ML Platform Engineer"]
     assert "Data Scientist" not in titles
     assert "AI Platform Engineer" in profile["query_plan"]["title_queries"]
+
+
+def test_build_career_intent_profile_for_backend_resume_avoids_ai_platform_defaults():
+    parsed = ResumeParseResult(
+        skills=["Java", "Spring Boot", "PostgreSQL", "Microservices"],
+        recent_titles=["Senior Backend Engineer"],
+        suggested_roles=["Backend Engineer"],
+        years_of_experience=6,
+    )
+
+    profile = build_career_intent_profile(parsed)
+
+    titles = [item["title"] for item in profile["target_roles"]]
+    query_terms = (
+        profile["query_plan"]["title_queries"]
+        + profile["query_plan"]["skill_queries"]
+        + profile["query_plan"]["domain_queries"]
+    )
+
+    assert "Backend Engineer" in titles
+    assert "AI Platform Engineer" not in titles
+    assert "Kubernetes" not in query_terms
+    assert "Terraform" not in query_terms

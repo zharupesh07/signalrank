@@ -11,7 +11,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.database import get_db
 from api.deps import get_current_user
 from api.deps_llm import get_llm_client
-from api.models import Application, ArchivalQueue, JobFeedbackEvent, JobPreferenceMemory, JobRaw, JobResult, Profile, Run, User
+from api.models import (
+    Application,
+    ArchivalQueue,
+    JobFeedbackEvent,
+    JobPreferenceMemory,
+    JobRaw,
+    JobResult,
+    Profile,
+    Run,
+    User,
+)
 from api.rate_limits import enforce_user_rate_limit
 from api.stats_cache import get_cached_stats, invalidate_stats_cache, set_cached_stats
 from api.timezone import format_datetime_local
@@ -39,12 +49,13 @@ DEFAULT_JOBS_CACHE_PARAMS = {
     "sort": "final_score",
     "sort_dir": "desc",
     "search": "",
-    "show_archived": True,
+    "show_archived": False,
     "min_score": 0,
     "tiers": [],
     "job_type": "all",
     "sites": [],
     "date_range": "any",
+    "match_quality": "all",
 }
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
@@ -75,15 +86,26 @@ class JobsFeedbackRequest(BaseModel):
     session_intent: str | None = None
     page: int = 1
     limit: int = 50
-    sort: Literal["final_score", "semantic_score", "skills_score", "company_score", "seniority_score", "location_score", "recency_score", "title_relevance_score", "date_posted"] = "final_score"
+    sort: Literal[
+        "final_score",
+        "semantic_score",
+        "skills_score",
+        "company_score",
+        "seniority_score",
+        "location_score",
+        "recency_score",
+        "title_relevance_score",
+        "date_posted",
+    ] = "final_score"
     sort_dir: Literal["asc", "desc"] = "desc"
     search: str = ""
-    show_archived: bool = True
+    show_archived: bool = False
     min_score: int = 0
     tiers: list[str] = Field(default_factory=list)
     job_type: Literal["all", "fte", "contract"] = "all"
     sites: list[str] = Field(default_factory=list)
     date_range: Literal["any", "24h", "week", "month"] = "any"
+    match_quality: Literal["all", "strong", "review"] = "all"
 
 
 class JobsPreferencesResetRequest(BaseModel):
@@ -115,7 +137,9 @@ class ArchiveExpiredRequest(BaseModel):
     limit: int = Field(default=50, ge=1, le=100)
 
 
-async def warm_default_jobs_cache(db: AsyncSession, *, user_id: str, tz_name: str | None = None) -> None:
+async def warm_default_jobs_cache(
+    db: AsyncSession, *, user_id: str, tz_name: str | None = None
+) -> None:
     latest_run = await db.execute(
         select(Run)
         .where(Run.user_id == user_id, Run.status == "success")
@@ -126,7 +150,9 @@ async def warm_default_jobs_cache(db: AsyncSession, *, user_id: str, tz_name: st
     if not run:
         return
 
-    cache_key = _jobs_cache_key(user_id=user_id, run_id=run.id, tz_name=tz_name, **DEFAULT_JOBS_CACHE_PARAMS)
+    cache_key = _jobs_cache_key(
+        user_id=user_id, run_id=run.id, tz_name=tz_name, **DEFAULT_JOBS_CACHE_PARAMS
+    )
     if get_cached_stats(cache_key) is not None:
         return
 
@@ -144,11 +170,14 @@ async def warm_default_jobs_cache(db: AsyncSession, *, user_id: str, tz_name: st
         job_type=DEFAULT_JOBS_CACHE_PARAMS["job_type"],
         sites=DEFAULT_JOBS_CACHE_PARAMS["sites"],
         date_range=DEFAULT_JOBS_CACHE_PARAMS["date_range"],
+        match_quality=DEFAULT_JOBS_CACHE_PARAMS["match_quality"],
         current_user=type("User", (), {"id": user_id})(),
         db=db,
     )
     set_cached_stats(cache_key, payload)
-    await _persist_default_jobs_cache(db, user_id=user_id, run_id=run.id, tz_name=tz_name, payload=payload)
+    await _persist_default_jobs_cache(
+        db, user_id=user_id, run_id=run.id, tz_name=tz_name, payload=payload
+    )
 
 
 def _jobs_cache_key(
@@ -166,6 +195,7 @@ def _jobs_cache_key(
     job_type: str,
     sites: list[str],
     date_range: str,
+    match_quality: str,
     tz_name: str | None,
 ) -> str:
     return "::".join(
@@ -184,13 +214,18 @@ def _jobs_cache_key(
             job_type,
             ",".join(sorted(sites)),
             date_range,
+            match_quality,
             tz_name or "utc",
         ]
     )
 
 
-async def _persist_default_jobs_cache(db: AsyncSession, *, user_id: str, run_id: str, tz_name: str | None, payload: dict) -> None:
-    result = await db.execute(select(Run).where(Run.id == run_id, Run.user_id == user_id))
+async def _persist_default_jobs_cache(
+    db: AsyncSession, *, user_id: str, run_id: str, tz_name: str | None, payload: dict
+) -> None:
+    result = await db.execute(
+        select(Run).where(Run.id == run_id, Run.user_id == user_id)
+    )
     run = result.scalar_one_or_none()
     if not run:
         return
@@ -205,7 +240,9 @@ async def _persist_default_jobs_cache(db: AsyncSession, *, user_id: str, run_id:
     await db.commit()
 
 
-async def _load_default_jobs_cache(db: AsyncSession, *, user_id: str, run_id: str, tz_name: str | None) -> dict | None:
+async def _load_default_jobs_cache(
+    db: AsyncSession, *, user_id: str, run_id: str, tz_name: str | None
+) -> dict | None:
     result = await db.execute(
         select(Run.progress).where(Run.id == run_id, Run.user_id == user_id)
     )
@@ -237,7 +274,10 @@ async def run_profile_fresh_preview(
         await db.execute(select(Profile).where(Profile.user_id == current_user.id))
     ).scalar_one_or_none()
     if not profile or not profile.resume_text:
-        raise HTTPException(status_code=400, detail="Resume text is required to run profile-fresh preview")
+        raise HTTPException(
+            status_code=400,
+            detail="Resume text is required to run profile-fresh preview",
+        )
 
     output_dir = Path(__file__).resolve().parents[2] / "tmp" / "top100_company_rank_300"
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
@@ -272,8 +312,21 @@ def _canonical_company_tier(value: str | None) -> str | None:
 
 def _rank_debug_payload(result: JobResult, job: JobRaw) -> dict:
     match_report = result.match_report if isinstance(result.match_report, dict) else {}
-    why_up = [str(item).strip() for item in (match_report.get("why_rank_up") or []) if str(item).strip()]
-    why_down = [str(item).strip() for item in (match_report.get("why_rank_down") or []) if str(item).strip()]
+    why_up = [
+        str(item).strip()
+        for item in (match_report.get("why_rank_up") or [])
+        if str(item).strip()
+    ]
+    why_down = [
+        str(item).strip()
+        for item in (match_report.get("why_rank_down") or [])
+        if str(item).strip()
+    ]
+    risk_flags = [
+        str(item).strip()
+        for item in (match_report.get("risk_flags") or [])
+        if str(item).strip()
+    ]
 
     if not why_up:
         if (result.title_relevance_score or 0) >= 80:
@@ -282,7 +335,10 @@ def _rank_debug_payload(result: JobResult, job: JobRaw) -> dict:
             why_up.append("Strong skill overlap")
         if is_direct_source(job.site):
             why_up.append("Direct ATS source")
-        if compute_freshness_bucket(job.date_posted, job.ingested_at, job.site) == "fresh":
+        if (
+            compute_freshness_bucket(job.date_posted, job.ingested_at, job.site)
+            == "fresh"
+        ):
             why_up.append("Fresh posting")
 
     if not why_down:
@@ -297,12 +353,22 @@ def _rank_debug_payload(result: JobResult, job: JobRaw) -> dict:
         "rank_reason_up": why_up[0] if why_up else None,
         "rank_reason_down": why_down[0] if why_down else None,
         "rank_stage": "structured" if result.fit_band else "deterministic",
-        "freshness_bucket": compute_freshness_bucket(job.date_posted, job.ingested_at, job.site),
+        "freshness_bucket": compute_freshness_bucket(
+            job.date_posted, job.ingested_at, job.site
+        ),
         "is_direct_source": is_direct_source(job.site),
+        "risk_flags": risk_flags[:5],
     }
 
 
-def _serialize_job_payload(*, result: JobResult, job: JobRaw, tz_name: str | None, run: Run, preference_data: dict | None = None) -> dict:
+def _serialize_job_payload(
+    *,
+    result: JobResult,
+    job: JobRaw,
+    tz_name: str | None,
+    run: Run,
+    preference_data: dict | None = None,
+) -> dict:
     preference_data = preference_data or {}
     base_score = float(result.final_score or 0.0)
     preference_score = float(preference_data.get("preference_score", base_score))
@@ -315,29 +381,54 @@ def _serialize_job_payload(*, result: JobResult, job: JobRaw, tz_name: str | Non
         "location": job.location,
         "site": job.site,
         "date_posted": format_datetime_local(job.date_posted, tz_name),
-        "is_new_find": bool(result.run_id == run.id and job.ingested_at and job.ingested_at >= run.started_at),
-        "final_score": result.final_score / 100 if result.final_score is not None else None,
+        "is_new_find": bool(
+            result.run_id == run.id
+            and job.ingested_at
+            and job.ingested_at >= run.started_at
+        ),
+        "final_score": (
+            result.final_score / 100 if result.final_score is not None else None
+        ),
         "semantic_score": result.semantic_score,
-        "skills_score": result.skills_score / 100 if result.skills_score is not None else None,
-        "company_score": result.company_score / 100 if result.company_score is not None else None,
-        "seniority_score": result.seniority_score / 100 if result.seniority_score is not None else None,
-        "location_score": result.location_score / 100 if result.location_score is not None else None,
-        "recency_score": result.recency_score / 100 if result.recency_score is not None else None,
-        "title_relevance_score": result.title_relevance_score / 100 if result.title_relevance_score is not None else None,
+        "skills_score": (
+            result.skills_score / 100 if result.skills_score is not None else None
+        ),
+        "company_score": (
+            result.company_score / 100 if result.company_score is not None else None
+        ),
+        "seniority_score": (
+            result.seniority_score / 100 if result.seniority_score is not None else None
+        ),
+        "location_score": (
+            result.location_score / 100 if result.location_score is not None else None
+        ),
+        "recency_score": (
+            result.recency_score / 100 if result.recency_score is not None else None
+        ),
+        "title_relevance_score": (
+            result.title_relevance_score / 100
+            if result.title_relevance_score is not None
+            else None
+        ),
         "fit_band": result.fit_band,
         "confidence_band": result.confidence_band,
         "explanation_summary": result.explanation_summary,
         "company_tier": (
             canonical_tier
-            if (canonical_tier := _canonical_company_tier(result.company_tier)) not in ("default", "", None)
+            if (canonical_tier := _canonical_company_tier(result.company_tier))
+            not in ("default", "", None)
             else None
         ),
         "is_contract": result.is_contract,
         "archived_by_llm": result.archived_by_llm,
         "archival_reason": result.archival_reason,
         "preference_score": round(preference_score / 100, 4),
-        "preference_bucket_key": str(preference_data.get("preference_bucket_key") or bucket_key),
-        "preference_bucket": str(preference_data.get("preference_bucket") or bucket_label),
+        "preference_bucket_key": str(
+            preference_data.get("preference_bucket_key") or bucket_key
+        ),
+        "preference_bucket": str(
+            preference_data.get("preference_bucket") or bucket_label
+        ),
         "preference_tags": list(preference_data.get("preference_tags") or []),
         **_rank_debug_payload(result, job),
     }
@@ -379,7 +470,9 @@ async def _get_latest_success_run(
         return run
 
     latest_run = await db.execute(
-        base_query.order_by(Run.finished_at.desc().nulls_last(), Run.started_at.desc()).limit(1)
+        base_query.order_by(
+            Run.finished_at.desc().nulls_last(), Run.started_at.desc()
+        ).limit(1)
     )
     return latest_run.scalar_one_or_none()
 
@@ -432,22 +525,34 @@ async def _get_requested_or_latest_success_run(
 ) -> Run | None:
     if run_id:
         requested = await db.execute(
-            select(Run).where(Run.id == run_id, Run.user_id == user_id, Run.status == "success")
+            select(Run).where(
+                Run.id == run_id, Run.user_id == user_id, Run.status == "success"
+            )
         )
         return requested.scalar_one_or_none()
-    return await _get_latest_success_run(db, user_id=user_id, require_tiers=require_tiers)
+    return await _get_latest_success_run(
+        db, user_id=user_id, require_tiers=require_tiers
+    )
 
 
-async def _get_preference_context(db: AsyncSession, *, user_id: str) -> tuple[PreferenceContext, JobPreferenceMemory | None]:
+async def _get_preference_context(
+    db: AsyncSession, *, user_id: str
+) -> tuple[PreferenceContext, JobPreferenceMemory | None]:
     profile_row = await db.execute(select(Profile).where(Profile.user_id == user_id))
     profile = profile_row.scalar_one_or_none()
-    memory_row = await db.execute(select(JobPreferenceMemory).where(JobPreferenceMemory.user_id == user_id))
+    memory_row = await db.execute(
+        select(JobPreferenceMemory).where(JobPreferenceMemory.user_id == user_id)
+    )
     memory = memory_row.scalar_one_or_none()
-    context = effective_preference_context(profile=profile, stored_state=(memory.state_json if memory else None))
+    context = effective_preference_context(
+        profile=profile, stored_state=(memory.state_json if memory else None)
+    )
     return context, memory
 
 
-async def _recent_feedback(db: AsyncSession, *, user_id: str, limit: int = 8) -> list[dict]:
+async def _recent_feedback(
+    db: AsyncSession, *, user_id: str, limit: int = 8
+) -> list[dict]:
     rows = await db.execute(
         select(JobFeedbackEvent)
         .where(JobFeedbackEvent.user_id == user_id)
@@ -463,18 +568,26 @@ async def _recent_feedback(db: AsyncSession, *, user_id: str, limit: int = 8) ->
                 "quick_actions": list(event.quick_actions or []),
                 "job_ids": list(event.job_ids or []),
                 "job_snapshots": list(event.job_snapshots or []),
-                "created_at": event.created_at.isoformat() if event.created_at else None,
+                "created_at": (
+                    event.created_at.isoformat() if event.created_at else None
+                ),
             }
         )
     return events
 
 
-def _preferences_payload(context: PreferenceContext, memory: JobPreferenceMemory | None, recent_feedback: list[dict]) -> dict:
+def _preferences_payload(
+    context: PreferenceContext,
+    memory: JobPreferenceMemory | None,
+    recent_feedback: list[dict],
+) -> dict:
     return {
         "state": context.state,
         "summary_chips": context.summary_chips,
         "has_learned_preferences": context.has_learned_preferences,
-        "updated_at": memory.updated_at.isoformat() if memory and memory.updated_at else None,
+        "updated_at": (
+            memory.updated_at.isoformat() if memory and memory.updated_at else None
+        ),
         "recent_feedback": recent_feedback,
     }
 
@@ -485,6 +598,20 @@ def _age_sort_col():
 
 def _age_cutoff_filter(cutoff: datetime):
     return _age_sort_col() >= cutoff
+
+
+def _match_quality_filter(match_quality: str):
+    if match_quality == "strong":
+        return or_(
+            JobResult.final_score >= 60,
+            JobResult.fit_band.in_(["strong_fit", "adjacent_fit"]),
+        )
+    if match_quality == "review":
+        return or_(
+            JobResult.fit_band.in_(["adjacent_fit", "weak_fit", "misleading_fit"]),
+            JobResult.final_score.between(35, 75),
+        )
+    return None
 
 
 async def _build_jobs_payload_multi_run(
@@ -502,6 +629,7 @@ async def _build_jobs_payload_multi_run(
     job_type: str,
     sites: list[str],
     date_range: str,
+    match_quality: str,
     current_user: User,
     db: AsyncSession,
     preference_context: PreferenceContext | None = None,
@@ -509,8 +637,14 @@ async def _build_jobs_payload_multi_run(
     """Build jobs payload for multiple runs (used when tier filters are active)."""
     tz_name = request.headers.get("X-User-Timezone")
     sort_col = _age_sort_col() if sort == "date_posted" else getattr(JobResult, sort)
-    order_expr = sort_col.asc().nulls_last() if sort_dir == "asc" else sort_col.desc().nulls_last()
-    preference_context = preference_context or PreferenceContext(state=canonicalize_state(None), summary_chips=[], has_learned_preferences=False)
+    order_expr = (
+        sort_col.asc().nulls_last()
+        if sort_dir == "asc"
+        else sort_col.desc().nulls_last()
+    )
+    preference_context = preference_context or PreferenceContext(
+        state=canonicalize_state(None), summary_chips=[], has_learned_preferences=False
+    )
     preference_active = has_explicit_preferences(preference_context.state)
 
     # Get run IDs for filtering
@@ -521,7 +655,10 @@ async def _build_jobs_payload_multi_run(
 
     if not show_archived:
         base_filters.append(
-            or_(JobResult.archived_by_llm.is_(None), JobResult.archived_by_llm == False)
+            or_(
+                JobResult.archived_by_llm.is_(None),
+                JobResult.archived_by_llm.is_(False),
+            )
         )
     if search:
         pattern = f"%{search}%"
@@ -532,9 +669,19 @@ async def _build_jobs_payload_multi_run(
     if min_score > 0:
         base_filters.append(JobResult.final_score >= min_score)
 
+    quality_filter = _match_quality_filter(match_quality)
+    if quality_filter is not None:
+        base_filters.append(quality_filter)
+
     if tiers:
-        normalized_tiers = [_canonical_company_tier(tier) for tier in tiers if tier and tier != "unknown"]
-        normalized_tiers = [tier for tier in normalized_tiers if tier and tier not in {"default", ""}]
+        normalized_tiers = [
+            _canonical_company_tier(tier)
+            for tier in tiers
+            if tier and tier != "unknown"
+        ]
+        normalized_tiers = [
+            tier for tier in normalized_tiers if tier and tier not in {"default", ""}
+        ]
         wants_unknown = "unknown" in tiers
         tier_clauses = []
         if normalized_tiers:
@@ -561,7 +708,9 @@ async def _build_jobs_payload_multi_run(
     if job_type == "contract":
         base_filters.append(JobResult.is_contract.is_(True))
     elif job_type == "fte":
-        base_filters.append(or_(JobResult.is_contract.is_(False), JobResult.is_contract.is_(None)))
+        base_filters.append(
+            or_(JobResult.is_contract.is_(False), JobResult.is_contract.is_(None))
+        )
 
     if date_range != "any":
         hours = {"24h": 24, "week": 24 * 7, "month": 24 * 30}[date_range]
@@ -573,7 +722,12 @@ async def _build_jobs_payload_multi_run(
         site_filters.append(JobRaw.site.in_(sites))
 
     # Count total
-    count_query = select(func.count()).select_from(JobResult).join(JobRaw, JobResult.job_id == JobRaw.id).where(*site_filters)
+    count_query = (
+        select(func.count())
+        .select_from(JobResult)
+        .join(JobRaw, JobResult.job_id == JobRaw.id)
+        .where(*site_filters)
+    )
     total_result = await db.execute(count_query)
     total = total_result.scalar() or 0
 
@@ -590,11 +744,13 @@ async def _build_jobs_payload_multi_run(
                 JobResult.user_id == current_user.id,
                 JobResult.final_score >= 70,
                 JobRaw.ingested_at >= most_recent_run.started_at,
-                ~select(Application.job_id).where(
+                ~select(Application.job_id)
+                .where(
                     Application.user_id == current_user.id,
                     Application.job_id == JobResult.job_id,
                     Application.job_id.isnot(None),
-                ).exists(),
+                )
+                .exists(),
             )
         )
         new_good_matches = new_good_matches_result.scalar() or 0
@@ -621,20 +777,23 @@ async def _build_jobs_payload_multi_run(
         rows = (await db.execute(row_query.limit(candidate_limit))).all()
     else:
         rows = (
-            await db.execute(
-                row_query.offset((page - 1) * limit).limit(limit)
-            )
+            await db.execute(row_query.offset((page - 1) * limit).limit(limit))
         ).all()
 
     jobs = []
     if preference_active:
-        reranked = rerank_rows(rows, state=preference_context.state, sort=sort, sort_dir=sort_dir)
+        reranked = rerank_rows(
+            rows, state=preference_context.state, sort=sort, sort_dir=sort_dir
+        )
         start = max(0, (page - 1) * limit)
         end = start + limit
         selected = reranked[start:end]
         for item in selected:
             # For multi-run, we need to get the run object for serialization
-            run_for_item = next((r for r in runs if r.id == item["result"].run_id), runs[0] if runs else None)
+            run_for_item = next(
+                (r for r in runs if r.id == item["result"].run_id),
+                runs[0] if runs else None,
+            )
             if run_for_item:
                 jobs.append(
                     _serialize_job_payload(
@@ -648,9 +807,15 @@ async def _build_jobs_payload_multi_run(
     else:
         for result, job in rows:
             # Find the run for this result
-            run_for_item = next((r for r in runs if r.id == result.run_id), runs[0] if runs else None)
+            run_for_item = next(
+                (r for r in runs if r.id == result.run_id), runs[0] if runs else None
+            )
             if run_for_item:
-                jobs.append(_serialize_job_payload(result=result, job=job, tz_name=tz_name, run=run_for_item))
+                jobs.append(
+                    _serialize_job_payload(
+                        result=result, job=job, tz_name=tz_name, run=run_for_item
+                    )
+                )
 
     return {
         "jobs": jobs,
@@ -678,14 +843,21 @@ async def _build_jobs_payload(
     job_type: str,
     sites: list[str],
     date_range: str,
+    match_quality: str,
     current_user: User,
     db: AsyncSession,
     preference_context: PreferenceContext | None = None,
 ) -> dict:
     tz_name = request.headers.get("X-User-Timezone")
     sort_col = _age_sort_col() if sort == "date_posted" else getattr(JobResult, sort)
-    order_expr = sort_col.asc().nulls_last() if sort_dir == "asc" else sort_col.desc().nulls_last()
-    preference_context = preference_context or PreferenceContext(state=canonicalize_state(None), summary_chips=[], has_learned_preferences=False)
+    order_expr = (
+        sort_col.asc().nulls_last()
+        if sort_dir == "asc"
+        else sort_col.desc().nulls_last()
+    )
+    preference_context = preference_context or PreferenceContext(
+        state=canonicalize_state(None), summary_chips=[], has_learned_preferences=False
+    )
     preference_active = has_explicit_preferences(preference_context.state)
 
     base_filters = [JobResult.user_id == current_user.id, JobResult.run_id == run.id]
@@ -694,7 +866,10 @@ async def _build_jobs_payload(
 
     if not show_archived:
         base_filters.append(
-            or_(JobResult.archived_by_llm.is_(None), JobResult.archived_by_llm == False)
+            or_(
+                JobResult.archived_by_llm.is_(None),
+                JobResult.archived_by_llm.is_(False),
+            )
         )
     if search:
         pattern = f"%{search}%"
@@ -705,9 +880,19 @@ async def _build_jobs_payload(
     if min_score > 0:
         base_filters.append(JobResult.final_score >= min_score)
 
+    quality_filter = _match_quality_filter(match_quality)
+    if quality_filter is not None:
+        base_filters.append(quality_filter)
+
     if tiers:
-        normalized_tiers = [_canonical_company_tier(tier) for tier in tiers if tier and tier != "unknown"]
-        normalized_tiers = [tier for tier in normalized_tiers if tier and tier not in {"default", ""}]
+        normalized_tiers = [
+            _canonical_company_tier(tier)
+            for tier in tiers
+            if tier and tier != "unknown"
+        ]
+        normalized_tiers = [
+            tier for tier in normalized_tiers if tier and tier not in {"default", ""}
+        ]
         wants_unknown = "unknown" in tiers
         tier_clauses = []
         if normalized_tiers:
@@ -734,7 +919,9 @@ async def _build_jobs_payload(
     if job_type == "contract":
         base_filters.append(JobResult.is_contract.is_(True))
     elif job_type == "fte":
-        base_filters.append(or_(JobResult.is_contract.is_(False), JobResult.is_contract.is_(None)))
+        base_filters.append(
+            or_(JobResult.is_contract.is_(False), JobResult.is_contract.is_(None))
+        )
 
     if date_range != "any":
         hours = {"24h": 24, "week": 24 * 7, "month": 24 * 30}[date_range]
@@ -757,6 +944,7 @@ async def _build_jobs_payload(
         and job_type == DEFAULT_JOBS_CACHE_PARAMS["job_type"]
         and sites == DEFAULT_JOBS_CACHE_PARAMS["sites"]
         and date_range == DEFAULT_JOBS_CACHE_PARAMS["date_range"]
+        and match_quality == DEFAULT_JOBS_CACHE_PARAMS["match_quality"]
     )
 
     if is_default_filters:
@@ -766,7 +954,12 @@ async def _build_jobs_payload(
         if not isinstance(available_sites, list):
             available_sites = []
     else:
-        count_query = select(func.count()).select_from(JobResult).join(JobRaw, JobResult.job_id == JobRaw.id).where(*site_filters)
+        count_query = (
+            select(func.count())
+            .select_from(JobResult)
+            .join(JobRaw, JobResult.job_id == JobRaw.id)
+            .where(*site_filters)
+        )
         total_result = await db.execute(count_query)
         total = total_result.scalar() or 0
 
@@ -779,11 +972,13 @@ async def _build_jobs_payload(
                 JobResult.user_id == current_user.id,
                 JobResult.final_score >= 70,
                 JobRaw.ingested_at >= run.started_at,
-                ~select(Application.job_id).where(
+                ~select(Application.job_id)
+                .where(
                     Application.user_id == current_user.id,
                     Application.job_id == JobResult.job_id,
                     Application.job_id.isnot(None),
-                ).exists(),
+                )
+                .exists(),
             )
         )
         new_good_matches = new_good_matches_result.scalar() or 0
@@ -808,14 +1003,14 @@ async def _build_jobs_payload(
         rows = (await db.execute(row_query.limit(candidate_limit))).all()
     else:
         rows = (
-            await db.execute(
-                row_query.offset((page - 1) * limit).limit(limit)
-            )
+            await db.execute(row_query.offset((page - 1) * limit).limit(limit))
         ).all()
 
     jobs = []
     if preference_active:
-        reranked = rerank_rows(rows, state=preference_context.state, sort=sort, sort_dir=sort_dir)
+        reranked = rerank_rows(
+            rows, state=preference_context.state, sort=sort, sort_dir=sort_dir
+        )
         start = max(0, (page - 1) * limit)
         end = start + limit
         selected = reranked[start:end]
@@ -831,7 +1026,9 @@ async def _build_jobs_payload(
             )
     else:
         for result, job in rows:
-            jobs.append(_serialize_job_payload(result=result, job=job, tz_name=tz_name, run=run))
+            jobs.append(
+                _serialize_job_payload(result=result, job=job, tz_name=tz_name, run=run)
+            )
 
     return {
         "jobs": jobs,
@@ -850,15 +1047,26 @@ async def list_jobs(
     run_id: str | None = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
-    sort: Literal["final_score", "semantic_score", "skills_score", "company_score", "seniority_score", "location_score", "recency_score", "title_relevance_score", "date_posted"] = Query("final_score"),
+    sort: Literal[
+        "final_score",
+        "semantic_score",
+        "skills_score",
+        "company_score",
+        "seniority_score",
+        "location_score",
+        "recency_score",
+        "title_relevance_score",
+        "date_posted",
+    ] = Query("final_score"),
     sort_dir: Literal["asc", "desc"] = Query("desc"),
     search: str = Query(""),
-    show_archived: bool = Query(True),
+    show_archived: bool = Query(False),
     min_score: int = Query(0, ge=0, le=100),
     tiers: list[str] = Query(default=[]),
     job_type: Literal["all", "fte", "contract"] = Query("all"),
     sites: list[str] = Query(default=[]),
     date_range: Literal["any", "24h", "week", "month"] = Query("any"),
+    match_quality: Literal["all", "strong", "review"] = Query("all"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -867,7 +1075,11 @@ async def list_jobs(
     runs_to_use: list[Run] = []
     if run_id and run_id != "all":
         requested = await db.execute(
-            select(Run).where(Run.id == run_id, Run.user_id == current_user.id, Run.status == "success")
+            select(Run).where(
+                Run.id == run_id,
+                Run.user_id == current_user.id,
+                Run.status == "success",
+            )
         )
         run = requested.scalar_one_or_none()
         if run:
@@ -876,16 +1088,26 @@ async def list_jobs(
         if tiers:
             runs_to_use = await _get_runs_with_tier_data(db, user_id=current_user.id)
             if not runs_to_use:
-                run = await _get_latest_success_run(db, user_id=current_user.id, require_tiers=False)
+                run = await _get_latest_success_run(
+                    db, user_id=current_user.id, require_tiers=False
+                )
                 if run:
                     runs_to_use = [run]
         else:
             runs_to_use = await _get_success_runs(db, user_id=current_user.id)
 
     if not runs_to_use:
-        return {"jobs": [], "total": 0, "page": page, "limit": limit, "new_good_matches": 0}
+        return {
+            "jobs": [],
+            "total": 0,
+            "page": page,
+            "limit": limit,
+            "new_good_matches": 0,
+        }
 
-    preference_context, memory = await _get_preference_context(db, user_id=current_user.id)
+    preference_context, memory = await _get_preference_context(
+        db, user_id=current_user.id
+    )
     use_cache = not has_explicit_preferences(preference_context.state)
 
     representative_run = runs_to_use[0] if runs_to_use else None
@@ -905,6 +1127,7 @@ async def list_jobs(
             job_type=job_type,
             sites=sites,
             date_range=date_range,
+            match_quality=match_quality,
             tz_name=tz_name,
         )
         cached = get_cached_stats(cache_key)
@@ -922,8 +1145,14 @@ async def list_jobs(
             and job_type == DEFAULT_JOBS_CACHE_PARAMS["job_type"]
             and sites == DEFAULT_JOBS_CACHE_PARAMS["sites"]
             and date_range == DEFAULT_JOBS_CACHE_PARAMS["date_range"]
+            and match_quality == DEFAULT_JOBS_CACHE_PARAMS["match_quality"]
         ):
-            persisted = await _load_default_jobs_cache(db, user_id=current_user.id, run_id=representative_run.id, tz_name=tz_name)
+            persisted = await _load_default_jobs_cache(
+                db,
+                user_id=current_user.id,
+                run_id=representative_run.id,
+                tz_name=tz_name,
+            )
             if persisted is not None:
                 set_cached_stats(cache_key, persisted)
                 return persisted
@@ -940,6 +1169,7 @@ async def list_jobs(
         and job_type == DEFAULT_JOBS_CACHE_PARAMS["job_type"]
         and sites == DEFAULT_JOBS_CACHE_PARAMS["sites"]
         and date_range == DEFAULT_JOBS_CACHE_PARAMS["date_range"]
+        and match_quality == DEFAULT_JOBS_CACHE_PARAMS["match_quality"]
     )
 
     payload = await _build_jobs_payload_multi_run(
@@ -956,6 +1186,7 @@ async def list_jobs(
         job_type=job_type,
         sites=sites,
         date_range=date_range,
+        match_quality=match_quality,
         current_user=current_user,
         db=db,
         preference_context=preference_context,
@@ -963,7 +1194,13 @@ async def list_jobs(
     if cache_key is not None:
         set_cached_stats(cache_key, payload)
     if is_default_filters and use_cache and representative_run:
-        await _persist_default_jobs_cache(db, user_id=current_user.id, run_id=representative_run.id, tz_name=tz_name, payload=payload)
+        await _persist_default_jobs_cache(
+            db,
+            user_id=current_user.id,
+            run_id=representative_run.id,
+            tz_name=tz_name,
+            payload=payload,
+        )
     return payload
 
 
@@ -1000,7 +1237,9 @@ async def reset_preferences(
     memory.last_feedback_at = datetime.now(timezone.utc)
     await db.commit()
     invalidate_stats_cache()
-    refreshed_context, refreshed_memory = await _get_preference_context(db, user_id=current_user.id)
+    refreshed_context, refreshed_memory = await _get_preference_context(
+        db, user_id=current_user.id
+    )
     recent_feedback = await _recent_feedback(db, user_id=current_user.id)
     return _preferences_payload(refreshed_context, refreshed_memory, recent_feedback)
 
@@ -1020,17 +1259,26 @@ async def post_feedback(
     )
     invalid_actions = sorted(set(body.quick_actions) - QUICK_ACTIONS)
     if invalid_actions:
-        raise HTTPException(status_code=422, detail=f"invalid quick_actions: {', '.join(invalid_actions)}")
+        raise HTTPException(
+            status_code=422,
+            detail=f"invalid quick_actions: {', '.join(invalid_actions)}",
+        )
     feedback_text = str(body.feedback_text or "").strip()
     if not feedback_text and not body.quick_actions:
-        raise HTTPException(status_code=422, detail="feedback_text or quick_actions required")
+        raise HTTPException(
+            status_code=422, detail="feedback_text or quick_actions required"
+        )
 
     requested_all_runs = body.run_id == "all"
-    run = None if requested_all_runs else await _get_requested_or_latest_success_run(
-        db,
-        user_id=current_user.id,
-        run_id=body.run_id,
-        require_tiers=bool(body.tiers),
+    run = (
+        None
+        if requested_all_runs
+        else await _get_requested_or_latest_success_run(
+            db,
+            user_id=current_user.id,
+            run_id=body.run_id,
+            require_tiers=bool(body.tiers),
+        )
     )
     _, memory = await _get_preference_context(db, user_id=current_user.id)
     target_jobs: list[JobRaw] = []
@@ -1049,8 +1297,12 @@ async def post_feedback(
                 }
             )
 
-    delta = build_feedback_delta(feedback_text=feedback_text, quick_actions=body.quick_actions, jobs=target_jobs)
-    profile_row = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
+    delta = build_feedback_delta(
+        feedback_text=feedback_text, quick_actions=body.quick_actions, jobs=target_jobs
+    )
+    profile_row = await db.execute(
+        select(Profile).where(Profile.user_id == current_user.id)
+    )
     profile = profile_row.scalar_one_or_none()
     llm = get_llm_client()
     delta = await enrich_feedback_delta_with_llm(
@@ -1068,13 +1320,21 @@ async def post_feedback(
         memory = JobPreferenceMemory(
             user_id=current_user.id,
             state_json=next_state,
-            summary_json={"summary_chips": effective_preference_context(profile=profile, stored_state=next_state).summary_chips},
+            summary_json={
+                "summary_chips": effective_preference_context(
+                    profile=profile, stored_state=next_state
+                ).summary_chips
+            },
             last_feedback_at=now,
         )
         db.add(memory)
     else:
         memory.state_json = next_state
-        memory.summary_json = {"summary_chips": effective_preference_context(profile=profile, stored_state=next_state).summary_chips}
+        memory.summary_json = {
+            "summary_chips": effective_preference_context(
+                profile=profile, stored_state=next_state
+            ).summary_chips
+        }
         memory.last_feedback_at = now
 
     db.add(
@@ -1100,6 +1360,7 @@ async def post_feedback(
                     "job_type": body.job_type,
                     "sites": body.sites,
                     "date_range": body.date_range,
+                    "match_quality": body.match_quality,
                 },
             },
         )
@@ -1107,40 +1368,63 @@ async def post_feedback(
     await db.commit()
     invalidate_stats_cache()
 
-    refreshed_context, refreshed_memory = await _get_preference_context(db, user_id=current_user.id)
+    refreshed_context, refreshed_memory = await _get_preference_context(
+        db, user_id=current_user.id
+    )
     recent_feedback = await _recent_feedback(db, user_id=current_user.id)
     if run is None and not requested_all_runs:
         return {
-            "preferences": _preferences_payload(refreshed_context, refreshed_memory, recent_feedback),
-            "jobs_payload": {"jobs": [], "total": 0, "page": body.page, "limit": body.limit, "new_good_matches": 0},
+            "preferences": _preferences_payload(
+                refreshed_context, refreshed_memory, recent_feedback
+            ),
+            "jobs_payload": {
+                "jobs": [],
+                "total": 0,
+                "page": body.page,
+                "limit": body.limit,
+                "new_good_matches": 0,
+            },
         }
 
     if requested_all_runs:
         if body.tiers:
             runs_to_use = await _get_runs_with_tier_data(db, user_id=current_user.id)
             if not runs_to_use:
-                fallback_run = await _get_latest_success_run(db, user_id=current_user.id, require_tiers=False)
+                fallback_run = await _get_latest_success_run(
+                    db, user_id=current_user.id, require_tiers=False
+                )
                 runs_to_use = [fallback_run] if fallback_run else []
         else:
             runs_to_use = await _get_success_runs(db, user_id=current_user.id)
-        jobs_payload = await _build_jobs_payload_multi_run(
-            request=request,
-            runs=runs_to_use,
-            page=body.page,
-            limit=body.limit,
-            sort=body.sort,
-            sort_dir=body.sort_dir,
-            search=body.search,
-            show_archived=body.show_archived,
-            min_score=body.min_score,
-            tiers=body.tiers,
-            job_type=body.job_type,
-            sites=body.sites,
-            date_range=body.date_range,
-            current_user=current_user,
-            db=db,
-            preference_context=refreshed_context,
-        ) if runs_to_use else {"jobs": [], "total": 0, "page": body.page, "limit": body.limit, "new_good_matches": 0}
+        jobs_payload = (
+            await _build_jobs_payload_multi_run(
+                request=request,
+                runs=runs_to_use,
+                page=body.page,
+                limit=body.limit,
+                sort=body.sort,
+                sort_dir=body.sort_dir,
+                search=body.search,
+                show_archived=body.show_archived,
+                min_score=body.min_score,
+                tiers=body.tiers,
+                job_type=body.job_type,
+                sites=body.sites,
+                date_range=body.date_range,
+                match_quality=body.match_quality,
+                current_user=current_user,
+                db=db,
+                preference_context=refreshed_context,
+            )
+            if runs_to_use
+            else {
+                "jobs": [],
+                "total": 0,
+                "page": body.page,
+                "limit": body.limit,
+                "new_good_matches": 0,
+            }
+        )
     else:
         jobs_payload = await _build_jobs_payload(
             request=request,
@@ -1156,12 +1440,15 @@ async def post_feedback(
             job_type=body.job_type,
             sites=body.sites,
             date_range=body.date_range,
+            match_quality=body.match_quality,
             current_user=current_user,
             db=db,
             preference_context=refreshed_context,
         )
     return {
-        "preferences": _preferences_payload(refreshed_context, refreshed_memory, recent_feedback),
+        "preferences": _preferences_payload(
+            refreshed_context, refreshed_memory, recent_feedback
+        ),
         "jobs_payload": jobs_payload,
     }
 
@@ -1183,8 +1470,7 @@ async def archive_unsuitable(
         return {"queued": 0, "message": "No successful run found"}
 
     results = await db.execute(
-        select(JobResult.id)
-        .where(
+        select(JobResult.id).where(
             JobResult.run_id == run.id,
             JobResult.user_id == current_user.id,
             JobResult.archived_by_llm.is_(None),
@@ -1198,10 +1484,12 @@ async def archive_unsuitable(
 
     await db.execute(
         pg_insert(ArchivalQueue)
-        .values([
-            {"user_id": current_user.id, "job_result_id": jrid}
-            for jrid in job_result_ids
-        ])
+        .values(
+            [
+                {"user_id": current_user.id, "job_result_id": jrid}
+                for jrid in job_result_ids
+            ]
+        )
         .on_conflict_do_nothing(constraint="uq_archival_queue_user_job_result")
     )
     await db.commit()
@@ -1274,9 +1562,9 @@ async def get_analytics(
         return cached
 
     analytics = (
-        await db.execute(
-            text(
-                """
+        (
+            await db.execute(
+                text("""
                 WITH filtered AS (
                     SELECT jr.final_score, j.company, j.site
                     FROM job_results jr
@@ -1356,11 +1644,13 @@ async def get_analytics(
                         '[]'::json
                     ) AS sites,
                     (SELECT COUNT(*) FROM filtered) AS total
-                """
-            ),
-            {"run_id": run.id, "user_id": current_user.id},
+                """),
+                {"run_id": run.id, "user_id": current_user.id},
+            )
         )
-    ).mappings().one()
+        .mappings()
+        .one()
+    )
 
     payload = {
         "score_distribution": analytics["score_distribution"] or [],
@@ -1390,23 +1680,26 @@ async def get_job(
     if not row:
         raise HTTPException(status_code=404, detail="Job not found")
     job_result, job = row
-    run = await _get_latest_success_run(db, user_id=current_user.id)
-    preference_data = rerank_rows([(job_result, job)], state=preference_context.state, sort="final_score", sort_dir="desc")[0]
-    return {
-        "id": job.id,
-        "job_url": job.job_url,
-        "title": job.title,
-        "company": job.company,
-        "description": job.description,
-        "location": job.location,
-        "site": job.site,
-        "date_posted": format_datetime_local(job.date_posted, tz_name),
-        "fit_band": job_result.fit_band,
-        "confidence_band": job_result.confidence_band,
-        "explanation_summary": job_result.explanation_summary,
-        "preference_score": round(float(preference_data["preference_score"]) / 100, 4),
-        "preference_bucket_key": preference_data["preference_bucket_key"],
-        "preference_bucket": preference_data["preference_bucket"],
-        "preference_tags": preference_data["preference_tags"],
-        **_rank_debug_payload(job_result, job),
-    }
+    run_result = await db.execute(
+        select(Run).where(Run.id == job_result.run_id, Run.user_id == current_user.id)
+    )
+    run = run_result.scalar_one_or_none()
+    if run is None:
+        run = await _get_latest_success_run(db, user_id=current_user.id)
+    preference_data = rerank_rows(
+        [(job_result, job)],
+        state=preference_context.state,
+        sort="final_score",
+        sort_dir="desc",
+    )[0]
+    if run is None:
+        raise HTTPException(status_code=404, detail="Run not found")
+    payload = _serialize_job_payload(
+        result=job_result,
+        job=job,
+        tz_name=tz_name,
+        run=run,
+        preference_data=preference_data,
+    )
+    payload["description"] = job.description
+    return payload

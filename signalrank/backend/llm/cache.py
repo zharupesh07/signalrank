@@ -25,9 +25,13 @@ class PromptCache:
         row = result.scalar_one_or_none()
         if row is None:
             return None
+        if self.ttl <= 0:
+            return None
 
-        age = (datetime.now(timezone.utc) - row.created_at.replace(tzinfo=timezone.utc)).total_seconds()
-        if age > self.ttl:
+        age = (
+            datetime.now(timezone.utc) - row.created_at.replace(tzinfo=timezone.utc)
+        ).total_seconds()
+        if age >= self.ttl:
             return None
 
         return row.response_json

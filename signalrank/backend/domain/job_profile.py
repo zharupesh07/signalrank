@@ -11,6 +11,7 @@ from domain.artifact_versions import (
     stable_digest,
 )
 from domain.description_quality import description_quality_multiplier
+from domain.intent_matching import JOB_INTENT_KEY, build_job_intent
 from domain.role_clusters import infer_clusters_from_job_text
 from domain.skills import extract_skills_from_texts
 
@@ -60,7 +61,10 @@ def _normalize_location(location: str | None, work_mode: str) -> str:
 
 def _work_mode(location: str | None, title: str, description: str) -> str:
     text = f"{location or ''} {title or ''} {description or ''}".lower()
-    if any(term in text for term in ("remote", "work from home", "wfh", "fully distributed")):
+    if any(
+        term in text
+        for term in ("remote", "work from home", "wfh", "fully distributed")
+    ):
         return "remote"
     if any(term in text for term in ("hybrid", "2 days", "3 days", "days in office")):
         return "hybrid"
@@ -71,9 +75,14 @@ def _work_mode(location: str | None, title: str, description: str) -> str:
 
 def _seniority_band(title: str, description: str) -> str:
     text = f"{title or ''} {description or ''}".lower()
-    if any(term in text for term in ("principal", "distinguished", "architect", "head of")):
+    if any(
+        term in text for term in ("principal", "distinguished", "architect", "head of")
+    ):
         return "principal"
-    if any(term in text for term in ("staff", "lead", "manager", "director", "vp", "vice president")):
+    if any(
+        term in text
+        for term in ("staff", "lead", "manager", "director", "vp", "vice president")
+    ):
         return "senior"
     if any(term in text for term in ("senior", "sr.", "sr ")):
         return "senior"
@@ -105,15 +114,43 @@ def _infer_domain(title: str, description: str, clusters: Iterable[str]) -> str:
     text = f"{title or ''} {description or ''}".lower()
     if any(term in text for term in ("sap", "s/4hana", "otc", "order to cash", "erp")):
         return "SAP / ERP"
-    if any(term in text for term in ("machine learning", "llm", "genai", "mlops", "data scientist")):
+    if any(
+        term in text
+        for term in ("machine learning", "llm", "genai", "mlops", "data scientist")
+    ):
         return "AI / ML"
-    if any(term in text for term in ("innovation", "emerging technologies", "prototype", "creative technologist", "iot", "robotics", "r&d")):
+    if any(
+        term in text
+        for term in (
+            "innovation",
+            "emerging technologies",
+            "prototype",
+            "creative technologist",
+            "iot",
+            "robotics",
+            "r&d",
+        )
+    ):
         return "Innovation / Emerging Tech"
-    if any(term in text for term in ("network automation", "cloud network", "network reliability", "firewall", "routing", "switching", "load balancer")):
+    if any(
+        term in text
+        for term in (
+            "network automation",
+            "cloud network",
+            "network reliability",
+            "firewall",
+            "routing",
+            "switching",
+            "load balancer",
+        )
+    ):
         return "Network / Infrastructure Automation"
     if any(term in text for term in ("backend", "full stack", "api", "integrations")):
         return "Backend / Product Engineering"
-    if any(term in text for term in ("platform", "devops", "sre", "infrastructure", "cloud")):
+    if any(
+        term in text
+        for term in ("platform", "devops", "sre", "infrastructure", "cloud")
+    ):
         return "Platform / Infrastructure"
     if any(term in text for term in ("qa", "test", "sdet", "automation")):
         return "QA / Product Engineering"
@@ -160,7 +197,13 @@ def _red_flags(description: str, quality: float) -> list[str]:
     if quality < 0.8:
         flags.append("low_description_quality")
     boilerplate_hits = sum(
-        1 for phrase in ("fast paced environment", "dynamic environment", "cross functional teams", "stakeholders")
+        1
+        for phrase in (
+            "fast paced environment",
+            "dynamic environment",
+            "cross functional teams",
+            "stakeholders",
+        )
         if phrase in text
     )
     if boilerplate_hits >= 2:
@@ -175,7 +218,7 @@ def _section_excerpt(description: str, markers: Iterable[str]) -> str:
     if not positions:
         return ""
     idx = min(positions)
-    return text[idx: idx + 500]
+    return text[idx : idx + 500]
 
 
 def _evidence_snippets(*snippets: tuple[str, str | None]) -> list[dict]:
@@ -206,14 +249,20 @@ def build_job_profile(
 
     clusters = _dedupe(role_clusters)
     if not clusters or clusters == ["general"]:
-        clusters = sorted(infer_clusters_from_job_text(title_text or None, description_text or None))
+        clusters = sorted(
+            infer_clusters_from_job_text(title_text or None, description_text or None)
+        )
 
-    required_skills = _dedupe(extract_skills_from_texts([f"{title_text} {description_text}"], cfg or {})[0])
+    required_skills = _dedupe(
+        extract_skills_from_texts([f"{title_text} {description_text}"], cfg or {})[0]
+    )
     preferred_section = _section_excerpt(
         description_text,
         ("preferred", "nice to have", "bonus", "plus", "good to have"),
     )
-    preferred_skills = _dedupe(extract_skills_from_texts([preferred_section], cfg or {})[0])
+    preferred_skills = _dedupe(
+        extract_skills_from_texts([preferred_section], cfg or {})[0]
+    )
 
     work_mode = _work_mode(location_text or None, title_text, description_text)
     normalized_location = _normalize_location(location_text or None, work_mode)
@@ -221,11 +270,21 @@ def build_job_profile(
     family = _infer_domain(title_text, description_text, clusters)
     cluster_family = _family_from_clusters(clusters)
     role_family = cluster_family if cluster_family != "General" else family
-    role_titles = _dedupe([
-        title_text,
-        re.sub(r"\s+", " ", re.sub(r"(?i)\b(senior|sr\.?|junior|jr\.?|lead|principal|staff)\b", "", title_text)).strip(),
-        role_family,
-    ])
+    role_titles = _dedupe(
+        [
+            title_text,
+            re.sub(
+                r"\s+",
+                " ",
+                re.sub(
+                    r"(?i)\b(senior|sr\.?|junior|jr\.?|lead|principal|staff)\b",
+                    "",
+                    title_text,
+                ),
+            ).strip(),
+            role_family,
+        ]
+    )
 
     profile_payload = {
         "role_family": role_family,
@@ -272,8 +331,18 @@ def build_job_profile(
             ("title", title_text),
             ("location", normalized_location or location_text),
             ("description", description_text[:240] if description_text else None),
-            ("preferred_section", preferred_section[:240] if preferred_section else None),
+            (
+                "preferred_section",
+                preferred_section[:240] if preferred_section else None,
+            ),
         ),
     }
+    profile[JOB_INTENT_KEY] = build_job_intent(
+        title=title_text,
+        company=company,
+        description=description_text,
+        location=location_text,
+        job_profile=profile,
+    )
     _JOB_PROFILE_CACHE[job_fingerprint] = dict(profile)
     return profile

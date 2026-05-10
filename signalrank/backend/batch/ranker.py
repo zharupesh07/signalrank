@@ -1,5 +1,4 @@
 import asyncio
-import gc
 import logging
 import re
 import time
@@ -8,13 +7,17 @@ from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models import JobRaw, JobResult, Profile
 from api.config import settings
 from batch.context import build_context, get_batch, load_base_config
-from batch.embedding_cache import PgEmbeddingCache, clear_vector_cache, store_job_embeddings
+from batch.embedding_cache import (
+    PgEmbeddingCache,
+    clear_vector_cache,
+    store_job_embeddings,
+)
 from batch.memory import log_rss, release_memory
 from domain.candidate_profile import build_candidate_profile
 from domain.additive_scoring import (
@@ -32,6 +35,14 @@ from domain.embeddings import (
     unload_embedding_engine,
 )
 from domain.job_profile import build_job_profile
+from domain.intent_matching import (
+    JOB_INTENT_KEY,
+    MATCH_DECISION_KEY,
+    PROFILE_INTENT_KEY,
+    build_job_intent,
+    build_profile_intent,
+    score_intent_match,
+)
 from domain.artifact_versions import (
     MATCH_JUDGE_PROMPT_VERSION,
     MATCH_REPORT_VERSION,
@@ -45,7 +56,10 @@ from domain.artifact_versions import (
 from domain.match_judge import judge_match_report
 from domain.match_verifier import verify_match_report
 from domain.profile_rules import enrich_config_with_profile_rules, title_rule_flags
-from domain.profile_rules import profile_description_alignment_multiplier, text_matches_profile_positive_terms
+from domain.profile_rules import (
+    profile_description_alignment_multiplier,
+    text_matches_profile_positive_terms,
+)
 from domain.score_synthesis import synthesize_match_score
 from domain.title_relevance import compute_title_relevance, title_relevance_score_0_100
 from domain.roles import (
@@ -66,7 +80,6 @@ from domain.skills import SkillCanonicalizer, extract_skills_from_texts
 from llm.openrouter import OpenRouterClient
 
 logger = logging.getLogger(__name__)
-
 
 
 _JOB_WINDOW_DAYS = load_base_config().get("batch", {}).get("job_window_days", 15)
@@ -121,13 +134,25 @@ async def load_jobs_dataframe(
 ) -> pd.DataFrame:
     cutoff = datetime.now(timezone.utc) - timedelta(days=_JOB_WINDOW_DAYS)
     _cols = (
-        JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.company,
+        JobRaw.id,
+        JobRaw.job_url,
+        JobRaw.title,
+        JobRaw.company,
         func.left(JobRaw.description, _RANK_DESCRIPTION_CHARS).label("description"),
-        JobRaw.location, JobRaw.site, JobRaw.date_posted, JobRaw.role_clusters, JobRaw.embedding,
+        JobRaw.location,
+        JobRaw.site,
+        JobRaw.date_posted,
+        JobRaw.role_clusters,
+        JobRaw.job_profile,
+        JobRaw.embedding,
     )
 
     if job_urls:
-        logger.info("Loading jobs from filtered set of %d URLs (offset=%d)", len(job_urls), offset)
+        logger.info(
+            "Loading jobs from filtered set of %d URLs (offset=%d)",
+            len(job_urls),
+            offset,
+        )
         stmt = (
             select(*_cols)
             .where(JobRaw.ingested_at >= cutoff)
@@ -146,7 +171,9 @@ async def load_jobs_dataframe(
             .distinct(_co, _ti, _lo)
             .where(JobRaw.ingested_at >= cutoff)
             .order_by(
-                _co, _ti, _lo,
+                _co,
+                _ti,
+                _lo,
                 func.length(JobRaw.description).desc().nulls_last(),
                 JobRaw.ingested_at.desc(),
             )
@@ -159,13 +186,35 @@ async def load_jobs_dataframe(
     rows = result.all()
     if not rows:
         return pd.DataFrame(
-            columns=["id", "job_url", "title", "company", "description",
-                     "location", "site", "date_posted", "role_clusters", "embedding"]
+            columns=[
+                "id",
+                "job_url",
+                "title",
+                "company",
+                "description",
+                "location",
+                "site",
+                "date_posted",
+                "role_clusters",
+                "job_profile",
+                "embedding",
+            ]
         )
     df = pd.DataFrame(
         rows,
-        columns=["id", "job_url", "title", "company", "description",
-                 "location", "site", "date_posted", "role_clusters", "embedding"],
+        columns=[
+            "id",
+            "job_url",
+            "title",
+            "company",
+            "description",
+            "location",
+            "site",
+            "date_posted",
+            "role_clusters",
+            "job_profile",
+            "embedding",
+        ],
     )
     if role_clusters and "general" not in role_clusters:
         match_mask = df.apply(
@@ -187,25 +236,66 @@ async def load_jobs_by_ids_dataframe(
 ) -> pd.DataFrame:
     if not job_ids:
         return pd.DataFrame(
-            columns=["id", "job_url", "title", "company", "description",
-                     "location", "site", "date_posted", "role_clusters", "embedding"]
+            columns=[
+                "id",
+                "job_url",
+                "title",
+                "company",
+                "description",
+                "location",
+                "site",
+                "date_posted",
+                "role_clusters",
+                "job_profile",
+                "embedding",
+            ]
         )
     stmt = select(
-        JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.company,
+        JobRaw.id,
+        JobRaw.job_url,
+        JobRaw.title,
+        JobRaw.company,
         func.left(JobRaw.description, _RANK_DESCRIPTION_CHARS).label("description"),
-        JobRaw.location, JobRaw.site, JobRaw.date_posted, JobRaw.role_clusters, JobRaw.job_profile, JobRaw.embedding,
+        JobRaw.location,
+        JobRaw.site,
+        JobRaw.date_posted,
+        JobRaw.role_clusters,
+        JobRaw.job_profile,
+        JobRaw.embedding,
     ).where(JobRaw.id.in_(job_ids))
     result = await db.execute(stmt)
     rows = result.all()
     if not rows:
         return pd.DataFrame(
-            columns=["id", "job_url", "title", "company", "description",
-                     "location", "site", "date_posted", "role_clusters", "job_profile", "embedding"]
+            columns=[
+                "id",
+                "job_url",
+                "title",
+                "company",
+                "description",
+                "location",
+                "site",
+                "date_posted",
+                "role_clusters",
+                "job_profile",
+                "embedding",
+            ]
         )
     return pd.DataFrame(
         rows,
-        columns=["id", "job_url", "title", "company", "description",
-                 "location", "site", "date_posted", "role_clusters", "job_profile", "embedding"],
+        columns=[
+            "id",
+            "job_url",
+            "title",
+            "company",
+            "description",
+            "location",
+            "site",
+            "date_posted",
+            "role_clusters",
+            "job_profile",
+            "embedding",
+        ],
     )
 
 
@@ -287,7 +377,11 @@ def _resolve_profile_roles(cfg: dict, profile: Profile | None = None) -> list[st
         return roles
 
     if profile is not None:
-        roles = [str(role).strip() for role in (profile.target_roles or []) if str(role).strip()]
+        roles = [
+            str(role).strip()
+            for role in (profile.target_roles or [])
+            if str(role).strip()
+        ]
         if roles:
             return roles
         if getattr(profile, "role_intent", None):
@@ -307,7 +401,9 @@ def _resolve_profile_roles(cfg: dict, profile: Profile | None = None) -> list[st
     return parsed_roles
 
 
-def _apply_semantic_gates(df: pd.DataFrame, cfg: dict, role_intent: str) -> pd.DataFrame:
+def _apply_semantic_gates(
+    df: pd.DataFrame, cfg: dict, role_intent: str
+) -> pd.DataFrame:
     mask_non_ic = df["title"].astype(str).apply(requires_high_semantic_floor)
     mask_semantic = df["semantic_score"] >= 0.75
     mask = ~mask_non_ic | mask_semantic
@@ -334,14 +430,18 @@ def _apply_semantic_gates(df: pd.DataFrame, cfg: dict, role_intent: str) -> pd.D
             & (df["skill_overlap"] < strong_cfg.get("min_skill_overlap", 2))
         )
     if "adjacent_title" in df:
-        adjacent_mask = df["adjacent_title"].fillna(False) & ~df["strong_title_penalty"].fillna(False)
+        adjacent_mask = df["adjacent_title"].fillna(False) & ~df[
+            "strong_title_penalty"
+        ].fillna(False)
         mask &= ~(
             adjacent_mask
             & (df["semantic_score"] < adjacent_cfg.get("semantic_floor", 0.50))
             & (df["skill_overlap"] < adjacent_cfg.get("min_skill_overlap", 2))
         )
     if "hybrid_title" in df:
-        hybrid_mask = df["hybrid_title"].fillna(False) & ~df["strong_title_penalty"].fillna(False)
+        hybrid_mask = df["hybrid_title"].fillna(False) & ~df[
+            "strong_title_penalty"
+        ].fillna(False)
         mask &= ~(
             hybrid_mask
             & (df["semantic_score"] < hybrid_cfg.get("semantic_floor", 0.52))
@@ -380,7 +480,12 @@ def _apply_semantic_gates(df: pd.DataFrame, cfg: dict, role_intent: str) -> pd.D
         )
         generic_delivery = (
             title_text.str.contains(r"\bsoftware engineer\b", regex=True)
+            | title_text.str.contains(r"\bsoftware developer\b", regex=True)
+            | title_text.str.contains(r"\bapplication developer\b", regex=True)
             | title_text.str.contains(r"\bai engineer\b", regex=True)
+            | title_text.str.contains(r"\bmachine learning engineer\b", regex=True)
+            | title_text.str.contains(r"\bml engineer\b", regex=True)
+            | title_text.str.contains(r"\bfull[ -]?stack\b", regex=True)
             | title_text.str.contains(r"\bplatform engineer\b", regex=True)
             | title_text.str.contains(r"\bsite reliability\b", regex=True)
             | title_text.str.contains(r"\bsre\b", regex=True)
@@ -397,7 +502,9 @@ def _apply_semantic_gates(df: pd.DataFrame, cfg: dict, role_intent: str) -> pd.D
             | combined_text.str.contains(r"\bcloud network(?:ing)?\b", regex=True)
             | combined_text.str.contains(r"\bnetwork reliability\b", regex=True)
             | combined_text.str.contains(r"\bnetwork devops engineer\b", regex=True)
-            | combined_text.str.contains(r"\bnetwork operations automation\b", regex=True)
+            | combined_text.str.contains(
+                r"\bnetwork operations automation\b", regex=True
+            )
             | combined_text.str.contains(r"\bfirewall\b", regex=True)
             | combined_text.str.contains(r"\bload balancer\b", regex=True)
         )
@@ -422,7 +529,11 @@ def _apply_semantic_gates(df: pd.DataFrame, cfg: dict, role_intent: str) -> pd.D
             | title_text.str.contains(r"\bsre\b", regex=True)
             | title_text.str.contains(r"\bdevops\b", regex=True)
         )
-        mask &= network_specific | (title_has_network & desc_has_network_automation) | ~generic_infra_or_ai
+        mask &= (
+            network_specific
+            | (title_has_network & desc_has_network_automation)
+            | ~generic_infra_or_ai
+        )
 
     title_relevance_floor = ranking.get("title_relevance_floor", 0.0)
     if title_relevance_floor > 0 and "title_relevance" in df:
@@ -446,33 +557,46 @@ def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     func_mod = np.clip((df["functional_role_penalty"] - 1.0) * 50, -8, 10)
     base = base + func_mod
     base = base - (damp < 1.0).astype(float) * 10
-    
+
     # Apply skill coverage penalty
     from domain.additive_scoring import skill_coverage_penalty as _coverage_penalty
+
     if "skill_coverage" in df.columns:
         coverage_penalties = df["skill_coverage"].apply(_coverage_penalty)
         base = base + coverage_penalties
-    
+
     df["skills_score"] = np.clip(base, 0, 100)
 
     # Company score — vectorized
     _TIER_SCORE_MAP = {
-        "tier_ss": 100.0, "tier_s": 95.0, "tier_a": 85.0, "tier_b": 65.0,
-        "tier_c": 45.0, "tier_d": 15.0, "preferred": 100.0, "deprioritized": 15.0,
+        "tier_ss": 100.0,
+        "tier_s": 95.0,
+        "tier_a": 85.0,
+        "tier_b": 65.0,
+        "tier_c": 45.0,
+        "tier_d": 15.0,
+        "preferred": 100.0,
+        "deprioritized": 15.0,
     }
     df["company_score"] = df["company_tier"].map(_TIER_SCORE_MAP).fillna(40.0)
 
     semantic_floor = cfg.get("ranking", {}).get("company_semantic_floor", 0.60)
     if semantic_floor > 0:
         below_floor = df["semantic_score"] < semantic_floor
-        df.loc[below_floor, "company_score"] *= df.loc[below_floor, "semantic_score"] / semantic_floor
+        df.loc[below_floor, "company_score"] *= (
+            df.loc[below_floor, "semantic_score"] / semantic_floor
+        )
 
     gem_threshold = cfg.get("ranking", {}).get("hidden_gem_semantic_threshold", 0.70)
     gem_bonus = cfg.get("ranking", {}).get("hidden_gem_company_bonus", 60)
-    is_default_tier = df["company_tier"].isin(["default", "", None]) | df["company_tier"].isna()
+    is_default_tier = (
+        df["company_tier"].isin(["default", "", None]) | df["company_tier"].isna()
+    )
     high_semantic = df["semantic_score"] >= gem_threshold
     gem_mask = is_default_tier & high_semantic
-    df.loc[gem_mask, "company_score"] = np.maximum(df.loc[gem_mask, "company_score"], gem_bonus)
+    df.loc[gem_mask, "company_score"] = np.maximum(
+        df.loc[gem_mask, "company_score"], gem_bonus
+    )
 
     # Company score relevance dampening: high-tier company for irrelevant role still gets penalized
     company_tr_floor = ranking_cfg.get("company_title_relevance_floor", 0.0)
@@ -481,7 +605,9 @@ def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
         df["company_score"] = df["company_score"] * relevance_factor
 
     # Seniority — vectorized
-    df["seniority_score_dim"] = np.clip(((df["seniority_score"] - 0.4) / 0.75) * 90 + 10, 0, 100)
+    df["seniority_score_dim"] = np.clip(
+        ((df["seniority_score"] - 0.4) / 0.75) * 90 + 10, 0, 100
+    )
 
     # Location — vectorized
     if "location_score" not in df.columns:
@@ -520,18 +646,26 @@ def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     tr_min = ranking_cfg.get("title_relevance_multiplier_min", 0.70)
     tr_multiplier = np.clip(
         tr_min + (1.0 - tr_min) * (df["title_relevance_score"] / 100.0),
-        tr_min, 1.0,
+        tr_min,
+        1.0,
     )
     df["final_score"] = df["final_score"] * tr_multiplier
 
     archetypes = set((cfg.get("ranking", {}) or {}).get("profile_archetypes", []))
     if "network_automation_engineer" in archetypes:
         title_text = df["title"].fillna("").astype(str).str.lower()
-        network_title_mask = (
-            title_text.str.contains(r"\bnetwork\b", regex=True)
+        combined_text = (
+            df["title"].fillna("").astype(str).str.lower()
+            + " "
+            + df["description"].fillna("").astype(str).str.lower()
+        )
+        direct_network_title_mask = (
+            title_text.str.contains(r"\bnetwork automation\b", regex=True)
+            | title_text.str.contains(r"\bnetdevops\b", regex=True)
+            | title_text.str.contains(r"\bnetwork engineer\b", regex=True)
+            | title_text.str.contains(r"\bcloud network engineer\b", regex=True)
             | title_text.str.contains(r"\binfrastructure automation\b", regex=True)
-            | title_text.str.contains(r"\bcloud networking\b", regex=True)
-            | title_text.str.contains(r"\bcloud network\b", regex=True)
+            | title_text.str.contains(r"\bnetwork operations\b", regex=True)
         )
         generic_title_mask = (
             title_text.str.contains(r"\bai\b", regex=True)
@@ -540,10 +674,68 @@ def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
             | title_text.str.contains(r"\bbackend\b", regex=True)
             | title_text.str.contains(r"\bdevops\b", regex=True)
             | title_text.str.contains(r"\bsre\b", regex=True)
+            | title_text.str.contains(r"\bsite reliability\b", regex=True)
             | title_text.str.contains(r"\bsecurity\b", regex=True)
+            | title_text.str.contains(r"\bsoftware engineer\b", regex=True)
+            | title_text.str.contains(r"\btechnical leader\b", regex=True)
         )
-        mask = ~network_title_mask & generic_title_mask
-        df.loc[mask, "final_score"] *= 0.68
+        network_evidence_mask = (
+            combined_text.str.contains(r"\bnetwork automation\b", regex=True)
+            | combined_text.str.contains(r"\bfirewall\b", regex=True)
+            | combined_text.str.contains(r"\brouting\b", regex=True)
+            | combined_text.str.contains(r"\bswitching\b", regex=True)
+            | combined_text.str.contains(r"\bsd-wan\b", regex=True)
+            | combined_text.str.contains(r"\bvpn\b", regex=True)
+            | combined_text.str.contains(r"\bgnmi\b", regex=True)
+            | combined_text.str.contains(r"\byang\b", regex=True)
+            | combined_text.str.contains(r"\bsonic\b", regex=True)
+        )
+        mask = generic_title_mask & ~direct_network_title_mask
+        df.loc[mask, "final_score"] = np.minimum(df.loc[mask, "final_score"], 39.0)
+        weak_mask = ~direct_network_title_mask & ~network_evidence_mask
+        df.loc[weak_mask, "final_score"] = np.minimum(
+            df.loc[weak_mask, "final_score"], 49.0
+        )
+
+    if "innovation_rd_engineer" in archetypes:
+        title_text = df["title"].fillna("").astype(str).str.lower()
+        generic_title_mask = (
+            title_text.str.contains(r"\bsoftware engineer\b", regex=True)
+            | title_text.str.contains(r"\bsoftware developer\b", regex=True)
+            | title_text.str.contains(r"\bapplication developer\b", regex=True)
+            | title_text.str.contains(r"\bdata architect\b", regex=True)
+            | title_text.str.contains(r"\bforward deployment engineer\b", regex=True)
+            | title_text.str.contains(r"\bfull[ -]?stack\b", regex=True)
+            | title_text.str.contains(r"\bmachine learning engineer\b", regex=True)
+            | title_text.str.contains(r"\bml engineer\b", regex=True)
+            | title_text.str.contains(r"\bdata scientist\b", regex=True)
+            | title_text.str.contains(r"\bplatform engineer\b", regex=True)
+            | title_text.str.contains(r"\bsite reliability\b", regex=True)
+            | title_text.str.contains(r"\bsre\b", regex=True)
+            | title_text.str.contains(r"\bdevops\b", regex=True)
+        )
+        innovation_patterns = (
+            r"\bcomputer vision\b",
+            r"\bconversational ai\b",
+            r"\bcreative technologist\b",
+            r"\bemerging technolog",
+            r"\bindustrial automation\b",
+            r"\biot\b",
+            r"\bmvp\b",
+            r"\bpoc\b",
+            r"\bproof[- ]of[- ]concept\b",
+            r"\bprototype\b",
+            r"\bprototyp",
+            r"\br&d\b",
+            r"\brobotics\b",
+            r"\bsmart building",
+        )
+        title_evidence_mask = False
+        for pattern in innovation_patterns:
+            title_hit = title_text.str.contains(pattern, regex=True)
+            title_evidence_mask = title_evidence_mask | title_hit
+        mask = generic_title_mask & ~title_evidence_mask
+        df.loc[mask, "final_score"] = np.minimum(df.loc[mask, "final_score"], 39.0)
 
     title_rule_cfg = cfg.get("ranking", {}).get("profile_title_rule_scoring", {})
     strong_cfg = title_rule_cfg.get("strong", {})
@@ -551,23 +743,27 @@ def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     hybrid_cfg = title_rule_cfg.get("hybrid", {})
 
     if "strong_title_penalty" in df:
-        df.loc[df["strong_title_penalty"], "final_score"] *= strong_cfg.get("multiplier", 0.72)
+        df.loc[df["strong_title_penalty"], "final_score"] *= strong_cfg.get(
+            "multiplier", 0.72
+        )
 
     if "adjacent_title" in df:
         adjacent_mask = df["adjacent_title"] & ~df["strong_title_penalty"]
         adjacent_keep = (
-            (df["semantic_score"] >= adjacent_cfg.get("keep_semantic_floor", 0.58))
-            & (df["role_skill_score"] >= adjacent_cfg.get("keep_role_skill_score", 1.12))
+            df["semantic_score"] >= adjacent_cfg.get("keep_semantic_floor", 0.58)
+        ) & (df["role_skill_score"] >= adjacent_cfg.get("keep_role_skill_score", 1.12))
+        df.loc[adjacent_mask & ~adjacent_keep, "final_score"] *= adjacent_cfg.get(
+            "multiplier", 0.88
         )
-        df.loc[adjacent_mask & ~adjacent_keep, "final_score"] *= adjacent_cfg.get("multiplier", 0.88)
 
     if "hybrid_title" in df:
         hybrid_mask = df["hybrid_title"] & ~df["strong_title_penalty"]
         hybrid_keep = (
-            (df["semantic_score"] >= hybrid_cfg.get("keep_semantic_floor", 0.60))
-            & (df["role_skill_score"] >= hybrid_cfg.get("keep_role_skill_score", 1.15))
+            df["semantic_score"] >= hybrid_cfg.get("keep_semantic_floor", 0.60)
+        ) & (df["role_skill_score"] >= hybrid_cfg.get("keep_role_skill_score", 1.15))
+        df.loc[hybrid_mask & ~hybrid_keep, "final_score"] *= hybrid_cfg.get(
+            "multiplier", 0.82
         )
-        df.loc[hybrid_mask & ~hybrid_keep, "final_score"] *= hybrid_cfg.get("multiplier", 0.82)
 
     df["profile_alignment_multiplier"] = df.apply(
         lambda r: profile_description_alignment_multiplier(
@@ -582,7 +778,8 @@ def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     # Contract penalty — vectorized
     contract_penalty = cfg.get("ranking", {}).get("contract_penalty", 0.9)
     df["is_contract"] = df.apply(
-        lambda r: detect_contract_type(r["title"], r["description"]), axis=1,
+        lambda r: detect_contract_type(r["title"], r["description"]),
+        axis=1,
     )
     df.loc[df["is_contract"], "final_score"] *= contract_penalty
     return df
@@ -595,7 +792,10 @@ def _agentic_client_or_none() -> OpenRouterClient | None:
     try:
         return OpenRouterClient(api_key=api_key)
     except Exception:
-        logger.warning("Agentic matching disabled: could not initialize OpenRouter client", exc_info=True)
+        logger.warning(
+            "Agentic matching disabled: could not initialize OpenRouter client",
+            exc_info=True,
+        )
         return None
 
 
@@ -609,9 +809,17 @@ def _llm_model_version(llm_client: OpenRouterClient | None) -> str:
     return stable_digest({"models": models, "preferred_models": preferred})
 
 
-def _match_cache_key(candidate_profile: dict, job_profile: dict, model_version: str) -> str:
-    candidate_fp = str(candidate_profile.get("profile_fingerprint") or candidate_profile.get("profile_cache_key") or "")
-    job_fp = str(job_profile.get("job_fingerprint") or job_profile.get("job_cache_key") or "")
+def _match_cache_key(
+    candidate_profile: dict, job_profile: dict, model_version: str
+) -> str:
+    candidate_fp = str(
+        candidate_profile.get("profile_fingerprint")
+        or candidate_profile.get("profile_cache_key")
+        or ""
+    )
+    job_fp = str(
+        job_profile.get("job_fingerprint") or job_profile.get("job_cache_key") or ""
+    )
     return match_report_cache_key(
         candidate_profile_fingerprint=candidate_fp,
         job_profile_fingerprint=job_fp,
@@ -620,9 +828,17 @@ def _match_cache_key(candidate_profile: dict, job_profile: dict, model_version: 
     )
 
 
-def _verification_cache_key(candidate_profile: dict, job_profile: dict, model_version: str) -> str:
-    candidate_fp = str(candidate_profile.get("profile_fingerprint") or candidate_profile.get("profile_cache_key") or "")
-    job_fp = str(job_profile.get("job_fingerprint") or job_profile.get("job_cache_key") or "")
+def _verification_cache_key(
+    candidate_profile: dict, job_profile: dict, model_version: str
+) -> str:
+    candidate_fp = str(
+        candidate_profile.get("profile_fingerprint")
+        or candidate_profile.get("profile_cache_key")
+        or ""
+    )
+    job_fp = str(
+        job_profile.get("job_fingerprint") or job_profile.get("job_cache_key") or ""
+    )
     return verification_report_cache_key(
         candidate_profile_fingerprint=candidate_fp,
         job_profile_fingerprint=job_fp,
@@ -631,14 +847,21 @@ def _verification_cache_key(candidate_profile: dict, job_profile: dict, model_ve
     )
 
 
-def _is_valid_match_report(report: dict | None, candidate_profile: dict, job_profile: dict, model_version: str) -> bool:
+def _is_valid_match_report(
+    report: dict | None, candidate_profile: dict, job_profile: dict, model_version: str
+) -> bool:
     if not isinstance(report, dict):
         return False
-    if report.get("artifact_version") != MATCH_REPORT_VERSION or report.get("schema_version") != SCHEMA_VERSION:
+    if (
+        report.get("artifact_version") != MATCH_REPORT_VERSION
+        or report.get("schema_version") != SCHEMA_VERSION
+    ):
         return False
     if report.get("prompt_version") != MATCH_JUDGE_PROMPT_VERSION:
         return False
-    return str(report.get("match_cache_key") or "") == _match_cache_key(candidate_profile, job_profile, model_version)
+    return str(report.get("match_cache_key") or "") == _match_cache_key(
+        candidate_profile, job_profile, model_version
+    )
 
 
 def _is_valid_verification_report(
@@ -649,11 +872,16 @@ def _is_valid_verification_report(
 ) -> bool:
     if not isinstance(report, dict):
         return False
-    if report.get("artifact_version") != VERIFICATION_REPORT_VERSION or report.get("schema_version") != SCHEMA_VERSION:
+    if (
+        report.get("artifact_version") != VERIFICATION_REPORT_VERSION
+        or report.get("schema_version") != SCHEMA_VERSION
+    ):
         return False
     if report.get("prompt_version") != MATCH_VERIFIER_PROMPT_VERSION:
         return False
-    return str(report.get("verification_cache_key") or "") == _verification_cache_key(candidate_profile, job_profile, model_version)
+    return str(report.get("verification_cache_key") or "") == _verification_cache_key(
+        candidate_profile, job_profile, model_version
+    )
 
 
 def _cache_hit_report(report: dict, *, key_name: str) -> dict:
@@ -663,7 +891,9 @@ def _cache_hit_report(report: dict, *, key_name: str) -> dict:
     return cached
 
 
-def _row_job_profile(row: pd.Series, cfg: dict, persisted_job_profile: dict | None = None) -> dict:
+def _row_job_profile(
+    row: pd.Series, cfg: dict, persisted_job_profile: dict | None = None
+) -> dict:
     job_profile = persisted_job_profile or row.get("job_profile")
     if isinstance(job_profile, dict) and job_profile:
         return job_profile
@@ -691,6 +921,112 @@ def _row_match_payload(row: pd.Series) -> str:
         ]
         if part
     )
+
+
+def _profile_intent_for_shadow(
+    *,
+    cfg: dict,
+    profile: Profile | None,
+    resume_text: str,
+) -> dict:
+    candidate_profile = None
+    if profile and isinstance(profile.candidate_profile, dict):
+        candidate_profile = profile.candidate_profile
+    else:
+        candidate_profile = build_candidate_profile(
+            profile=profile,
+            resume_text=resume_text,
+            cfg=cfg,
+        )
+    profile_intent = candidate_profile.get(PROFILE_INTENT_KEY)
+    if isinstance(profile_intent, dict) and profile_intent:
+        return profile_intent
+    return build_profile_intent(candidate_profile, resume_text=resume_text)
+
+
+def _job_intent_for_shadow(row: pd.Series, cfg: dict) -> tuple[dict, dict, bool]:
+    job_profile = _row_job_profile(row, cfg)
+    job_intent = (
+        job_profile.get(JOB_INTENT_KEY) if isinstance(job_profile, dict) else None
+    )
+    if isinstance(job_intent, dict) and job_intent:
+        return job_profile, job_intent, False
+    job_profile = dict(job_profile or {})
+    job_intent = build_job_intent(
+        title=row.get("title"),
+        company=row.get("company"),
+        description=row.get("description"),
+        location=row.get("location"),
+        job_profile=job_profile,
+    )
+    job_profile[JOB_INTENT_KEY] = job_intent
+    return job_profile, job_intent, True
+
+
+async def _persist_missing_job_intents(
+    db: AsyncSession,
+    pending_job_profiles: dict[str, dict],
+) -> None:
+    if not pending_job_profiles:
+        return
+    for job_id, job_profile in pending_job_profiles.items():
+        await db.execute(
+            update(JobRaw).where(JobRaw.id == job_id).values(job_profile=job_profile)
+        )
+    await db.commit()
+
+
+async def _apply_intent_shadow_matching(
+    df: pd.DataFrame,
+    *,
+    cfg: dict,
+    resume_text: str,
+    profile: Profile | None,
+    db: AsyncSession,
+) -> pd.DataFrame:
+    intent_cfg = cfg.get("ranking", {}).get("intent_matching", {}) or {}
+    if df.empty or not intent_cfg.get("shadow_enabled", False):
+        return df
+
+    for column in (
+        "match_report",
+        "intent_shadow_score",
+        "intent_shadow_band",
+        "intent_shadow_confidence",
+    ):
+        if column not in df.columns:
+            df[column] = None
+
+    profile_intent = _profile_intent_for_shadow(
+        cfg=cfg,
+        profile=profile,
+        resume_text=resume_text,
+    )
+    pending_job_profiles: dict[str, dict] = {}
+    for idx, row in df.iterrows():
+        job_profile, job_intent, created = _job_intent_for_shadow(row, cfg)
+        decision = score_intent_match(
+            profile_intent,
+            job_intent,
+            current_score=float(row.get("final_score") or 0.0),
+        )
+        df.at[idx, "intent_shadow_score"] = decision["score"]
+        df.at[idx, "intent_shadow_band"] = decision["band"]
+        df.at[idx, "intent_shadow_confidence"] = decision["confidence"]
+
+        report = row.get("match_report")
+        match_report = dict(report) if isinstance(report, dict) else {}
+        match_report[MATCH_DECISION_KEY] = {
+            "profile_intent_version": profile_intent.get("artifact_version"),
+            "job_intent": job_intent,
+            "decision": decision,
+        }
+        df.at[idx, "match_report"] = match_report
+        if created:
+            pending_job_profiles[str(row["id"])] = job_profile
+
+    await _persist_missing_job_intents(db, pending_job_profiles)
+    return df
 
 
 def _select_verifier_indices(
@@ -741,10 +1077,16 @@ async def _judge_selected_jobs(
     tasks: list[tuple[int, asyncio.Future]] = []
     for position, idx in enumerate(selected_indices):
         row = df.loc[idx]
-        job_profile = _row_job_profile(row, cfg, (persisted_job_profiles or {}).get(str(row["id"])))
+        job_profile = _row_job_profile(
+            row, cfg, (persisted_job_profiles or {}).get(str(row["id"]))
+        )
         cached_report = cached_match_reports.get(str(row["id"]))
-        if _is_valid_match_report(cached_report, candidate_profile, job_profile, model_version):
-            reports[position] = _cache_hit_report(cached_report, key_name="match_cache_key")
+        if _is_valid_match_report(
+            cached_report, candidate_profile, job_profile, model_version
+        ):
+            reports[position] = _cache_hit_report(
+                cached_report, key_name="match_cache_key"
+            )
             continue
         job_text = _row_match_payload(row)
         tasks.append(
@@ -756,7 +1098,9 @@ async def _judge_selected_jobs(
                     resume_text=resume_text,
                     job_text=job_text,
                     llm_client=llm_client,
-                    max_tokens=cfg.get("ranking", {}).get("agentic_matching", {}).get("max_judge_tokens", 1200),
+                    max_tokens=cfg.get("ranking", {})
+                    .get("agentic_matching", {})
+                    .get("max_judge_tokens", 1200),
                     model_version=model_version,
                 ),
             )
@@ -799,10 +1143,16 @@ async def _verify_selected_jobs(
                 "status": "pass",
             }
             continue
-        job_profile = _row_job_profile(row, cfg, (persisted_job_profiles or {}).get(str(row["id"])))
+        job_profile = _row_job_profile(
+            row, cfg, (persisted_job_profiles or {}).get(str(row["id"]))
+        )
         cached_report = cached_verification_reports.get(str(row["id"]))
-        if bool(match_report.get("cache_hit")) and _is_valid_verification_report(cached_report, candidate_profile, job_profile, model_version):
-            reports[idx] = _cache_hit_report(cached_report, key_name="verification_cache_key")
+        if bool(match_report.get("cache_hit")) and _is_valid_verification_report(
+            cached_report, candidate_profile, job_profile, model_version
+        ):
+            reports[idx] = _cache_hit_report(
+                cached_report, key_name="verification_cache_key"
+            )
             continue
         tasks.append(
             (
@@ -812,7 +1162,9 @@ async def _verify_selected_jobs(
                     candidate_profile=candidate_profile,
                     job_profile=job_profile,
                     llm_client=llm_client,
-                    max_tokens=cfg.get("ranking", {}).get("agentic_matching", {}).get("max_verifier_tokens", 700),
+                    max_tokens=cfg.get("ranking", {})
+                    .get("agentic_matching", {})
+                    .get("max_verifier_tokens", 700),
                     model_version=model_version,
                 ),
             )
@@ -844,7 +1196,13 @@ async def _apply_agentic_matching(
         df["explanation_summary"] = None
         return df
 
-    for column in ("match_report", "verification_report", "fit_band", "confidence_band", "explanation_summary"):
+    for column in (
+        "match_report",
+        "verification_report",
+        "fit_band",
+        "confidence_band",
+        "explanation_summary",
+    ):
         if column not in df.columns:
             df[column] = None
 
@@ -852,7 +1210,9 @@ async def _apply_agentic_matching(
     if profile and isinstance(profile.candidate_profile, dict):
         candidate_profile = profile.candidate_profile
     else:
-        candidate_profile = build_candidate_profile(profile=profile, resume_text=resume_text, cfg=cfg)
+        candidate_profile = build_candidate_profile(
+            profile=profile, resume_text=resume_text, cfg=cfg
+        )
 
     created_client = False
     if llm_client is None:
@@ -863,7 +1223,9 @@ async def _apply_agentic_matching(
     try:
         judge_top_n = int(agentic_cfg.get("judge_top_n", 20))
         min_score = float(agentic_cfg.get("min_deterministic_score", 45))
-        eligible = df[df["final_score"] >= min_score].nlargest(judge_top_n, "final_score")
+        eligible = df[df["final_score"] >= min_score].nlargest(
+            judge_top_n, "final_score"
+        )
         if eligible.empty:
             df["match_report"] = None
             df["verification_report"] = None
@@ -880,8 +1242,11 @@ async def _apply_agentic_matching(
         cached_verification_reports: dict[str, dict] = {}
         if selected_job_ids:
             profile_rows = await db.execute(
-                select(JobResult.job_id, JobResult.match_report, JobResult.verification_report)
-                .where(
+                select(
+                    JobResult.job_id,
+                    JobResult.match_report,
+                    JobResult.verification_report,
+                ).where(
                     JobResult.user_id == user_id,
                     JobResult.job_id.in_(selected_job_ids),
                 )
@@ -892,7 +1257,9 @@ async def _apply_agentic_matching(
                 if isinstance(verification_report, dict):
                     cached_verification_reports[str(job_id)] = verification_report
             profile_rows = await db.execute(
-                select(JobRaw.id, JobRaw.job_profile).where(JobRaw.id.in_(selected_job_ids))
+                select(JobRaw.id, JobRaw.job_profile).where(
+                    JobRaw.id.in_(selected_job_ids)
+                )
             )
             for job_id, job_profile in profile_rows.all():
                 if isinstance(job_profile, dict) and job_profile:
@@ -908,7 +1275,9 @@ async def _apply_agentic_matching(
             persisted_job_profiles=persisted_job_profiles,
             cached_match_reports=cached_match_reports,
         )
-        verifier_indices = _select_verifier_indices(df, selected_indices, match_reports, cfg)
+        verifier_indices = _select_verifier_indices(
+            df, selected_indices, match_reports, cfg
+        )
         verification_reports = await _verify_selected_jobs(
             match_reports,
             selected_rows,
@@ -921,7 +1290,9 @@ async def _apply_agentic_matching(
             cached_verification_reports=cached_verification_reports,
         )
 
-        for idx, row, match_report, verification_report in zip(selected_indices, selected_rows, match_reports, verification_reports):
+        for idx, row, match_report, verification_report in zip(
+            selected_indices, selected_rows, match_reports, verification_reports
+        ):
             synthesis = synthesize_match_score(
                 deterministic_score=float(row["final_score"] or 0.0),
                 match_report=match_report,
@@ -972,8 +1343,7 @@ async def _compute_embeddings(
     # any subsequent DataFrame operations, reducing peak RSS by ~3.8MB per 500-row chunk.
     emb_series = df.pop("embedding")
     stored_embeddings = [
-        np.array(e, dtype="float32") if e is not None else None
-        for e in emb_series
+        np.array(e, dtype="float32") if e is not None else None for e in emb_series
     ]
     del emb_series
 
@@ -993,7 +1363,9 @@ async def _compute_embeddings(
     if resume_text or distilled_text:
         _resume_for_skills = distilled_text or resume_text or ""
         _user_raw_skills = extract_skills_from_texts([_resume_for_skills], cfg)
-        _user_canonical = set(canon.canonicalize(_user_raw_skills[0])) if _user_raw_skills else set()
+        _user_canonical = (
+            set(canon.canonicalize(_user_raw_skills[0])) if _user_raw_skills else set()
+        )
     else:
         _user_canonical = set()
 
@@ -1003,7 +1375,9 @@ async def _compute_embeddings(
         matched = len(set(job_skills) & _user_canonical)
         return matched / len(job_skills)
 
-    df["matched_skills"] = df["canonical_skills"].apply(lambda s: len(set(s) & _user_canonical))
+    df["matched_skills"] = df["canonical_skills"].apply(
+        lambda s: len(set(s) & _user_canonical)
+    )
     df["skill_coverage"] = df["canonical_skills"].apply(_coverage)
 
     dim = cfg["embeddings"]["embedding_dim"]
@@ -1017,7 +1391,9 @@ async def _compute_embeddings(
             vectors[i] = stored_embedding
             stored_hits += 1
             continue
-        job_text = build_job_embedding_text(title=t, description=d, canonical_skills=cs, cfg=cfg)
+        job_text = build_job_embedding_text(
+            title=t, description=d, canonical_skills=cs, cfg=cfg
+        )
         miss_specs.append((i, fingerprint_text(job_text), job_text))
     del stored_embeddings
 
@@ -1035,7 +1411,10 @@ async def _compute_embeddings(
 
     logger.info(
         "Embedding cache: %d stored hits, %d cache hits, %d misses out of %d jobs",
-        stored_hits, len(cached), len(misses), len(df),
+        stored_hits,
+        len(cached),
+        len(misses),
+        len(df),
     )
     log_rss(logger, "rank_embed_prepare", jobs=len(df), cache_misses=len(misses))
 
@@ -1093,7 +1472,9 @@ async def _compute_embeddings(
         r_emb = (await asyncio.to_thread(engine.embed, [resume_emb_text]))[0]
         await resume_cache.store_vectors([(resume_fp, r_emb.tolist())])
         if _is_uuid_like(user_id):
-            profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+            profile_result = await db.execute(
+                select(Profile).where(Profile.user_id == user_id)
+            )
             profile = profile_result.scalar_one_or_none()
             if profile:
                 profile.resume_embedding = r_emb.tolist()
@@ -1113,20 +1494,22 @@ async def _compute_embeddings(
         title_texts = df["title"].fillna("").astype(str).tolist()
         title_vecs = await asyncio.to_thread(engine.embed, title_texts)
         role_vecs = await asyncio.to_thread(engine.embed, target_roles)
-        df["title_relevance"] = compute_title_relevance(
-            title_vecs.tolist(), role_vecs
-        )
+        df["title_relevance"] = compute_title_relevance(title_vecs.tolist(), role_vecs)
         logger.info(
             "Title relevance computed for %d jobs against %d target roles",
-            len(df), len(target_roles),
+            len(df),
+            len(target_roles),
         )
     else:
         df["title_relevance"] = 1.0
 
     logger.info(
         "Embeddings computed",
-        extra={"jobs": len(df), "cache_misses": len(misses),
-               "duration_s": round(time.monotonic() - t_emb, 2)},
+        extra={
+            "jobs": len(df),
+            "cache_misses": len(misses),
+            "duration_s": round(time.monotonic() - t_emb, 2),
+        },
     )
     log_rss(logger, "rank_embed_done", jobs=len(df), cache_misses=len(misses))
     df = df.drop(columns=["canonical_skills"], errors="ignore")
@@ -1153,12 +1536,16 @@ async def score_jobs_for_user(
     llm_client = None
     try:
         if job_urls:
-            logger.info("Ranking against %d freshly scraped jobs (filtered mode)", len(job_urls))
+            logger.info(
+                "Ranking against %d freshly scraped jobs (filtered mode)", len(job_urls)
+            )
         ctx = build_context(user_id, resume_text, config_overrides)
         profile = None
         persisted_resume_embedding = None
         if _is_uuid_like(user_id):
-            profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+            profile_result = await db.execute(
+                select(Profile).where(Profile.user_id == user_id)
+            )
             profile = profile_result.scalar_one_or_none()
             if profile and profile.resume_embedding is not None:
                 persisted_resume_embedding = list(profile.resume_embedding)
@@ -1177,7 +1564,9 @@ async def score_jobs_for_user(
                 "archetypes": cfg.get("ranking", {}).get("profile_archetypes", []),
                 "rule_counts": {
                     name: len(patterns)
-                    for name, patterns in (cfg.get("ranking", {}).get("profile_title_rules", {}) or {}).items()
+                    for name, patterns in (
+                        cfg.get("ranking", {}).get("profile_title_rules", {}) or {}
+                    ).items()
                 },
             },
         )
@@ -1199,9 +1588,14 @@ async def score_jobs_for_user(
             ann_urls = await ann_prefilter_job_urls(db, persisted_resume_embedding)
             if len(ann_urls) >= 50:
                 effective_job_urls = ann_urls
-                logger.info("ANN pre-filter: %d candidates (embedding-based)", len(ann_urls))
+                logger.info(
+                    "ANN pre-filter: %d candidates (embedding-based)", len(ann_urls)
+                )
             else:
-                logger.info("ANN pre-filter skipped: only %d embedded jobs, using global pool", len(ann_urls))
+                logger.info(
+                    "ANN pre-filter skipped: only %d embedded jobs, using global pool",
+                    len(ann_urls),
+                )
 
         base_cfg_fp = build_context(user_id="__base__", resume_text="").config_fp
         canon = SkillCanonicalizer(cfg)
@@ -1212,11 +1606,23 @@ async def score_jobs_for_user(
 
         for offset in range(0, _RANK_MAX_CANDIDATES, rank_load_chunk):
             page_limit = min(rank_load_chunk, _RANK_MAX_CANDIDATES - offset)
-            df = await load_jobs_dataframe(db, role_clusters=clusters, job_urls=effective_job_urls, limit=page_limit, offset=offset)
+            df = await load_jobs_dataframe(
+                db,
+                role_clusters=clusters,
+                job_urls=effective_job_urls,
+                limit=page_limit,
+                offset=offset,
+            )
             if df.empty:
                 break
             total_loaded += len(df)
-            log_rss(logger, "rank_jobs_loaded_chunk", jobs=len(df), offset=offset, total_loaded=total_loaded)
+            log_rss(
+                logger,
+                "rank_jobs_loaded_chunk",
+                jobs=len(df),
+                offset=offset,
+                total_loaded=total_loaded,
+            )
 
             scored = await _score_loaded_jobs_dataframe(
                 db=db,
@@ -1244,18 +1650,32 @@ async def score_jobs_for_user(
                 offset + len(df),
                 _RANK_MAX_CANDIDATES,
             )
-            log_rss(logger, "rank_chunk_done", offset=offset, loaded=len(df), scored=len(scored))
+            log_rss(
+                logger,
+                "rank_chunk_done",
+                offset=offset,
+                loaded=len(df),
+                scored=len(scored),
+            )
             del df, scored
             release_memory(logger, "rank_chunk_release", offset=offset)
 
             if len(frames) > 1:
                 merged = pd.concat(frames, ignore_index=True)
-                merged = merged.sort_values("final_score", ascending=False).head(_RANK_MAX_CANDIDATES).reset_index(drop=True)
+                merged = (
+                    merged.sort_values("final_score", ascending=False)
+                    .head(_RANK_MAX_CANDIDATES)
+                    .reset_index(drop=True)
+                )
                 frames = [merged]
                 log_rss(logger, "rank_chunk_merge", rows=len(merged))
                 release_memory(logger, "rank_chunk_merge_release", rows=len(merged))
 
-            if len(frames) == 1 and len(frames[0]) >= _RANK_MAX_CANDIDATES and offset + len(frames[0]) >= _RANK_MAX_CANDIDATES:
+            if (
+                len(frames) == 1
+                and len(frames[0]) >= _RANK_MAX_CANDIDATES
+                and offset + len(frames[0]) >= _RANK_MAX_CANDIDATES
+            ):
                 break
 
         unload_embedding_engine()
@@ -1264,8 +1684,14 @@ async def score_jobs_for_user(
             return pd.DataFrame(columns=["final_score"])
 
         df = pd.concat(frames, ignore_index=True)
-        logger.info("Ranking chunked aggregation complete: loaded=%d scored=%d", total_loaded, len(df))
-        log_rss(logger, "rank_jobs_aggregated", total_loaded=total_loaded, scored=len(df))
+        logger.info(
+            "Ranking chunked aggregation complete: loaded=%d scored=%d",
+            total_loaded,
+            len(df),
+        )
+        log_rss(
+            logger, "rank_jobs_aggregated", total_loaded=total_loaded, scored=len(df)
+        )
         return _finalize_ranked_dataframe(df, user_id, role_intent="chunked")
     finally:
         if llm_client is not None:
@@ -1283,7 +1709,9 @@ async def score_job_ids_for_user(
     df = await load_jobs_by_ids_dataframe(db, job_ids)
     profile = None
     if _is_uuid_like(user_id):
-        profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+        profile_result = await db.execute(
+            select(Profile).where(Profile.user_id == user_id)
+        )
         profile = profile_result.scalar_one_or_none()
     llm_client = _agentic_client_or_none()
     try:
@@ -1324,7 +1752,9 @@ async def _score_loaded_jobs_dataframe(
     if cfg is None:
         cfg = ctx.config
     if profile is None and _is_uuid_like(user_id):
-        profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+        profile_result = await db.execute(
+            select(Profile).where(Profile.user_id == user_id)
+        )
         profile = profile_result.scalar_one_or_none()
     if not skip_context_enrichment:
         profile_roles = _resolve_profile_roles(cfg, profile)
@@ -1340,7 +1770,9 @@ async def _score_loaded_jobs_dataframe(
                 "archetypes": cfg.get("ranking", {}).get("profile_archetypes", []),
                 "rule_counts": {
                     name: len(patterns)
-                    for name, patterns in (cfg.get("ranking", {}).get("profile_title_rules", {}) or {}).items()
+                    for name, patterns in (
+                        cfg.get("ranking", {}).get("profile_title_rules", {}) or {}
+                    ).items()
                 },
             },
         )
@@ -1356,7 +1788,9 @@ async def _score_loaded_jobs_dataframe(
     pre_dedupe_count = len(df)
     df = _dedupe_before_embedding(df)
     if len(df) != pre_dedupe_count:
-        logger.info("Pre-embedding dedupe removed %d duplicate rows", pre_dedupe_count - len(df))
+        logger.info(
+            "Pre-embedding dedupe removed %d duplicate rows", pre_dedupe_count - len(df)
+        )
     log_rss(logger, "rank_preembed_dedupe_done", jobs=len(df))
 
     effective_role_intent = role_intent or (
@@ -1390,18 +1824,24 @@ async def _score_loaded_jobs_dataframe(
         return pd.DataFrame(columns=["final_score"])
 
     df["semantic_score"] *= df["skill_overlap"].apply(bounded_skill_boost)
-    title_flags = df["title"].fillna("").astype(str).apply(lambda t: title_rule_flags(t, cfg))
+    title_flags = (
+        df["title"].fillna("").astype(str).apply(lambda t: title_rule_flags(t, cfg))
+    )
     df["strong_title_penalty"] = title_flags.apply(lambda x: x["strong"])
     df["adjacent_title"] = title_flags.apply(lambda x: x["adjacent"])
     df["hybrid_title"] = title_flags.apply(lambda x: x["hybrid"])
 
     df["functional_role"] = df.apply(
-        lambda r: classify_functional_role(r["title"] or "", r["description"] or "", cfg),
+        lambda r: classify_functional_role(
+            r["title"] or "", r["description"] or "", cfg
+        ),
         axis=1,
     )
     df["role_skill_score"] = df.apply(
         lambda r: calculate_role_and_skill_match_score(
-            cfg, title=r["title"], description=r["description"],
+            cfg,
+            title=r["title"],
+            description=r["description"],
         ),
         axis=1,
     )
@@ -1418,7 +1858,10 @@ async def _score_loaded_jobs_dataframe(
     user_yoe = cfg.get("experience", {}).get("max_yoe")
     df["seniority_score"] = df.apply(
         lambda r: calculate_seniority_score(
-            cfg, title=r["title"], description=r["description"], user_yoe=user_yoe,
+            cfg,
+            title=r["title"],
+            description=r["description"],
+            user_yoe=user_yoe,
         ),
         axis=1,
     )
@@ -1435,8 +1878,20 @@ async def _score_loaded_jobs_dataframe(
         db=db,
         llm_client=llm_client,
     )
+    df = await _apply_intent_shadow_matching(
+        df,
+        cfg=cfg,
+        resume_text=resume_text,
+        profile=profile,
+        db=db,
+    )
 
-    return _finalize_ranked_dataframe(df, user_id, role_intent=effective_role_intent, duration_s=time.monotonic() - t_total)
+    return _finalize_ranked_dataframe(
+        df,
+        user_id,
+        role_intent=effective_role_intent,
+        duration_s=time.monotonic() - t_total,
+    )
 
 
 def _finalize_ranked_dataframe(
@@ -1446,18 +1901,28 @@ def _finalize_ranked_dataframe(
     role_intent: str,
     duration_s: float | None = None,
 ) -> pd.DataFrame:
-    df = df.sort_values("final_score", ascending=False).drop_duplicates(subset=["job_url"])
+    df = df.sort_values("final_score", ascending=False).drop_duplicates(
+        subset=["job_url"]
+    )
     df["_dedup_key"] = (
-        df["title"].str.strip().str.lower() + "|" + df["company"].str.strip().str.lower()
+        df["title"].str.strip().str.lower()
+        + "|"
+        + df["company"].str.strip().str.lower()
     )
     df = df.drop_duplicates(subset="_dedup_key", keep="first")
     df["_fuzzy_key"] = (
-        df["title"].str.strip().str.lower()
+        df["title"]
+        .str.strip()
+        .str.lower()
         .str.replace(_SENIORITY_SUFFIXES, "", regex=True)
-        .str.strip() + "|" + df["company"].str.strip().str.lower()
+        .str.strip()
+        + "|"
+        + df["company"].str.strip().str.lower()
     )
     df = df.drop_duplicates(subset="_fuzzy_key", keep="first")
-    df = df.drop(columns=["_dedup_key", "_fuzzy_key"], errors="ignore").reset_index(drop=True)
+    df = df.drop(columns=["_dedup_key", "_fuzzy_key"], errors="ignore").reset_index(
+        drop=True
+    )
     df = df.drop(columns=["description", "role_clusters", "embedding"], errors="ignore")
     release_memory(logger, "rank_finalize_release", jobs=len(df))
 

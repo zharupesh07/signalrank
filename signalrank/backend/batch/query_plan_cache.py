@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models import QueryPlanCache, gen_uuid
 from batch import query_builder
-from batch.query_builder import SearchQuery
+from batch.query_builder import QUERY_PLAN_DEBUG_KEY, SearchQuery
 from domain.artifact_versions import QUERY_PLAN_VERSION, query_plan_cache_key
 
 
@@ -16,7 +16,20 @@ def _queries_to_payload(queries: list[SearchQuery]) -> list[dict]:
     return [asdict(query) for query in queries]
 
 
+def _cache_payload(
+    queries: list[SearchQuery],
+    *,
+    shadow_payload: dict | None = None,
+) -> dict:
+    payload = {"queries": _queries_to_payload(queries)}
+    if shadow_payload:
+        payload[QUERY_PLAN_DEBUG_KEY] = shadow_payload
+    return payload
+
+
 def _payload_to_queries(payload: object) -> list[SearchQuery]:
+    if isinstance(payload, dict):
+        payload = payload.get("queries") or []
     if not isinstance(payload, list):
         return []
     queries: list[SearchQuery] = []
@@ -69,6 +82,7 @@ async def store_query_plan_cache(
     source_filter: str,
     max_terms: int,
     queries: list[SearchQuery],
+    shadow_payload: dict | None = None,
     query_version: str = QUERY_PLAN_VERSION,
 ) -> None:
     cache_key = query_plan_cache_key(
@@ -77,7 +91,7 @@ async def store_query_plan_cache(
         source_filter=source_filter,
         query_version=query_version,
     )
-    payload = _queries_to_payload(queries)
+    payload = _cache_payload(queries, shadow_payload=shadow_payload)
     stmt = pg_insert(QueryPlanCache).values(
         id=gen_uuid(),
         cache_key=cache_key,
@@ -122,6 +136,7 @@ async def get_cached_queries(
     if cached is not None:
         return cached
     queries = query_builder.build_queries(profile, max_terms=max_terms)
+    shadow_payload = query_builder.build_query_plan_debug(profile)
     if profile_fingerprint:
         await store_query_plan_cache(
             db,
@@ -130,5 +145,6 @@ async def get_cached_queries(
             source_filter=source_filter,
             max_terms=max_terms,
             queries=queries,
+            shadow_payload=shadow_payload,
         )
     return queries

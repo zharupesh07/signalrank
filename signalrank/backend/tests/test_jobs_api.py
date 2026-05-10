@@ -148,7 +148,7 @@ async def test_list_jobs_returns_isoformatted_date_posted(client, auth_token, db
     me = await client.get("/api/profile", headers={"Authorization": f"Bearer {auth_token}"})
     user_id = me.json()["user_id"]
 
-    posted_at = datetime(2026, 3, 29, 12, 0, tzinfo=timezone.utc)
+    posted_at = datetime.now(timezone.utc) - timedelta(days=20)
     run = Run(user_id=user_id, status="success")
     job = JobRaw(
         job_url="https://example.com/jobs/iso-date",

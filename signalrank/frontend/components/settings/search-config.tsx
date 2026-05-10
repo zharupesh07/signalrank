@@ -8,6 +8,7 @@ import { DraggableTagList } from "@/components/draggable-tag-list";
 import { useToast } from "@/components/toast";
 import { api } from "@/lib/api";
 import { formatPenaltyPattern } from "@/lib/formatting";
+import type { ProfileScanPlan } from "@/types";
 
 interface TitlePenaltyRules {
   strong: string[];
@@ -30,6 +31,7 @@ interface SearchConfigProps {
   scraperMaxTerms: string;
   setScraperMaxTerms: (v: string) => void;
   titlePenaltyRules: TitlePenaltyRules;
+  scanPlan: ProfileScanPlan | null;
   initialTierSS: string[];
   initialTierS: string[];
   initialPenaltyStrong: string[];
@@ -55,6 +57,7 @@ export function SearchConfig({
   scraperMaxTerms,
   setScraperMaxTerms,
   titlePenaltyRules,
+  scanPlan,
   initialTierSS,
   initialTierS,
   initialPenaltyStrong,
@@ -139,6 +142,73 @@ export function SearchConfig({
           placeholder="e.g. 'LLM platform engineer Bangalore'"
         />
       </div>
+
+      {scanPlan ? (
+        <div className="stat-card card-hover space-y-4 border border-border bg-card p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Briefcase size={13} className="text-primary" />
+              <span className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">Profile-Derived Scan Plan</span>
+            </div>
+            <span className="border border-primary/25 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-primary">
+              {(scanPlan.confidence * 100).toFixed(0)}% confidence
+            </span>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="border border-border bg-background/30 p-3">
+              <div className="mb-2 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Accepted Terms</div>
+              <div className="flex flex-wrap gap-1.5">
+                {scanPlan.search_terms.slice(0, 10).map((term) => (
+                  <span key={term} className="border border-primary/25 px-1.5 py-0.5 text-[10px] text-primary">
+                    {term}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="border border-border bg-background/30 p-3">
+              <div className="mb-2 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Locations</div>
+              <div className="flex flex-wrap gap-1.5">
+                {scanPlan.locations.slice(0, 8).map((location) => (
+                  <span key={location} className="border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                    {location || "Any"}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="border border-border bg-background/30 p-3">
+              <div className="mb-2 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Excluded Terms</div>
+              <div className="flex flex-wrap gap-1.5">
+                {scanPlan.title_filter.negative.slice(0, 8).map((term) => (
+                  <span key={term} className="border border-destructive/25 px-1.5 py-0.5 text-[10px] text-destructive/80">
+                    {term}
+                  </span>
+                ))}
+                {scanPlan.title_filter.negative.length === 0 ? (
+                  <span className="text-[10px] text-muted-foreground">None</span>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          {scanPlan.rejected_terms.length > 0 ? (
+            <div className="border-t border-border pt-3">
+              <div className="mb-2 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Rejected Terms</div>
+              <div className="flex flex-wrap gap-1.5">
+                {scanPlan.rejected_terms.slice(0, 8).map((item) => (
+                  <span
+                    key={`${item.term}-${item.risk_flags.join(",")}`}
+                    className="border border-[var(--terminal-yellow)]/25 px-1.5 py-0.5 text-[10px] text-[var(--terminal-yellow)]"
+                    title={item.risk_flags.join(", ")}
+                  >
+                    {item.term}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="stat-card card-hover space-y-5 border border-border bg-card p-5">
         <div className="flex items-center gap-2">

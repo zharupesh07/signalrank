@@ -87,6 +87,7 @@ _RUNS_ERROR_SCHEMA_LOCK_KEY = 1_947_017_465
 _RUNS_MODE_SCHEMA_LOCK_KEY = 1_947_017_466
 _PROFILES_CANDIDATE_PROFILE_LOCK_KEY = 1_947_017_467
 _JOBS_RAW_JOB_PROFILE_LOCK_KEY = 1_947_017_468
+_JOBS_RAW_AVAILABILITY_URLS_LOCK_KEY = 1_947_017_473
 _JOB_RESULTS_REPORTS_LOCK_KEY = 1_947_017_469
 _QUERY_PLAN_CACHE_LOCK_KEY = 1_947_017_470
 _SCRAPE_QUERY_CACHE_LOCK_KEY = 1_947_017_471
@@ -167,6 +168,7 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
             ("runs", "executor_type"),
             ("profiles", "candidate_profile"),
             ("jobs_raw", "job_profile"),
+            ("jobs_raw", "availability_urls"),
             ("job_results", "fit_band"),
             ("job_results", "confidence_band"),
             ("job_results", "explanation_summary"),
@@ -195,6 +197,7 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
                                   'lease_expires_at', 'last_heartbeat_at', 'attempt_count',
                                   'cancel_requested', 'trigger_source', 'executor_type',
                                   'candidate_profile', 'job_profile',
+                                  'availability_urls',
                                   'fit_band', 'confidence_band', 'explanation_summary',
                                   'match_report', 'verification_report',
                                   'cache_key', 'provider'
@@ -222,6 +225,7 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
                 ("runs", "executor_type"): _RUNS_CLAIM_FIELDS_LOCK_KEY,
                 ("profiles", "candidate_profile"): _PROFILES_CANDIDATE_PROFILE_LOCK_KEY,
                 ("jobs_raw", "job_profile"): _JOBS_RAW_JOB_PROFILE_LOCK_KEY,
+                ("jobs_raw", "availability_urls"): _JOBS_RAW_AVAILABILITY_URLS_LOCK_KEY,
                 ("job_results", "fit_band"): _JOB_RESULTS_REPORTS_LOCK_KEY,
                 ("job_results", "confidence_band"): _JOB_RESULTS_REPORTS_LOCK_KEY,
                 ("job_results", "explanation_summary"): _JOB_RESULTS_REPORTS_LOCK_KEY,
@@ -279,6 +283,13 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
             await conn.execute(text("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS candidate_profile JSONB"))
         if ("jobs_raw", "job_profile") in missing:
             await conn.execute(text("ALTER TABLE jobs_raw ADD COLUMN IF NOT EXISTS job_profile JSONB"))
+        if ("jobs_raw", "availability_urls") in missing:
+            await conn.execute(
+                text(
+                    "ALTER TABLE jobs_raw ADD COLUMN IF NOT EXISTS "
+                    "availability_urls JSONB DEFAULT '[]'::jsonb"
+                )
+            )
         if ("job_results", "fit_band") in missing:
             await conn.execute(text("ALTER TABLE job_results ADD COLUMN IF NOT EXISTS fit_band VARCHAR(50)"))
         if ("job_results", "confidence_band") in missing:

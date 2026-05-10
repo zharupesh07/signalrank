@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from tools import semantic_resume_job_search as script
@@ -9,6 +10,8 @@ from tools import semantic_resume_job_search as script
 def test_collect_jobs_from_scrape_cache_dedupes_and_filters(tmp_path: Path):
     cache_dir = tmp_path / "cache"
     cache_dir.mkdir()
+    recent_posted = (datetime.now(timezone.utc) - timedelta(days=10)).date().isoformat()
+    old_posted = (datetime.now(timezone.utc) - timedelta(days=90)).date().isoformat()
     payload = {
         "query": {"term": "Innovation Lead", "location": "Bangalore", "country": "India"},
         "jobs": [
@@ -18,7 +21,7 @@ def test_collect_jobs_from_scrape_cache_dedupes_and_filters(tmp_path: Path):
                 "company": "Example",
                 "location": "Bangalore",
                 "description": "IoT and rapid prototyping",
-                "date_posted": "2026-04-05",
+                "date_posted": recent_posted,
             },
             {
                 "job_url": "https://example.com/1",
@@ -26,7 +29,7 @@ def test_collect_jobs_from_scrape_cache_dedupes_and_filters(tmp_path: Path):
                 "company": "Example",
                 "location": "Bangalore",
                 "description": "IoT and rapid prototyping",
-                "date_posted": "2026-04-05",
+                "date_posted": recent_posted,
             },
             {
                 "job_url": "https://example.com/2",
@@ -34,7 +37,7 @@ def test_collect_jobs_from_scrape_cache_dedupes_and_filters(tmp_path: Path):
                 "company": "OldCo",
                 "location": "Bangalore",
                 "description": "Old role",
-                "date_posted": "2025-01-01",
+                "date_posted": old_posted,
             },
         ],
     }

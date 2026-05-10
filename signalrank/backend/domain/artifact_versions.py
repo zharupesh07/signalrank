@@ -8,13 +8,16 @@ SCHEMA_VERSION = 1
 
 CANDIDATE_PROFILE_VERSION = "candidate_profile_v2"
 JOB_PROFILE_VERSION = "job_profile_v2"
+PROFILE_INTENT_VERSION = "profile_intent_v1"
+JOB_INTENT_VERSION = "job_intent_v1"
+MATCH_DECISION_VERSION = "match_decision_v1"
 MATCH_REPORT_VERSION = "match_report_v2"
 VERIFICATION_REPORT_VERSION = "verification_report_v2"
 
 MATCH_JUDGE_PROMPT_VERSION = "match_judge_prompt_v1"
 MATCH_VERIFIER_PROMPT_VERSION = "match_verifier_prompt_v1"
 
-QUERY_PLAN_VERSION = "query_plan_v1"
+QUERY_PLAN_VERSION = "query_plan_v3"
 
 
 def stable_digest(payload: Any) -> str:
@@ -22,7 +25,9 @@ def stable_digest(payload: Any) -> str:
     return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 
-def candidate_profile_cache_key(*, resume_fingerprint: str, profile_version: str = CANDIDATE_PROFILE_VERSION) -> str:
+def candidate_profile_cache_key(
+    *, resume_fingerprint: str, profile_version: str = CANDIDATE_PROFILE_VERSION
+) -> str:
     return stable_digest(
         {
             "kind": "candidate_profile",
@@ -33,7 +38,9 @@ def candidate_profile_cache_key(*, resume_fingerprint: str, profile_version: str
     )
 
 
-def job_profile_cache_key(*, job_fingerprint: str, profile_version: str = JOB_PROFILE_VERSION) -> str:
+def job_profile_cache_key(
+    *, job_fingerprint: str, profile_version: str = JOB_PROFILE_VERSION
+) -> str:
     return stable_digest(
         {
             "kind": "job_profile",

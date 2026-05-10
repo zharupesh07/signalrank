@@ -26,6 +26,7 @@ class RawJob:
     location: str | None
     site: str
     date_posted: datetime | None
+    availability_urls: list[str] = field(default_factory=list)
 
 
 def raw_job_to_dict(job: RawJob) -> dict:
@@ -37,6 +38,7 @@ def raw_job_to_dict(job: RawJob) -> dict:
         "location": job.location,
         "site": job.site,
         "date_posted": job.date_posted,
+        "availability_urls": job.availability_urls or [job.job_url],
     }
 
 

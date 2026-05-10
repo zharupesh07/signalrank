@@ -68,6 +68,9 @@ def _scrape_sync(term: str, location: str, country: str, config: ScraperConfig, 
     for _, row in df.iterrows():
         direct = str(row.get("job_url_direct") or "").strip()
         fallback = str(row.get("job_url") or "").strip()
+        availability_urls = list(
+            dict.fromkeys(url for url in [direct, fallback] if url)
+        )
         # Prefer company portal URL; fall back to Indeed; last resort LinkedIn
         if direct and "linkedin.com" not in direct:
             url = direct
@@ -98,6 +101,7 @@ def _scrape_sync(term: str, location: str, country: str, config: ScraperConfig, 
             location=str(row.get("location", "")) or None,
             site=str(row.get("site", "jobspy")),
             date_posted=date_posted,
+            availability_urls=availability_urls or [url],
         ))
     return jobs
 

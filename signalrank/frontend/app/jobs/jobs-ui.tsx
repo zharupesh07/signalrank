@@ -16,7 +16,17 @@ import { TIER_COLORS } from "./columns";
 
 export type JobsRunSummary = Pick<
   Run,
-  "id" | "status" | "job_count" | "scrape_count" | "started_at" | "finished_at" | "run_kind" | "scrape_reason"
+  | "id"
+  | "status"
+  | "job_count"
+  | "scrape_count"
+  | "ranked_count"
+  | "visible_count"
+  | "started_at"
+  | "finished_at"
+  | "run_kind"
+  | "scrape_reason"
+  | "progress"
 >;
 
 const QUICK_FEEDBACK_ACTIONS = [
@@ -145,6 +155,67 @@ export function JobsRunSelector({
           <div className="text-[11px] text-muted-foreground tabular-nums">
             {selectedRun.job_count ?? 0} jobs
           </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function formatQueryPlanValue(value: number | undefined) {
+  return value == null ? "—" : value.toLocaleString();
+}
+
+export function RunQualityStrip({
+  run,
+  visible,
+  runTotal,
+  newGoodMatches,
+  sourceCount,
+}: {
+  run: JobsRunSummary | null;
+  visible: number;
+  runTotal: number;
+  newGoodMatches: number;
+  sourceCount: number;
+}) {
+  const progress = run?.progress;
+  const queryPlan = progress?.query_plan ?? null;
+  const stats = [
+    { label: "scraped", value: run?.scrape_count ?? progress?.jobs_found ?? "—" },
+    { label: "ranked", value: run?.ranked_count ?? run?.job_count ?? runTotal },
+    { label: "visible", value: visible },
+    { label: "new good", value: newGoodMatches },
+    { label: "sources", value: sourceCount },
+  ];
+
+  return (
+    <div className="mb-4 border border-border bg-card px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+          run quality
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {stats.map((stat) => (
+            <span key={stat.label} className="inline-flex items-center gap-1.5 border border-border px-2 py-1 text-[10px] uppercase tracking-[0.13em] text-muted-foreground">
+              <span>{stat.label}</span>
+              <span className="text-foreground tabular-nums">{typeof stat.value === "number" ? stat.value.toLocaleString() : stat.value}</span>
+            </span>
+          ))}
+        </div>
+        {queryPlan ? (
+          <details className="ml-auto text-[10px] text-muted-foreground">
+            <summary className="cursor-pointer uppercase tracking-[0.13em] hover:text-primary">
+              query plan
+            </summary>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <span>targeted {formatQueryPlanValue(queryPlan.executed_terms)}</span>
+              <span>shadow {formatQueryPlanValue(queryPlan.shadow_terms)}</span>
+              <span>rejected {formatQueryPlanValue(queryPlan.rejected_candidates)}</span>
+              {(queryPlan.risk_flags ?? []).slice(0, 3).map((flag) => (
+                <span key={flag} className="text-[var(--terminal-yellow)]">{flag}</span>
+              ))}
+            </div>
+          </details>
         ) : null}
       </div>
     </div>
@@ -295,6 +366,31 @@ export function JobsFiltersSidebar({
                   }}
                 >
                   {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <hr className="border-border" />
+
+          <div>
+            <div className="text-xs font-semibold text-[var(--fg-muted,#71717a)] uppercase tracking-wide mb-2">Match Quality</div>
+            <div className="space-y-1">
+              {[
+                { key: "all", label: "All" },
+                { key: "strong", label: "Strong" },
+                { key: "review", label: "Needs review" },
+              ].map((item) => (
+                <button
+                  key={item.key}
+                  onClick={() => onSetFilters((f) => ({ ...f, matchQuality: item.key as Filters["matchQuality"] }))}
+                  className="w-full border px-2 py-1.5 text-left text-[11px] uppercase tracking-[0.13em] transition-colors hover:border-primary hover:text-primary"
+                  style={{
+                    borderColor: filters.matchQuality === item.key ? "var(--primary)" : "var(--border)",
+                    color: filters.matchQuality === item.key ? "var(--primary)" : "var(--muted-foreground)",
+                  }}
+                >
+                  {item.label}
                 </button>
               ))}
             </div>
@@ -542,6 +638,31 @@ export function JobsRefinementPanel({
   );
 }
 
+function fitBandLabel(value: string | null | undefined) {
+  if (!value) return null;
+  const labels: Record<string, string> = {
+    strong_fit: "Strong",
+    adjacent_fit: "Possible",
+    weak_fit: "Stretch",
+    misleading_fit: "Hidden/Noisy",
+    reject: "Hidden/Noisy",
+  };
+  return labels[value] ?? value.replaceAll("_", " ");
+}
+
+function uniqueSignals(values: Array<string | null | undefined>, limit: number) {
+  const seen = new Set<string>();
+  const signals: string[] = [];
+  for (const value of values) {
+    const normalized = String(value ?? "").trim();
+    if (!normalized || seen.has(normalized.toLowerCase())) continue;
+    seen.add(normalized.toLowerCase());
+    signals.push(normalized);
+    if (signals.length >= limit) break;
+  }
+  return signals;
+}
+
 export function JobDetailPanel({
   selectedJob,
   tracked,
@@ -559,6 +680,21 @@ export function JobDetailPanel({
   onFeedback: (action: string, job: Job) => void;
   onTrack: (job: Job) => void;
 }) {
+  const positiveSignals = uniqueSignals(
+    [selectedJob.rank_reason_up, selectedJob.explanation_summary, ...(selectedJob.preference_tags ?? [])],
+    3
+  );
+  const cautionSignals = uniqueSignals(
+    [
+      selectedJob.rank_reason_down,
+      selectedJob.archival_reason,
+      ...(selectedJob.risk_flags ?? []).map((flag) => flag.replaceAll("_", " ")),
+      selectedJob.archived_by_llm ? "Archived as low-fit or stale" : null,
+    ],
+    3
+  );
+  const fitLabel = fitBandLabel(selectedJob.fit_band);
+
   return (
     <div className="w-80 shrink-0 sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto border border-border bg-card space-y-4 p-4 z-40 relative">
       <div className="flex items-start justify-between gap-2">
@@ -570,6 +706,18 @@ export function JobDetailPanel({
               {selectedJob.preference_bucket}
             </div>
           ) : null}
+          <div className="mt-2 flex flex-wrap gap-1">
+            {fitLabel ? (
+              <span className="inline-flex items-center border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground uppercase tracking-[0.13em]">
+                {fitLabel}
+              </span>
+            ) : null}
+            {selectedJob.confidence_band ? (
+              <span className="inline-flex items-center border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground uppercase tracking-[0.13em]">
+                {selectedJob.confidence_band} confidence
+              </span>
+            ) : null}
+          </div>
         </div>
         <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-0.5">
           <XCircle size={14} />
@@ -588,12 +736,12 @@ export function JobDetailPanel({
 
       <div className="space-y-2">
         {[
-          { label: "Overall", value: selectedJob.final_score },
-          { label: "Title match", value: selectedJob.title_relevance_score },
-          { label: "Resume match", value: selectedJob.semantic_score },
+          { label: "Match score", value: selectedJob.final_score },
+          { label: "Title intent", value: selectedJob.title_relevance_score },
+          { label: "Resume overlap", value: selectedJob.semantic_score },
           { label: "Skills", value: selectedJob.skills_score },
           { label: "Company", value: selectedJob.company_score },
-          { label: "Recency", value: selectedJob.recency_score },
+          { label: "Freshness", value: selectedJob.recency_score },
         ].map(({ label, value }) => {
           if (value == null) return null;
           const pct = value * 100;
@@ -641,6 +789,30 @@ export function JobDetailPanel({
           {selectedJob.archival_reason}
         </div>
       )}
+
+      <div className="pt-1 border-t border-border space-y-2">
+        <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Why this ranked here</div>
+        {positiveSignals.length > 0 ? (
+          <div className="space-y-1">
+            {positiveSignals.map((signal) => (
+              <div key={signal} className="text-[11px] text-secondary-foreground leading-relaxed">
+                + {signal}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-[11px] text-muted-foreground">No positive explanation available.</div>
+        )}
+        {cautionSignals.length > 0 ? (
+          <div className="space-y-1">
+            {cautionSignals.map((signal) => (
+              <div key={signal} className="text-[11px] text-[var(--terminal-yellow)] leading-relaxed">
+                ! {signal}
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
 
       <div className="flex items-center gap-2 pt-1">
         {selectedJob.job_url && (

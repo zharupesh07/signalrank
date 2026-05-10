@@ -9,11 +9,21 @@ from api.database import get_db
 from api.deps import get_current_user
 from api.models import Profile, User
 from api.utils import deep_merge_dict, profile_resume_template
-from domain.candidate_profile import build_candidate_profile
 from batch.context import deep_merge, load_base_config
+from batch.query_builder import build_profile_scan_plan
+from domain.candidate_profile import build_candidate_profile
 from domain.profile_rules import enrich_config_with_profile_rules
-from domain.resume_editor import merge_resume_editor, parse_resume_editor, serialize_resume_editor
-from domain.role_taxonomy import CANONICAL_ROLE_OPTIONS, LOCATION_OPTIONS, ROLE_UI_OPTIONS, TIER_OPTIONS
+from domain.resume_editor import (
+    merge_resume_editor,
+    parse_resume_editor,
+    serialize_resume_editor,
+)
+from domain.role_taxonomy import (
+    CANONICAL_ROLE_OPTIONS,
+    LOCATION_OPTIONS,
+    ROLE_UI_OPTIONS,
+    TIER_OPTIONS,
+)
 
 router = APIRouter(prefix="/api", tags=["profile"])
 
@@ -280,6 +290,7 @@ async def get_profile_options(current_user: User = Depends(get_current_user), db
         "canonical_role_options": CANONICAL_ROLE_OPTIONS,
         "location_options": LOCATION_OPTIONS,
         "tier_options": TIER_OPTIONS,
+        "scan_plan": build_profile_scan_plan(profile) if profile else None,
         "title_penalty_rules": ranking.get("profile_title_rules", {"strong": [], "adjacent": [], "hybrid": []}),
         "company_tier_lists": {
             "tier_ss": company_scoring.get("tier_ss", []) or [],

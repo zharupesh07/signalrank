@@ -1,0 +1,71 @@
+{
+  "output_dir": "/Users/examplecandidate/Projects/job_ranker/signalrank/backend/data/evals",
+  "profiles": {
+    "abhijeet": {
+      "active_lanes": [
+        "ai_platform"
+      ],
+      "gold_seed_path": "/Users/examplecandidate/Projects/job_ranker/signalrank/backend/data/evals/abhijeet_job_fit_gold_seed.jsonl",
+      "label_counts": {
+        "hard_violation": 10,
+        "maybe_adjacent": 15,
+        "reject": 20,
+        "strong_pursue": 15
+      },
+      "silver_path": "/Users/examplecandidate/Projects/job_ranker/signalrank/backend/data/evals/abhijeet_job_fit_silver.jsonl",
+      "target_roles_primary": [
+        "Machine Learning Engineer"
+      ]
+    },
+    "aditya": {
+      "active_lanes": [
+        "network_automation"
+      ],
+      "gold_seed_path": "/Users/examplecandidate/Projects/job_ranker/signalrank/backend/data/evals/aditya_job_fit_gold_seed.jsonl",
+      "label_counts": {
+        "hard_violation": 10,
+        "maybe_adjacent": 5,
+        "reject": 30,
+        "strong_pursue": 15
+      },
+      "silver_path": "/Users/examplecandidate/Projects/job_ranker/signalrank/backend/data/evals/aditya_job_fit_silver.jsonl",
+      "target_roles_primary": [
+        "Network Automation Engineer | Network Operations & Infra Automation"
+      ]
+    },
+    "ayush": {
+      "active_lanes": [
+        "sap_erp"
+      ],
+      "gold_seed_path": "/Users/examplecandidate/Projects/job_ranker/signalrank/backend/data/evals/ayush_job_fit_gold_seed.jsonl",
+      "label_counts": {
+        "hard_violation": 10,
+        "maybe_adjacent": 15,
+        "reject": 20,
+        "strong_pursue": 15
+      },
+      "silver_path": "/Users/examplecandidate/Projects/job_ranker/signalrank/backend/data/evals/ayush_job_fit_silver.jsonl",
+      "target_roles_primary": [
+        "SAP Certified Application Associate - SAP S/4HANA Sales"
+      ]
+    },
+    "vivek": {
+      "active_lanes": [
+        "innovation",
+        "iot",
+        "conversational_ai"
+      ],
+      "gold_seed_path": "/Users/examplecandidate/Projects/job_ranker/signalrank/backend/data/evals/vivek_job_fit_gold_seed.jsonl",
+      "label_counts": {
+        "hard_violation": 10,
+        "maybe_adjacent": 15,
+        "reject": 20,
+        "strong_pursue": 15
+      },
+      "silver_path": "/Users/examplecandidate/Projects/job_ranker/signalrank/backend/data/evals/vivek_job_fit_silver.jsonl",
+      "target_roles_primary": [
+        "Innovation and R&D \u00b7 Emerging Technologies \u00b7 Rapid POC/POT & MVP \u00b7 Creative Technologist"
+      ]
+    }
+  }
+}

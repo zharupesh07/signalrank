@@ -65,6 +65,7 @@ export interface ProfileOptions {
   canonical_role_options: string[];
   location_options: string[];
   tier_options: { label: string; value: string }[];
+  scan_plan: ProfileScanPlan | null;
   title_penalty_rules: {
     strong: string[];
     adjacent: string[];
@@ -74,6 +75,35 @@ export interface ProfileOptions {
     tier_ss: string[];
     tier_s: string[];
   };
+}
+
+export interface ProfileScanPlanTerm {
+  term: string;
+  query_type: string;
+  role_family: string;
+  priority: number;
+  confidence: number;
+  risk_flags: string[];
+  evidence: string[];
+}
+
+export interface ProfileScanPlan {
+  version: string;
+  source: string;
+  use_for_scrape: boolean;
+  confidence: number;
+  search_terms: string[];
+  workday_search_terms: string[];
+  locations: string[];
+  title_filter: {
+    positive: string[];
+    negative: string[];
+  };
+  accepted_terms: ProfileScanPlanTerm[];
+  rejected_terms: ProfileScanPlanTerm[];
+  risk_flags: string[];
+  gates: Record<string, boolean>;
+  counts: Record<string, number>;
 }
 
 export interface Job {
@@ -99,12 +129,16 @@ export interface Job {
   rank_reason_up?: string | null;
   rank_reason_down?: string | null;
   rank_stage?: "deterministic" | "structured";
+  fit_band?: "strong_fit" | "adjacent_fit" | "weak_fit" | "misleading_fit" | "reject" | string | null;
+  confidence_band?: string | null;
+  explanation_summary?: string | null;
   freshness_bucket?: "fresh" | "recent" | "aging" | "stale" | "unknown";
   is_direct_source?: boolean;
   preference_score?: number | null;
   preference_bucket_key?: "top_fit" | "strong_fit" | "possible_fit" | "stretch" | "hide";
   preference_bucket?: "Top fit" | "Strong fit" | "Possible fit" | "Stretch" | "Hide";
   preference_tags?: string[];
+  risk_flags?: string[];
   archived_by_llm: boolean | null;
   archival_reason: string | null;
 }
@@ -187,6 +221,7 @@ export interface JobFeedbackRequest {
   jobType?: "all" | "fte" | "contract";
   sites?: string[];
   dateRange?: "any" | "24h" | "week" | "month";
+  matchQuality?: "all" | "strong" | "review";
 }
 
 export interface JobFeedbackResponse {
@@ -289,6 +324,12 @@ export interface RunProgress {
   scrape_reason?: string | null;
   run_kind?: string | null;
   auto_refresh?: boolean;
+  query_plan?: {
+    executed_terms?: number;
+    shadow_terms?: number;
+    rejected_candidates?: number;
+    risk_flags?: string[];
+  } | null;
 }
 
 export type RunStatus =

@@ -25,6 +25,7 @@ export type JobsListParams = {
   jobType?: "all" | "fte" | "contract";
   sites?: string[];
   dateRange?: "any" | "24h" | "week" | "month";
+  matchQuality?: "all" | "strong" | "review";
 };
 
 export const jobsApi = {
@@ -36,12 +37,13 @@ export const jobsApi = {
       sortDir = "desc",
       runId,
       search = "",
-      showArchived = true,
+      showArchived = false,
       minScore = 0,
       tiers = [],
       jobType = "all",
       sites = [],
       dateRange = "any",
+      matchQuality = "all",
     } = params;
     const qs = new URLSearchParams({
       page: String(page),
@@ -52,6 +54,7 @@ export const jobsApi = {
       min_score: String(minScore),
       job_type: jobType,
       date_range: dateRange,
+      match_quality: matchQuality,
     });
     if (runId) qs.set("run_id", runId);
     if (search) qs.set("search", search);
@@ -94,12 +97,13 @@ export const jobsApi = {
         sort: data.sort ?? "final_score",
         sort_dir: data.sortDir ?? "desc",
         search: data.search ?? "",
-        show_archived: data.showArchived ?? true,
+        show_archived: data.showArchived ?? false,
         min_score: data.minScore ?? 0,
         tiers: data.tiers ?? [],
         job_type: data.jobType ?? "all",
         sites: data.sites ?? [],
         date_range: data.dateRange ?? "any",
+        match_quality: data.matchQuality ?? "all",
       }),
     }),
   resetPreferences: (token: string, data: { clearAll?: boolean; categories?: string[] } = {}) =>

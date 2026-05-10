@@ -39,6 +39,7 @@ flowchart TD
             S2["RapidAPI JSearch"]
             S3["Free APIs\n(Remotive, Himalayas, Jobicy)"]
             S4["Google Jobs"]
+            S5["Direct ATS\n(Greenhouse, Ashby, Lever, Workday)"]
         end
 
         subgraph Scoring["Additive Scoring Engine"]
@@ -120,17 +121,31 @@ flowchart TD
 | **Jobs Page Pagination** | Page-size picker (50 / 100 / 200 / All); fetches up to 5000 jobs |
 | **Onboarding** | Guided flow to distil resume → profile → preferences |
 | **Resume-grounded Onboarding** | Resume parsing now infers skills, recent titles, salary, locations, exclusions, and target roles, then normalizes them against the supported taxonomy before prefilling the UI |
+| **Profile-derived Scan Plan** | The profile API exposes accepted search terms, Workday terms, locations, negative filters, rejected terms, and confidence so users can inspect why a scan will run |
+| **Direct ATS Scanning** | Career-Ops-style company/ATS scanning now feeds normal `jobs_raw` rows from Greenhouse, Ashby, Lever, and Workday without making Career-Ops files part of the product runtime |
 | **Profile-aware Ranking Rules** | Resume/profile archetypes tune title penalties and positive terms so adjacent-but-wrong domains do not dominate the feed |
+| **Evidence-backed Job Reasons** | Ranked jobs expose concise match reasons plus hard mismatch risk flags in the Jobs UI |
 | **Dev Panel** | Hidden 5-click debug overlay: tweak roles, locations, scoring weights, trigger runs |
-| **Multi-source Scraping** | Indeed + LinkedIn (JobSpy), RapidAPI JSearch, Remotive, Himalayas, Jobicy, Google Jobs |
+| **Multi-source Scraping** | Indeed + LinkedIn (JobSpy), RapidAPI JSearch, Remotive, Himalayas, Jobicy, Google Jobs, and direct ATS sources |
 
 ---
 
-## Resume-grounded Onboarding
+## Resume-grounded Onboarding and Scan Plans
 
 The onboarding pipeline parses resume text in the background, then writes prefill data for `target_roles`, locations, exclusions, salary, and YOE into the profile. Suggested roles are normalized against the supported role taxonomy used by the UI and query builder, so the product is no longer hard-wired to its earlier ML/data-science framing.
 
 The current taxonomy is still bounded rather than open-ended: it spans AI/data roles, backend/frontend/mobile, platform/infra/security, product, QA, and a narrow SAP track. Enterprise/SAP heuristics still exist, but only as explicit resume-driven overrides when the resume contains matching signals. After onboarding, profile archetypes inferred from the resume feed into ranking rules that tighten penalties and positive terms for the candidate's domain.
+
+SignalRank is the canonical product runtime. Career-Ops remains useful as a local migration/dev bridge through `backend/batch/career_ops_import.py`, but product users do not need Career-Ops markdown or YAML files. The profile is the source of truth for direct ATS scans, query generation, ranking, tracker state, and tailored resume generation.
+
+`GET /api/profile/options` includes a `scan_plan` debug payload derived from the current profile:
+
+- accepted search terms and Workday search terms
+- target locations and remote preferences
+- negative title terms and rejected terms
+- confidence and risk flags
+
+The Settings UI shows this scan plan next to editable target roles, excluded roles, locations, and search terms. The Jobs UI surfaces source/run context, confidence bands, evidence-backed reasons, and hard mismatch warnings so users can understand why a role ranked up or down.
 
 ### Running Onboarding Tests
 
@@ -325,6 +340,7 @@ sequenceDiagram
     participant IN as JobSpy (Indeed)
     participant LI as JobSpy (LinkedIn)
     participant PA as Parallel Sources
+    participant ATS as Direct ATS
     participant R as Ranker
     participant DB as PostgreSQL
 
@@ -345,6 +361,9 @@ sequenceDiagram
     Q->>PA: search(queries, parallel)
     Note over PA: rapidapi + free_apis + google_jobs run concurrently
     PA-->>DB: INSERT jobs_raw
+    Q->>ATS: search profile-derived company/ATS plans
+    Note over ATS: Greenhouse + Ashby + Lever + Workday emit normal jobs_raw rows
+    ATS-->>DB: INSERT jobs_raw
 
     Q->>R: score_jobs_for_user(resume, profile)
     R->>DB: SELECT jobs_raw + embeddings

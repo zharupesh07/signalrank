@@ -591,6 +591,7 @@ async def _upsert_jobs_raw(
             "location": _truncate(job.location, _MAX_LOCATION_LENGTH),
             "site": _truncate(job.site, _MAX_SITE_LENGTH),
             "date_posted": job.date_posted,
+            "availability_urls": [job.job_url],
             "role_clusters": job.role_clusters,
             "job_profile": job.job_profile,
         }
@@ -608,6 +609,7 @@ async def _upsert_jobs_raw(
                 "location": insert_stmt.excluded.location,
                 "site": insert_stmt.excluded.site,
                 "date_posted": insert_stmt.excluded.date_posted,
+                "availability_urls": insert_stmt.excluded.availability_urls,
                 "role_clusters": insert_stmt.excluded.role_clusters,
                 "job_profile": insert_stmt.excluded.job_profile,
             },

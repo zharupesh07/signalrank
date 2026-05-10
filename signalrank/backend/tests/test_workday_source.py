@@ -73,6 +73,33 @@ def test_workday_matches_query_uses_tokens_and_location():
     )
 
 
+def test_workday_normalize_job_emits_standard_raw_job():
+    company = {
+        "company": "Autodesk",
+        "base_url": "https://autodesk.wd1.myworkdayjobs.com/Ext",
+    }
+    summary = {
+        "title": "Data Engineer",
+        "externalPath": "/job/Bangalore/Data-Engineer_R1",
+        "locationsText": "Bangalore, India",
+    }
+    detail = {
+        "title": "Data Engineer",
+        "jobDescription": "Spark and Airflow pipelines",
+        "jobRequisitionLocation": {"descriptor": "Bangalore, India"},
+        "postedOn": "2026-05-01T00:00:00Z",
+    }
+
+    job = workday._normalize_job(company, summary, detail)
+
+    assert job is not None
+    assert job.job_url == "https://autodesk.wd1.myworkdayjobs.com/Ext/job/Bangalore/Data-Engineer_R1"
+    assert job.title == "Data Engineer"
+    assert job.company == "Autodesk"
+    assert job.site == "workday"
+    assert job.location == "Bangalore, India"
+
+
 @pytest.mark.asyncio
 async def test_probe_company_reports_status(monkeypatch):
     class _Response:

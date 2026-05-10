@@ -24,7 +24,7 @@ import { formatPenaltyPattern } from "@/lib/formatting";
 import { swr } from "@/lib/cache";
 import { loadProfileOptions, PROFILE_OPTIONS_FALLBACK } from "@/lib/profile-options";
 import { makeQueuedRun, upsertRunCaches } from "@/lib/run-cache";
-import type { Profile, ResumeEditor, Run } from "@/types";
+import type { Profile, ProfileScanPlan, ResumeEditor, Run } from "@/types";
 
 const EMPTY_RESUME_EDITOR: ResumeEditor = {
   name: "",
@@ -101,6 +101,7 @@ export default function SettingsPage() {
   const [roleOptions, setRoleOptions] = useState<string[]>(PROFILE_OPTIONS_FALLBACK.role_options);
   const [locationOptions, setLocationOptions] = useState<string[]>(PROFILE_OPTIONS_FALLBACK.location_options);
   const [titlePenaltyRules, setTitlePenaltyRules] = useState(PROFILE_OPTIONS_FALLBACK.title_penalty_rules);
+  const [scanPlan, setScanPlan] = useState<ProfileScanPlan | null>(PROFILE_OPTIONS_FALLBACK.scan_plan);
 
   const [initialTierSS, setInitialTierSS] = useState<string[]>([]);
   const [initialTierS, setInitialTierS] = useState<string[]>([]);
@@ -167,6 +168,7 @@ export default function SettingsPage() {
         if (cancelled) return;
         setRoleOptions(options.role_options);
         setLocationOptions(options.location_options);
+        setScanPlan(options.scan_plan);
         setTitlePenaltyRules(options.title_penalty_rules);
         setInitialTierSS(options.company_tier_lists.tier_ss);
         setInitialTierS(options.company_tier_lists.tier_s);
@@ -485,6 +487,7 @@ export default function SettingsPage() {
                 scraperMaxTerms={scraperMaxTerms}
                 setScraperMaxTerms={setScraperMaxTerms}
                 titlePenaltyRules={titlePenaltyRules}
+                scanPlan={scanPlan}
                 initialTierSS={initialTierSS}
                 initialTierS={initialTierS}
                 initialPenaltyStrong={initialPenaltyStrong}

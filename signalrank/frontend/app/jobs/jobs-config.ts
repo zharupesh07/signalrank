@@ -25,6 +25,7 @@ export interface Filters {
   jobType: "all" | "fte" | "contract";
   sites: string[];
   dateRange: "any" | "24h" | "week" | "month";
+  matchQuality: "all" | "strong" | "review";
 }
 
 export const DEFAULT_FILTERS: Filters = {
@@ -33,6 +34,7 @@ export const DEFAULT_FILTERS: Filters = {
   jobType: "all",
   sites: [],
   dateRange: "any",
+  matchQuality: "all",
 };
 
 export const TIERS = [
@@ -53,7 +55,42 @@ export const JOB_PRESETS = [
       filters: { ...DEFAULT_FILTERS, minScore: 70 },
       search: "",
       sorting: [{ id: "final_score", desc: true }] as SortingState,
-      showArchived: true,
+      showArchived: false,
+    }),
+  },
+  {
+    key: "strong",
+    label: "Strong Only",
+    apply: () => ({
+      filters: { ...DEFAULT_FILTERS, minScore: 60, matchQuality: "strong" as const },
+      search: "",
+      sorting: [{ id: "final_score", desc: true }] as SortingState,
+      showArchived: false,
+    }),
+  },
+  {
+    key: "fresh-strong",
+    label: "Fresh Strong",
+    apply: () => ({
+      filters: {
+        ...DEFAULT_FILTERS,
+        minScore: 60,
+        dateRange: "week" as const,
+        matchQuality: "strong" as const,
+      },
+      search: "",
+      sorting: [{ id: "final_score", desc: true }] as SortingState,
+      showArchived: false,
+    }),
+  },
+  {
+    key: "needs-review",
+    label: "Needs Review",
+    apply: () => ({
+      filters: { ...DEFAULT_FILTERS, minScore: 35, matchQuality: "review" as const },
+      search: "",
+      sorting: [{ id: "final_score", desc: true }] as SortingState,
+      showArchived: false,
     }),
   },
   {
@@ -63,7 +100,7 @@ export const JOB_PRESETS = [
       filters: { ...DEFAULT_FILTERS, dateRange: "week" as const },
       search: "",
       sorting: [{ id: "date_posted", desc: true }] as SortingState,
-      showArchived: true,
+      showArchived: false,
     }),
   },
   {
@@ -73,7 +110,7 @@ export const JOB_PRESETS = [
       filters: { ...DEFAULT_FILTERS, sites: ["greenhouse", "ashby", "lever"] },
       search: "",
       sorting: [{ id: "final_score", desc: true }] as SortingState,
-      showArchived: true,
+      showArchived: false,
     }),
   },
   {
@@ -83,7 +120,7 @@ export const JOB_PRESETS = [
       filters: { ...DEFAULT_FILTERS, sites: ["greenhouse", "ashby", "lever"], dateRange: "week" as const },
       search: "",
       sorting: [{ id: "date_posted", desc: true }] as SortingState,
-      showArchived: true,
+      showArchived: false,
     }),
   },
   {
@@ -93,7 +130,7 @@ export const JOB_PRESETS = [
       filters: { ...DEFAULT_FILTERS, tiers: ["tier_ss", "tier_s", "tier_a"] },
       search: "",
       sorting: [{ id: "final_score", desc: true }] as SortingState,
-      showArchived: true,
+      showArchived: false,
     }),
   },
   {
@@ -103,7 +140,7 @@ export const JOB_PRESETS = [
       filters: { ...DEFAULT_FILTERS, jobType: "fte" as const },
       search: "",
       sorting: [{ id: "final_score", desc: true }] as SortingState,
-      showArchived: true,
+      showArchived: false,
     }),
   },
   {
@@ -113,7 +150,7 @@ export const JOB_PRESETS = [
       filters: { ...DEFAULT_FILTERS },
       search: "remote",
       sorting: [{ id: "final_score", desc: true }] as SortingState,
-      showArchived: true,
+      showArchived: false,
     }),
   },
 ];
@@ -151,6 +188,7 @@ export function countActiveFilters(filters: Filters): number {
   if (filters.jobType !== "all") n++;
   if (filters.sites.length > 0) n++;
   if (filters.dateRange !== "any") n++;
+  if (filters.matchQuality !== "all") n++;
   return n;
 }
 

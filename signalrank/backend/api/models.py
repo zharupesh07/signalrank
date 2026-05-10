@@ -80,6 +80,9 @@ class JobRaw(Base):
     location: Mapped[str | None] = mapped_column(String(255))
     site: Mapped[str | None] = mapped_column(String(100))
     date_posted: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    availability_urls: Mapped[list | None] = mapped_column(
+        JSONB, server_default=text("'[]'::jsonb")
+    )
     embedding: Mapped[list[float] | None] = mapped_column(Vector(384))
     job_profile: Mapped[dict | None] = mapped_column(JSONB)
     ingested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

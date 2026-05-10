@@ -103,6 +103,77 @@ def test_ats_direct_api_url_builder_supports_all_sites():
     ) == "https://careers.smartrecruiters.com/Freshworks"
 
 
+def test_ats_direct_normalizes_greenhouse_ashby_and_lever_payloads():
+    greenhouse_jobs = ats_direct._normalize_greenhouse(
+        {"company": "Acme"},
+        {
+            "jobs": [
+                {
+                    "absolute_url": "https://boards.greenhouse.io/acme/jobs/1",
+                    "title": "Backend Engineer",
+                    "content": "<p>Python APIs</p>",
+                    "location": {"name": "Remote"},
+                    "first_published": "2026-05-01T00:00:00Z",
+                }
+            ]
+        },
+    )
+    ashby_jobs = ats_direct._normalize_ashby(
+        {"company": "Acme"},
+        {
+            "jobs": [
+                {
+                    "jobUrl": "https://jobs.ashbyhq.com/acme/2",
+                    "title": "Frontend Engineer",
+                    "descriptionPlain": "React UI",
+                    "location": "Pune",
+                    "publishedDate": "2026-05-02T00:00:00Z",
+                }
+            ]
+        },
+    )
+    lever_jobs = ats_direct._normalize_lever(
+        {"company": "Acme"},
+        [
+            {
+                "hostedUrl": "https://jobs.lever.co/acme/3",
+                "text": "Data Engineer",
+                "descriptionPlain": "Spark pipelines",
+                "categories": {"location": "Bangalore"},
+            }
+        ],
+    )
+
+    assert greenhouse_jobs[0].site == "greenhouse"
+    assert greenhouse_jobs[0].location == "Remote"
+    assert ashby_jobs[0].site == "ashby"
+    assert ashby_jobs[0].description == "React UI"
+    assert lever_jobs[0].site == "lever"
+    assert lever_jobs[0].title == "Data Engineer"
+
+
+def test_ats_direct_matches_query_applies_title_and_location_filter():
+    job = RawJob(
+        job_url="https://example.com/frontend",
+        title="Frontend Engineer",
+        company="Acme",
+        description="Build React and TypeScript interfaces",
+        location="Pune, India",
+        site="ashby",
+        date_posted=None,
+    )
+
+    assert ats_direct._matches_query(
+        job, SearchQuery(term="Frontend Engineer", location="Pune", country="India")
+    )
+    assert not ats_direct._matches_query(
+        job, SearchQuery(term="Backend Engineer", location="Pune", country="India")
+    )
+    assert not ats_direct._matches_query(
+        job, SearchQuery(term="Frontend Engineer", location="Bangalore", country="India")
+    )
+
+
 @pytest.mark.asyncio
 async def test_probe_company_reports_status(monkeypatch):
     class _Response:

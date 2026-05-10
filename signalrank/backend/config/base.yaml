@@ -141,6 +141,11 @@ ranking:
     misleading_multiplier: 0.78
     reject_multiplier: 0.55
 
+  intent_matching:
+    shadow_enabled: true
+    use_for_final_score: false
+    llm_fallback_enabled: false
+
   profile_title_rule_scoring:
     strong:
       semantic_floor: 0.56
@@ -411,6 +416,11 @@ scraping:
   min_description_length: 0
   use_multiprocessing: true
   supports_hours_old: true
+  intent_query_planner:
+    shadow_enabled: true
+    use_for_scrape: true
+    default_max_terms: 8
+    default_max_locations: 3
 
   # Set jobspy_only: true to disable ALL sources except JobSpy/Indeed.
   # Queries run sequentially (one at a time) with a small delay to avoid 403s.

@@ -12,6 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from batch import query_builder
 from api.models import JobRaw, Profile, Run
 from domain.job_profile import build_job_profile
 from domain.role_clusters import infer_clusters_from_job_text
@@ -60,7 +61,9 @@ def _phrase_match_score(title: str | None, phrases: list[str]) -> int:
     return score
 
 
-def _location_signal(job_location: str, preferred_locations: list[str], preferred_modes: set[str]) -> int:
+def _location_signal(
+    job_location: str, preferred_locations: list[str], preferred_modes: set[str]
+) -> int:
     normalized_job_location = _normalize_key(job_location)
     if "remote" in normalized_job_location:
         return 2 if ("remote" in preferred_modes or not preferred_locations) else 1
@@ -70,7 +73,10 @@ def _location_signal(job_location: str, preferred_locations: list[str], preferre
         normalized_location = _normalize_key(location)
         if not normalized_location:
             continue
-        if normalized_location in normalized_job_location or normalized_job_location in normalized_location:
+        if (
+            normalized_location in normalized_job_location
+            or normalized_job_location in normalized_location
+        ):
             return 1
     return 0
 
@@ -99,7 +105,9 @@ def select_fresh_jobs_for_embedding(
         ]
         if str(role or "").strip()
     ]
-    target_role_keys = {_normalize_key(role) for role in target_roles if _normalize_key(role)}
+    target_role_keys = {
+        _normalize_key(role) for role in target_roles if _normalize_key(role)
+    }
     target_role_tokens = _tokenize_text(" ".join(target_roles))
     negative_roles = {
         _normalize_key(role)
@@ -116,7 +124,11 @@ def select_fresh_jobs_for_embedding(
         for mode in (profile.get("preferred_work_modes") or [])
         if _normalize_key(mode)
     }
-    target_clusters = {str(cluster) for cluster in (profile.get("career_clusters") or []) if str(cluster or "").strip()}
+    target_clusters = {
+        str(cluster)
+        for cluster in (profile.get("career_clusters") or [])
+        if str(cluster or "").strip()
+    }
     must_have_skills = {
         _normalize_key(skill)
         for skill in (profile.get("must_have_skills") or [])
@@ -146,7 +158,11 @@ def select_fresh_jobs_for_embedding(
 
     for row in rows:
         job_profile = row.job_profile if isinstance(row.job_profile, dict) else {}
-        role_clusters = {str(cluster) for cluster in (row.role_clusters or []) if str(cluster or "").strip()}
+        role_clusters = {
+            str(cluster)
+            for cluster in (row.role_clusters or [])
+            if str(cluster or "").strip()
+        }
         title = row.title or ""
         company = row.company or ""
         location = row.location or ""
@@ -159,10 +175,20 @@ def select_fresh_jobs_for_embedding(
             ]
             if _normalize_key(skill)
         }
-        red_flags = {str(flag) for flag in (job_profile.get("red_flags") or []) if str(flag or "").strip()}
+        red_flags = {
+            str(flag)
+            for flag in (job_profile.get("red_flags") or [])
+            if str(flag or "").strip()
+        }
         description_quality = float(job_profile.get("description_quality") or 0)
-        role_titles = [str(item) for item in (job_profile.get("role_titles_normalized") or []) if str(item or "").strip()]
-        domain = _normalize_key(str(job_profile.get("domain") or job_profile.get("role_family") or ""))
+        role_titles = [
+            str(item)
+            for item in (job_profile.get("role_titles_normalized") or [])
+            if str(item or "").strip()
+        ]
+        domain = _normalize_key(
+            str(job_profile.get("domain") or job_profile.get("role_family") or "")
+        )
         title_tokens = _tokenize_text(title)
 
         score = 0
@@ -178,7 +204,9 @@ def select_fresh_jobs_for_embedding(
             score += 3 + min(title_hits - 1, 2)
             positive_signal = True
             metrics["boosted_title"] += 1
-        elif any(_normalize_key(role_title) in target_role_keys for role_title in role_titles):
+        elif any(
+            _normalize_key(role_title) in target_role_keys for role_title in role_titles
+        ):
             score += 2
             positive_signal = True
             metrics["boosted_title"] += 1
@@ -234,7 +262,12 @@ def select_fresh_jobs_for_embedding(
             continue
         seen_fingerprints[dedupe_key] = (score, row.job_url)
 
-    selected = [job_url for _, job_url in sorted(seen_fingerprints.values(), key=lambda item: (-item[0], item[1]))]
+    selected = [
+        job_url
+        for _, job_url in sorted(
+            seen_fingerprints.values(), key=lambda item: (-item[0], item[1])
+        )
+    ]
     if not selected:
         selected = [row.job_url for row in rows]
     metrics["selected_count"] = len(selected)
@@ -262,12 +295,15 @@ async def _should_skip_scrape(
         if mode == "full":
             deep_scan_cutoff = now - timedelta(hours=48)
             recent_runs_result = await db.execute(
-                select(Run).where(
+                select(Run)
+                .where(
                     Run.user_id == user_id,
                     Run.status == "success",
                     Run.finished_at >= deep_scan_cutoff,
                     Run.id != run_id,
-                ).order_by(Run.finished_at.desc()).limit(20)
+                )
+                .order_by(Run.finished_at.desc())
+                .limit(20)
             )
             recent_runs = recent_runs_result.scalars().all()
             skip_scrape = any(
@@ -281,13 +317,15 @@ async def _should_skip_scrape(
             scrape_threshold_hours = 1
             scrape_cutoff = now - timedelta(hours=scrape_threshold_hours)
             recent_scrape = await db.execute(
-                select(Run.id).where(
+                select(Run.id)
+                .where(
                     Run.user_id == user_id,
                     Run.status == "success",
                     Run.scrape_count.is_not(None),
                     Run.finished_at >= scrape_cutoff,
                     Run.id != run_id,
-                ).limit(1)
+                )
+                .limit(1)
             )
             skip_scrape = recent_scrape.scalar_one_or_none() is not None
         if skip_scrape:
@@ -338,6 +376,35 @@ async def execute_scrape_pipeline(
     else:
         queries = []
 
+    query_plan_shadow = (
+        query_builder.build_query_plan_debug(
+            profile,
+            max_terms=scraper_max_terms,
+        )
+        if profile
+        else None
+    )
+    if query_plan_shadow:
+        shadow_counts = query_plan_shadow.get("counts") or {}
+        logger.info(
+            "Run %s query plan stats: executed_terms=%d shadow_terms=%d rejected_candidates=%d risk_flags=%s",
+            run_id,
+            len({query.term for query in queries}),
+            int(shadow_counts.get("intent_terms") or 0),
+            int(shadow_counts.get("rejected_candidates") or 0),
+            ",".join(query_plan_shadow.get("risk_flags") or []),
+        )
+        await progress_writer(
+            query_plan={
+                "executed_terms": len({query.term for query in queries}),
+                "shadow_terms": int(shadow_counts.get("intent_terms") or 0),
+                "rejected_candidates": int(
+                    shadow_counts.get("rejected_candidates") or 0
+                ),
+                "risk_flags": query_plan_shadow.get("risk_flags") or [],
+            }
+        )
+
     skip_scrape, scrape_reason, scrape_threshold_hours = await _should_skip_scrape(
         db,
         user_id=user_id,
@@ -352,7 +419,11 @@ async def execute_scrape_pipeline(
         logger.info(
             "Run %s skipping scrape%s",
             run_id,
-            "" if disable_scraping else f" - recent scrape within {scrape_threshold_hours}h threshold",
+            (
+                ""
+                if disable_scraping
+                else f" - recent scrape within {scrape_threshold_hours}h threshold"
+            ),
         )
 
     scrape_count = 0
@@ -372,10 +443,12 @@ async def execute_scrape_pipeline(
                 **kwargs,
             )
 
-        scrape_queries, cached_query_job_urls = await scraper_mod.plan_incremental_scrape(
-            scrape_queries,
-            scraper_cfg,
-            db,
+        scrape_queries, cached_query_job_urls = (
+            await scraper_mod.plan_incremental_scrape(
+                scrape_queries,
+                scraper_cfg,
+                db,
+            )
         )
         if cached_query_job_urls:
             logger.info(
@@ -384,9 +457,14 @@ async def execute_scrape_pipeline(
                 len(cached_query_job_urls),
             )
         if queries and not scrape_queries:
-            logger.info("Run %s incremental scrape found all queries fresh; skipping network fetch", run_id)
+            logger.info(
+                "Run %s incremental scrape found all queries fresh; skipping network fetch",
+                run_id,
+            )
 
-        stop_state = await check_run_stop_state(session_factory, run_id, claim_token=claim_token)
+        stop_state = await check_run_stop_state(
+            session_factory, run_id, claim_token=claim_token
+        )
         if stop_state:
             raise ScrapePipelineStopRequested(stop_state)
 
@@ -401,7 +479,10 @@ async def execute_scrape_pipeline(
                     values = [scraper_mod.raw_job_to_dict(job) for job in batch]
                     for v in values:
                         v["role_clusters"] = sorted(
-                            infer_clusters_from_job_text(v.get("title"), v.get("description")) - {"general"}
+                            infer_clusters_from_job_text(
+                                v.get("title"), v.get("description")
+                            )
+                            - {"general"}
                         )
                         v["job_profile"] = build_job_profile(
                             title=v.get("title"),
@@ -414,22 +495,20 @@ async def execute_scrape_pipeline(
                             cfg=cfg,
                         )
                     insert_stmt = pg_insert(JobRaw).values(values)
-                    stmt = (
-                        insert_stmt
-                        .on_conflict_do_update(
-                            index_elements=["job_url"],
-                            set_={
-                                "title": insert_stmt.excluded.title,
-                                "company": insert_stmt.excluded.company,
-                                "description": insert_stmt.excluded.description,
-                                "location": insert_stmt.excluded.location,
-                                "site": insert_stmt.excluded.site,
-                                "date_posted": insert_stmt.excluded.date_posted,
-                                "role_clusters": insert_stmt.excluded.role_clusters,
-                                "job_profile": insert_stmt.excluded.job_profile,
-                                "ingested_at": insert_stmt.excluded.ingested_at,
-                            },
-                        )
+                    stmt = insert_stmt.on_conflict_do_update(
+                        index_elements=["job_url"],
+                        set_={
+                            "title": insert_stmt.excluded.title,
+                            "company": insert_stmt.excluded.company,
+                            "description": insert_stmt.excluded.description,
+                            "location": insert_stmt.excluded.location,
+                            "site": insert_stmt.excluded.site,
+                            "date_posted": insert_stmt.excluded.date_posted,
+                            "availability_urls": insert_stmt.excluded.availability_urls,
+                            "role_clusters": insert_stmt.excluded.role_clusters,
+                            "job_profile": insert_stmt.excluded.job_profile,
+                            "ingested_at": insert_stmt.excluded.ingested_at,
+                        },
                     )
                     await pdb.execute(stmt)
                 await pdb.commit()
@@ -458,7 +537,9 @@ async def execute_scrape_pipeline(
         else:
             logger.info("Run %s scrape no queries after cache reuse", run_id)
 
-        stop_state = await check_run_stop_state(session_factory, run_id, claim_token=claim_token)
+        stop_state = await check_run_stop_state(
+            session_factory, run_id, claim_token=claim_token
+        )
         if stop_state:
             raise ScrapePipelineStopRequested(stop_state)
 
@@ -510,7 +591,9 @@ async def execute_scrape_pipeline(
 
         if freshly_scraped_job_urls:
             t_embed = time.monotonic()
-            await embed_new_jobs(db, freshly_scraped_job_urls, update_progress=_update_progress)
+            await embed_new_jobs(
+                db, freshly_scraped_job_urls, update_progress=_update_progress
+            )
             logger.info(
                 "Run %s embed done",
                 run_id,

@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from pathlib import Path
-from types import SimpleNamespace
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 
 import pytest
 
@@ -43,7 +42,10 @@ def test_extract_generic_profile_infers_innovation_iot_roles_and_skills():
     profile = script._extract_generic_profile(resume_text, "vivek-like")
 
     assert "Innovation Lead" in profile["suggested_roles"]
-    assert "IoT Solutions Lead" in profile["suggested_roles"] or "IoT Engineer" in profile["suggested_roles"]
+    assert (
+        "IoT Solutions Lead" in profile["suggested_roles"]
+        or "IoT Engineer" in profile["suggested_roles"]
+    )
     assert "IoT" in profile["skills"]
     assert "3D Printing" in profile["skills"]
     assert "Rapid Prototyping" in profile["skills"]
@@ -72,7 +74,13 @@ def test_score_jobs_prefers_generic_overlap_without_domain_boost():
         "suggested_locations": ["Bangalore"],
         "suggested_exclusions": ["Intern", "Junior"],
         "avoid_terms": ["Intern", "Junior"],
-        "domains": [{"name": "Software Engineering", "confidence": 0.9, "evidence": ["software engineer"]}],
+        "domains": [
+            {
+                "name": "Software Engineering",
+                "confidence": 0.9,
+                "evidence": ["software engineer"],
+            }
+        ],
         "industries": [],
         "seniority_band": "senior",
         "years_of_experience": 8,
@@ -211,14 +219,26 @@ def test_build_matching_signals_prioritizes_innovation_skills_for_innovation_rol
         "target_roles": [{"title": "Innovation Lead", "priority": "primary"}],
         "suggested_roles": ["Innovation Lead", "Creative Technologist"],
         "recent_titles": ["Innovation Lead"],
-        "skills": ["Python", "Java", "IoT", "Conversational AI", "3D Printing", "Rapid Prototyping"],
+        "skills": [
+            "Python",
+            "Java",
+            "IoT",
+            "Conversational AI",
+            "3D Printing",
+            "Rapid Prototyping",
+        ],
         "must_have_terms": [],
         "seniority_band": "lead",
     }
 
     signals = script._build_matching_signals(profile)
 
-    assert signals["must_have_skills"][:4] == ["3D Printing", "Conversational AI", "IoT", "Rapid Prototyping"]
+    assert signals["must_have_skills"][:4] == [
+        "3D Printing",
+        "Conversational AI",
+        "IoT",
+        "Rapid Prototyping",
+    ]
 
 
 def test_build_deterministic_queries_adds_innovation_keyword_lane():
@@ -254,7 +274,9 @@ def test_score_jobs_penalizes_innovation_profile_drift_terms():
         "must_have_terms": ["IoT", "Conversational AI"],
         "suggested_locations": ["Bangalore"],
         "seniority_band": "lead",
-        "domains": [{"name": "Innovation", "confidence": 0.9, "evidence": ["innovation"]}],
+        "domains": [
+            {"name": "Innovation", "confidence": 0.9, "evidence": ["innovation"]}
+        ],
         "industries": [],
         "matching_signals": {
             "primary_roles": ["Innovation Lead"],
@@ -296,6 +318,437 @@ def test_score_jobs_penalizes_innovation_profile_drift_terms():
     assert scores[0]["final_score"] > scores[1]["final_score"]
 
 
+def test_score_jobs_caps_hard_negative_manager_titles():
+    profile = {
+        "suggested_roles": ["Creative Technologist"],
+        "recent_titles": ["Innovation Engineer"],
+        "skills": ["IoT", "Computer Vision", "Conversational AI"],
+        "suggested_locations": ["Bangalore"],
+        "seniority_band": "lead",
+        "matching_signals": {
+            "primary_roles": ["Creative Technologist"],
+            "adjacent_roles": ["Innovation Engineer"],
+            "broadened_roles": [],
+            "must_have_skills": ["Computer Vision", "Conversational AI"],
+            "supporting_skills": ["IoT"],
+            "domain_terms": ["Innovation"],
+            "industry_terms": [],
+            "preferred_locations": ["Bangalore"],
+            "avoid_terms": [],
+            "curated_queries": ["Creative Technologist computer vision"],
+            "seniority_band": "lead",
+            "weights": dict(script.DEFAULT_SCORE_WEIGHTS),
+        },
+    }
+    jobs = [
+        script.JobRecord(
+            job_url="https://example.com/manager",
+            title="Engineering Manager",
+            company="Example",
+            location="Bangalore",
+            site="indeed",
+            description="Lead teams for innovation, IoT, computer vision, and AI delivery.",
+        ),
+        script.JobRecord(
+            job_url="https://example.com/cv",
+            title="Computer Vision Engineer",
+            company="Example",
+            location="Bangalore",
+            site="indeed",
+            description="Build computer vision and conversational AI prototypes for IoT products.",
+        ),
+    ]
+
+    scores = script._score_jobs(profile, jobs, agentic=False)
+    manager = next(item for item in scores if item["title"] == "Engineering Manager")
+
+    assert manager["fit_band"] == "reject"
+    assert manager["final_score"] <= 39.0
+    assert scores[0]["title"] == "Computer Vision Engineer"
+
+
+def test_score_jobs_allows_target_manager_titles():
+    profile = {
+        "suggested_roles": ["Product Manager"],
+        "recent_titles": ["Product Manager"],
+        "skills": ["roadmap", "analytics"],
+        "suggested_locations": ["Bangalore"],
+        "seniority_band": "senior",
+        "matching_signals": {
+            "primary_roles": ["Product Manager"],
+            "adjacent_roles": [],
+            "broadened_roles": [],
+            "must_have_skills": ["roadmap", "analytics"],
+            "supporting_skills": [],
+            "domain_terms": ["product strategy"],
+            "industry_terms": [],
+            "preferred_locations": ["Bangalore"],
+            "avoid_terms": [],
+            "curated_queries": ["Product Manager roadmap"],
+            "seniority_band": "senior",
+            "weights": dict(script.DEFAULT_SCORE_WEIGHTS),
+        },
+    }
+    jobs = [
+        script.JobRecord(
+            job_url="https://example.com/product-manager",
+            title="Product Manager",
+            company="Example",
+            location="Bangalore",
+            site="indeed",
+            description="Own roadmap, product strategy, analytics, and discovery.",
+        )
+    ]
+
+    scores = script._score_jobs(profile, jobs, agentic=False)
+
+    assert scores[0]["fit_band"] != "reject"
+
+
+def test_score_jobs_boosts_direct_sap_fit():
+    profile = {
+        "suggested_roles": ["SAP SD Consultant"],
+        "recent_titles": ["SAP SD Consultant"],
+        "skills": ["SAP SD", "S/4HANA", "Order to Cash"],
+        "suggested_locations": ["India"],
+        "seniority_band": "senior",
+        "matching_signals": {
+            "primary_roles": ["SAP SD Consultant"],
+            "adjacent_roles": [],
+            "broadened_roles": [],
+            "must_have_skills": ["SAP SD", "S/4HANA", "Order to Cash"],
+            "supporting_skills": [],
+            "domain_terms": ["SAP"],
+            "industry_terms": [],
+            "preferred_locations": ["India"],
+            "avoid_terms": [],
+            "curated_queries": ["SAP SD Consultant"],
+            "seniority_band": "senior",
+            "weights": dict(script.DEFAULT_SCORE_WEIGHTS),
+        },
+    }
+    jobs = [
+        script.JobRecord(
+            job_url="https://example.com/sap",
+            title="SAP SD + SAP GTS Consultant",
+            company="Example",
+            location="India",
+            site="indeed",
+            description="SAP SD, SAP GTS, S/4HANA, and order to cash process design.",
+        )
+    ]
+
+    scores = script._score_jobs(profile, jobs, agentic=False)
+
+    assert scores[0]["fit_band"] != "reject"
+    assert scores[0]["domain_role_boost_score"] > 0
+
+
+def test_score_jobs_does_not_boost_unrelated_sap_module_for_specific_sap_profile():
+    profile = {
+        "suggested_roles": ["SAP SD Consultant"],
+        "recent_titles": ["SAP SD Consultant"],
+        "skills": ["SAP SD", "Order to Cash"],
+        "suggested_locations": ["India"],
+        "seniority_band": "senior",
+        "matching_signals": {
+            "primary_roles": ["SAP SD Consultant"],
+            "adjacent_roles": [],
+            "broadened_roles": [],
+            "must_have_skills": ["SAP SD", "Order to Cash"],
+            "supporting_skills": [],
+            "domain_terms": ["SAP"],
+            "industry_terms": [],
+            "preferred_locations": ["India"],
+            "avoid_terms": [],
+            "curated_queries": ["SAP SD Consultant"],
+            "seniority_band": "senior",
+            "weights": dict(script.DEFAULT_SCORE_WEIGHTS),
+        },
+    }
+    jobs = [
+        script.JobRecord(
+            job_url="https://example.com/sap-bw",
+            title="SAP BW Consultant",
+            company="Example",
+            location="India",
+            site="indeed",
+            description="SAP BW reporting and analytics.",
+        )
+    ]
+
+    scores = script._score_jobs(profile, jobs, agentic=False)
+
+    assert scores[0]["domain_role_boost_score"] == 0
+    assert scores[0]["domain_mismatch_penalty"] > 0
+    assert scores[0]["fit_band"] != "strong_fit"
+
+
+def test_score_jobs_boosts_direct_network_automation_fit():
+    profile = {
+        "suggested_roles": ["Network Automation Engineer"],
+        "recent_titles": ["Network Automation Engineer"],
+        "skills": ["ServiceNow", "routing", "firewall"],
+        "suggested_locations": ["Pune"],
+        "seniority_band": "senior",
+        "matching_signals": {
+            "primary_roles": ["Network Automation Engineer"],
+            "adjacent_roles": [],
+            "broadened_roles": [],
+            "must_have_skills": ["ServiceNow", "routing", "firewall"],
+            "supporting_skills": [],
+            "domain_terms": ["network automation"],
+            "industry_terms": [],
+            "preferred_locations": ["Pune"],
+            "avoid_terms": [],
+            "curated_queries": ["Network Automation Engineer ServiceNow"],
+            "seniority_band": "senior",
+            "weights": dict(script.DEFAULT_SCORE_WEIGHTS),
+        },
+    }
+    jobs = [
+        script.JobRecord(
+            job_url="https://example.com/network",
+            title="Network Engineer Senior",
+            company="Example",
+            location="Pune",
+            site="indeed",
+            description="Routing, firewall, CCNP, and network automation workflows.",
+        )
+    ]
+
+    scores = script._score_jobs(profile, jobs, agentic=False)
+
+    assert scores[0]["fit_band"] != "reject"
+    assert scores[0]["domain_role_boost_score"] > 0
+
+
+def test_score_jobs_does_not_boost_sre_for_network_automation_profile():
+    profile = {
+        "suggested_roles": ["Network Automation Engineer"],
+        "recent_titles": ["Network Automation Engineer"],
+        "skills": ["ServiceNow", "routing", "firewall"],
+        "suggested_locations": ["Pune"],
+        "seniority_band": "senior",
+        "matching_signals": {
+            "primary_roles": ["Network Automation Engineer"],
+            "adjacent_roles": [],
+            "broadened_roles": [],
+            "must_have_skills": ["ServiceNow", "routing", "firewall"],
+            "supporting_skills": [],
+            "domain_terms": ["network automation"],
+            "industry_terms": [],
+            "preferred_locations": ["Pune"],
+            "avoid_terms": [],
+            "curated_queries": ["Network Automation Engineer ServiceNow"],
+            "seniority_band": "senior",
+            "weights": dict(script.DEFAULT_SCORE_WEIGHTS),
+        },
+    }
+    jobs = [
+        script.JobRecord(
+            job_url="https://example.com/sre",
+            title="Site Reliability Engineer",
+            company="Example",
+            location="Pune",
+            site="indeed",
+            description="Reliability automation, cloud platforms, and incident response.",
+        )
+    ]
+
+    scores = script._score_jobs(profile, jobs, agentic=False)
+
+    assert scores[0]["domain_role_boost_score"] == 0
+
+
+def test_score_jobs_rejects_generic_sre_for_network_automation_profile():
+    profile = {
+        "suggested_roles": ["Network Automation Engineer"],
+        "recent_titles": ["Network Automation Engineer"],
+        "skills": ["ServiceNow", "routing", "firewall"],
+        "suggested_locations": ["Pune"],
+        "seniority_band": "senior",
+        "matching_signals": {
+            "primary_roles": ["Network Automation Engineer"],
+            "adjacent_roles": [],
+            "broadened_roles": [],
+            "must_have_skills": ["ServiceNow", "routing", "firewall"],
+            "supporting_skills": [],
+            "domain_terms": ["network automation"],
+            "industry_terms": [],
+            "preferred_locations": ["Pune"],
+            "avoid_terms": [],
+            "curated_queries": ["Network Automation Engineer ServiceNow"],
+            "seniority_band": "senior",
+            "weights": dict(script.DEFAULT_SCORE_WEIGHTS),
+        },
+    }
+    jobs = [
+        script.JobRecord(
+            job_url="https://example.com/sre",
+            title="Site Reliability Engineer",
+            company="Example",
+            location="Pune",
+            site="indeed",
+            description=(
+                "Reliability automation for Kubernetes services with incident response, "
+                "Linux, and cloud platforms."
+            ),
+        ),
+        script.JobRecord(
+            job_url="https://example.com/network",
+            title="Network Operations Automation Engineer",
+            company="Example",
+            location="Pune",
+            site="indeed",
+            description="Network automation, firewall, routing, VPN, and ServiceNow workflows.",
+        ),
+    ]
+
+    scores = script._score_jobs(profile, jobs, agentic=False)
+    sre = next(item for item in scores if item["title"] == "Site Reliability Engineer")
+
+    assert scores[0]["title"] == "Network Operations Automation Engineer"
+    assert sre["fit_band"] == "reject"
+    assert sre["final_score"] <= 39.0
+
+
+def test_score_jobs_rejects_backend_cloud_network_for_network_automation_profile():
+    profile = {
+        "suggested_roles": ["Network Automation Engineer"],
+        "recent_titles": ["Network Automation Engineer"],
+        "skills": ["ServiceNow", "routing", "firewall"],
+        "suggested_locations": ["Pune"],
+        "seniority_band": "senior",
+        "matching_signals": {
+            "primary_roles": ["Network Automation Engineer"],
+            "adjacent_roles": [],
+            "broadened_roles": [],
+            "must_have_skills": ["ServiceNow", "routing", "firewall"],
+            "supporting_skills": [],
+            "domain_terms": ["network automation"],
+            "industry_terms": [],
+            "preferred_locations": ["Pune"],
+            "avoid_terms": [],
+            "curated_queries": ["Network Automation Engineer ServiceNow"],
+            "seniority_band": "senior",
+            "weights": dict(script.DEFAULT_SCORE_WEIGHTS),
+        },
+    }
+    jobs = [
+        script.JobRecord(
+            job_url="https://example.com/backend-network",
+            title="Senior Software Engineer (Backend, Cloud Network Management)",
+            company="Example",
+            location="Pune",
+            site="indeed",
+            description=(
+                "Build backend services for network device provisioning, telemetry, "
+                "and cloud managed networking."
+            ),
+        )
+    ]
+
+    scores = script._score_jobs(profile, jobs, agentic=False)
+
+    assert scores[0]["fit_band"] == "reject"
+    assert scores[0]["final_score"] <= 39.0
+
+
+def test_score_jobs_rejects_generic_software_for_innovation_profile():
+    profile = {
+        "suggested_roles": ["Creative Technologist"],
+        "recent_titles": ["Innovation Engineer"],
+        "skills": ["IoT", "Computer Vision", "Conversational AI"],
+        "suggested_locations": ["Bangalore"],
+        "seniority_band": "lead",
+        "matching_signals": {
+            "primary_roles": ["Creative Technologist"],
+            "adjacent_roles": ["Innovation Engineer"],
+            "broadened_roles": [],
+            "must_have_skills": ["Computer Vision", "Conversational AI"],
+            "supporting_skills": ["IoT"],
+            "domain_terms": ["Innovation"],
+            "industry_terms": [],
+            "preferred_locations": ["Bangalore"],
+            "avoid_terms": [],
+            "curated_queries": ["Creative Technologist computer vision"],
+            "seniority_band": "lead",
+            "weights": dict(script.DEFAULT_SCORE_WEIGHTS),
+        },
+    }
+    jobs = [
+        script.JobRecord(
+            job_url="https://example.com/software",
+            title="Senior Software Engineer",
+            company="Example",
+            location="Bangalore",
+            site="indeed",
+            description="Build Java services for enterprise platforms and APIs.",
+        ),
+        script.JobRecord(
+            job_url="https://example.com/cv",
+            title="Computer Vision Engineer",
+            company="Example",
+            location="Bangalore",
+            site="indeed",
+            description="Build computer vision and conversational AI prototypes for IoT products.",
+        ),
+    ]
+
+    scores = script._score_jobs(profile, jobs, agentic=False)
+    software = next(
+        item for item in scores if item["title"] == "Senior Software Engineer"
+    )
+
+    assert scores[0]["title"] == "Computer Vision Engineer"
+    assert software["fit_band"] == "reject"
+    assert software["final_score"] <= 39.0
+
+
+def test_score_jobs_keeps_industrial_ai_for_innovation_profile():
+    profile = {
+        "suggested_roles": ["Creative Technologist"],
+        "recent_titles": ["Innovation Engineer"],
+        "skills": ["IoT", "Computer Vision", "Conversational AI"],
+        "suggested_locations": ["Bangalore"],
+        "seniority_band": "lead",
+        "matching_signals": {
+            "primary_roles": ["Creative Technologist"],
+            "adjacent_roles": ["Innovation Engineer"],
+            "broadened_roles": [],
+            "must_have_skills": ["Computer Vision", "Conversational AI"],
+            "supporting_skills": ["IoT"],
+            "domain_terms": ["Innovation"],
+            "industry_terms": [],
+            "preferred_locations": ["Bangalore"],
+            "avoid_terms": [],
+            "curated_queries": ["Creative Technologist computer vision"],
+            "seniority_band": "lead",
+            "weights": dict(script.DEFAULT_SCORE_WEIGHTS),
+        },
+    }
+    jobs = [
+        script.JobRecord(
+            job_url="https://example.com/industrial-ai",
+            title="Lead AI Engineer",
+            company="Example",
+            location="Bangalore",
+            site="indeed",
+            description=(
+                "Design AI solutions for smart buildings, industrial automation, "
+                "IoT sensor systems, computer vision, conversational AI, innovation "
+                "pilots, and proof-of-concept work."
+            ),
+        )
+    ]
+
+    scores = script._score_jobs(profile, jobs, agentic=False)
+
+    assert scores[0]["fit_band"] != "reject"
+    assert scores[0]["domain_mismatch_penalty"] == 0
+
+
 @pytest.mark.asyncio
 async def test_run_for_resume_uses_profile_driven_jobspy_queries(tmp_path, monkeypatch):
     resume_path = tmp_path / "resume.txt"
@@ -322,8 +775,16 @@ async def test_run_for_resume_uses_profile_driven_jobspy_queries(tmp_path, monke
                 description="Python Kubernetes AWS Terraform",
             )
         ]
-        queries = [{"term": term, "location": location, "country": "India"} for term in terms for location in locations]
-        return jobs, queries, {"full_hits": 0, "incremental_hits": 0, "misses": len(queries)}
+        queries = [
+            {"term": term, "location": location, "country": "India"}
+            for term in terms
+            for location in locations
+        ]
+        return (
+            jobs,
+            queries,
+            {"full_hits": 0, "incremental_hits": 0, "misses": len(queries)},
+        )
 
     monkeypatch.setattr(script, "_scrape_jobspy", _fake_scrape_jobspy)
 
@@ -348,7 +809,9 @@ async def test_run_for_resume_uses_profile_driven_jobspy_queries(tmp_path, monke
 
 
 @pytest.mark.asyncio
-async def test_run_for_resume_reuses_llm_parse_and_verifies_unique_jobs_once(tmp_path, monkeypatch):
+async def test_run_for_resume_reuses_llm_parse_and_verifies_unique_jobs_once(
+    tmp_path, monkeypatch
+):
     resume_path = tmp_path / "resume.txt"
     resume_path.write_text(
         "Senior Backend Engineer\n"
@@ -370,8 +833,16 @@ async def test_run_for_resume_reuses_llm_parse_and_verifies_unique_jobs_once(tmp
                 description="Python APIs on AWS",
             )
         ]
-        queries = [{"term": term, "location": location, "country": "India"} for term in terms for location in locations]
-        return jobs, queries, {"full_hits": 0, "incremental_hits": 0, "misses": len(queries)}
+        queries = [
+            {"term": term, "location": location, "country": "India"}
+            for term in terms
+            for location in locations
+        ]
+        return (
+            jobs,
+            queries,
+            {"full_hits": 0, "incremental_hits": 0, "misses": len(queries)},
+        )
 
     async def _fake_enrich(profile, resume_text, client):
         return profile
@@ -420,7 +891,9 @@ async def test_run_for_resume_reuses_llm_parse_and_verifies_unique_jobs_once(tmp
 
 
 @pytest.mark.asyncio
-async def test_scrape_jobspy_reuses_same_window_cache_with_incremental_refresh(tmp_path, monkeypatch):
+async def test_scrape_jobspy_reuses_same_window_cache_with_incremental_refresh(
+    tmp_path, monkeypatch
+):
     monkeypatch.setattr(script, "SCRAPE_CACHE_DIR", tmp_path / "scrape_cache")
 
     class _FakeFrame:
@@ -436,39 +909,50 @@ async def test_scrape_jobspy_reuses_same_window_cache_with_incremental_refresh(t
     def _fake_scrape_jobs(**kwargs):
         calls.append(kwargs["hours_old"])
         if kwargs["hours_old"] == 2:
-            return _FakeFrame([
+            return _FakeFrame(
+                [
+                    {
+                        "job_url": "https://example.com/new",
+                        "title": "New Job",
+                        "company": "NewCo",
+                        "location": "Pune",
+                        "site": "indeed",
+                        "description": "fresh",
+                        "date_posted": "2026-04-05",
+                    }
+                ]
+            )
+        return _FakeFrame(
+            [
                 {
-                    "job_url": "https://example.com/new",
-                    "title": "New Job",
-                    "company": "NewCo",
+                    "job_url": "https://example.com/cached",
+                    "title": "Cached Job",
+                    "company": "OldCo",
                     "location": "Pune",
                     "site": "indeed",
-                    "description": "fresh",
-                    "date_posted": "2026-04-05",
+                    "description": "cached",
+                    "date_posted": "2026-04-04",
                 }
-            ])
-        return _FakeFrame([
-            {
-                "job_url": "https://example.com/cached",
-                "title": "Cached Job",
-                "company": "OldCo",
-                "location": "Pune",
-                "site": "indeed",
-                "description": "cached",
-                "date_posted": "2026-04-04",
-            }
-        ])
+            ]
+        )
 
     import sys
+
     sys.modules["jobspy"] = SimpleNamespace(scrape_jobs=_fake_scrape_jobs)
 
-    cache_key = script._scrape_cache_key({"term": "Backend Engineer", "location": "Pune", "country": "India"}, 10)
+    cache_key = script._scrape_cache_key(
+        {"term": "Backend Engineer", "location": "Pune", "country": "India"}, 10
+    )
     script._store_scrape_cache(
         cache_key,
         {
             "fetched_at": (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(),
             "hours_old": 360,
-            "query": {"term": "Backend Engineer", "location": "Pune", "country": "India"},
+            "query": {
+                "term": "Backend Engineer",
+                "location": "Pune",
+                "country": "India",
+            },
             "max_results": 10,
             "jobs": [
                 {
@@ -484,7 +968,9 @@ async def test_scrape_jobspy_reuses_same_window_cache_with_incremental_refresh(t
         },
     )
 
-    jobs, queries, cache_summary = await script._scrape_jobspy(["Backend Engineer"], ["Pune"], 360, 10)
+    jobs, queries, cache_summary = await script._scrape_jobspy(
+        ["Backend Engineer"], ["Pune"], 360, 10
+    )
 
     assert calls == [2]
     assert len(jobs) == 2

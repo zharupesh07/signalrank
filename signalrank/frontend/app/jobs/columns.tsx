@@ -1,7 +1,7 @@
 "use client";
 
 import { createColumnHelper } from "@tanstack/react-table";
-import { ExternalLink, Plus } from "lucide-react";
+import { AlertTriangle, ExternalLink, Plus } from "lucide-react";
 import type { Job } from "@/types";
 import { formatJobAge, formatSourceLabel } from "@/lib/formatting";
 
@@ -29,15 +29,29 @@ export function FitBucketCell({ job }: { job: Job }) {
   const bucketLabel = job.preference_bucket ?? "Possible fit";
   const style = BUCKET_STYLES[bucketKey] ?? BUCKET_STYLES.possible_fit;
   return (
-    <div className="space-y-1">
-      <span
-        className="inline-flex items-center px-2 py-1 text-[10px] uppercase tracking-[0.16em] border"
-        style={{ color: style.color, borderColor: `${style.border}55`, background: style.bg }}
-      >
-        {bucketLabel}
-      </span>
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-1.5">
+        <span
+          className="inline-flex items-center px-2 py-1 text-[10px] uppercase tracking-[0.16em] border"
+          style={{ color: style.color, borderColor: `${style.border}55`, background: style.bg }}
+        >
+          {bucketLabel}
+        </span>
+        {job.rank_reason_down ? (
+          <span
+            className="inline-flex items-center gap-1 px-1.5 py-1 text-[10px] text-[var(--terminal-yellow)] border border-[var(--terminal-yellow)]/35"
+            title={job.rank_reason_down}
+          >
+            <AlertTriangle size={10} />
+            caution
+          </span>
+        ) : null}
+      </div>
       {job.rank_reason_up ? (
         <div className="text-[10px] text-muted-foreground line-clamp-1">{job.rank_reason_up}</div>
+      ) : null}
+      {job.rank_reason_down ? (
+        <div className="text-[10px] text-muted-foreground line-clamp-1">{job.rank_reason_down}</div>
       ) : null}
     </div>
   );

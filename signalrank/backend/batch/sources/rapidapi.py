@@ -136,17 +136,23 @@ def _normalize_results(source_name: str, data) -> list[RawJob]:
         # li_bulk nests job data under "data" key
         job_data = item.get("data", item)
 
-        url = (
-            job_data.get("job_url")
-            or job_data.get("url")
-            or job_data.get("external_apply_url")
-            or job_data.get("jobPostingUrl")
-            or job_data.get("job_apply_link")
-            or job_data.get("redirect_url")
-            or job_data.get("linkedin_job_url_cleaned")
-            or job_data.get("link")
-            or ""
-        )
+        url_fields = [
+            "job_url",
+            "url",
+            "external_apply_url",
+            "jobPostingUrl",
+            "job_apply_link",
+            "redirect_url",
+            "linkedin_job_url_cleaned",
+            "link",
+        ]
+        availability_urls = [
+            str(job_data.get(field) or "").strip()
+            for field in url_fields
+            if str(job_data.get(field) or "").strip()
+        ]
+        availability_urls = list(dict.fromkeys(availability_urls))
+        url = availability_urls[0] if availability_urls else ""
         if not url:
             continue
 
@@ -193,6 +199,7 @@ def _normalize_results(source_name: str, data) -> list[RawJob]:
                 or job_data.get("posted_at")
                 or job_data.get("list_date")
             ),
+            availability_urls=availability_urls,
         ))
     return jobs
 

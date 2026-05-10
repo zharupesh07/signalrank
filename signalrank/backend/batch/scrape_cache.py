@@ -34,6 +34,7 @@ def raw_job_to_raw(row: JobRaw) -> RawJob:
         location=row.location,
         site=row.site or "jobspy",
         date_posted=row.date_posted,
+        availability_urls=row.availability_urls or [row.job_url],
     )
 
 

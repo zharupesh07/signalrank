@@ -231,6 +231,22 @@ def build_career_intent_profile(parsed: ResumeParseResult) -> dict:
     false_friends = _uniq_dicts(parsed.false_friend_terms, ("term",))
     domains = _uniq_dicts(parsed.domains, ("name",))
 
+    if not target_roles:
+        fallback_roles = _uniq_strs(
+            list(parsed.suggested_roles or []) + list(parsed.recent_titles or [])
+        )
+        target_roles = [
+            {
+                "title": role,
+                "priority": "primary" if idx == 0 else "adjacent",
+                "confidence": 0.84 if idx == 0 else 0.68,
+                "evidence": ["Resume-derived role signal"],
+            }
+            for idx, role in enumerate(fallback_roles[:6])
+        ]
+        for role in fallback_roles[:4]:
+            _ensure_query_term(query_plan, "title_queries", role)
+
     text = _text_blob(parsed)
 
     if "sap sd" in text or "order to cash" in text or "otc" in text or "s/4hana" in text:

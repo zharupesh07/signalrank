@@ -404,6 +404,7 @@ async def test_resume_fixture_backend_chain_allows_results_and_tracker_import(
     monkeypatch.setattr(onboarding_route, "_parse_and_update_profile", noop_parse_and_update_profile)
     monkeypatch.setattr(onboarding_route, "_embed_resume", noop_embed_resume)
     monkeypatch.setattr(worker_mod, "_embed_new_jobs", fake_embed_new_jobs)
+    monkeypatch.setattr(worker_mod.settings, "job_availability_archive_after_run", False)
     monkeypatch.setattr(scraper, "scrape", fake_scrape)
     monkeypatch.setattr(
         scrape_pipeline,

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from collections.abc import Iterable
 from typing import Any
 
@@ -10,6 +9,7 @@ from domain.artifact_versions import (
     candidate_profile_cache_key,
     stable_digest,
 )
+from domain.intent_matching import PROFILE_INTENT_KEY, build_profile_intent
 from domain.role_clusters import infer_clusters_from_job_text, roles_to_clusters
 from domain.skills import SkillCanonicalizer, extract_skills_from_texts
 from llm.resume_parser import ResumeParseResult
@@ -58,13 +58,19 @@ def _extract_strings(value: Any) -> list[str]:
 
 def _title_band_from_text(text: str) -> str:
     lowered = (text or "").lower()
-    if any(term in lowered for term in ("principal", "distinguished", "architect", "head of")):
+    if any(
+        term in lowered
+        for term in ("principal", "distinguished", "architect", "head of")
+    ):
         return "principal"
     if any(term in lowered for term in ("staff", "lead", "manager", "director")):
         return "senior"
     if any(term in lowered for term in ("senior", "sr.", "sr ", "ii", "iii")):
         return "senior"
-    if any(term in lowered for term in ("junior", "entry", "intern", "associate", "assistant")):
+    if any(
+        term in lowered
+        for term in ("junior", "entry", "intern", "associate", "assistant")
+    ):
         return "junior"
     return "mid"
 
@@ -98,24 +104,41 @@ def _infer_work_modes(text: str, preferred_locations: list[str]) -> list[str]:
     locations = " ".join(preferred_locations).lower()
     modes: list[str] = []
 
-    if any(term in lowered or term in locations for term in ("remote", "wfh", "work from home", "fully distributed")):
+    if any(
+        term in lowered or term in locations
+        for term in ("remote", "wfh", "work from home", "fully distributed")
+    ):
         modes.append("remote")
-    if any(term in lowered or term in locations for term in ("hybrid", "2 days", "3 days", "days per week")):
+    if any(
+        term in lowered or term in locations
+        for term in ("hybrid", "2 days", "3 days", "days per week")
+    ):
         modes.append("hybrid")
-    if any(term in lowered or term in locations for term in ("onsite", "on-site", "in office", "office")):
+    if any(
+        term in lowered or term in locations
+        for term in ("onsite", "on-site", "in office", "office")
+    ):
         modes.append("onsite")
 
     return _dedupe(modes) or ["any"]
 
 
-def _infer_domain(archetypes: list[str], roles: list[str], resume_text: str) -> list[str]:
+def _infer_domain(
+    archetypes: list[str], roles: list[str], resume_text: str
+) -> list[str]:
     text = " ".join([resume_text, " ".join(archetypes), " ".join(roles)]).lower()
     domains: list[str] = []
     if any(term in text for term in ("sap", "s/4hana", "order to cash", "otc", "erp")):
         domains.append("Enterprise Apps")
-    if any(term in text for term in ("machine learning", "llm", "genai", "mlops", "data science")):
+    if any(
+        term in text
+        for term in ("machine learning", "llm", "genai", "mlops", "data science")
+    ):
         domains.append("AI / ML")
-    if any(term in text for term in ("kubernetes", "terraform", "devops", "platform", "sre")):
+    if any(
+        term in text
+        for term in ("kubernetes", "terraform", "devops", "platform", "sre")
+    ):
         domains.append("Platform / Infrastructure")
     if any(term in text for term in ("backend", "full stack", "api", "integrations")):
         domains.append("Backend / Product Engineering")
@@ -140,11 +163,20 @@ def _role_family_from_text(title: str, clusters: Iterable[str] | None = None) ->
     lowered = (title or "").lower()
     if any(term in lowered for term in ("sap", "s/4hana", "order to cash", "otc")):
         return "SAP / ERP"
-    if any(term in lowered for term in ("machine learning", "ml", "llm", "genai", "data scientist")):
+    if any(
+        term in lowered
+        for term in ("machine learning", "ml", "llm", "genai", "data scientist")
+    ):
         return "AI / ML"
-    if any(term in lowered for term in ("platform", "devops", "sre", "infrastructure", "cloud")):
+    if any(
+        term in lowered
+        for term in ("platform", "devops", "sre", "infrastructure", "cloud")
+    ):
         return "Platform / Infrastructure"
-    if any(term in lowered for term in ("backend", "full stack", "software engineer", "api")):
+    if any(
+        term in lowered
+        for term in ("backend", "full stack", "software engineer", "api")
+    ):
         return "Backend / Product Engineering"
     if any(term in lowered for term in ("qa", "test", "sdet", "automation")):
         return "QA / Product Engineering"
@@ -169,7 +201,10 @@ def _candidate_role_lists(
     resume_text: str,
     career_intent: dict,
 ) -> tuple[list[str], list[str], list[str], list[str]]:
-    parsed_roles = _dedupe(_extract_strings(parsed.target_roles) or _extract_strings(parsed.suggested_roles))
+    parsed_roles = _dedupe(
+        _extract_strings(parsed.target_roles)
+        or _extract_strings(parsed.suggested_roles)
+    )
     profile_roles = _dedupe(profile_roles)
     primary = _dedupe(parsed_roles + profile_roles)[:6]
 
@@ -184,12 +219,16 @@ def _candidate_role_lists(
         _extract_strings(parsed.negative_targets)
         + _extract_strings(parsed.suggested_exclusions)
         + _extract_strings((career_intent.get("negative_targets") or []))
-        + _extract_strings((career_intent.get("work_preferences") or {}).get("exclude_roles"))
+        + _extract_strings(
+            (career_intent.get("work_preferences") or {}).get("exclude_roles")
+        )
     )
 
     role_pool = primary + adjacent
     cluster_source = " ".join(role_pool or [resume_text])
-    clusters = sorted(roles_to_clusters(role_pool or _extract_strings(parsed.recent_titles)))
+    clusters = sorted(
+        roles_to_clusters(role_pool or _extract_strings(parsed.recent_titles))
+    )
     if not clusters or clusters == ["general"]:
         clusters = sorted(infer_clusters_from_job_text(cluster_source, resume_text))
 
@@ -205,17 +244,27 @@ def _skills_for_profile(
     career_intent: dict,
 ) -> tuple[list[str], list[str]]:
     canonicalizer = SkillCanonicalizer(cfg)
-    raw_skills = _dedupe(_extract_strings(parsed.skills) + _extract_strings(profile_skills))
+    raw_skills = _dedupe(
+        _extract_strings(parsed.skills) + _extract_strings(profile_skills)
+    )
     if not raw_skills and resume_text:
         raw_skills = _dedupe(extract_skills_from_texts([resume_text], cfg)[0])
     canonical = sorted(canonicalizer.canonicalize(raw_skills))
 
-    query_plan = career_intent.get("query_plan") if isinstance(career_intent.get("query_plan"), dict) else {}
+    query_plan = (
+        career_intent.get("query_plan")
+        if isinstance(career_intent.get("query_plan"), dict)
+        else {}
+    )
     good_to_have = _dedupe(
         _extract_strings(query_plan.get("skill_queries"))
         + _extract_strings(query_plan.get("domain_queries"))
     )
-    good_to_have = [skill for skill in good_to_have if skill.lower() not in {item.lower() for item in canonical}]
+    good_to_have = [
+        skill
+        for skill in good_to_have
+        if skill.lower() not in {item.lower() for item in canonical}
+    ]
     return canonical[:16], good_to_have[:12]
 
 
@@ -232,13 +281,17 @@ def build_candidate_profile(
     profile_resume_text = str(getattr(profile, "resume_text", "") or "")
     profile_distilled_text = str(getattr(profile, "distilled_text", "") or "")
     full_resume_text = " ".join(
-        part for part in [resume_text, profile_resume_text, profile_distilled_text] if part
+        part
+        for part in [resume_text, profile_resume_text, profile_distilled_text]
+        if part
     ).strip()
 
     profile_roles = _extract_strings(getattr(profile, "target_roles", None))
     profile_locations = _extract_strings(getattr(profile, "preferred_locations", None))
     profile_skills = _extract_strings(getattr(profile, "skills", None))
-    profile_overrides = getattr(profile, "config_overrides", None) if profile is not None else None
+    profile_overrides = (
+        getattr(profile, "config_overrides", None) if profile is not None else None
+    )
     career_intent = {}
     if isinstance(profile_overrides, dict):
         candidate = profile_overrides.get("career_intent")
@@ -253,20 +306,27 @@ def build_candidate_profile(
                 for key in ("name", "position", "summary")
             ).strip()
 
-    target_primary, target_adjacent, negative_roles, career_clusters = _candidate_role_lists(
-        parsed=parsed,
-        profile_roles=profile_roles,
-        resume_text=full_resume_text,
-        career_intent=career_intent,
+    target_primary, target_adjacent, negative_roles, career_clusters = (
+        _candidate_role_lists(
+            parsed=parsed,
+            profile_roles=profile_roles,
+            resume_text=full_resume_text,
+            career_intent=career_intent,
+        )
     )
 
     locations = _dedupe(
         _extract_strings(parsed.suggested_locations)
         + profile_locations
-        + _extract_strings((career_intent.get("work_preferences") or {}).get("locations"))
+        + _extract_strings(
+            (career_intent.get("work_preferences") or {}).get("locations")
+        )
     )
     if not locations and full_resume_text:
-        if any(term in full_resume_text.lower() for term in ("remote", "wfh", "work from home")):
+        if any(
+            term in full_resume_text.lower()
+            for term in ("remote", "wfh", "work from home")
+        ):
             locations = ["Remote only"]
 
     work_modes = _infer_work_modes(
@@ -282,7 +342,9 @@ def build_candidate_profile(
         career_intent=career_intent,
     )
 
-    target_roles = target_primary or profile_roles or _extract_strings(parsed.recent_titles)
+    target_roles = (
+        target_primary or profile_roles or _extract_strings(parsed.recent_titles)
+    )
     seniority_band = _infer_seniority_band(
         years=parsed.years_of_experience or getattr(profile, "min_yoe", None),
         text=full_resume_text,
@@ -296,7 +358,11 @@ def build_candidate_profile(
     )
 
     archetypes = _dedupe(
-        [str(item.get("id", "")).strip() for item in (parsed.career_archetypes or []) if isinstance(item, dict)]
+        [
+            str(item.get("id", "")).strip()
+            for item in (parsed.career_archetypes or [])
+            if isinstance(item, dict)
+        ]
         + _extract_strings(career_intent.get("career_archetypes"))
     )
 
@@ -308,7 +374,9 @@ def build_candidate_profile(
         "roles": 0.92 if target_primary else 0.74 if target_adjacent else 0.52,
         "skills": min(0.96, 0.42 + 0.07 * min(len(must_have_skills), 6)),
         "domains": 0.88 if domains and domains[0] != "General" else 0.52,
-        "seniority": 0.86 if parsed.years_of_experience is not None or target_primary else 0.6,
+        "seniority": (
+            0.86 if parsed.years_of_experience is not None or target_primary else 0.6
+        ),
         "locations": 0.8 if locations else 0.48,
         "overall": 0.82,
     }
@@ -347,6 +415,10 @@ def build_candidate_profile(
         "schema_version": SCHEMA_VERSION,
         "artifact_version": CANDIDATE_PROFILE_VERSION,
     }
+    profile_payload[PROFILE_INTENT_KEY] = build_profile_intent(
+        profile_payload,
+        resume_text=full_resume_text,
+    )
     profile_fingerprint = stable_digest(
         {
             "resume_text": full_resume_text,

@@ -44,7 +44,7 @@ export function useJobsPageData({
   const [selectedJobLoading, setSelectedJobLoading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [pageSize, setPageSize] = useState(50);
-  const [showArchived, setShowArchived] = useState(true);
+  const [showArchived, setShowArchived] = useState(false);
   const [archiveStatus, setArchiveStatus] = useState<{ total: number; done: number; pending: number; running: number } | null>(null);
   const [archiving, setArchiving] = useState(false);
   const [preferences, setPreferences] = useState<JobPreferencesResponse | null>(null);
@@ -161,6 +161,7 @@ export function useJobsPageData({
       jobType: filters.jobType,
       sites: filters.sites,
       dateRange: filters.dateRange,
+      matchQuality: filters.matchQuality,
     };
   }, [debouncedSearch, filters, page, pageSize, showArchived, sorting]);
 
@@ -198,6 +199,7 @@ export function useJobsPageData({
         jobType: filters.jobType,
         sites: filters.sites,
         dateRange: filters.dateRange,
+        matchQuality: filters.matchQuality,
       });
       applyJobsPayload(response);
     } finally {

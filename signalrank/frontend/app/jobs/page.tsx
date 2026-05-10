@@ -23,6 +23,7 @@ import {
   JobsPresetBar,
   JobsRunSelector,
   JobsRefinementPanel,
+  RunQualityStrip,
 } from "./jobs-ui";
 import { useJobsPageData } from "./use-jobs-page-data";
 
@@ -77,6 +78,13 @@ export default function JobsPage() {
     submitFeedback,
   } = useJobsPageData({ token, isAdmin, toast });
   const activeFilterCount = countActiveFilters(filters);
+  const selectedRun = useMemo(
+    () =>
+      selectedRunId === "all"
+        ? null
+        : runs.find((run) => run.id === selectedRunId) ?? runs[0] ?? null,
+    [runs, selectedRunId]
+  );
 
   const columns = useMemo(
     () => getColumns({ tracked, trackJob }),
@@ -171,6 +179,14 @@ export default function JobsPage() {
           }}
         />
 
+        <RunQualityStrip
+          run={selectedRun}
+          visible={total}
+          runTotal={runTotal}
+          newGoodMatches={newGoodMatches}
+          sourceCount={availableSites.length}
+        />
+
         <div className="flex gap-4 items-start">
           <JobsFiltersSidebar
             collapsed={collapsed}
@@ -189,7 +205,7 @@ export default function JobsPage() {
               {refreshing && (
                 <div className="absolute inset-0 z-10 bg-background/35 pointer-events-none" />
               )}
-              <table className="jobs-table w-full text-xs border-collapse min-w-[1040px]">
+              <table className="jobs-table w-full text-xs border-collapse min-w-[1100px]">
                 <colgroup>
                   <col style={{ width: 300 }} />
                   <col style={{ width: 160 }} />
