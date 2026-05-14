@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
+import { api } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,6 +14,42 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const isDesktop = process.env.NEXT_PUBLIC_SIGNALRANK_MODE === "desktop";
+
+  useEffect(() => {
+    if (!isDesktop) return;
+    let cancelled = false;
+    async function authenticateDesktop() {
+      setLoading(true);
+      setError("");
+      try {
+        await api.desktop.status();
+        const session = await api.desktop.session();
+        const res = await signIn("credentials", {
+          desktopToken: session.access_token,
+          redirect: false,
+        });
+        if (!cancelled) {
+          if (res?.error) {
+            setError("Desktop session failed. Restart SignalRank and try again.");
+          } else {
+            router.replace(callbackUrl);
+            router.refresh();
+          }
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Desktop backend is not ready");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    authenticateDesktop();
+    return () => {
+      cancelled = true;
+    };
+  }, [callbackUrl, isDesktop, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,15 +76,36 @@ export default function LoginPage() {
             SIGNAL<span className="text-[#a3e635]">RANK</span>
           </div>
           <div className="text-[10px] text-[#52525b] uppercase tracking-widest">
-            Job Intelligence Terminal
+            {isDesktop ? "Local Desktop" : "Job Intelligence Terminal"}
           </div>
         </div>
 
         <div className="border border-[#2a2a2e] bg-[#111113] p-6 space-y-5 stat-card">
           <div className="text-[10px] text-[#52525b] uppercase tracking-widest">
-            {"// AUTHENTICATE"}
+            {isDesktop ? "// LOCAL SESSION" : "// AUTHENTICATE"}
           </div>
 
+          {isDesktop ? (
+            <div className="space-y-4">
+              <div className="text-sm text-[#a1a1aa] leading-6">
+                Starting your local SignalRank session...
+              </div>
+              {error && (
+                <div className="text-[11px] text-[#ef4444] flex items-center gap-2">
+                  <span>&gt;</span>
+                  <span>ERR: {error}</span>
+                </div>
+              )}
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => window.location.reload()}
+                className="w-full py-2.5 text-xs font-bold uppercase tracking-widest bg-[#22c55e] text-[#0a0a0a] hover:bg-[#a3e635] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? "Connecting..." : "Retry"}
+              </button>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-[10px] text-[#71717a] uppercase tracking-wider">Email</label>
@@ -96,13 +154,14 @@ export default function LoginPage() {
               {loading ? "Authenticating..." : "Sign In"}
             </button>
           </form>
+          )}
 
-          <div className="text-[10px] text-[#52525b] text-center">
+          {!isDesktop && <div className="text-[10px] text-[#52525b] text-center">
             No account?{" "}
             <a href="/signup" className="text-[#22c55e] hover:text-[#a3e635] transition-colors">
               Register
             </a>
-          </div>
+          </div>}
         </div>
       </div>
     </div>

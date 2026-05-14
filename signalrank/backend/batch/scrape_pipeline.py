@@ -9,11 +9,11 @@ from datetime import datetime, timedelta, timezone
 from typing import Awaitable, Callable
 
 from sqlalchemy import select
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from batch import query_builder
 from api.models import JobRaw, Profile, Run
+from api.sql_compat import dialect_insert
 from domain.job_profile import build_job_profile
 from domain.role_clusters import infer_clusters_from_job_text
 
@@ -494,7 +494,7 @@ async def execute_scrape_pipeline(
                             role_clusters=v["role_clusters"],
                             cfg=cfg,
                         )
-                    insert_stmt = pg_insert(JobRaw).values(values)
+                    insert_stmt = dialect_insert(pdb, JobRaw).values(values)
                     stmt = insert_stmt.on_conflict_do_update(
                         index_elements=["job_url"],
                         set_={

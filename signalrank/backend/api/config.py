@@ -1,5 +1,6 @@
 import json
 import os
+import secrets
 from typing import Annotated
 from urllib.parse import urlparse
 
@@ -7,17 +8,38 @@ from pydantic import field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
+def _desktop_data_dir(configured: str = ""):
+    from pathlib import Path
+    import sys
+
+    if configured:
+        root = Path(configured).expanduser()
+    elif sys.platform == "darwin":
+        root = Path.home() / "Library" / "Application Support" / "SignalRank"
+    elif sys.platform.startswith("win"):
+        root = Path(os.getenv("APPDATA", str(Path.home()))) / "SignalRank"
+    else:
+        root = Path(os.getenv("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))) / "signalrank"
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    database_url: str
+    signalrank_mode: str = "server"
+    signalrank_app_data_dir: str = ""
+    database_url: str = ""
     database_private_url: str = ""
     database_public_url: str = ""
-    nextauth_secret: str
+    nextauth_secret: str = ""
     environment: str = "development"
     allowed_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
     cors_allow_origin_regex: str = ""
+    llm_provider: str = "openrouter"
     openrouter_api_key: str = ""
+    openai_api_key: str = ""
+    anthropic_api_key: str = ""
     hunter_api_key: str = ""
     db_pool_size: int = 5
     db_max_overflow: int = 5
@@ -48,6 +70,24 @@ class Settings(BaseSettings):
     max_active_runs_per_user: int = 1
     access_token_expire_minutes: int = 60 * 24 * 7  # 7 days
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def default_database_url(cls, v):
+        if v:
+            return v
+        if os.getenv("SIGNALRANK_MODE", "").strip().lower() == "desktop":
+            return f"sqlite+aiosqlite:///{_desktop_data_dir(os.getenv('SIGNALRANK_APP_DATA_DIR', '')) / 'signalrank.db'}"
+        return "postgresql+asyncpg://postgres:postgres@localhost:5432/signalrank"
+
+    @field_validator("nextauth_secret", mode="before")
+    @classmethod
+    def default_nextauth_secret(cls, v):
+        if v:
+            return v
+        if os.getenv("SIGNALRANK_MODE", "").strip().lower() == "desktop":
+            return secrets.token_urlsafe(32)
+        return ""
+
     @field_validator("allowed_origins", mode="before")
     @classmethod
     def parse_origins(cls, v):
@@ -65,6 +105,14 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def is_desktop_mode() -> bool:
+    return settings.signalrank_mode.strip().lower() == "desktop"
+
+
+def desktop_data_dir():
+    return _desktop_data_dir(settings.signalrank_app_data_dir)
 
 
 def _normalize_origin_candidate(value: str | None) -> str | None:
@@ -130,7 +178,11 @@ def effective_allowed_origins() -> list[str]:
 
 def effective_allow_origin_regex() -> str | None:
     regex = (settings.cors_allow_origin_regex or "").strip()
-    return regex or None
+    if regex:
+        return regex
+    if is_desktop_mode():
+        return r"^http://(localhost|127\.0\.0\.1):\d+$"
+    return None
 
 
 def _env_truthy(name: str, default: bool) -> bool:
@@ -142,10 +194,11 @@ def _env_truthy(name: str, default: bool) -> bool:
 
 def runtime_flags(mode: str = "api") -> dict[str, bool]:
     is_worker = mode == "worker"
+    desktop = is_desktop_mode()
     return {
-        "run_api_worker": _env_truthy("RUN_API_WORKER", is_worker),
-        "run_resume_worker": _env_truthy("RUN_RESUME_WORKER", is_worker),
-        "run_archival_worker": _env_truthy("RUN_ARCHIVAL_WORKER", is_worker),
+        "run_api_worker": _env_truthy("RUN_API_WORKER", True if desktop else is_worker),
+        "run_resume_worker": _env_truthy("RUN_RESUME_WORKER", True if desktop else is_worker),
+        "run_archival_worker": _env_truthy("RUN_ARCHIVAL_WORKER", False if desktop else is_worker),
         "run_boot_scan": _env_truthy("RUN_BOOT_SCAN", False),
         "run_boot_embed": _env_truthy("RUN_BOOT_EMBED", False),
     }

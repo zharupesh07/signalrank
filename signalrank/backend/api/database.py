@@ -4,16 +4,18 @@ import re
 from collections.abc import AsyncGenerator
 from urllib.parse import urlparse
 
-from sqlalchemy import text
+from sqlalchemy import event, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
-from api.config import settings
+from api.config import is_desktop_mode, settings
 
 logger = logging.getLogger(__name__)
 
 
 def _parse_url(url: str) -> tuple[str, dict]:
+    if url.startswith("sqlite"):
+        return url, {}
     # Normalize driver prefix to asyncpg.
     url = re.sub(r"^postgresql(\+\w+)?://", "postgresql+asyncpg://", url)
     # asyncpg doesn't accept sslmode/ssl/channel_binding as URL params.
@@ -27,11 +29,15 @@ def _parse_url(url: str) -> tuple[str, dict]:
 
 def _url_host(url: str) -> str:
     """Extract host:port from a DB URL for display purposes."""
+    if url.startswith("sqlite"):
+        return "sqlite"
     m = re.search(r"@([^/?]+)", url)
     return m.group(1) if m else "unknown"
 
 
 def _runtime_database_url() -> str:
+    if is_desktop_mode():
+        return settings.database_url
     return settings.database_private_url or settings.database_url
 
 
@@ -58,19 +64,26 @@ def _build_engine(url: str, *, label: str = "runtime"):
         # command_timeout: asyncpg cancels any single DB query taking >120s and
         # releases the connection cleanly (guards against runaway queries).
         connect_args = {**connect_args, "command_timeout": 120}
-    eng = create_async_engine(
-        clean_url,
-        echo=False,
-        connect_args=connect_args,
-        pool_size=settings.db_pool_size,
-        max_overflow=settings.db_max_overflow,
-        pool_timeout=settings.db_pool_timeout,
-        pool_pre_ping=True,
-        pool_use_lifo=True,
-        # Recycle connections before Railway/Neon proxy idle-timeout (~300s) kills them.
-        # Expired connections are replaced transparently when next checked out.
-        pool_recycle=280,
-    )
+    engine_kwargs = {"echo": False, "connect_args": connect_args}
+    if clean_url.startswith("postgresql"):
+        engine_kwargs.update(
+            {
+                "pool_size": settings.db_pool_size,
+                "max_overflow": settings.db_max_overflow,
+                "pool_timeout": settings.db_pool_timeout,
+                "pool_pre_ping": True,
+                "pool_use_lifo": True,
+                "pool_recycle": 280,
+            }
+        )
+    eng = create_async_engine(clean_url, **engine_kwargs)
+    if clean_url.startswith("sqlite"):
+        @event.listens_for(eng.sync_engine, "connect")
+        def _set_sqlite_pragmas(dbapi_connection, _connection_record):
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.close()
+
     factory = async_sessionmaker(eng, expire_on_commit=False)
     return eng, factory
 
@@ -155,6 +168,12 @@ async def ensure_runtime_schema_compatibility(bind=None) -> None:
     global _schema_compat_checked
     target = bind or _active_engine
     async with target.begin() as conn:
+        if conn.dialect.name == "sqlite":
+            await conn.execute(text("PRAGMA foreign_keys=ON"))
+            await conn.run_sync(Base.metadata.create_all)
+            _schema_compat_checked = True
+            return
+
         checks = [
             ("runs", "error"),
             ("runs", "mode"),

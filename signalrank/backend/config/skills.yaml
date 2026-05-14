@@ -412,3 +412,46 @@ skills:
       - seldon
       - cloud run
       - kubernetes deployment
+    test_automation:
+      canonical: test automation
+      variants:
+      - test automation
+      - qa automation
+      - automation testing
+      - automated testing
+      - automation framework
+      - test automation framework
+    sdet:
+      canonical: sdet
+      variants:
+      - sdet
+      - software development engineer in test
+      - qa automation engineer
+      - qa engineer
+      - test engineer
+    selenium:
+      canonical: selenium
+      variants:
+      - selenium
+      - selenium webdriver
+    playwright:
+      canonical: playwright
+      variants:
+      - playwright
+    cypress:
+      canonical: cypress
+      variants:
+      - cypress
+    api_testing:
+      canonical: api testing
+      variants:
+      - api testing
+      - postman
+      - rest assured
+      - rest api testing
+    defect_tracking:
+      canonical: defect tracking
+      variants:
+      - jira
+      - defect tracking
+      - bug tracking

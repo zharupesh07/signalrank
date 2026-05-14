@@ -1,0 +1,19 @@
+{
+  "name": "signalrank-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tauri dev",
+    "dev:services": "node scripts/dev-services.mjs",
+    "build": "npm run build:backend && tauri build",
+    "build:backend": "node scripts/build-backend.mjs",
+    "build:web": "node scripts/build-web.mjs",
+    "stage:sidecars": "node scripts/stage-sidecars.mjs",
+    "smoke:packaged": "node scripts/smoke-packaged.mjs",
+    "smoke:resumes": "node scripts/smoke-resume-folder.mjs"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}

@@ -1,7 +1,7 @@
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models import JobResult
+from api.sql_compat import conflict_kwargs, dialect_insert
 
 
 def normalize_ranked_df(ranked_df):
@@ -17,6 +17,30 @@ async def persist_ranked_results(
     run_id: str,
     user_id: str,
 ) -> None:
+    def _upsert(batch: list[dict]):
+        stmt = dialect_insert(db, JobResult).values(batch)
+        return stmt.on_conflict_do_update(
+            **conflict_kwargs(db, constraint="uq_job_results_user_job"),
+            set_={
+                "run_id": stmt.excluded.run_id,
+                "semantic_score": stmt.excluded.semantic_score,
+                "skills_score": stmt.excluded.skills_score,
+                "company_score": stmt.excluded.company_score,
+                "seniority_score": stmt.excluded.seniority_score,
+                "location_score": stmt.excluded.location_score,
+                "recency_score": stmt.excluded.recency_score,
+                "final_score": stmt.excluded.final_score,
+                "title_relevance_score": stmt.excluded.title_relevance_score,
+                "fit_band": stmt.excluded.fit_band,
+                "confidence_band": stmt.excluded.confidence_band,
+                "explanation_summary": stmt.excluded.explanation_summary,
+                "match_report": stmt.excluded.match_report,
+                "verification_report": stmt.excluded.verification_report,
+                "company_tier": stmt.excluded.company_tier,
+                "is_contract": stmt.excluded.is_contract,
+            },
+        )
+
     insert_batch: list[dict] = []
     for row in ranked_df.itertuples(index=False):
         insert_batch.append({
@@ -40,52 +64,8 @@ async def persist_ranked_results(
             "is_contract": bool(row.is_contract),
         })
         if len(insert_batch) >= 500:
-            await db.execute(
-                pg_insert(JobResult).values(insert_batch).on_conflict_do_update(
-                    constraint="uq_job_results_user_job",
-                    set_={
-                        "run_id": pg_insert(JobResult).excluded.run_id,
-                        "semantic_score": pg_insert(JobResult).excluded.semantic_score,
-                        "skills_score": pg_insert(JobResult).excluded.skills_score,
-                        "company_score": pg_insert(JobResult).excluded.company_score,
-                        "seniority_score": pg_insert(JobResult).excluded.seniority_score,
-                        "location_score": pg_insert(JobResult).excluded.location_score,
-                        "recency_score": pg_insert(JobResult).excluded.recency_score,
-                        "final_score": pg_insert(JobResult).excluded.final_score,
-                        "title_relevance_score": pg_insert(JobResult).excluded.title_relevance_score,
-                        "fit_band": pg_insert(JobResult).excluded.fit_band,
-                        "confidence_band": pg_insert(JobResult).excluded.confidence_band,
-                        "explanation_summary": pg_insert(JobResult).excluded.explanation_summary,
-                        "match_report": pg_insert(JobResult).excluded.match_report,
-                        "verification_report": pg_insert(JobResult).excluded.verification_report,
-                        "company_tier": pg_insert(JobResult).excluded.company_tier,
-                        "is_contract": pg_insert(JobResult).excluded.is_contract,
-                    },
-                )
-            )
+            await db.execute(_upsert(insert_batch))
             insert_batch.clear()
     if insert_batch:
-        await db.execute(
-            pg_insert(JobResult).values(insert_batch).on_conflict_do_update(
-                constraint="uq_job_results_user_job",
-                set_={
-                    "run_id": pg_insert(JobResult).excluded.run_id,
-                    "semantic_score": pg_insert(JobResult).excluded.semantic_score,
-                    "skills_score": pg_insert(JobResult).excluded.skills_score,
-                    "company_score": pg_insert(JobResult).excluded.company_score,
-                    "seniority_score": pg_insert(JobResult).excluded.seniority_score,
-                    "location_score": pg_insert(JobResult).excluded.location_score,
-                    "recency_score": pg_insert(JobResult).excluded.recency_score,
-                    "final_score": pg_insert(JobResult).excluded.final_score,
-                    "title_relevance_score": pg_insert(JobResult).excluded.title_relevance_score,
-                    "fit_band": pg_insert(JobResult).excluded.fit_band,
-                    "confidence_band": pg_insert(JobResult).excluded.confidence_band,
-                    "explanation_summary": pg_insert(JobResult).excluded.explanation_summary,
-                    "match_report": pg_insert(JobResult).excluded.match_report,
-                    "verification_report": pg_insert(JobResult).excluded.verification_report,
-                    "company_tier": pg_insert(JobResult).excluded.company_tier,
-                    "is_contract": pg_insert(JobResult).excluded.is_contract,
-                },
-            )
-        )
+        await db.execute(_upsert(insert_batch))
     await db.commit()

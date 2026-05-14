@@ -12,8 +12,9 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from api.config import settings
+from api.config import is_desktop_mode, settings
 from api.models import JobRaw, Profile, Run
+from api.sql_compat import dialect_name
 from batch.context import build_context, get_batch, get_retry
 from batch.job_availability import archive_expired_jobs_for_user
 from batch.run_corpus import load_rerank_corpus_job_urls
@@ -47,6 +48,14 @@ def _get_score_jobs_for_user():
     from ranking.v4.db_scorer import score_jobs_for_user
 
     return score_jobs_for_user
+
+
+def _should_archive_availability_after_run(ranked_count: int) -> bool:
+    return (
+        settings.job_availability_archive_after_run
+        and not is_desktop_mode()
+        and ranked_count > 0
+    )
 
 
 def _should_log_embed_progress(done: int, total: int, last_logged: int) -> bool:
@@ -542,7 +551,7 @@ async def process_run(
                 user_id=user_id,
             )
             availability_archive_meta: dict[str, int] = {}
-            if settings.job_availability_archive_after_run and len(ranked_df) > 0:
+            if _should_archive_availability_after_run(len(ranked_df)):
                 try:
                     t_archive = time.monotonic()
                     availability_result = await archive_expired_jobs_for_user(
@@ -866,17 +875,18 @@ async def _claim_pending_run(session_factory: async_sessionmaker, mode: str, loc
 
         run = None
         for candidate in candidates:
-            result = await db.execute(
+            stmt = (
                 select(Run)
                 .where(
                     claimable_filter,
                     Run.user_id == candidate.user_id,
-                    Run.started_at == candidate.oldest_started_at,
                 )
-                .order_by(Run.id.asc())
+                .order_by(Run.started_at.asc(), Run.id.asc())
                 .limit(1)
-                .with_for_update(skip_locked=True)
             )
+            if dialect_name(db) != "sqlite":
+                stmt = stmt.with_for_update(skip_locked=True)
+            result = await db.execute(stmt)
             run = result.scalar_one_or_none()
             if run is not None:
                 break
@@ -908,12 +918,10 @@ async def _claim_pending_run(session_factory: async_sessionmaker, mode: str, loc
 async def _claim_run_by_id(session_factory: async_sessionmaker, req: RunRequest, local_worker: bool = False) -> RunRequest | None:
     async with session_factory() as db:
         now = datetime.now(timezone.utc)
-        result = await db.execute(
-            select(Run)
-            .where(Run.id == req.run_id, Run.mode == req.mode)
-            .limit(1)
-            .with_for_update(skip_locked=True)
-        )
+        stmt = select(Run).where(Run.id == req.run_id, Run.mode == req.mode).limit(1)
+        if dialect_name(db) != "sqlite":
+            stmt = stmt.with_for_update(skip_locked=True)
+        result = await db.execute(stmt)
         run = result.scalar_one_or_none()
         if not run:
             await db.rollback()

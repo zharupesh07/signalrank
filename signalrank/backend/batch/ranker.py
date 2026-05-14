@@ -10,8 +10,9 @@ import pandas as pd
 from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.models import JobRaw, JobResult, Profile
 from api.config import settings
+from api.models import JobRaw, JobResult, Profile
+from api.sql_compat import dialect_name, text_prefix_expr
 from batch.context import build_context, get_batch, load_base_config
 from batch.embedding_cache import (
     PgEmbeddingCache,
@@ -77,7 +78,7 @@ from domain.scoring import (
 )
 from domain.skill_boost import bounded_skill_boost
 from domain.skills import SkillCanonicalizer, extract_skills_from_texts
-from llm.openrouter import OpenRouterClient
+from llm.providers import build_llm_client, configured_api_key, normalize_provider
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +139,9 @@ async def load_jobs_dataframe(
         JobRaw.job_url,
         JobRaw.title,
         JobRaw.company,
-        func.left(JobRaw.description, _RANK_DESCRIPTION_CHARS).label("description"),
+        text_prefix_expr(db, JobRaw.description, _RANK_DESCRIPTION_CHARS).label(
+            "description"
+        ),
         JobRaw.location,
         JobRaw.site,
         JobRaw.date_posted,
@@ -255,7 +258,9 @@ async def load_jobs_by_ids_dataframe(
         JobRaw.job_url,
         JobRaw.title,
         JobRaw.company,
-        func.left(JobRaw.description, _RANK_DESCRIPTION_CHARS).label("description"),
+        text_prefix_expr(db, JobRaw.description, _RANK_DESCRIPTION_CHARS).label(
+            "description"
+        ),
         JobRaw.location,
         JobRaw.site,
         JobRaw.date_posted,
@@ -317,6 +322,31 @@ async def ann_prefilter_job_urls(
     """
     if cutoff is None:
         cutoff = datetime.now(timezone.utc) - timedelta(days=_JOB_WINDOW_DAYS)
+    if dialect_name(db) == "sqlite":
+        rows = (
+            await db.execute(
+                select(JobRaw.job_url, JobRaw.embedding)
+                .where(JobRaw.embedding.is_not(None), JobRaw.ingested_at >= cutoff)
+                .limit(max(limit * 5, limit))
+            )
+        ).all()
+        query = np.array(resume_embedding, dtype="float32")
+        scored = [
+            (
+                job_url,
+                float(
+                    cosine_similarity(
+                        query,
+                        np.array([embedding], dtype="float32"),
+                    )[0]
+                ),
+            )
+            for job_url, embedding in rows
+            if embedding
+        ]
+        scored.sort(key=lambda item: item[1], reverse=True)
+        return [job_url for job_url, _ in scored[:limit]]
+
     rows = await db.execute(
         text("""
             SELECT job_url FROM jobs_raw
@@ -785,21 +815,21 @@ def _apply_additive_scoring(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     return df
 
 
-def _agentic_client_or_none() -> OpenRouterClient | None:
-    api_key = getattr(settings, "openrouter_api_key", None)
-    if not api_key:
+def _agentic_client_or_none():
+    provider = normalize_provider(getattr(settings, "llm_provider", "openrouter"))
+    if not configured_api_key(provider):
         return None
     try:
-        return OpenRouterClient(api_key=api_key)
+        return build_llm_client(provider=provider)
     except Exception:
         logger.warning(
-            "Agentic matching disabled: could not initialize OpenRouter client",
+            "Agentic matching disabled: could not initialize LLM client",
             exc_info=True,
         )
         return None
 
 
-def _llm_model_version(llm_client: OpenRouterClient | None) -> str:
+def _llm_model_version(llm_client) -> str:
     if llm_client is None:
         return "heuristic"
     models = list(getattr(llm_client, "models", []) or [])
@@ -1067,7 +1097,7 @@ async def _judge_selected_jobs(
     candidate_profile: dict,
     resume_text: str,
     cfg: dict,
-    llm_client: OpenRouterClient | None,
+    llm_client: object | None,
     model_version: str,
     persisted_job_profiles: dict[str, dict] | None = None,
     cached_match_reports: dict[str, dict] | None = None,
@@ -1118,7 +1148,7 @@ async def _verify_selected_jobs(
     *,
     candidate_profile: dict,
     cfg: dict,
-    llm_client: OpenRouterClient | None,
+    llm_client: object | None,
     model_version: str,
     persisted_job_profiles: dict[str, dict] | None = None,
     verifier_indices: list[int] | None = None,
@@ -1185,7 +1215,7 @@ async def _apply_agentic_matching(
     resume_text: str,
     profile: Profile | None,
     db: AsyncSession,
-    llm_client: OpenRouterClient | None = None,
+    llm_client: object | None = None,
 ) -> pd.DataFrame:
     agentic_cfg = cfg.get("ranking", {}).get("agentic_matching", {}) or {}
     if not agentic_cfg.get("enabled", False) or df.empty:
@@ -1745,7 +1775,7 @@ async def _score_loaded_jobs_dataframe(
     canon: SkillCanonicalizer | None = None,
     base_cfg_fp: str | None = None,
     profile: Profile | None = None,
-    llm_client: OpenRouterClient | None = None,
+    llm_client: object | None = None,
 ) -> pd.DataFrame:
     t_total = time.monotonic()
     ctx = build_context(user_id, resume_text, config_overrides)

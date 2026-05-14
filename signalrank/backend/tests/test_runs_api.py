@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import uuid
 
 import pytest
@@ -5,7 +6,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models import User, Run
-from sqlalchemy.ext.asyncio import AsyncSession
+
+
+def test_iso_utc_marks_naive_sqlite_timestamps_as_utc():
+    from api.routes.runs import _iso_utc
+
+    assert _iso_utc(datetime(2026, 5, 13, 11, 47, 54)) == "2026-05-13T11:47:54+00:00"
+    assert _iso_utc(datetime(2026, 5, 13, 11, 47, 54, tzinfo=timezone.utc)) == "2026-05-13T11:47:54+00:00"
 
 
 @pytest.fixture

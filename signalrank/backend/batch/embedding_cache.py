@@ -4,10 +4,10 @@ from collections.abc import Sequence
 
 import numpy as np
 from sqlalchemy import select
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models import Embedding, JobRaw
+from api.sql_compat import dialect_insert
 from batch.context import load_base_config
 
 # Process-level LRU cache keyed by (cfg_fp, text_fp) — avoids re-fetching
@@ -80,7 +80,7 @@ class PgEmbeddingCache:
                 clean = _clean_vector(vector)
                 values.append({"text_fp": text_fp, "cfg_fp": self.cfg_fp, "vector": clean})
             await self.db.execute(
-                pg_insert(Embedding)
+                dialect_insert(self.db, Embedding)
                 .values(values)
                 .on_conflict_do_nothing(index_elements=["text_fp", "cfg_fp"])
             )
@@ -102,7 +102,7 @@ async def store_job_embeddings(
             {"job_url": job_url, "embedding": _clean_vector(vector)}
             for job_url, vector in batch
         ]
-        insert_stmt = pg_insert(JobRaw).values(values)
+        insert_stmt = dialect_insert(db, JobRaw).values(values)
         await db.execute(
             insert_stmt.on_conflict_do_update(
                 index_elements=["job_url"],

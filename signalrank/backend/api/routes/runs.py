@@ -7,7 +7,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
-from api.config import api_runtime_flags, settings
+from api.config import api_runtime_flags, is_desktop_mode, settings
 from api.database import get_db
 from api.deps import get_current_user
 from api.models import Profile, Run, User
@@ -23,6 +23,14 @@ ACTIVE_RUN_STATUSES = ("pending", "claimed", "scraping", "ranking")
 
 def _display_status(db_status: str) -> str:
     return "completed" if db_status == "success" else db_status
+
+
+def _iso_utc(value: datetime | None) -> str | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc).isoformat()
 
 
 def _jobs_snapshot(progress: dict | None) -> dict | None:
@@ -75,12 +83,13 @@ async def _create_run(
     profile = result.scalar_one_or_none()
     if not profile or not profile.onboarding_complete:
         raise HTTPException(status_code=400, detail="Please complete onboarding before triggering a run")
-    await enforce_user_rate_limit(
-        current_user.id,
-        "refresh_jobs",
-        limit=6,
-        window_seconds=60 * 60,
-    )
+    if not is_desktop_mode():
+        await enforce_user_rate_limit(
+            current_user.id,
+            "refresh_jobs",
+            limit=6,
+            window_seconds=60 * 60,
+        )
 
     active_runs_result = await db.execute(
         select(Run)
@@ -154,8 +163,8 @@ def _serialize_run(run: Run) -> RunResponse:
         scrape_reason=scrape_reason_from_progress(run.progress),
         jobs_snapshot=_jobs_snapshot(run.progress),
         error=run.error,
-        started_at=str(run.started_at) if run.started_at else None,
-        finished_at=str(run.finished_at) if run.finished_at else None,
+        started_at=_iso_utc(run.started_at),
+        finished_at=_iso_utc(run.finished_at),
         executor_type=run.executor_type,
     )
 

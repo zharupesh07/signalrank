@@ -5,11 +5,11 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from sqlalchemy.dialects.postgresql import insert
 
 from api.config import settings
 from api.helpers import get_resume_template
 from api.models import Application, GenerationQueue, JobRaw, Profile, TailoredResume
+from api.sql_compat import conflict_kwargs, dialect_insert, dialect_name
 from batch.context import load_base_config
 from llm.email_generator import generate_email
 from llm.openrouter import OpenRouterClient
@@ -200,9 +200,9 @@ async def boot_scan(db: AsyncSession) -> None:
         return
 
     await db.execute(
-        insert(GenerationQueue)
+        dialect_insert(db, GenerationQueue)
         .values([{"user_id": r.user_id, "job_id": r.job_id} for r in rows])
-        .on_conflict_do_nothing(constraint="uq_generation_queue_user_job")
+        .on_conflict_do_nothing(**conflict_kwargs(db, constraint="uq_generation_queue_user_job"))
     )
     await db.commit()
     logger.info("Boot scan: enqueued %d resume generation tasks", len(rows))
@@ -232,10 +232,10 @@ async def force_regenerate_all(db: AsyncSession, user_id: str) -> int:
     )
     # Enqueue any that don't have a queue row yet
     await db.execute(
-        insert(GenerationQueue)
+        dialect_insert(db, GenerationQueue)
         .values([{"user_id": user_id, "job_id": jid} for jid in job_ids])
         .on_conflict_do_update(
-            constraint="uq_generation_queue_user_job",
+            **conflict_kwargs(db, constraint="uq_generation_queue_user_job"),
             set_={"status": "pending", "error": None},
         )
     )
@@ -260,7 +260,7 @@ async def resume_worker_loop(
         try:
             async with session_factory() as db:
                 now = datetime.now(timezone.utc)
-                result = await db.execute(
+                stmt = (
                     select(GenerationQueue)
                     .where(
                         GenerationQueue.status == "pending",
@@ -268,8 +268,10 @@ async def resume_worker_loop(
                     )
                     .order_by(GenerationQueue.created_at)
                     .limit(CONCURRENCY)
-                    .with_for_update(skip_locked=True)
                 )
+                if dialect_name(db) != "sqlite":
+                    stmt = stmt.with_for_update(skip_locked=True)
+                result = await db.execute(stmt)
                 tasks = result.scalars().all()
 
                 if tasks:

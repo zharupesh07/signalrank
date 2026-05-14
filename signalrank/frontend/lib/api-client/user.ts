@@ -60,3 +60,42 @@ export const onboardingApi = {
       body: JSON.stringify({ question_id, answer }),
     }),
 };
+
+export const desktopApi = {
+  status: () =>
+    request<{
+      mode: "desktop";
+      provider_configured: boolean;
+      provider: string | null;
+      active_provider: string;
+      providers: { id: string; name: string; configured: boolean; active: boolean }[];
+      user_id: string;
+      resume_uploaded: boolean;
+      onboarding_complete: boolean;
+    }>("/api/desktop/status"),
+  session: () =>
+    request<{ access_token: string; token_type: string }>("/api/desktop/session", {
+      method: "POST",
+    }),
+  providers: () =>
+    request<{
+      active_provider: string;
+      providers: { id: string; name: string; configured: boolean; active: boolean }[];
+    }>("/api/desktop/providers"),
+  saveProviderKey: (api_key: string, provider = "openrouter") =>
+    request<{ status: string; provider: string; healthy_models: string[] }>(
+      "/api/desktop/provider-key",
+      {
+        method: "POST",
+        body: JSON.stringify({ provider, api_key }),
+      }
+    ),
+  setProviderPreference: (active_provider: string) =>
+    request<{ status: string; active_provider: string }>(
+      "/api/desktop/provider-preferences",
+      {
+        method: "PATCH",
+        body: JSON.stringify({ active_provider }),
+      }
+    ),
+};

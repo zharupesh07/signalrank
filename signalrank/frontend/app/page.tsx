@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import {
   ArrowRight,
   CheckCircle2,
@@ -35,6 +36,10 @@ const features = [
 ];
 
 export default async function HomePage() {
+  if (process.env.NEXT_PUBLIC_SIGNALRANK_MODE === "desktop") {
+    redirect("/desktop-setup");
+  }
+
   const session = await auth();
   const isAuthed = Boolean(session);
   const primaryHref = isAuthed ? "/dashboard" : "/signup";

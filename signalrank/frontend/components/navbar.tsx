@@ -23,8 +23,9 @@ export default function Navbar() {
 
   const email = (session.user as { email?: string })?.email ?? "";
   const isAdmin = (session as { isAdmin?: boolean })?.isAdmin ?? false;
+  const isDesktop = process.env.NEXT_PUBLIC_SIGNALRANK_MODE === "desktop";
 
-  const links = isAdmin
+  const links = isAdmin && !isDesktop
     ? [...NAV_LINKS, { href: "/admin", label: "Admin" }]
     : NAV_LINKS;
 
@@ -86,13 +87,15 @@ export default function Navbar() {
               {email}
             </Link>
           </div>
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors group"
-          >
-            <LogOut size={11} className="group-hover:rotate-12 transition-transform" />
-            <span className="tracking-wider">LOGOUT</span>
-          </button>
+          {!isDesktop && (
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors group"
+            >
+              <LogOut size={11} className="group-hover:rotate-12 transition-transform" />
+              <span className="tracking-wider">LOGOUT</span>
+            </button>
+          )}
           {/* Hamburger — mobile only */}
           <button
             onClick={() => setMobileOpen((v) => !v)}
@@ -125,13 +128,15 @@ export default function Navbar() {
             })}
             <div className="border-t border-border mt-2 pt-3 flex items-center justify-between">
               <span className="text-xs text-muted-foreground truncate max-w-[200px]">{email}</span>
-              <button
-                onClick={() => signOut({ callbackUrl: "/login" })}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors"
-              >
-                <LogOut size={11} />
-                <span className="tracking-wider">LOGOUT</span>
-              </button>
+              {!isDesktop && (
+                <button
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <LogOut size={11} />
+                  <span className="tracking-wider">LOGOUT</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

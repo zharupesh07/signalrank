@@ -18,8 +18,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        desktopToken: { label: "Desktop Token", type: "text" },
       },
       async authorize(credentials) {
+        const desktopToken = credentials?.desktopToken as string | undefined;
+        if (
+          desktopToken &&
+          (process.env.SIGNALRANK_MODE === "desktop" ||
+            process.env.NEXT_PUBLIC_SIGNALRANK_MODE === "desktop")
+        ) {
+          const decoded = decodeJwtPayload(desktopToken);
+          return {
+            id: String(decoded.sub ?? "desktop"),
+            email: String(decoded.email ?? "local@signalrank.desktop"),
+            accessToken: desktopToken,
+            isAdmin: (decoded.is_admin as boolean) ?? true,
+          };
+        }
         if (!credentials?.email || !credentials?.password) return null;
         try {
           const data = await api.auth.login(

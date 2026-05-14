@@ -4,10 +4,10 @@ import re
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models import JobRaw, ScrapeQueryCache
+from api.sql_compat import dialect_insert
 from batch.query_builder import SearchQuery
 from batch.scraper import RawJob, ScraperConfig
 
@@ -93,7 +93,7 @@ async def store_cached_jobs(
     hours_old = effective_hours_old(config, site)
     job_urls = [job.job_url for job in jobs if job.job_url]
     stmt = (
-        pg_insert(ScrapeQueryCache)
+        dialect_insert(db, ScrapeQueryCache)
         .values(
             provider=provider,
             site=site,

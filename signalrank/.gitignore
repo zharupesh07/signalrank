@@ -4,8 +4,10 @@ __pycache__/
 *.pyo
 .venv/
 *.egg-info/
+build/
 dist/
 .pytest_cache/
+*.spec
 
 # Environment
 .env
@@ -26,3 +28,11 @@ alembic/versions/*.pyc
 
 # Backups
 backups/
+
+# Desktop packaging outputs
+.desktop-data/
+desktop/src-tauri/binaries/*
+!desktop/src-tauri/binaries/.gitkeep
+desktop/src-tauri/node-libs/*
+!desktop/src-tauri/node-libs/.gitkeep
+desktop/src-tauri/target/

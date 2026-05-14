@@ -16,43 +16,46 @@ export const TIER_COLORS: Record<string, string> = {
   tier_d:  "var(--muted-foreground)",
 };
 
-const BUCKET_STYLES: Record<string, { color: string; border: string; bg: string }> = {
-  top_fit: { color: "var(--primary)", border: "var(--primary)", bg: "color-mix(in srgb, var(--primary) 12%, transparent)" },
-  strong_fit: { color: "var(--terminal-green-bright)", border: "var(--terminal-green-bright)", bg: "color-mix(in srgb, var(--terminal-green-bright) 10%, transparent)" },
-  possible_fit: { color: "#4ade80", border: "#4ade80", bg: "color-mix(in srgb, #4ade80 12%, transparent)" },
-  stretch: { color: "var(--terminal-yellow)", border: "var(--terminal-yellow)", bg: "color-mix(in srgb, var(--terminal-yellow) 12%, transparent)" },
-  hide: { color: "var(--muted-foreground)", border: "var(--muted-foreground)", bg: "transparent" },
+const BUCKET_STYLES: Record<string, { color: string; bg: string; label: string }> = {
+  top_fit: { color: "var(--primary)", bg: "color-mix(in srgb, var(--primary) 9%, transparent)", label: "Top fit" },
+  strong_fit: { color: "var(--terminal-green-bright)", bg: "color-mix(in srgb, var(--terminal-green-bright) 8%, transparent)", label: "Strong" },
+  possible_fit: { color: "#4ade80", bg: "color-mix(in srgb, #4ade80 8%, transparent)", label: "Possible" },
+  stretch: { color: "var(--terminal-yellow)", bg: "color-mix(in srgb, var(--terminal-yellow) 9%, transparent)", label: "Stretch" },
+  hide: { color: "var(--muted-foreground)", bg: "color-mix(in srgb, var(--muted-foreground) 7%, transparent)", label: "Hide" },
 };
 
 export function FitBucketCell({ job }: { job: Job }) {
   const bucketKey = job.preference_bucket_key ?? "possible_fit";
-  const bucketLabel = job.preference_bucket ?? "Possible fit";
   const style = BUCKET_STYLES[bucketKey] ?? BUCKET_STYLES.possible_fit;
+  const bucketLabel = style.label ?? job.preference_bucket ?? "Possible";
+  const reason = job.rank_reason_down || job.rank_reason_up;
+
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-1.5">
-        <span
-          className="inline-flex items-center px-2 py-1 text-[10px] uppercase tracking-[0.16em] border"
-          style={{ color: style.color, borderColor: `${style.border}55`, background: style.bg }}
-        >
-          {bucketLabel}
-        </span>
-        {job.rank_reason_down ? (
-          <span
-            className="inline-flex items-center gap-1 px-1.5 py-1 text-[10px] text-[var(--terminal-yellow)] border border-[var(--terminal-yellow)]/35"
-            title={job.rank_reason_down}
-          >
-            <AlertTriangle size={10} />
-            caution
+    <div
+      className="group/fit grid max-w-[180px] grid-cols-[3px_minmax(0,1fr)] overflow-hidden border border-border/80 bg-background/40"
+      title={reason || job.preference_bucket || undefined}
+    >
+      <span style={{ background: style.color }} />
+      <div className="min-w-0 px-2.5 py-2" style={{ background: style.bg }}>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-[11px] font-medium uppercase tracking-[0.12em]" style={{ color: style.color }}>
+            {bucketLabel}
           </span>
-        ) : null}
+          {job.rank_reason_down ? (
+            <AlertTriangle
+              aria-hidden="true"
+              className="size-3 shrink-0 text-[var(--terminal-yellow)]"
+            />
+          ) : null}
+        </div>
+        {reason ? (
+          <div className="mt-1 truncate text-[10px] leading-4 text-muted-foreground">
+            {reason}
+          </div>
+        ) : (
+          <div className="mt-1 text-[10px] leading-4 text-muted-foreground/70">No major caveats</div>
+        )}
       </div>
-      {job.rank_reason_up ? (
-        <div className="text-[10px] text-muted-foreground line-clamp-1">{job.rank_reason_up}</div>
-      ) : null}
-      {job.rank_reason_down ? (
-        <div className="text-[10px] text-muted-foreground line-clamp-1">{job.rank_reason_down}</div>
-      ) : null}
     </div>
   );
 }
@@ -146,7 +149,7 @@ export function getColumns({ tracked, trackJob }: ColumnHandlers) {
     }),
     col.accessor("final_score", {
       header: "Fit",
-      size: 120,
+      size: 180,
       cell: (i) => <FitBucketCell job={i.row.original} />,
     }),
     col.accessor("company_tier", {

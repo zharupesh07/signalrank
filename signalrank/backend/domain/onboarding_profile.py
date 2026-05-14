@@ -70,7 +70,9 @@ def deterministic_resume_parse(resume_text: str, profile: Any | None = None) -> 
     editor = parse_resume_editor(resume_text)
     skills = flatten_editor_skills(editor)
     if not skills and resume_text:
-        cfg = {}
+        from batch.context import load_base_config
+
+        cfg = load_base_config()
         skills = _normalize_str_list(extract_skills_from_texts([resume_text], cfg)[0])
     recent_titles = _normalize_str_list(
         exp.get("title")
@@ -120,6 +122,8 @@ def deterministic_resume_parse(resume_text: str, profile: Any | None = None) -> 
             suggested_roles = ["Innovation Engineer", "Emerging Technologies Engineer", "R&D Engineer"]
         elif any(term in resume_text_lower for term in ("network automation", "infrastructure automation", "cloud networking", "network engineer", "firewall", "load balancer")):
             suggested_roles = ["Network Automation Engineer", "Infrastructure Automation Engineer", "Cloud Network Engineer"]
+        elif any(term in resume_text_lower for term in ("qa automation", "sdet", "test automation", "selenium", "playwright")):
+            suggested_roles = ["QA Automation Engineer", "SDET", "Test Automation Engineer"]
     if detect_enterprise_role_from_text(resume_text):
         suggested_roles = _normalize_str_list(["SAP SD Consultant", *suggested_roles])
     elif any(term in resume_text_lower for term in ("ai platform", "mlops", "llmops", "internal developer platform", "platform engineer")):
@@ -128,6 +132,8 @@ def deterministic_resume_parse(resume_text: str, profile: Any | None = None) -> 
         suggested_roles = _normalize_str_list(["Innovation Engineer", *suggested_roles])
     elif any(term in resume_text_lower for term in ("network automation", "infrastructure automation", "cloud networking", "network engineer", "firewall", "load balancer")):
         suggested_roles = _normalize_str_list(["Network Automation Engineer", *suggested_roles])
+    elif any(term in resume_text_lower for term in ("qa automation", "sdet", "test automation", "selenium", "playwright")):
+        suggested_roles = _normalize_str_list(["QA Automation Engineer", "SDET", "Test Automation Engineer", *suggested_roles])
     career_archetypes = [
         {
             "id": archetype,
@@ -221,6 +227,8 @@ def infer_seed_roles(signals: dict) -> list[str]:
             roles = ["Innovation Engineer", "Emerging Technologies Engineer", "R&D Engineer"]
         elif any(term in resume_text for term in ("network automation", "infrastructure automation", "cloud network")):
             roles = ["Network Automation Engineer", "Infrastructure Automation Engineer", "Cloud Network Engineer"]
+        elif any(term in resume_text for term in ("qa automation", "sdet", "test automation", "selenium", "playwright")):
+            roles = ["QA Automation Engineer", "SDET", "Test Automation Engineer"]
     return _normalize_str_list(roles)[:5]
 
 

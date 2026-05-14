@@ -5,7 +5,6 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select, or_, text
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.database import get_db
@@ -22,6 +21,7 @@ from api.models import (
     Run,
     User,
 )
+from api.sql_compat import conflict_kwargs, dialect_insert
 from api.rate_limits import enforce_user_rate_limit
 from api.stats_cache import get_cached_stats, invalidate_stats_cache, set_cached_stats
 from api.timezone import format_datetime_local
@@ -1483,14 +1483,14 @@ async def archive_unsuitable(
         return {"queued": 0, "message": "All eligible jobs already evaluated"}
 
     await db.execute(
-        pg_insert(ArchivalQueue)
+        dialect_insert(db, ArchivalQueue)
         .values(
             [
                 {"user_id": current_user.id, "job_result_id": jrid}
                 for jrid in job_result_ids
             ]
         )
-        .on_conflict_do_nothing(constraint="uq_archival_queue_user_job_result")
+        .on_conflict_do_nothing(**conflict_kwargs(db, constraint="uq_archival_queue_user_job_result"))
     )
     await db.commit()
 

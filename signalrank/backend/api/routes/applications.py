@@ -7,7 +7,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -17,6 +16,7 @@ from api.deps_hunter import get_hunter_client
 from api.deps_llm import get_llm_client
 from api.stats_cache import get_cached_stats, invalidate_stats_cache, set_cached_stats
 from api.models import Application, GenerationQueue, JobRaw, JobResult, Profile, Recruiter, User
+from api.sql_compat import conflict_kwargs, dialect_insert
 from batch.recruiter_finder import find_recruiters
 
 logger = logging.getLogger(__name__)
@@ -180,7 +180,7 @@ async def _auto_find_recruiters(company: str, session_factory, llm, hunter):
             found = await find_recruiters(company=company, max_results=10, db=db, llm=llm, hunter=hunter)
             for rec in found:
                 stmt = (
-                    pg_insert(Recruiter)
+                    dialect_insert(db, Recruiter)
                     .values(
                         company=company,
                         name=rec.get("name"),
@@ -192,7 +192,7 @@ async def _auto_find_recruiters(company: str, session_factory, llm, hunter):
                         email_source=rec.get("email_source"),
                         email_verified=rec.get("email_verified"),
                     )
-                    .on_conflict_do_nothing(constraint="uq_recruiter_company_linkedin")
+                    .on_conflict_do_nothing(**conflict_kwargs(db, constraint="uq_recruiter_company_linkedin"))
                 )
                 await db.execute(stmt)
             await db.commit()
@@ -235,9 +235,9 @@ async def create_application(
     if app.job_id:
         try:
             await db.execute(
-                pg_insert(GenerationQueue)
+                dialect_insert(db, GenerationQueue)
                 .values(user_id=current_user.id, job_id=app.job_id)
-                .on_conflict_do_nothing(constraint="uq_generation_queue_user_job")
+                .on_conflict_do_nothing(**conflict_kwargs(db, constraint="uq_generation_queue_user_job"))
             )
             await db.commit()
         except Exception:

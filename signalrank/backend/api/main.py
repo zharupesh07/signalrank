@@ -19,12 +19,14 @@ from api.config import (
     api_runtime_flags,
     effective_allow_origin_regex,
     effective_allowed_origins,
+    is_desktop_mode,
     settings,
 )
 from api.database import AsyncSessionLocal, _parse_url, ensure_runtime_schema_compatibility
 from api.deps_llm import get_llm_client
 from api.logging_setup import configure_logging
 from api.routes import admin, applications, auth, dev, ingest, jobs, onboarding, profile, recruiters, resume, runs
+from api.routes import desktop
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -130,7 +132,8 @@ async def lifespan(app: FastAPI):
     if runtime_flags["run_api_worker"]:
         from batch.worker import worker_loop
         _worker_task = asyncio.create_task(worker_loop(AsyncSessionLocal))
-        _maintenance_worker_task = asyncio.create_task(_maintenance_worker_watchdog(AsyncSessionLocal))
+        if not is_desktop_mode():
+            _maintenance_worker_task = asyncio.create_task(_maintenance_worker_watchdog(AsyncSessionLocal))
 
     llm = None
     if runtime_flags["run_resume_worker"] or runtime_flags["run_archival_worker"]:
@@ -219,6 +222,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(desktop.router)
 app.include_router(admin.router)
 app.include_router(dev.router)
 app.include_router(profile.router)

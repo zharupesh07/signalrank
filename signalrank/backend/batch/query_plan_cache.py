@@ -3,10 +3,10 @@ from __future__ import annotations
 from dataclasses import asdict
 
 from sqlalchemy import select
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models import QueryPlanCache, gen_uuid
+from api.sql_compat import dialect_insert
 from batch import query_builder
 from batch.query_builder import QUERY_PLAN_DEBUG_KEY, SearchQuery
 from domain.artifact_versions import QUERY_PLAN_VERSION, query_plan_cache_key
@@ -92,7 +92,7 @@ async def store_query_plan_cache(
         query_version=query_version,
     )
     payload = _cache_payload(queries, shadow_payload=shadow_payload)
-    stmt = pg_insert(QueryPlanCache).values(
+    stmt = dialect_insert(db, QueryPlanCache).values(
         id=gen_uuid(),
         cache_key=cache_key,
         profile_fingerprint=profile_fingerprint,

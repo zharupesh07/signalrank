@@ -10,7 +10,6 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.database import get_db
@@ -18,6 +17,7 @@ from api.deps import get_current_user
 from api.deps_llm import get_llm_client
 from api.models import Application, GenerationQueue, JobRaw, JobResult, Profile, User
 from api.rate_limits import enforce_user_rate_limit
+from api.sql_compat import conflict_kwargs, dialect_insert
 from batch.context import load_base_config
 from domain.job_profile import build_job_profile
 from llm.openrouter import OpenRouterClient
@@ -290,7 +290,7 @@ async def ingest_confirm(
         )
 
     # Upsert JobRaw (shared across users) — tag by job content, not by the current user's profile.
-    insert_stmt = pg_insert(JobRaw).values(
+    insert_stmt = dialect_insert(db, JobRaw).values(
             job_url=job_url,
             title=body.title or None,
             company=body.company or None,
@@ -318,7 +318,7 @@ async def ingest_confirm(
 
     # Insert Application (idempotency guard — requires uq_application_user_job constraint)
     app_insert = await db.execute(
-        pg_insert(Application)
+        dialect_insert(db, Application)
         .values(
             user_id=current_user.id,
             job_id=job.id,
@@ -327,7 +327,7 @@ async def ingest_confirm(
             status="interested",
             priority=priority,
         )
-        .on_conflict_do_nothing(constraint="uq_application_user_job")
+        .on_conflict_do_nothing(**conflict_kwargs(db, constraint="uq_application_user_job"))
         .returning(Application.id)
     )
     app_id_row = app_insert.fetchone()
@@ -345,9 +345,9 @@ async def ingest_confirm(
 
     # Enqueue generation
     await db.execute(
-        pg_insert(GenerationQueue)
+        dialect_insert(db, GenerationQueue)
         .values(user_id=current_user.id, job_id=job.id)
-        .on_conflict_do_nothing(constraint="uq_generation_queue_user_job")
+        .on_conflict_do_nothing(**conflict_kwargs(db, constraint="uq_generation_queue_user_job"))
     )
     await db.commit()
 

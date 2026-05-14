@@ -1,0 +1,23 @@
+SignalRank Smoke Candidate
+AI Platform Engineer
+Bangalore, India
+smoke.candidate@example.com
+
+SUMMARY
+AI platform engineer with 7 years of experience building internal developer platforms, MLOps pipelines, LLM evaluation services, and Kubernetes-based model serving systems.
+
+EXPERIENCE
+Senior AI Platform Engineer, Example Cloud Labs, 2021 - Present
+- Built Python and FastAPI services for model deployment, prompt evaluation, and batch ranking workflows.
+- Operated Kubernetes, Terraform, Docker, PostgreSQL, SQLite, and CI/CD pipelines for production ML systems.
+- Partnered with data scientists to productionize embedding search, RAG prototypes, and monitoring dashboards.
+
+Machine Learning Engineer, Example Analytics, 2018 - 2021
+- Delivered PyTorch and scikit-learn models for document classification and job matching.
+- Automated Airflow pipelines and improved observability for feature generation jobs.
+
+SKILLS
+Python, FastAPI, TypeScript, Kubernetes, Terraform, Docker, PostgreSQL, SQLite, PyTorch, MLOps, LLM Evaluation, RAG, Embeddings, Airflow
+
+EDUCATION
+B.Tech in Computer Science, Example Institute

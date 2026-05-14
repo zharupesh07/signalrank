@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from api.routes.onboarding import _extract_text_from_pdf, _render_pdf_pages_as_images
+from domain.onboarding_profile import deterministic_resume_parse
 from domain.resume_editor import (
     editor_to_tailored_content,
     merge_resume_editor,
@@ -19,6 +20,7 @@ from tests._paths import repo_resumes_dir
 
 RESUMES_DIR = repo_resumes_dir()
 SAMPLE_PDFS = sorted(RESUMES_DIR.glob("*.pdf"))
+SPEC_PDFS = [path for path in SAMPLE_PDFS if path.with_suffix(".json").exists()]
 
 _EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)
 
@@ -139,11 +141,11 @@ class FakeVisionLLM:
 
 
 @pytest.fixture(
-    params=list(range(len(SAMPLE_PDFS))),
-    ids=[_load_sample_spec(path)["label"] for path in SAMPLE_PDFS],
+    params=list(range(len(SPEC_PDFS))),
+    ids=[_load_sample_spec(path).get("label", path.stem) for path in SPEC_PDFS],
 )
 def sample_pdf(request) -> tuple[int, Path, str, dict]:
-    path = SAMPLE_PDFS[request.param]
+    path = SPEC_PDFS[request.param]
     return request.param, path, _extract_text_from_pdf(path.read_bytes()), _load_sample_spec(path)
 
 
@@ -184,6 +186,19 @@ def test_parse_resume_editor_recovers_contact_handles_and_projects_from_real_res
     assert vivek["linkedin"] == "vivek-gupta-07bb7597"
     assert vivek["github"] == "vikkey321"
     assert vivek["projects"] == []
+
+
+def test_deterministic_parse_handles_rohan_text_pdf_without_llm():
+    resume_text = _extract_text_from_pdf((RESUMES_DIR / "RohanResumeText.pdf").read_bytes())
+
+    parsed = deterministic_resume_parse(resume_text)
+
+    assert parsed.skills
+    assert parsed.suggested_roles[:3] == [
+        "QA Automation Engineer",
+        "SDET",
+        "Test Automation Engineer",
+    ]
 
 
 def test_extract_text_corrupt_bytes():

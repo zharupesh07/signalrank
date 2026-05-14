@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.database import AsyncSessionLocal, get_db
@@ -15,6 +14,7 @@ from api.deps_hunter import get_hunter_client
 from api.deps_llm import get_llm_client
 from api.models import Application, Recruiter, RecruiterRefreshTask, User
 from api.rate_limits import enforce_user_rate_limit
+from api.sql_compat import conflict_kwargs, dialect_insert
 from batch.recruiter_finder import find_recruiters
 
 logger = logging.getLogger(__name__)
@@ -66,7 +66,7 @@ async def _run_refresh(task_id: str, user_id: str, companies: list[str], session
                     found = await find_recruiters(company=company, max_results=10, db=db, llm=llm, hunter=hunter)
                     for rec in found:
                         stmt = (
-                            pg_insert(Recruiter)
+                            dialect_insert(db, Recruiter)
                             .values(
                                 company=company,
                                 name=rec.get("name"),
@@ -78,7 +78,7 @@ async def _run_refresh(task_id: str, user_id: str, companies: list[str], session
                                 email_source=rec.get("email_source"),
                                 email_verified=rec.get("email_verified"),
                             )
-                            .on_conflict_do_nothing()
+                            .on_conflict_do_nothing(**conflict_kwargs(db, constraint="uq_recruiter_company_linkedin"))
                         )
                         r = await db.execute(stmt)
                         if r.rowcount:
@@ -172,7 +172,7 @@ async def _run_find_one(company: str, max_results: int, session_factory, llm, hu
                 found = await find_recruiters(company=company, max_results=max_results, db=db, llm=llm, hunter=hunter)
                 for rec in found:
                     stmt = (
-                        pg_insert(Recruiter)
+                        dialect_insert(db, Recruiter)
                         .values(
                             company=company,
                             name=rec.get("name"),
@@ -184,7 +184,7 @@ async def _run_find_one(company: str, max_results: int, session_factory, llm, hu
                             email_source=rec.get("email_source"),
                             email_verified=rec.get("email_verified"),
                         )
-                        .on_conflict_do_nothing(constraint="uq_recruiter_company_linkedin")
+                        .on_conflict_do_nothing(**conflict_kwargs(db, constraint="uq_recruiter_company_linkedin"))
                     )
                     await db.execute(stmt)
                 await db.commit()

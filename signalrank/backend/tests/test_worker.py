@@ -7,7 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from api.models import JobRaw, JobResult, Profile, Run, User
 from batch.query_builder import SearchQuery
-from batch.worker import _claim_pending_run, _embed_new_jobs, process_run
+from batch.worker import (
+    _claim_pending_run,
+    _embed_new_jobs,
+    _should_archive_availability_after_run,
+    process_run,
+)
 
 
 def _empty_ranked_df():
@@ -520,6 +525,25 @@ async def test_process_run_archives_expired_jobs_after_ranking(
     assert refreshed_run.progress["availability_checked"] == 1
     assert refreshed_run.progress["availability_archived"] == 1
     assert refreshed_run.progress["tracker_archived"] == 0
+
+
+def test_availability_archive_after_run_is_disabled_in_desktop_mode(monkeypatch):
+    import batch.worker as worker_module
+
+    monkeypatch.setattr(worker_module.settings, "signalrank_mode", "desktop")
+    monkeypatch.setattr(worker_module.settings, "job_availability_archive_after_run", True)
+
+    assert _should_archive_availability_after_run(1) is False
+
+
+def test_availability_archive_after_run_stays_enabled_in_server_mode(monkeypatch):
+    import batch.worker as worker_module
+
+    monkeypatch.setattr(worker_module.settings, "signalrank_mode", "server")
+    monkeypatch.setattr(worker_module.settings, "job_availability_archive_after_run", True)
+
+    assert _should_archive_availability_after_run(1) is True
+    assert _should_archive_availability_after_run(0) is False
 
 
 @pytest.mark.asyncio

@@ -13,6 +13,7 @@ import pandas as pd
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.sql_compat import text_prefix_expr
 from domain.job_source import compute_freshness_bucket, is_direct_source
 from ranking.v4.embeddings import ann_prefilter_job_urls, attach_embeddings_to_jobs, get_resume_embedding
 from ranking.v4.extraction import extract_profile_v4
@@ -55,13 +56,35 @@ async def _load_jobs(
 
     cutoff = datetime.now(timezone.utc) - timedelta(days=_JOB_WINDOW_DAYS)
     cols = (
-        JobRaw.id, JobRaw.job_url, JobRaw.title, JobRaw.company,
-        func.left(JobRaw.description, _RANK_DESCRIPTION_CHARS).label("description"),
-        JobRaw.location, JobRaw.site, JobRaw.date_posted,
-        JobRaw.ingested_at, JobRaw.role_clusters, JobRaw.job_profile, JobRaw.embedding,
+        JobRaw.id,
+        JobRaw.job_url,
+        JobRaw.title,
+        JobRaw.company,
+        text_prefix_expr(db, JobRaw.description, _RANK_DESCRIPTION_CHARS).label(
+            "description"
+        ),
+        JobRaw.location,
+        JobRaw.site,
+        JobRaw.date_posted,
+        JobRaw.ingested_at,
+        JobRaw.role_clusters,
+        JobRaw.job_profile,
+        JobRaw.embedding,
     )
-    col_names = ["id", "job_url", "title", "company", "description",
-                 "location", "site", "date_posted", "ingested_at", "role_clusters", "job_profile", "embedding"]
+    col_names = [
+        "id",
+        "job_url",
+        "title",
+        "company",
+        "description",
+        "location",
+        "site",
+        "date_posted",
+        "ingested_at",
+        "role_clusters",
+        "job_profile",
+        "embedding",
+    ]
 
     source_rank = case(
         (JobRaw.site.in_(["greenhouse", "ashby", "lever"]), 3),
