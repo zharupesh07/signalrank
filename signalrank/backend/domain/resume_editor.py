@@ -4,7 +4,7 @@ import re
 _EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)
 _PHONE_RE = re.compile(r"(\(?\+?\d[\d\s().-]{7,}\d)")
 _DATE_LINE_RE = re.compile(
-    r"(?i)\b(?:\d{1,2}/\d{4}|[A-Za-z]{3,9}\s+\d{4}|\d{4})\b.*(?:present|\d{4})"
+    r"(?i)\b(?:\d{1,2}/\d{4}|[A-Za-z]{3,9}\s+\d{4}|[A-Za-z]{3,9}[’']?\d{2}|\d{4})\b.*(?:present|\d{4}|\d{2})"
 )
 _SECTION_HEADINGS = {
     "summary": {"summary", "professional summary", "profile"},
@@ -15,6 +15,11 @@ _SECTION_HEADINGS = {
     "education": {"education", "academic background"},
     "awards": {"awards and achievements", "awards", "achievements", "honors and awards"},
 }
+_ROLE_TITLE_RE = re.compile(
+    r"\b(engineer|developer|analyst|manager|consultant|scientist|architect|"
+    r"specialist|sdet|qa|automation|platform|cloud|mlops|lead|intern)\b",
+    re.I,
+)
 
 
 def _clean_line(line: str) -> str:
@@ -26,11 +31,17 @@ def _clean_lines(text: str) -> list[str]:
 
 
 def _normalize_heading(line: str) -> str:
-    return re.sub(r"[^a-z0-9 ]+", " ", (line or "").lower()).strip()
+    normalized = re.sub(r"[^a-z0-9 ]+", " ", (line or "").lower()).strip()
+    tokens = normalized.split()
+    if len(tokens) >= 3 and all(len(token) == 1 for token in tokens):
+        return "".join(tokens)
+    return normalized
 
 
 def _looks_like_name(line: str) -> bool:
     if not line or "@" in line or any(ch.isdigit() for ch in line):
+        return False
+    if _ROLE_TITLE_RE.search(line):
         return False
     words = line.split()
     if len(words) < 2 or len(words) > 5:
@@ -69,7 +80,37 @@ def _looks_like_position_line(line: str) -> bool:
     if _looks_like_location(cleaned):
         return False
     words = cleaned.split()
-    return len(cleaned) <= 80 and 2 <= len(words) <= 12
+    letters = [ch for ch in cleaned if ch.isalpha()]
+    uppercase_ratio = (
+        sum(1 for ch in letters if ch.isupper()) / len(letters) if letters else 0
+    )
+    if len(words) >= 8 and uppercase_ratio < 0.5 and not any(token in cleaned for token in ("|", "·", "/", "&")):
+        return False
+    return len(cleaned) <= 140 and 2 <= len(words) <= 16
+
+
+def _normalize_position_text(value: str) -> str:
+    cleaned = _clean_line(value).strip(" |·-/")
+    if not cleaned:
+        return ""
+    letters = [ch for ch in cleaned if ch.isalpha()]
+    if letters and sum(1 for ch in letters if ch.isupper()) / len(letters) >= 0.75:
+        cleaned = cleaned.upper()
+    cleaned = re.sub(r"\bi([A-Z])", r"I\1", cleaned)
+    cleaned = re.sub(r"([A-Z])i\b", r"\1I", cleaned)
+    if cleaned.upper() == cleaned:
+        return (
+            cleaned.title()
+            .replace("Ai ", "AI ")
+            .replace("Mlops", "MLOps")
+            .replace("R&D", "R&D")
+            .replace("Poc", "POC")
+            .replace("Pot", "POT")
+            .replace("Mvp", "MVP")
+            .replace("Qa ", "QA ")
+            .replace("Sdet", "SDET")
+        )
+    return cleaned
 
 
 def _looks_like_location(line: str) -> bool:
@@ -135,9 +176,11 @@ def _split_role_company(line: str) -> tuple[str, str]:
 
 def _match_heading(line: str) -> tuple[str | None, str]:
     normalized = _normalize_heading(line)
+    compact = normalized.replace(" ", "")
     for name, aliases in _SECTION_HEADINGS.items():
         for alias in aliases:
-            if normalized == _normalize_heading(alias):
+            alias_normalized = _normalize_heading(alias)
+            if normalized == alias_normalized or compact == alias_normalized.replace(" ", ""):
                 return name, ""
             pattern = rf"(?i)^\s*{re.escape(alias)}\s*[:\-]\s*(.*)$"
             match = re.match(pattern, line or "")
@@ -173,7 +216,14 @@ def _parse_contact(lines: list[str]) -> dict:
             name_index = -1
         for line in top_lines[name_index + 1:]:
             if _looks_like_position_line(line) and not _looks_like_name(line):
-                position = line
+                position = _normalize_position_text(line)
+                break
+    if not position:
+        for line in top_lines:
+            if line == name or len(line) <= 2:
+                continue
+            if _looks_like_position_line(line):
+                position = _normalize_position_text(line)
                 break
 
     email_match = _EMAIL_RE.search(joined)
@@ -186,6 +236,7 @@ def _parse_contact(lines: list[str]) -> dict:
     handle_candidates: list[str] = []
     for line in top_lines:
         lower = line.lower()
+        skip_parts = line == name or _normalize_position_text(line) == position or _looks_like_location(line)
         if "linkedin.com/" in lower and not linkedin:
             linkedin = line
         elif "github.com/" in lower and not github:
@@ -205,11 +256,36 @@ def _parse_contact(lines: list[str]) -> dict:
             cleaned_location = _clean_line(line)
             if _looks_like_location(cleaned_location):
                 location = cleaned_location
+        if skip_parts:
+            continue
+        for part in re.split(r"\s*[|•]\s*", line):
+            part = _clean_line(part)
+            part_lower = part.lower()
+            if not part or part in {name, position, website}:
+                continue
+            if not linkedin and "linkedin.com/" in part_lower:
+                linkedin = part
+            elif not github and "github.com/" in part_lower:
+                github = part
+            elif (
+                not website
+                and "@" not in part
+                and not _PHONE_RE.search(part)
+                and "." in part
+                and " " not in part
+                and not part_lower.startswith("linkedin.com/")
+                and not part_lower.startswith("github.com/")
+            ):
+                website = part
+            elif not location and _looks_like_location(part):
+                location = part
+            elif _looks_like_handle_token(part):
+                handle_candidates.append(part)
 
     unique_handles = _dedupe_preserve(handle_candidates)
-    if unique_handles and (len(unique_handles) >= 2 or any("-" in candidate or "." in candidate for candidate in unique_handles)):
+    if unique_handles and (len(unique_handles) >= 2 or any("-" in candidate for candidate in unique_handles)):
         if not linkedin:
-            linked_candidate = next((candidate for candidate in unique_handles if "-" in candidate or "." in candidate), "")
+            linked_candidate = next((candidate for candidate in unique_handles if "-" in candidate), "")
             if linked_candidate:
                 linkedin = linked_candidate
         if not github:
@@ -248,6 +324,8 @@ def _infer_summary_from_header(lines: list[str], contact: dict) -> str:
     for line in lines:
         cleaned = _clean_line(line)
         if not cleaned or cleaned in exclusions:
+            continue
+        if cleaned.lower().startswith("last updated"):
             continue
         if _looks_like_contact_line(cleaned) or _looks_like_name(cleaned) or _looks_like_certification_line(cleaned):
             continue
@@ -325,6 +403,29 @@ def _split_title_company(header: str) -> tuple[str, str]:
     return cleaned, ""
 
 
+def _split_company_tech(line: str) -> tuple[str, str]:
+    cleaned = _clean_line(line)
+    if " · " in cleaned:
+        company, tech = cleaned.split(" · ", 1)
+        return _clean_line(company), _clean_line(tech)
+    return cleaned, ""
+
+
+def _extract_date_location(line: str) -> tuple[str, str]:
+    cleaned = _clean_line(line)
+    match = re.search(
+        r"(?i)\b(?:\d{1,2}/\d{4}|[A-Za-z]{3,9}\s+\d{4}|[A-Za-z]{3,9}'?\d{2}|\d{4})\b",
+        cleaned,
+    )
+    if not match:
+        return cleaned, ""
+    prefix = _clean_line(cleaned[:match.start()].rstrip(",-–— "))
+    dates = _clean_line(cleaned[match.start():].strip(" ,"))
+    if prefix and _looks_like_location(prefix):
+        return dates, prefix
+    return cleaned, ""
+
+
 def _extract_inline_dates(header: str) -> tuple[str, str, str] | None:
     match = _DATE_LINE_RE.search(header or "")
     if not match:
@@ -337,6 +438,30 @@ def _extract_inline_dates(header: str) -> tuple[str, str, str] | None:
     if not title:
         return None
     return title, company, dates
+
+
+def _extract_colon_experience(header: str) -> tuple[str, str, str, str] | None:
+    cleaned = _clean_line(header)
+    if ":" not in cleaned:
+        return None
+    date_part, rest = cleaned.split(":", 1)
+    date_part = _clean_line(date_part)
+    rest = _clean_line(rest)
+    if not date_part or not rest or not _looks_like_date_line(date_part):
+        return None
+    title = ""
+    company = rest
+    location = ""
+    match = re.search(r"(?i)\s+as\s+(.+)$", rest)
+    if match:
+        title = _clean_line(match.group(1))
+        company = _clean_line(rest[: match.start()])
+    if "," in company:
+        left, right = company.rsplit(",", 1)
+        if _looks_like_location(right):
+            company = _clean_line(left)
+            location = _clean_line(right)
+    return title, company, date_part, location
 
 
 def _starts_new_experience(lines: list[str], index: int) -> bool:
@@ -369,8 +494,12 @@ def _parse_experiences(lines: list[str]) -> list[dict]:
         title = company = dates = location = ""
         j = i
 
+        colon_exp = _extract_colon_experience(line)
         inline = _extract_inline_dates(line)
-        if inline:
+        if colon_exp:
+            title, company, dates, location = colon_exp
+            j = i + 1
+        elif inline:
             title, company, dates = inline
             j = i + 1
         elif i + 2 < len(lines) and _looks_like_date_line(lines[i + 2]):
@@ -386,6 +515,9 @@ def _parse_experiences(lines: list[str]) -> list[dict]:
         if not dates:
             i += 1
             continue
+        dates, inline_location = _extract_date_location(dates)
+        if inline_location:
+            location = inline_location
 
         # Repair common OCR/extraction failure where a bullet fragment is followed
         # by the real role header and the date line. In that shape, the fragment
@@ -407,7 +539,25 @@ def _parse_experiences(lines: list[str]) -> list[dict]:
 
         while j < len(lines) and re.fullmatch(r"[,/–—\- ]+", _clean_line(lines[j] or "")):
             j += 1
-        if j < len(lines) and _looks_like_location_line(lines[j]):
+        tech = ""
+        if j < len(lines) and _clean_line(lines[j]).lower().startswith("tech") and ":" in _clean_line(lines[j]):
+            tech = _clean_line(lines[j]).split(":", 1)[1].strip()
+            j += 1
+        if not location and j < len(lines) and _looks_like_location_line(lines[j]):
+            location = _clean_line(lines[j])
+            j += 1
+        if not company and j < len(lines):
+            candidate_company, candidate_tech = _split_company_tech(lines[j])
+            if (
+                candidate_company
+                and not _has_bullet_marker(lines[j])
+                and not _looks_like_date_line(candidate_company)
+                and ":" not in candidate_company
+            ):
+                company = candidate_company
+                tech = tech or candidate_tech
+                j += 1
+        if not location and j < len(lines) and _looks_like_location_line(lines[j]):
             location = _clean_line(lines[j])
             j += 1
 
@@ -423,6 +573,7 @@ def _parse_experiences(lines: list[str]) -> list[dict]:
             "company": company.strip(),
             "dates": dates.strip(),
             "location": location.strip(),
+            "tech": tech.strip(),
             "bullets": bullets,
         })
         i = j
@@ -775,10 +926,14 @@ def parse_resume_editor(resume_text: str | None) -> dict:
     if not certifications:
         certifications = _dedupe_preserve([line for line in header_lines if _looks_like_certification_line(line)])
 
+    experiences = _parse_experiences(sections.get("experience", []))
+    if not contact.get("location") and experiences:
+        contact["location"] = str(experiences[0].get("location") or "").strip()
+
     return {
         **contact,
         "summary": summary,
-        "experiences": _parse_experiences(sections.get("experience", [])),
+        "experiences": experiences,
         "projects": _parse_projects(sections.get("projects", [])),
         "skills": _parse_skills(sections.get("skills", [])),
         "certifications": certifications,

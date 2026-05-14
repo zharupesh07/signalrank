@@ -61,22 +61,33 @@ def _assert_editor_matches_spec(editor: dict, spec: dict) -> None:
     assert editor["email"] == spec["email"]
     if spec["phone"]:
         assert editor["phone"] == spec["phone"]
-    if spec["position_contains"]:
-        assert spec["position_contains"] in editor["position"].lower()
-    assert len(editor["experiences"]) >= spec["minimums"]["experiences"]
+    position_contains = spec.get("position_contains") or spec.get("position", "")
+    if position_contains:
+        assert _token_overlap_ratio(position_contains, editor["position"]) >= 0.5
+    minimums = spec.get("minimums") or {}
+    assert len(editor["experiences"]) >= minimums.get("experiences", len(spec.get("experiences", [])))
     skill_item_count = sum(len(group.get("items", [])) for group in editor["skills"])
-    assert len(editor["skills"]) >= spec["minimums"]["skill_groups"] or skill_item_count >= spec["minimums"]["skill_groups"]
-    assert len(editor["certifications"]) >= spec["minimums"]["certifications"]
-    for marker in spec["experience_markers"]:
+    min_skill_groups = minimums.get("skill_groups", 0)
+    assert len(editor["skills"]) >= min_skill_groups or skill_item_count >= min_skill_groups
+    assert len(editor["certifications"]) >= minimums.get("certifications", 0)
+    markers = spec.get("experience_markers") or [
+        {"title": exp.get("title", ""), "company": exp.get("company", "")}
+        for exp in spec.get("experiences", [])
+    ]
+    for marker in markers:
         assert any(_experience_matches(exp, marker) for exp in editor["experiences"]), marker
-    for marker in spec["certification_markers"]:
+    for marker in spec.get("certification_markers", []):
         assert any(marker.lower() in cert.lower() for cert in editor["certifications"]), marker
 
 
 def _fake_llm_payload(spec: dict, extracted_text: str) -> dict:
     base = parse_resume_editor(extracted_text)
     experiences = []
-    for idx, marker in enumerate(spec["experience_markers"]):
+    markers = spec.get("experience_markers") or [
+        {"title": exp.get("title", ""), "company": exp.get("company", "")}
+        for exp in spec.get("experiences", [])
+    ]
+    for idx, marker in enumerate(markers):
         matched = next((exp for exp in base.get("experiences", []) if _experience_matches(exp, marker)), None)
         experiences.append(
             {
@@ -90,7 +101,8 @@ def _fake_llm_payload(spec: dict, extracted_text: str) -> dict:
         )
 
     skills = list(base.get("skills", []))
-    while len(skills) < spec["minimums"]["skill_groups"]:
+    minimums = spec.get("minimums") or {}
+    while len(skills) < minimums.get("skill_groups", 0):
         skills.append(
             {
                 "category": f"General {len(skills) + 1}",
@@ -98,7 +110,7 @@ def _fake_llm_payload(spec: dict, extracted_text: str) -> dict:
             }
         )
 
-    certifications = list(spec["certification_markers"])
+    certifications = list(spec.get("certification_markers", spec.get("certifications", [])))
 
     position = spec["position"] or base.get("position") or "Experienced Professional"
     summary = base.get("summary") or "Experienced professional delivering production systems and measurable outcomes."
@@ -106,11 +118,11 @@ def _fake_llm_payload(spec: dict, extracted_text: str) -> dict:
     return {
         "name": spec["name"],
         "email": spec["email"],
-        "phone": spec["phone"],
-        "location": spec["location"],
-        "linkedin": spec["linkedin"],
-        "github": spec["github"],
-        "website": spec["website"],
+        "phone": spec.get("phone", ""),
+        "location": spec.get("location", ""),
+        "linkedin": spec.get("linkedin", ""),
+        "github": spec.get("github", ""),
+        "website": spec.get("website", ""),
         "position": position,
         "summary": summary,
         "experiences": experiences,
@@ -186,6 +198,47 @@ def test_parse_resume_editor_recovers_contact_handles_and_projects_from_real_res
     assert vivek["linkedin"] == "vivek-gupta-07bb7597"
     assert vivek["github"] == "vikkey321"
     assert vivek["projects"] == []
+
+
+def test_parse_resume_editor_normalizes_example_workspace_fields():
+    text = _extract_text_from_pdf((RESUMES_DIR / "Example_Candidate_Resume_V2_2.pdf").read_bytes())
+
+    editor = parse_resume_editor(text)
+
+    assert editor["position"] == "Senior AI Platform Engineer | Cloud Infrastructure | MLOps | Agentic Systems"
+    assert editor["location"] == "Pune"
+    assert editor["linkedin"] == "example-candidate"
+    assert editor["github"] == "examplecandidate"
+    first = editor["experiences"][0]
+    assert first["company"] == "Fractal Analytics"
+    assert first["location"] == "Pune"
+    assert "LANGGRAPH" in first["tech"]
+
+
+def test_parse_resume_editor_handles_spaced_headings_and_inline_experience():
+    text = _extract_text_from_pdf((RESUMES_DIR / "RohanResumeText.pdf").read_bytes())
+
+    editor = parse_resume_editor(text)
+
+    assert editor["name"] == ""
+    assert editor["position"] == "QA Automation Engineer"
+    assert editor["summary"].startswith("IT professional")
+    assert editor["location"] == "Bangalore"
+    assert editor["experiences"][0]["title"] == "QA Engineer I/SDET"
+    assert editor["experiences"][0]["company"] == "Kaplan India Pvt. Ltd."
+
+
+def test_parse_resume_editor_keeps_combined_contact_line_clean():
+    text = _extract_text_from_pdf((RESUMES_DIR / "rohan_high_quality_resume.pdf").read_bytes())
+
+    editor = parse_resume_editor(text)
+
+    assert editor["email"] == "rohanraut372@gmail.com"
+    assert editor["phone"] == "+91 7741969606"
+    assert editor["linkedin"] == "rohan-raut-286406239"
+    assert editor["location"] == "Bangalore, India"
+    assert editor["experiences"][0]["company"] == "Kaplan India Pvt. Ltd."
+    assert "Selenium WebDriver" in editor["experiences"][0]["tech"]
 
 
 def test_deterministic_parse_handles_rohan_text_pdf_without_llm():

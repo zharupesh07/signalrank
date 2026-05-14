@@ -239,6 +239,47 @@ async function verifyPreview(token) {
   return preview;
 }
 
+const expectedEditors = {
+  "Example_Candidate_Resume_V2_2.pdf": {
+    position: "Senior AI Platform Engineer",
+    location: "Pune",
+    linkedin: "example-candidate",
+    github: "examplecandidate",
+    firstCompany: "Fractal Analytics",
+  },
+  "rohan_high_quality_resume.pdf": {
+    position: "QA Automation Engineer",
+    location: "Bangalore, India",
+    linkedin: "rohan-raut-286406239",
+    firstCompany: "Kaplan India Pvt. Ltd.",
+  },
+  "rohan_optimized_resume.pdf": {
+    position: "QA Automation Engineer",
+    location: "Bangalore, India",
+    linkedin: "rohan-raut-286406239",
+    firstCompany: "Kaplan India Pvt. Ltd.",
+  },
+};
+
+async function verifyResumeEditor(name, token) {
+  const expected = expectedEditors[name];
+  if (!expected) return;
+  const profile = await jsonFetch(`${backendUrl}/api/profile`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const editor = profile.resume_editor ?? {};
+  for (const [field, value] of Object.entries(expected)) {
+    if (field === "firstCompany") continue;
+    if (!String(editor[field] ?? "").includes(value)) {
+      throw new Error(`${name} resume_editor.${field} expected ${value}, got ${editor[field] ?? ""}`);
+    }
+  }
+  const firstCompany = editor.experiences?.[0]?.company ?? "";
+  if (expected.firstCompany && firstCompany !== expected.firstCompany) {
+    throw new Error(`${name} first company expected ${expected.firstCompany}, got ${firstCompany}`);
+  }
+}
+
 async function completeOnboarding(token) {
   await jsonFetch(`${backendUrl}/api/onboarding/refine`, {
     method: "POST",
@@ -305,6 +346,7 @@ try {
     try {
       const upload = await uploadResume(pdfPath, token);
       const parsed = await waitForParsed(token);
+      await verifyResumeEditor(name, token);
       await completeOnboarding(token);
       const preview = await verifyPreview(token);
       const run = await jsonFetch(`${backendUrl}/api/runs/rank-existing`, {
