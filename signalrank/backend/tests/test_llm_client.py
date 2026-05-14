@@ -304,6 +304,33 @@ async def test_probe_models_caches_healthy():
 
 
 @pytest.mark.asyncio
+async def test_validate_openrouter_key_uses_auth_endpoint():
+    client = OpenRouterClient(api_key="test-key", models=["model-a"])
+
+    resp = MagicMock(spec=httpx.Response)
+    resp.status_code = 200
+
+    with patch.object(client._http, "get", AsyncMock(return_value=resp)) as mock_get:
+        assert await client.validate_api_key() is True
+
+    assert mock_get.await_args.kwargs["headers"]["Authorization"] == "Bearer test-key"
+
+
+@pytest.mark.asyncio
+async def test_validate_openrouter_key_rejects_unauthorized():
+    client = OpenRouterClient(api_key="test-key", models=["model-a"])
+
+    resp = MagicMock(spec=httpx.Response)
+    resp.status_code = 401
+
+    with patch.object(client._http, "get", AsyncMock(return_value=resp)):
+        with patch.object(client, "probe_models", AsyncMock()) as mock_probe:
+            assert await client.validate_api_key() is False
+
+    mock_probe.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_probe_models_uses_lock_no_thundering_herd():
     """Concurrent _ensure_healthy calls should only trigger one probe."""
     client = OpenRouterClient(api_key="test-key", models=["model-a"])

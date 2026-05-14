@@ -233,12 +233,12 @@ async def save_provider_key(body: ProviderKeyRequest):
         )
 
     client = build_llm_client(provider=provider, api_key=key, timeout=10.0)
-    healthy = await client.probe_models(limit=1)
-    if not healthy:
+    if not await client.validate_api_key():
         raise HTTPException(
             status_code=400,
             detail=f"{provider_display_name(provider)} key could not be validated",
         )
+    healthy = await client.probe_models(limit=1)
 
     keychain_saved = _save_keychain_key(provider, key)
     _save_provider_key(provider, key, keychain_saved=keychain_saved)

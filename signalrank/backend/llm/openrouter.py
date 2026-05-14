@@ -72,6 +72,7 @@ VISION_MODELS = [
 
 BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODELS_URL = "https://openrouter.ai/api/v1/models"
+CREDITS_URL = "https://openrouter.ai/api/v1/credits"
 MAX_RETRIES_PER_MODEL = 3
 _llm_semaphore = asyncio.Semaphore(max(1, int(getattr(settings, "llm_semaphore", 3))))
 
@@ -412,6 +413,21 @@ class OpenRouterClient:
         else:
             logger.info("Probe found %d/%d healthy models: %s", len(healthy), len(models), healthy)
         return healthy
+
+    async def validate_api_key(self) -> bool:
+        try:
+            resp = await self._http.get(
+                CREDITS_URL,
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                timeout=8.0,
+            )
+            if resp.status_code == 401:
+                return False
+            if resp.status_code < 500:
+                return True
+        except Exception as exc:
+            logger.warning("OpenRouter key validation endpoint failed: %s", exc)
+        return bool(await self.probe_models())
 
     async def _ensure_healthy(self, *, limit: int | None = None) -> list[str]:
         """Return cached healthy models for the requested model slice."""

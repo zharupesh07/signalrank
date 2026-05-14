@@ -86,6 +86,9 @@ class DirectProviderClient:
             logger.warning("%s provider probe failed for all models", self.provider)
         return healthy
 
+    async def validate_api_key(self) -> bool:
+        return bool(await self.probe_models(limit=1))
+
     async def _call(
         self,
         model: str,

@@ -129,6 +129,9 @@ async def test_provider_key_is_validated_and_saved(tmp_path, monkeypatch):
             self.api_key = api_key
             self.timeout = timeout
 
+        async def validate_api_key(self):
+            return True
+
         async def probe_models(self, limit=1):
             return ["test-model"]
 
@@ -152,6 +155,44 @@ async def test_provider_key_is_validated_and_saved(tmp_path, monkeypatch):
         assert settings.openai_api_key == "sk-test"
         assert settings.llm_provider == "openai"
         assert (tmp_path / "provider.json").exists()
+    finally:
+        await client.aclose()
+        app.dependency_overrides.pop(get_db, None)
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_provider_key_saves_when_key_is_valid_but_probe_has_no_model(
+    tmp_path, monkeypatch
+):
+    from api.config import settings
+    from api.routes import desktop
+
+    app, get_db, engine, _, client = await _sqlite_client(tmp_path, monkeypatch)
+    monkeypatch.setattr(desktop, "_save_keychain_key", lambda provider, key: False)
+    monkeypatch.setattr(desktop, "_load_keychain_key", lambda provider: "")
+
+    class FakeClient:
+        async def validate_api_key(self):
+            return True
+
+        async def probe_models(self, limit=1):
+            return []
+
+    monkeypatch.setattr(
+        desktop,
+        "build_llm_client",
+        lambda *, provider, api_key, timeout: FakeClient(),
+    )
+
+    try:
+        res = await client.post(
+            "/api/desktop/provider-key",
+            json={"provider": "openrouter", "api_key": "sk-or-v1-test"},
+        )
+        assert res.status_code == 200
+        assert res.json()["healthy_models"] == []
+        assert settings.openrouter_api_key == "sk-or-v1-test"
     finally:
         await client.aclose()
         app.dependency_overrides.pop(get_db, None)
