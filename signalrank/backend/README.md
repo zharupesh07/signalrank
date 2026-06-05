@@ -151,7 +151,7 @@ For Railway, prefer a private database endpoint for backend runtime traffic. The
 # Required
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/signalrank
 NEXTAUTH_SECRET=<generate with: openssl rand -base64 32>
-OPENROUTER_API_KEY=sk-or-v1-...
+OPENROUTER_API_KEY=<openrouter-api-key>
 
 # Optional
 DATABASE_PRIVATE_URL=             # Preferred runtime DB URL on Railway/private networking

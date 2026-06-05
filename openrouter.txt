@@ -1,8 +1,0 @@
-export OPENROUTER_API_KEY="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"
-
-export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
-export ANTHROPIC_AUTH_TOKEN="$OPENROUTER_API_KEY"
-export ANTHROPIC_API_KEY=""
-
-# Primary model
-export ANTHROPIC_MODEL="openrouter/free"

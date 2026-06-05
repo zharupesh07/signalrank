@@ -36,8 +36,8 @@ AppliedAI Course, Pyspark and Data Engineering
 """
 
 VIVEK_REF = """\
-Vivek Shivbachanprasad Gupta
-(+91) 8796142757 | vikkey321@gmail.com
+Sample Research Engineer
++1 555 010 0101 | research@example.com
 
 Technical Expert Innovation & Research Engineer – Havells  Feb 2023 – Present
 Led and contributed to the development of IoT-based sensor and home automation projects.

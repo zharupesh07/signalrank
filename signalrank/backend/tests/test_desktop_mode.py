@@ -188,11 +188,11 @@ async def test_provider_key_saves_when_key_is_valid_but_probe_has_no_model(
     try:
         res = await client.post(
             "/api/desktop/provider-key",
-            json={"provider": "openrouter", "api_key": "sk-or-v1-test"},
+            json={"provider": "openrouter", "api_key": "test-key"},
         )
         assert res.status_code == 200
         assert res.json()["healthy_models"] == []
-        assert settings.openrouter_api_key == "sk-or-v1-test"
+        assert settings.openrouter_api_key == "test-key"
     finally:
         await client.aclose()
         app.dependency_overrides.pop(get_db, None)

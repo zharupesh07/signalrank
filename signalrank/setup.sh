@@ -80,7 +80,7 @@ DATABASE_URL=postgresql+asyncpg://postgres:${PG_PASSWORD}@localhost:${PG_PORT}/$
 NEXTAUTH_SECRET=$(LC_ALL=C tr -dc 'a-zA-Z0-9' </dev/urandom | head -c 40 || true)
 
 # Add your API keys:
-# OPENROUTER_API_KEY=sk-or-...
+# OPENROUTER_API_KEY=<openrouter-api-key>
 # RAPIDAPI_KEY=...
 EOF
   warn "Created $BACKEND_ENV — add OPENROUTER_API_KEY for LLM features."

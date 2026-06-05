@@ -34,6 +34,13 @@ def _load_sample_spec(pdf_path: Path) -> dict:
     return json.loads(pdf_path.with_suffix(".json").read_text())
 
 
+def _require_resume_pdf(name: str) -> Path:
+    path = RESUMES_DIR / name
+    if not path.exists():
+        pytest.skip(f"private resume fixture not present: {name}")
+    return path
+
+
 def _experience_matches(candidate: dict, marker: dict) -> bool:
     title = _normalize_cmp(candidate.get("title") or "").replace("developement", "development")
     company = _normalize_cmp(candidate.get("company") or "")
@@ -177,9 +184,9 @@ def test_extract_text_contains_detectable_email(sample_pdf):
 
 
 def test_parse_resume_editor_recovers_contact_handles_and_projects_from_real_resumes():
-    example_text = _extract_text_from_pdf((RESUMES_DIR / "Example_Candidate_Resume_V2_2.pdf").read_bytes())
-    ayush_text = _extract_text_from_pdf((RESUMES_DIR / "ayush_resume_new.pdf").read_bytes())
-    vivek_text = _extract_text_from_pdf((RESUMES_DIR / "Vivek-Gupta-Emerging-Technologies.pdf").read_bytes())
+    example_text = _extract_text_from_pdf(_require_resume_pdf("Example_Candidate_Resume_V2_2.pdf").read_bytes())
+    ayush_text = _extract_text_from_pdf(_require_resume_pdf("ayush_resume_new.pdf").read_bytes())
+    vivek_text = _extract_text_from_pdf(_require_resume_pdf("Vivek-Gupta-Emerging-Technologies.pdf").read_bytes())
 
     example = parse_resume_editor(example_text)
     ayush = parse_resume_editor(ayush_text)
@@ -201,7 +208,7 @@ def test_parse_resume_editor_recovers_contact_handles_and_projects_from_real_res
 
 
 def test_parse_resume_editor_normalizes_example_workspace_fields():
-    text = _extract_text_from_pdf((RESUMES_DIR / "Example_Candidate_Resume_V2_2.pdf").read_bytes())
+    text = _extract_text_from_pdf(_require_resume_pdf("Example_Candidate_Resume_V2_2.pdf").read_bytes())
 
     editor = parse_resume_editor(text)
 
@@ -291,8 +298,8 @@ async def test_parse_sample_pdf_images_to_editor_contract(sample_pdf):
 @pytest.mark.asyncio
 async def test_reference_verifier_restores_exact_header_education_and_experience_fields(sample_pdf):
     _, path, extracted_text, spec = sample_pdf
-    if spec.get("label") in {"Abhijeet Rathore", "Vivek Gupta", "Ayush Khandelwal"}:
-        return
+    if not spec.get("public_fixture"):
+        pytest.skip("private resume fixture")
     page_images = _render_pdf_pages_as_images(path.read_bytes(), dpi=72)
     first_exp = (spec.get("experiences") or [{}])[0]
     first_edu = (spec.get("education") or [{}])[0]
