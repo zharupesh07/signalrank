@@ -1,0 +1,77 @@
+name: Desktop Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish"
+        required: true
+        default: "v0.1.0"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS Apple Silicon
+            os: macos-14
+            node_asset: signalrank/desktop/src-tauri/target/release/bundle/dmg/*.dmg
+          - name: Windows
+            os: windows-latest
+            node_asset: |
+              signalrank/desktop/src-tauri/target/release/bundle/nsis/*.exe
+              signalrank/desktop/src-tauri/target/release/bundle/msi/*.msi
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            signalrank/desktop/package-lock.json
+            signalrank/frontend/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install frontend dependencies
+        working-directory: signalrank/frontend
+        run: npm ci
+
+      - name: Install desktop dependencies
+        working-directory: signalrank/desktop
+        run: npm ci
+
+      - name: Install backend dependencies
+        working-directory: signalrank/backend
+        run: uv sync --dev
+
+      - name: Build desktop app
+        working-directory: signalrank/desktop
+        env:
+          SIGNALRANK_MODE: desktop
+          NEXT_PUBLIC_SIGNALRANK_MODE: desktop
+        run: npm run build
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: SignalRank ${{ github.event.inputs.tag || github.ref_name }}
+          draft: false
+          prerelease: false
+          files: ${{ matrix.node_asset }}
