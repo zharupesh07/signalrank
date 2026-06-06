@@ -24,6 +24,7 @@ mkdirSync(standaloneDir, { recursive: true });
 
 const staticSource = resolve(frontendDir, ".next", "static");
 const staticTarget = resolve(standaloneDir, ".next", "static");
+mkdirSync(staticSource, { recursive: true });
 if (existsSync(staticSource)) {
   rmSync(staticTarget, { recursive: true, force: true });
   cpSync(staticSource, staticTarget, { recursive: true });
