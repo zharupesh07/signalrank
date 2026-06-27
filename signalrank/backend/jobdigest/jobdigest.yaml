@@ -1,0 +1,39 @@
+# JobDigest — non-secret configuration.
+# Secrets (DB URL, OpenRouter key, Gmail) live in env / GitHub Secrets, never here.
+# Add a resume or recipient by editing this file — no code changes needed.
+
+profiles:
+  - id: rtl
+    resume: resumes/rtl.pdf
+    titles: ["Clock Design Engineer", "RTL Clock Controller", "ASIC Clock", "CDC Engineer"]
+  - id: timing
+    resume: resumes/timing.pdf
+    titles: ["Physical Design Engineer", "STA Engineer", "Timing Closure", "DDR SerDes Timing"]
+
+recipients:
+  - zharupesh07@gmail.com
+
+search:
+  country: USA
+  sites: [linkedin, google]
+  remote: true
+  hours_old: 24
+
+filters:
+  exclude_work_auth: [citizen_required, clearance_required, itar_us_person]
+  seniority:
+    sweet_spot: [3, 6]
+    hard_exclude_min_years: 10
+
+scoring:
+  shortlist_per_profile: 28
+  provider: openrouter
+  model_cheap: anthropic/claude-3.5-haiku
+  model_strong: anthropic/claude-sonnet-4
+
+digest:
+  group_by: domain
+  routing: combined
+  top_n: 12
+  send_hour_local: 6
+  timezone: America/Los_Angeles
