@@ -2,26 +2,25 @@ name: Daily Job Digest
 
 # 6:00 AM America/Los_Angeles. GitHub cron is UTC and does NOT observe DST,
 # so we run at BOTH 13:00 UTC (= 6am PDT, summer) and 14:00 UTC (= 6am PST, winter).
-# The guard step below makes sure only the correct one for the current PT date sends.
+# The guard step makes sure only the correct one for the current PT date sends.
 on:
   schedule:
     - cron: "0 13 * * *"   # 6am PDT (Mar-Nov)
     - cron: "0 14 * * *"   # 6am PST (Nov-Mar)
-  workflow_dispatch: {}      # allows manual "Run workflow" from the Actions tab
+  workflow_dispatch: {}      # manual "Run workflow" button
 
 jobs:
   digest:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: signalrank/backend
     steps:
+      # Runs at the default workspace (no repo needed yet) — just checks the clock.
       - name: Only proceed if it is actually 6am Pacific
         id: gate
         run: |
           HOUR_PT=$(TZ="America/Los_Angeles" date +%H)
           echo "Pacific hour is $HOUR_PT"
-          if [ "$HOUR_PT" != "06" ]; then
+          # workflow_dispatch (manual) always proceeds; scheduled runs honor the DST guard.
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$HOUR_PT" != "06" ]; then
             echo "Not 6am PT (DST guard) — skipping."
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
@@ -38,10 +37,12 @@ jobs:
 
       - name: Set up Python + deps
         if: steps.gate.outputs.skip != 'true'
+        working-directory: signalrank/backend
         run: uv sync
 
       - name: Run digest
         if: steps.gate.outputs.skip != 'true'
+        working-directory: signalrank/backend
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
