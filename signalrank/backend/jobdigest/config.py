@@ -84,6 +84,7 @@ class Secrets(BaseModel):
 class JobDigestConfig(BaseModel):
     profiles: list[Profile]
     recipients: list[EmailStr]
+    exclude_companies: list[str] = Field(default_factory=list)
     search: Search = Field(default_factory=Search)
     filters: Filters = Field(default_factory=Filters)
     scoring: Scoring = Field(default_factory=Scoring)

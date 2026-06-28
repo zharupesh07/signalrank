@@ -5,17 +5,27 @@
 profiles:
   - id: rtl
     resume: resumes/rtl.pdf
-    titles: ["Clock Design Engineer", "RTL Clock Controller", "ASIC Clock", "CDC Engineer"]
+    titles: ["ASIC Design Engineer", "RTL Design Engineer", "Digital Design Engineer",
+             "SoC Design Engineer", "Clock Design Engineer", "CDC Engineer",
+             "Low Power Design Engineer", "DFT Engineer", "CPU RTL Engineer",
+             "GPU RTL Engineer", "ASIC Implementation Engineer"]
   - id: timing
     resume: resumes/timing.pdf
-    titles: ["Physical Design Engineer", "STA Engineer", "Timing Closure", "DDR SerDes Timing"]
+    titles: ["Physical Design Engineer", "STA Engineer", "Timing Closure Engineer",
+             "Timing Signoff Engineer", "Static Timing Analysis Engineer",
+             "ASIC Implementation Engineer", "Clock Design Engineer",
+             "DDR Timing Engineer", "SerDes Timing Engineer", "Low Power Design Engineer"]
 
 recipients:
   - zharupesh07@gmail.com
 
+# Companies to exclude (e.g. current employer)
+exclude_companies:
+  - Qualcomm
+
 search:
   country: USA
-  sites: [linkedin, google]
+  sites: [linkedin]
   remote: true
   hours_old: 24
 
@@ -23,17 +33,17 @@ filters:
   exclude_work_auth: [citizen_required, clearance_required, itar_us_person]
   seniority:
     sweet_spot: [3, 6]
-    hard_exclude_min_years: 10
+    bands: [mid, senior]          # mid + senior; drop junior/new-grad and staff+
+    hard_exclude_min_years: 8
 
 scoring:
   shortlist_per_profile: 28
-  provider: openrouter
-  model_cheap: anthropic/claude-3.5-haiku
-  model_strong: anthropic/claude-sonnet-4
+  provider: anthropic
+  model: claude-haiku-4-5-20251001
 
 digest:
   group_by: domain
   routing: combined
-  top_n: 12
+  top_n: 25
   send_hour_local: 6
   timezone: America/Los_Angeles

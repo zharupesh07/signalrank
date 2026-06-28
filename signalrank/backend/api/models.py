@@ -141,6 +141,11 @@ class JobResult(Base):
     is_contract: Mapped[bool | None] = mapped_column(Boolean)
     archived_by_llm: Mapped[bool | None] = mapped_column(Boolean)
     archival_reason: Mapped[str | None] = mapped_column(String(500))
+    # --- JobDigest additions ---
+    work_auth_verdict: Mapped[str | None] = mapped_column(String(50))
+    work_auth_evidence: Mapped[str | None] = mapped_column(Text)
+    domain: Mapped[str | None] = mapped_column(String(100))
+    emailed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (
         UniqueConstraint("user_id", "job_id", name="uq_job_results_user_job"),

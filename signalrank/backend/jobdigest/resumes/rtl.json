@@ -1,0 +1,287 @@
+{
+  "skills": [
+    "RTL design",
+    "Verilog",
+    "SystemVerilog",
+    "clock controller design",
+    "clock gating",
+    "hierarchical clock gating",
+    "PLL",
+    "programmable clock dividers",
+    "on-chip clocking",
+    "clock domain crossing",
+    "CDC verification",
+    "OCC insertion",
+    "DFT",
+    "glitch-free reset mux",
+    "scan",
+    "UPF",
+    "low power design",
+    "CLP verification",
+    "level shifter optimization",
+    "CMS constraints",
+    "generated clocks",
+    "clock uncertainty",
+    "Python",
+    "TCL",
+    "Shell",
+    "SpyGlass CDC",
+    "Conformal Low Power",
+    "PrimeTime",
+    "Innovus",
+    "sub-3nm"
+  ],
+  "years_of_experience": 4,
+  "recent_titles": [
+    "RTL Clock Design Engineer",
+    "Physical Design Engineer"
+  ],
+  "industries": [
+    "Semiconductors",
+    "ASIC",
+    "SoC design"
+  ],
+  "education": [
+    "MS Electrical and Computer Engineering, Portland State University",
+    "BE Electronics Engineering, Mumbai University"
+  ],
+  "suggested_roles": [
+    "Clock Design Engineer",
+    "RTL Clock Controller Engineer",
+    "Clocking Architect",
+    "CDC Engineer",
+    "Low Power RTL Engineer",
+    "ASIC Clock Design Engineer"
+  ],
+  "suggested_locations": [
+    "United States",
+    "Remote"
+  ],
+  "salary_lpa": null,
+  "suggested_exclusions": [
+    "US citizenship required",
+    "security clearance required",
+    "ITAR US Person",
+    "mechanical engineer",
+    "test engineer",
+    "aerospace",
+    "medical device",
+    "validation engineer",
+    "manufacturing"
+  ],
+  "suggested_search_queries": [
+    "Clock Design Engineer",
+    "RTL Clock Controller",
+    "CDC Engineer",
+    "Clock Architect ASIC",
+    "Low Power RTL Engineer"
+  ],
+  "career_archetypes": [
+    {
+      "id": "clock_rtl",
+      "label": "ASIC Clock / RTL Design Engineer",
+      "priority": "primary",
+      "confidence": 0.95,
+      "evidence": [
+        "Delivered clock controller RTL for >120 clocks",
+        "CDC verification across >40 clock domains",
+        "OCC insertion and DFT compliance"
+      ]
+    }
+  ],
+  "target_roles": [
+    {
+      "title": "Clock Design Engineer",
+      "priority": "primary",
+      "confidence": 0.95,
+      "evidence": [
+        "clock controller RTL",
+        "on-chip clocking network with PLLs and dividers"
+      ]
+    },
+    {
+      "title": "RTL Clock Controller Engineer",
+      "priority": "primary",
+      "confidence": 0.9,
+      "evidence": [
+        "clock/reset pairs for >120 clocks",
+        "clock-gating control"
+      ]
+    },
+    {
+      "title": "CDC Engineer",
+      "priority": "secondary",
+      "confidence": 0.85,
+      "evidence": [
+        "CDC verification across >40 clock domains",
+        "eliminated >200 false violations"
+      ]
+    },
+    {
+      "title": "Low Power RTL Engineer",
+      "priority": "secondary",
+      "confidence": 0.8,
+      "evidence": [
+        "UPF and CLP verification",
+        "eliminated >100 redundant level shifters"
+      ]
+    },
+    {
+      "title": "CPU RTL Design Engineer",
+      "priority": "secondary",
+      "confidence": 0.75,
+      "evidence": [
+        "on-chip clocking, RTL design, and timing experience transfers to CPU/GPU clock+RTL roles"
+      ]
+    },
+    {
+      "title": "GPU RTL Design Engineer",
+      "priority": "secondary",
+      "confidence": 0.75,
+      "evidence": [
+        "on-chip clocking, RTL design, and timing experience transfers to CPU/GPU clock+RTL roles"
+      ]
+    },
+    {
+      "title": "Timing Engineer",
+      "priority": "secondary",
+      "confidence": 0.75,
+      "evidence": [
+        "on-chip clocking, RTL design, and timing experience transfers to CPU/GPU clock+RTL roles"
+      ]
+    }
+  ],
+  "domains": [
+    {
+      "name": "Clock architecture / clock controller RTL",
+      "confidence": 0.95,
+      "evidence": [
+        "PLLs, programmable dividers, clock gates across 10 performance modes"
+      ]
+    },
+    {
+      "name": "Clock Domain Crossing",
+      "confidence": 0.9,
+      "evidence": [
+        "CDC verification across >40 domains, SpyGlass CDC"
+      ]
+    },
+    {
+      "name": "Low power / UPF",
+      "confidence": 0.85,
+      "evidence": [
+        "UPF authoring, CLP, level shifter redesign"
+      ]
+    },
+    {
+      "name": "DFT clocking",
+      "confidence": 0.8,
+      "evidence": [
+        "OCC insertion, glitch-free reset muxes, scan coverage"
+      ]
+    },
+    {
+      "name": "CPU/GPU clock and RTL design",
+      "confidence": 0.8,
+      "evidence": [
+        "clock controller RTL, PLLs, dividers applicable to CPU/GPU clocking"
+      ]
+    },
+    {
+      "name": "Clock architecture / timing",
+      "confidence": 0.8,
+      "evidence": [
+        "on-chip clocking network, generated clocks, clock uncertainty, STA background"
+      ]
+    }
+  ],
+  "negative_targets": [
+    {
+      "label": "Mechanical / aerospace / test engineering",
+      "reason": "Different discipline; 'engineer' keyword false match (e.g. hypersonic aerothermal test)",
+      "confidence": 0.95
+    },
+    {
+      "label": "Generic/product design engineer",
+      "reason": "Not RTL/clock IC design",
+      "confidence": 0.9
+    },
+    {
+      "label": "Validation / sustaining / manufacturing engineer",
+      "reason": "Not front-end clock RTL design",
+      "confidence": 0.9
+    },
+    {
+      "label": "Medical device R&D",
+      "reason": "Out of semiconductor domain",
+      "confidence": 0.95
+    }
+  ],
+  "false_friend_terms": [
+    {
+      "term": "design engineer",
+      "intended_meaning": "ASIC/RTL clock design engineer",
+      "exclude_meanings": [
+        "mechanical design engineer",
+        "product design engineer",
+        "founding design engineer (software/hardware startup)",
+        "PCB design engineer"
+      ]
+    },
+    {
+      "term": "engineer",
+      "intended_meaning": "digital IC clock/RTL design",
+      "exclude_meanings": [
+        "test engineer",
+        "aerothermal engineer",
+        "validation engineer",
+        "sustaining engineer"
+      ]
+    },
+    {
+      "term": "clock",
+      "intended_meaning": "on-chip clocking / clock tree / clock controller",
+      "exclude_meanings": [
+        "scheduling",
+        "time-tracking",
+        "wall-clock software"
+      ]
+    }
+  ],
+  "query_plan": {
+    "title_queries": [
+      "Clock Design Engineer",
+      "RTL Clock Controller",
+      "CDC Engineer",
+      "Clocking Architect",
+      "Low Power RTL Engineer",
+      "ASIC Clock Design Engineer",
+      "CPU RTL Engineer",
+      "GPU RTL Engineer",
+      "Timing Engineer"
+    ],
+    "skill_queries": [
+      "clock domain crossing",
+      "clock gating RTL",
+      "OCC DFT",
+      "UPF low power RTL"
+    ],
+    "domain_queries": [
+      "clock controller SoC",
+      "clock architecture ASIC"
+    ],
+    "negative_keywords": [
+      "mechanical",
+      "aerospace",
+      "hypersonic",
+      "test engineer",
+      "validation",
+      "medical",
+      "manufacturing",
+      "sustaining",
+      "PCB"
+    ]
+  },
+  "ambiguities": [],
+  "follow_up_questions": []
+}
