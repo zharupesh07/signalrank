@@ -1,14 +1,12 @@
-name: Daily Job Digest
+name: Daily Job Digest (Adya)
 
-# Target: 6am America/Los_Angeles. GitHub's scheduler can fire HOURS late, so we
-# don't rely on an exact-hour check. We trigger on a few UTC times that bracket
-# 6am PT (PST & PDT), and the script's once-per-day DB guard ensures the digest
-# is sent at most ONCE per day no matter how many of these fire or how late.
+# Target: 7am America/Los_Angeles. Same approach as the main digest — the once-per-day
+# DB guard (tag="adya") makes this send at most once per day even if GitHub fires late.
 on:
   schedule:
-    - cron: "0 13 * * *"   # ~6am PDT
-    - cron: "0 14 * * *"   # ~6am PST / fallback if 13:00 fires late
-  workflow_dispatch: {}      # manual run (always sends, ignores once-per-day if no DB)
+    - cron: "0 14 * * *"   # ~7am PDT
+    - cron: "0 15 * * *"   # ~7am PST / fallback
+  workflow_dispatch: {}
 
 jobs:
   digest:
@@ -21,7 +19,7 @@ jobs:
       - name: Set up Python + deps
         working-directory: signalrank/backend
         run: uv sync
-      - name: Run digest
+      - name: Run digest (Adya config)
         working-directory: signalrank/backend
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -29,4 +27,4 @@ jobs:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           PYTHONPATH: ${{ github.workspace }}/signalrank/backend
-        run: uv run python -m jobdigest.run_digest
+        run: uv run python -m jobdigest.run_digest --config jobdigest/adya.yaml

@@ -58,6 +58,41 @@ async def load_sent_urls() -> set[str]:
         await conn.close()
 
 
+async def already_ran_today(tag: str, day: str) -> bool:
+    """True if a digest for this tag (e.g. config name) already ran on `day` (YYYY-MM-DD)."""
+    conn = await _connect()
+    try:
+        await conn.execute(
+            "CREATE TABLE IF NOT EXISTS digest_runs ("
+            "  tag TEXT NOT NULL, run_day DATE NOT NULL,"
+            "  ran_at TIMESTAMPTZ NOT NULL DEFAULT now(),"
+            "  PRIMARY KEY (tag, run_day))"
+        )
+        row = await conn.fetchrow(
+            "SELECT 1 FROM digest_runs WHERE tag = $1 AND run_day = $2::date", tag, day
+        )
+        return row is not None
+    finally:
+        await conn.close()
+
+
+async def mark_ran_today(tag: str, day: str) -> None:
+    conn = await _connect()
+    try:
+        await conn.execute(
+            "CREATE TABLE IF NOT EXISTS digest_runs ("
+            "  tag TEXT NOT NULL, run_day DATE NOT NULL,"
+            "  ran_at TIMESTAMPTZ NOT NULL DEFAULT now(),"
+            "  PRIMARY KEY (tag, run_day))"
+        )
+        await conn.execute(
+            "INSERT INTO digest_runs (tag, run_day) VALUES ($1, $2::date) "
+            "ON CONFLICT (tag, run_day) DO NOTHING", tag, day
+        )
+    finally:
+        await conn.close()
+
+
 async def record_sent(jobs: list) -> int:
     """Insert the URLs we just emailed. jobs = list of (band, job, report). Returns count inserted."""
     if not jobs:

@@ -1,0 +1,48 @@
+{
+  "skills": ["Java", "Kotlin", "Python", "JavaScript", "TypeScript", "SQL", "React", "Node.js", "PostgreSQL", "NoSQL", "distributed systems", "cloud platforms", "AWS", "Azure", "GCP", "Terraform", "Kubernetes", "OpenShift", "Jenkins", "CI/CD", "Kafka", "Spark", "Flink", "Airflow", "microservices", "backend", "full-stack", "real-time systems", "data pipelines", "Grafana", "Prometheus", "Datadog", "observability", "billing systems", "API design"],
+  "years_of_experience": 5,
+  "recent_titles": ["Software Development Engineer", "Software Engineer"],
+  "industries": ["Cloud", "SaaS", "Distributed Systems", "Software"],
+  "education": ["MS Computer Science, Portland State University", "BS Computer Science, Valparaiso University"],
+  "suggested_roles": ["Senior Software Engineer", "Software Engineer", "Backend Engineer", "Distributed Systems Engineer", "Full Stack Engineer", "Cloud Engineer", "Platform Engineer"],
+  "suggested_locations": ["United States", "Remote"],
+  "salary_lpa": null,
+  "suggested_exclusions": ["US citizenship required", "security clearance required", "ITAR US Person", "hardware", "ASIC", "embedded firmware", "mechanical", "manual QA only", "helpdesk", "IT support"],
+  "suggested_search_queries": ["Senior Software Engineer", "Backend Engineer", "Distributed Systems Engineer", "Full Stack Engineer", "Platform Engineer"],
+  "career_archetypes": [
+    {"id": "senior_swe", "label": "Senior Software / Distributed Systems Engineer", "priority": "primary", "confidence": 0.95, "evidence": ["5+ years large-scale distributed systems for cloud platforms", "OCI console plugins for >1M users across 40 realms", "billing automation impacting ~$5M revenue"]}
+  ],
+  "target_roles": [
+    {"title": "Senior Software Engineer", "priority": "primary", "confidence": 0.95, "evidence": ["5+ years building distributed cloud systems", "full-stack + backend depth"]},
+    {"title": "Backend Engineer", "priority": "primary", "confidence": 0.9, "evidence": ["Java/Kotlin services, APIs, billing automation, transaction-safe rollback"]},
+    {"title": "Distributed Systems Engineer", "priority": "primary", "confidence": 0.9, "evidence": ["real-time distributed systems, data lineage frameworks, Kafka/Spark/Flink"]},
+    {"title": "Platform Engineer", "priority": "secondary", "confidence": 0.85, "evidence": ["OCI platform, governance rules, canary testing frameworks, Terraform/K8s"]},
+    {"title": "Full Stack Engineer", "priority": "secondary", "confidence": 0.8, "evidence": ["React/Node frontend console plus backend services"]},
+    {"title": "Cloud Infrastructure Engineer", "priority": "secondary", "confidence": 0.8, "evidence": ["AWS/Azure/GCP, Terraform, Kubernetes, OpenShift, CI/CD"]}
+  ],
+  "domains": [
+    {"name": "Distributed systems / backend", "confidence": 0.95, "evidence": ["real-time supply chain systems, OCI subscription/billing services at scale"]},
+    {"name": "Cloud infrastructure", "confidence": 0.9, "evidence": ["AWS, Azure, GCP, Terraform, Kubernetes, OpenShift"]},
+    {"name": "Data / streaming pipelines", "confidence": 0.85, "evidence": ["Kafka, Spark, Flink, Airflow, data lineage framework"]},
+    {"name": "Observability / reliability", "confidence": 0.8, "evidence": ["Grafana, Prometheus, Datadog, RCA on-call, canary testing"]},
+    {"name": "Full-stack web", "confidence": 0.75, "evidence": ["React, Node.js, TypeScript console plugins"]}
+  ],
+  "negative_targets": [
+    {"label": "Hardware / ASIC / embedded firmware", "reason": "Software engineer, not hardware", "confidence": 0.95},
+    {"label": "Manual QA / helpdesk / IT support", "reason": "Not a software-engineering IC role", "confidence": 0.9},
+    {"label": "Data entry / non-engineering", "reason": "Out of scope", "confidence": 0.95}
+  ],
+  "false_friend_terms": [
+    {"term": "engineer", "intended_meaning": "software / distributed-systems engineer", "exclude_meanings": ["mechanical engineer", "hardware engineer", "civil engineer", "manufacturing engineer", "sales engineer"]},
+    {"term": "platform", "intended_meaning": "cloud/software platform engineering", "exclude_meanings": ["oil platform", "marketing platform sales"]},
+    {"term": "support engineer", "intended_meaning": "(usually exclude) prefer dev roles", "exclude_meanings": ["helpdesk", "IT support", "tier-1 support"]}
+  ],
+  "query_plan": {
+    "title_queries": ["Senior Software Engineer", "Backend Engineer", "Distributed Systems Engineer", "Full Stack Engineer", "Platform Engineer", "Cloud Engineer", "Software Engineer"],
+    "skill_queries": ["distributed systems Java", "backend Kubernetes", "cloud microservices", "Kafka streaming"],
+    "domain_queries": ["cloud platform engineer", "real-time distributed systems"],
+    "negative_keywords": ["hardware", "asic", "firmware", "mechanical", "helpdesk", "it support", "qa tester", "sales engineer", "field engineer"]
+  },
+  "ambiguities": [],
+  "follow_up_questions": []
+}

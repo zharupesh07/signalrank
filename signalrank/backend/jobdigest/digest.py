@@ -16,6 +16,12 @@ DOMAIN_RULES = [
     ("CPU / GPU RTL", ["cpu", "gpu", "tpu", "npu", "riscv", "risc-v", "microarchitecture"]),
     ("Physical Design", ["physical design", "place", "route", "floorplan", "pnr"]),
     ("RTL / ASIC / SoC", ["rtl", "asic", "soc", "vlsi", "digital design", "logic design"]),
+    # software / distributed-systems domains
+    ("Backend / Distributed", ["backend", "distributed", "microservice", "api", "server"]),
+    ("Cloud / Platform / Infra", ["cloud", "platform", "infrastructure", "devops", "sre",
+                                   "kubernetes", "terraform"]),
+    ("Data / Streaming", ["data engineer", "streaming", "kafka", "spark", "flink", "pipeline", "etl"]),
+    ("Full Stack / Frontend", ["full stack", "full-stack", "frontend", "front-end", "react", "ui engineer"]),
 ]
 BAND_LABEL = {"strong_fit": "Strong", "adjacent_fit": "Adjacent",
               "weak_fit": "Weak", "misleading_fit": "Misleading", "reject": "Reject"}

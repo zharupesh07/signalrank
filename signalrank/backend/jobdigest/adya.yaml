@@ -1,0 +1,37 @@
+# JobDigest config — Adya (software / distributed systems). Separate from rtl/timing.
+profiles:
+  - id: adya
+    resume: resumes/adya.pdf
+    titles: ["Senior Software Engineer", "Backend Engineer", "Distributed Systems Engineer",
+             "Full Stack Engineer", "Platform Engineer", "Cloud Engineer",
+             "Software Engineer", "Software Development Engineer"]
+
+recipients:
+  - adyawork23@gmail.com
+
+exclude_companies: []
+
+search:
+  country: USA
+  sites: [linkedin]
+  remote: true
+  hours_old: 30
+
+filters:
+  exclude_work_auth: [citizen_required, clearance_required, itar_us_person]
+  seniority:
+    sweet_spot: [4, 8]
+    bands: [mid, senior]
+    hard_exclude_min_years: 12
+
+scoring:
+  shortlist_per_profile: 40
+  provider: anthropic
+  model: claude-haiku-4-5-20251001
+
+digest:
+  group_by: domain
+  routing: combined
+  top_n: 25
+  send_hour_local: 7
+  timezone: America/Los_Angeles

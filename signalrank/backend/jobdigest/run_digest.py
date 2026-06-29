@@ -50,7 +50,7 @@ def profile_text(profile: dict) -> str:
 
 async def scrape(cfg, terms: list[str]) -> list:
     sc = ScraperConfig(hours_old=cfg.search.hours_old, default_country=cfg.search.country,
-                       max_results_per_query=20, linkedin_max_queries=1,
+                       max_results_per_query=50, linkedin_max_queries=1,
                        sources=["linkedin"], jobspy_delay=1.0)
     seen, jobs = set(), []
     for term in terms:
@@ -62,26 +62,45 @@ async def scrape(cfg, terms: list[str]) -> list:
     return jobs
 
 
+def _positive_signals(profile: dict) -> set:
+    """Build the 'keep' keyword set from THIS profile's own roles/skills/queries,
+    so the pre-filter works for any person (IC, software, etc.), not a hardcoded list."""
+    sig = set()
+    titles = profile.get("suggested_roles", []) + [r.get("title", "") for r in profile.get("target_roles", [])]
+    for t in titles:
+        for w in t.lower().split():
+            if len(w) > 2:
+                sig.add(w)
+    for d in profile.get("domains", []):
+        for w in d.get("name", "").lower().replace("/", " ").split():
+            if len(w) > 2:
+                sig.add(w)
+    for q in profile.get("query_plan", {}).get("title_queries", []):
+        sig.add(q.lower())
+    return sig
+
+
 def prefilter(jobs: list, profile: dict) -> list:
     neg = {k.lower() for k in profile.get("query_plan", {}).get("negative_keywords", [])}
-    # Seniority: candidate is ~4 yrs. Target mid + senior (some stretch).
-    # Drop clearly-junior (new grad/intern) AND clearly-too-senior (staff/principal/director/manager).
+    pos = _positive_signals(profile)
+    # Seniority: target mid + senior. Drop clearly-junior (new grad/intern) and
+    # clearly-too-senior (principal/director/manager). 'staff' is NOT dropped — it's a
+    # normal senior IC level (esp. in software); the LLM judges the stretch.
     too_junior = ["new grad", "new college grad", "intern", "internship", "co-op",
                   "graduate", "entry level", "entry-level", "early career", "university grad"]
-    too_senior = ["principal", "director", "vp ", "head of", "fellow", "distinguished",
-                  "sr. staff", "sr staff", "senior staff", "staff ", "manager"]
+    too_senior = ["principal", "director", "vp ", "head of", "fellow", "distinguished", "manager"]
     exclude_companies = {c.lower() for c in profile.get("exclude_companies", [])}
     kept = []
     for j in jobs:
         t = (j.title or "").lower()
         company = (j.company or "").lower()
         if exclude_companies and any(ex in company for ex in exclude_companies):
-            continue  # e.g. current employer
+            continue
         if any(x in t for x in too_junior):
             continue
         if any(x in t for x in too_senior):
             continue
-        if any(p in t for p in POS) or not any(n in t for n in neg):
+        if any(p in t for p in pos) or not any(n in t for n in neg):
             kept.append(j)
     return kept
 
@@ -151,13 +170,29 @@ async def run_one_profile(cfg, profile_entry, profile_json: dict, client, dry_ru
     return label, deduped
 
 
-async def main(dry_run: bool, no_llm: bool = False) -> None:
-    cfg = load_config()
+async def main(dry_run: bool, no_llm: bool = False, config_path: str | None = None) -> None:
+    from jobdigest.config import CONFIG_PATH
+    cfg = load_config(config_path or CONFIG_PATH)
     date_str = datetime.now().strftime("%a %b %d, %Y")
+
+    import os
+    from zoneinfo import ZoneInfo
+    # tag = config file name (e.g. "adya" or "jobdigest"); keeps each digest independent
+    tag = Path(config_path).stem if config_path else "jobdigest"
+    # "today" in the digest's own timezone, so the once-per-day guard rolls over correctly
+    tz = ZoneInfo(getattr(cfg.digest, "timezone", "America/Los_Angeles"))
+    today = datetime.now(tz).strftime("%Y-%m-%d")
+
+    # ONCE-PER-DAY GUARD: GitHub cron can fire hours late and/or twice (DST double-cron).
+    # Instead of a brittle exact-hour check, just ensure we send at most once per day.
+    if not dry_run and os.getenv("DATABASE_URL"):
+        from jobdigest import dedup
+        if await dedup.already_ran_today(tag, today):
+            print(f"Already sent '{tag}' digest today ({today}) — skipping.")
+            return
 
     # secrets check
     missing = []
-    import os
     if not dry_run:
         if not os.getenv("ANTHROPIC_API_KEY"):
             missing.append("ANTHROPIC_API_KEY")
@@ -230,11 +265,15 @@ async def main(dry_run: bool, no_llm: bool = False) -> None:
         from jobdigest import dedup
         n = await dedup.record_sent(final)
         print(f"Dedup: recorded {n} emailed jobs.")
+        await dedup.mark_ran_today(tag, today)
+        print(f"Marked '{tag}' digest as sent for {today}.")
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true",
                     help="free preview: scrape + render HTML, NO LLM scoring, NO email")
+    ap.add_argument("--config", default=None,
+                    help="path to a config yaml (default: jobdigest.yaml). Use for a second person.")
     args = ap.parse_args()
-    asyncio.run(main(args.dry_run))
+    asyncio.run(main(args.dry_run, config_path=args.config))
