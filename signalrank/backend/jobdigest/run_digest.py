@@ -14,11 +14,14 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import logging
+import os
 import random
 import sys
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from batch.query_builder import SearchQuery
 from batch.scraper import ScraperConfig
@@ -53,12 +56,35 @@ async def scrape(cfg, terms: list[str]) -> list:
                        max_results_per_query=50, linkedin_max_queries=1,
                        sources=["linkedin"], jobspy_delay=1.0)
     seen, jobs = set(), []
+    cap = 50
+    # LinkedIn's own hours_old filter is unreliable (serves stale/reposted jobs to fill
+    # the quota), so we ENFORCE freshness ourselves on date_posted.
+    from datetime import datetime, timezone, timedelta
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=cfg.search.hours_old)
+    stale_dropped = 0
     for term in terms:
         q = [SearchQuery(term=term, location="United States", country=cfg.search.country)]
-        for j in await jobspy_source.search(q, sc, site="linkedin", db=None):
-            if j.job_url not in seen and j.description:
-                seen.add(j.job_url)
-                jobs.append(j)
+        try:
+            results = await jobspy_source.search(q, sc, site="linkedin", db=None)
+        except Exception as exc:  # noqa: BLE001 — one flaky query shouldn't kill the run
+            log.warning("scrape failed for '%s': %s — skipping this query", term, exc)
+            continue
+        n = len(results)
+        if n >= cap:
+            log.warning("query '%s' returned %d (hit the %d cap)", term, n, cap)
+        for j in results:
+            if j.job_url in seen or not j.description:
+                continue
+            # Enforce real freshness. Keep jobs with no date (LinkedIn sometimes omits it)
+            # rather than risk dropping a genuinely-new posting.
+            if j.date_posted is not None and j.date_posted < cutoff:
+                stale_dropped += 1
+                continue
+            seen.add(j.job_url)
+            jobs.append(j)
+    if stale_dropped:
+        log.info("dropped %d jobs older than %dh (LinkedIn's filter let them through)",
+                 stale_dropped, cfg.search.hours_old)
     return jobs
 
 
@@ -140,12 +166,12 @@ async def run_one_profile(cfg, profile_entry, profile_json: dict, client, dry_ru
     # inject config-level company excludes (e.g. current employer) into the profile
     profile_json = {**profile_json, "exclude_companies": getattr(cfg, "exclude_companies", []) or []}
     kept = prefilter(jobs, profile_json)
-    # DEDUP: drop jobs already emailed in a previous run (also saves scoring cost)
+    # SKIP anything we've EVER scored before (emailed or rejected) — never re-score.
     before = len(kept)
-    kept = [j for j in kept if j.job_url not in already_sent]
+    kept = [j for j in kept if j.job_url not in already_seen]
     skipped = before - len(kept)
     if skipped:
-        print(f"[{label}] skipped {skipped} already-emailed jobs (dedup)")
+        print(f"[{label}] skipped {skipped} already-scored jobs (won't re-score)")
     if no_llm:
         print(f"[{label}] {len(jobs)} scraped -> {len(kept)} new pre-filtered -> NO-LLM (skipping scoring)")
         deduped, seen = [], set()
@@ -154,7 +180,7 @@ async def run_one_profile(cfg, profile_entry, profile_json: dict, client, dry_ru
                 seen.add(j.job_url)
                 deduped.append(("adjacent_fit", j, {"summary": "(no-llm preview — not scored)"}))
         print(f"[{label}] {len(deduped)} jobs (unscored preview).")
-        return label, deduped
+        return label, deduped, []
 
     print(f"[{label}] {len(jobs)} scraped -> {len(kept)} new pre-filtered -> scoring...")
     scored = await score_all(kept, profile_json, client)
@@ -167,7 +193,7 @@ async def run_one_profile(cfg, profile_entry, profile_json: dict, client, dry_ru
             seen.add(j.job_url)
             deduped.append((b, j, r))
     print(f"[{label}] {len(deduped)} strong/adjacent matches.")
-    return label, deduped
+    return label, deduped, scored  # scored = ALL judged jobs, for recording as seen
 
 
 async def main(dry_run: bool, no_llm: bool = False, config_path: str | None = None) -> None:
@@ -175,8 +201,6 @@ async def main(dry_run: bool, no_llm: bool = False, config_path: str | None = No
     cfg = load_config(config_path or CONFIG_PATH)
     date_str = datetime.now().strftime("%a %b %d, %Y")
 
-    import os
-    from zoneinfo import ZoneInfo
     # tag = config file name (e.g. "adya" or "jobdigest"); keeps each digest independent
     tag = Path(config_path).stem if config_path else "jobdigest"
     # "today" in the digest's own timezone, so the once-per-day guard rolls over correctly
@@ -212,25 +236,26 @@ async def main(dry_run: bool, no_llm: bool = False, config_path: str | None = No
         client = build_llm_client(provider="anthropic")
         client.models = ["claude-haiku-4-5-20251001"]
 
-    # DEDUP: load URLs already emailed in past runs (skip in dry-run / when no DB)
-    already_sent: set = set()
+    # SKIP-LIST: load URLs we've EVER scored (emailed or rejected) so we never re-score.
+    already_seen: set = set()
     if not dry_run and os.getenv("DATABASE_URL"):
         from jobdigest import dedup
-        already_sent = await dedup.load_sent_urls()
-        print(f"Dedup: {len(already_sent)} jobs previously emailed will be skipped.")
+        already_seen = await dedup.load_seen_urls()
+        print(f"Skip-list: {len(already_seen)} jobs already scored before — won't re-score.")
 
     # load each profile's JSON (resume path is e.g. resumes/rtl.pdf -> resumes/rtl.json)
     resume_dir = Path(__file__).parent / "resumes"
     all_sections = []
+    all_scored = []  # every judged job across profiles, to record as 'seen'
     for p in cfg.profiles:
         jpath = resume_dir / f"{p.id}.json"
         if not jpath.exists():
             print(f"WARNING: {jpath} missing, skipping profile {p.id}")
             continue
-        import json
         pjson = json.loads(jpath.read_text())
-        label, matches = await run_one_profile(cfg, p, pjson, client, dry_run, no_llm, already_sent)
+        label, matches, scored = await run_one_profile(cfg, p, pjson, client, dry_run, no_llm, already_seen)
         all_sections.append((label, matches))
+        all_scored.extend(scored)
 
     # combine (routing=combined) into one digest
     combined = []
@@ -255,18 +280,36 @@ async def main(dry_run: bool, no_llm: bool = False, config_path: str | None = No
         print(f"DRY RUN — wrote {out.resolve()} (open it to preview). No email sent.")
         return
 
-    send_email(subject=subject, html=html,
-               sender=cfg.secrets.gmail_user, app_password=cfg.secrets.gmail_app_password,
-               recipients=[str(r) for r in cfg.recipients])
+    # Skip sending an empty digest (common once skip-list is active and there are no
+    # NEW jobs that day) — but still record what we scored + mark the day done.
+    if not final:
+        print("No new matches today — not sending an empty email.")
+        if os.getenv("DATABASE_URL"):
+            from jobdigest import dedup
+            n = await dedup.record_seen(all_scored)
+            print(f"Skip-list: recorded {n} newly-scored jobs.")
+            await dedup.mark_ran_today(tag, today)
+            print(f"Marked '{tag}' digest as done for {today} (empty).")
+        return
+
+    # Send first. Only on success do we record (seen + sent) and mark the day done.
+    # Rationale: if the email fails, we'd rather re-score next run (recoverable cost)
+    # than mark jobs 'seen' and silently lose matches that never reached the inbox.
+    try:
+        send_email(subject=subject, html=html,
+                   sender=cfg.secrets.gmail_user, app_password=cfg.secrets.gmail_app_password,
+                   recipients=[str(r) for r in cfg.recipients])
+    except Exception as exc:  # noqa: BLE001
+        print(f"ERROR: send failed ({exc}). Recording nothing — will retry next run.")
+        sys.exit(1)
     print(f"Sent digest to {[str(r) for r in cfg.recipients]}")
 
-    # DEDUP: record what we just emailed so tomorrow's run skips them
     if os.getenv("DATABASE_URL"):
         from jobdigest import dedup
-        n = await dedup.record_sent(final)
-        print(f"Dedup: recorded {n} emailed jobs.")
+        seen_n = await dedup.record_seen(all_scored)
+        sent_n = await dedup.record_sent(final)
         await dedup.mark_ran_today(tag, today)
-        print(f"Marked '{tag}' digest as sent for {today}.")
+        print(f"Recorded {seen_n} scored (skip-list), {sent_n} emailed. Marked '{tag}' done for {today}.")
 
 
 if __name__ == "__main__":

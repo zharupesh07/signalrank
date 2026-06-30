@@ -60,6 +60,8 @@ async def load_sent_urls() -> set[str]:
 
 async def already_ran_today(tag: str, day: str) -> bool:
     """True if a digest for this tag (e.g. config name) already ran on `day` (YYYY-MM-DD)."""
+    from datetime import date as _date
+    day_obj = _date.fromisoformat(day)
     conn = await _connect()
     try:
         await conn.execute(
@@ -69,7 +71,7 @@ async def already_ran_today(tag: str, day: str) -> bool:
             "  PRIMARY KEY (tag, run_day))"
         )
         row = await conn.fetchrow(
-            "SELECT 1 FROM digest_runs WHERE tag = $1 AND run_day = $2::date", tag, day
+            "SELECT 1 FROM digest_runs WHERE tag = $1 AND run_day = $2", tag, day_obj
         )
         return row is not None
     finally:
@@ -77,6 +79,8 @@ async def already_ran_today(tag: str, day: str) -> bool:
 
 
 async def mark_ran_today(tag: str, day: str) -> None:
+    from datetime import date as _date
+    day_obj = _date.fromisoformat(day)
     conn = await _connect()
     try:
         await conn.execute(
@@ -86,9 +90,45 @@ async def mark_ran_today(tag: str, day: str) -> None:
             "  PRIMARY KEY (tag, run_day))"
         )
         await conn.execute(
-            "INSERT INTO digest_runs (tag, run_day) VALUES ($1, $2::date) "
-            "ON CONFLICT (tag, run_day) DO NOTHING", tag, day
+            "INSERT INTO digest_runs (tag, run_day) VALUES ($1, $2) "
+            "ON CONFLICT (tag, run_day) DO NOTHING", tag, day_obj
         )
+    finally:
+        await conn.close()
+
+
+async def load_seen_urls() -> set[str]:
+    """All job URLs we've EVER scored (emailed or not) — so we never re-score them."""
+    conn = await _connect()
+    try:
+        await conn.execute(
+            "CREATE TABLE IF NOT EXISTS seen_jobs ("
+            "  job_url TEXT PRIMARY KEY, verdict TEXT,"
+            "  scored_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+        )
+        rows = await conn.fetch("SELECT job_url FROM seen_jobs")
+        return {r["job_url"] for r in rows}
+    finally:
+        await conn.close()
+
+
+async def record_seen(scored: list) -> int:
+    """Record every scored job (band, job, report) so future runs skip it. Returns count."""
+    if not scored:
+        return 0
+    conn = await _connect()
+    try:
+        await conn.execute(
+            "CREATE TABLE IF NOT EXISTS seen_jobs ("
+            "  job_url TEXT PRIMARY KEY, verdict TEXT,"
+            "  scored_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+        )
+        rows = [(j.job_url, str(b)[:50]) for (b, j, _r) in scored]
+        await conn.executemany(
+            "INSERT INTO seen_jobs (job_url, verdict) VALUES ($1, $2) "
+            "ON CONFLICT (job_url) DO NOTHING", rows
+        )
+        return len(rows)
     finally:
         await conn.close()
 
