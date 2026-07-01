@@ -76,10 +76,15 @@ async def scrape(cfg, terms: list[str]) -> list:
             if j.job_url in seen or not j.description:
                 continue
             # Enforce real freshness. Keep jobs with no date (LinkedIn sometimes omits it)
-            # rather than risk dropping a genuinely-new posting.
-            if j.date_posted is not None and j.date_posted < cutoff:
-                stale_dropped += 1
-                continue
+            # rather than risk dropping a genuinely-new posting. Normalize naive dates to
+            # UTC so we never compare offset-naive vs offset-aware (that raises TypeError).
+            dp = j.date_posted
+            if dp is not None:
+                if dp.tzinfo is None:
+                    dp = dp.replace(tzinfo=timezone.utc)
+                if dp < cutoff:
+                    stale_dropped += 1
+                    continue
             seen.add(j.job_url)
             jobs.append(j)
     if stale_dropped:
