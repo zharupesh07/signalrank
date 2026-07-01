@@ -141,7 +141,7 @@ async def record_sent(jobs: list) -> int:
     try:
         await conn.execute(DDL)
         rows = [(j.job_url, j.title, j.company) for (_b, j, _r) in jobs]
-        result = await conn.executemany(
+        await conn.executemany(
             "INSERT INTO digest_sent (job_url, title, company) VALUES ($1, $2, $3) "
             "ON CONFLICT (job_url) DO NOTHING",
             rows,

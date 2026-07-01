@@ -163,7 +163,7 @@ async def score_all(jobs: list, profile: dict, client) -> list:
 
 
 async def run_one_profile(cfg, profile_entry, profile_json: dict, client, dry_run: bool, no_llm: bool,
-                          already_sent: set):
+                          already_seen: set):
     terms = profile_entry.titles
     label = profile_entry.id
     print(f"\n[{label}] scraping {len(terms)} title queries...")
